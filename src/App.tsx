@@ -1,15 +1,21 @@
-import './App.css';
-import MyChart from './components/densityPlot';
 
+import HomePage from './page/home';
+import Header from './components/headers'
+import Footer from './components/footer';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from './globalStyle';
+import { Box } from '@mui/material';
 function App() {
   return (
-    <div className="App">
-    
-      <h1>My Chart App</h1>
-      <MyChart />
-    
-    
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline/>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Header/>
+        <HomePage/>
+        <Footer/>
+      </Box>
+    </ThemeProvider>
   );
 }
 

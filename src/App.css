@@ -28,6 +28,12 @@
   color: #61dafb;
 }
 
+/* .color1 { #000000 };
+.color2 { #001f36 };
+.color3 { #1c5560 };
+.color4 { #79ae92 };
+.color5 { #fbffcd }; */
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
