@@ -1,3 +1,4 @@
+import { ExperimentProvider } from "./ExperimentContext";
 import { SelectionProvider } from "./SelectionContext"
 import React, { ReactNode } from 'react';
 
@@ -7,9 +8,11 @@ interface ProvidersProps {
 
 const Providers:React.FC<ProvidersProps> = ({children}) =>{
   return(
-    <SelectionProvider>
-      {children}
-    </SelectionProvider>         
+    <ExperimentProvider>  
+      <SelectionProvider> 
+        {children}
+      </SelectionProvider>         
+    </ExperimentProvider>
   )
 }
 
