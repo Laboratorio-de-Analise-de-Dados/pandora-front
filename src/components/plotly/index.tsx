@@ -1,16 +1,10 @@
 import CropFreeSharpIcon from '@mui/icons-material/CropFreeSharp';
 import GestureIcon from '@mui/icons-material/Gesture';
-import { Box, Button,ToggleButtonGroup, ToggleButton,CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import React, { useState } from 'react';
 import Plot from 'react-plotly.js';
-import { useSelectionContext } from '../../providers/SelectionContext';
 
 
-interface DataPoint {
-  id: number;
-  x: number;
-  y: number;
-}
 
 interface Selection {
   name: string;
@@ -27,21 +21,15 @@ interface ScatterPlotProps {
   data: any[];
   xAxisSelector: string;
   yAxisSelector: string;
-  maxItems: number;
-  chunkSize: number;
+  loading: boolean
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
   data,
   xAxisSelector,
   yAxisSelector,
-  maxItems,
-  chunkSize,
+  loading
 }) => {
-  const { addSelectedId, clearSelection } = useSelectionContext();
-  const [visibleData, setVisibleData] = useState<DataPoint[]>([]);
-  const [loadedItems, setLoadedItems] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedSquareName, setSelectedSquareName] = useState('');
   const [selectionArea, setSelectionArea] = useState<{
@@ -52,14 +40,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
   } | null>(null);
   const [selections, setSelections] = useState<Selection[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-
-  useEffect(() => {
-    const initialData = data.slice(0, maxItems);
-    setVisibleData(initialData);
-    setLoadedItems(initialData.length);
-    console.log(initialData.length)
-  }, [data, maxItems]);
 
   const handleSelectedArea = (event: any) => {
     if (isSelecting && event && event.range) {
@@ -90,7 +70,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
       const newSelection: Selection = {
         name: selectedSquareName,
         area: selectionArea,
-        selectedIds: visibleData
+        selectedIds: data
           .filter(
             (item) =>
               item.x >= selectionArea.startX &&
@@ -128,14 +108,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
         </ToggleButtonGroup>
       </Box>
       <Box >
-        {visibleData.length ? (
+        {data.length ? (
           <Plot
             data={[
               {
                 type: 'scatter',
                 mode: 'markers',
-                x: visibleData.map((item) => item.x),
-                y: visibleData.map((item) => item.y),
+                x: data.map((item) => item[xAxisSelector]),
+                y: data.map((item) => item[yAxisSelector]),
                 marker: { color: 'black', size: 1 },
               },
             ]}

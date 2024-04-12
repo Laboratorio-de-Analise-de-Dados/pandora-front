@@ -1,9 +1,9 @@
-import React, { createContext, useContext, FC, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, FC, ReactNode, useState, useEffect, useCallback } from 'react';
 import CytometryApi from '../../API';
 
 interface ExperimentContextProps {
   experiments: any[];
-  ListExperiments: () => void
+  listExperiments: () => void
 }
 
 const ExperimentContext = createContext<ExperimentContextProps | undefined>(undefined);
@@ -22,19 +22,19 @@ interface ExperimentProviderProps {
 
 export const ExperimentProvider: FC<ExperimentProviderProps> = ({ children }) => {
   const [experiments, setExperiments] = useState<any[]>([]);
-
+  const listExperiments =useCallback(
   async function ListExperiments () {
     const experiments = await CytometryApi.get('/experiment/list')
     setExperiments([...experiments.data])
-  }
+  },[])
 
   useEffect(()=>{
-    ListExperiments()
-  },[])
+    listExperiments()
+  },[listExperiments])
 
 
   return (
-    <ExperimentContext.Provider value={{ experiments, ListExperiments }}>
+    <ExperimentContext.Provider value={{ experiments, listExperiments }}>
       {children}
     </ExperimentContext.Provider>
   );
