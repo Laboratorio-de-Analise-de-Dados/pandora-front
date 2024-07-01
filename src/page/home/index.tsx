@@ -13,7 +13,7 @@ export default function HomePage(){
   return (
     <Layout>
         <Typography sx={{fontSize:'2rem', fontWeight:'bold'}}>
-            Welcome to CitoSharp!
+            Welcome to ---------!
         </Typography>    
     </Layout>
   )

@@ -16,7 +16,7 @@ const Header = () => {
         <Box sx={{display:'flex', justifyContent:'space-around', gap:'2rem', alignItems:'center'}}>
           <Link to='/'>
             <Typography variant="h6" component="div" sx={{  color: '#fbffcd', textDecoration:'none' }}>
-              Citosharp
+              ---------  
             </Typography>
           </Link>
 
