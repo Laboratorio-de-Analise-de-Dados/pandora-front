@@ -125,8 +125,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
               yaxis: { title: `${yAxisSelector.toUpperCase().replace("_", '-')}` },
               width:500,
               height:500,
-              plot_bgcolor: '#fbffcd',
-              paper_bgcolor:'#fbffcd'
+              plot_bgcolor: '#FFFFFF',
+              paper_bgcolor:'#FFFFFF'
             }}
             onSelected={handleSelectedArea}
           />
