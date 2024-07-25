@@ -37,7 +37,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 }) => {
 	const [experiments, setExperiments] = useState<any[]>([])
 	const listExperiments = useCallback(async function ListExperiments() {
-		const experiments = await CytometryApi.get("/experiment/list")
+		const experiments = await CytometryApi.get("/experiment")
 		setExperiments([...experiments.data])
 	}, [])
 

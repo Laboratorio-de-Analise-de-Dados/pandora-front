@@ -1,17 +1,16 @@
+import AddIcon from "@mui/icons-material/Add"
 import {
 	Box,
+	Button,
+	FormControl,
+	FormHelperText,
 	Input,
+	InputLabel,
 	Modal,
 	Tooltip,
-	FormControl,
-	InputLabel,
-	FormHelperText,
-	Button,
 	Typography,
 } from "@mui/material"
-import AddIcon from "@mui/icons-material/Add"
-import { useState, useRef, ChangeEvent } from "react"
-import { useFormControlContext } from "@mui/base/FormControl"
+import { ChangeEvent, useRef, useState } from "react"
 
 export default function NewExperimentCard() {
 	const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
