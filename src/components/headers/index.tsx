@@ -3,12 +3,24 @@ import AppBar from "@mui/material/AppBar"
 import Toolbar from "@mui/material/Toolbar"
 import Typography from "@mui/material/Typography"
 import { Link } from "react-router-dom"
+import { useThemeMode } from "../../providers/ThemeContext"
+import { Button } from "@mui/material"
 
 const Header = () => {
 	const NAVLINKS = [{ id: 1, name: "Experiments", path: "/experiments" }]
+	const Content = () => {
+		const { mode, toggleMode } = useThemeMode()
 
+		return (
+			<Box sx={{ p: 2 }}>
+				<Button variant="contained" onClick={toggleMode}>
+					Mudar para {mode === "light" ? "dark" : "light"} mode
+				</Button>
+			</Box>
+		)
+	}
 	return (
-		<AppBar position="static" style={{ backgroundColor: "#001f36" }}>
+		<AppBar position="static" color="secondary">
 			<Toolbar>
 				<Box
 					sx={{
@@ -22,7 +34,7 @@ const Header = () => {
 						<Typography
 							variant="h6"
 							component="div"
-							sx={{ color: "#fbffcd", textDecoration: "none" }}
+							sx={{ color: "#FFFFFF", textDecoration: "none" }}
 						></Typography>
 					</Link>
 
@@ -32,7 +44,7 @@ const Header = () => {
 								<ListItem key={link.id}>
 									<Link to={link.path}>
 										<Typography
-											sx={{ color: "#fbffcd", textDecoration: "none" }}
+											sx={{ color: "#FFFFFF", textDecoration: "none" }}
 										>
 											{link.name}
 										</Typography>
@@ -41,6 +53,7 @@ const Header = () => {
 							)
 						})}
 					</List>
+					<Content />
 				</Box>
 			</Toolbar>
 		</AppBar>
