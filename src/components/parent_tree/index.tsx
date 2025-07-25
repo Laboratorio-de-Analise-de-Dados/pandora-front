@@ -63,7 +63,7 @@ export default function ParentTree({
 			sx={(theme) => ({
 				flexGrow: 1,
 				overflowY: "auto",
-				color: theme.palette.secondary.contrastText,
+				color: theme.palette.text.primary,
 			})}
 		/>
 	)
