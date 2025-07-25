@@ -9,8 +9,16 @@ export type EventData = {
 export default function HomePage() {
 	return (
 		<Layout>
-			<Typography sx={{ fontSize: "2rem", fontWeight: "bold" }}>
-				Welcome!
+			<Typography
+				sx={{
+					fontSize: "2rem",
+					fontWeight: "bold",
+					textAlign: "center",
+					alignSelf: "center",
+					flex: 1,
+				}}
+			>
+				Welcome to Pandora!
 			</Typography>
 		</Layout>
 	)
