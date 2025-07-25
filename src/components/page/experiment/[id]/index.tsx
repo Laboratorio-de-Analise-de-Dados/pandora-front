@@ -18,7 +18,7 @@ export default function ExperimentPage() {
 	const [loading, setLoading] = useState<boolean>(false)
 	const [loadFile, setLoadFile] = useState<boolean>(false)
 	const [fileData, setFileData] = useState<FileData | undefined>(undefined)
-	const [gate, setGate] = useState<Gate | undefined>()
+	const [gate, setGate] = useState<number | undefined>()
 	const getExperimentData = useCallback(async (id: string) => {
 		setLoading(true)
 		try {
@@ -86,7 +86,8 @@ export default function ExperimentPage() {
 							loading={loading}
 							values={experiment?.values || []}
 							fileId={fileData.id}
-							parentId={gate?.id}
+							parentId={gate}
+							loadFile={()=>getExperimentData(param.id)}
 						/>
 					</>
 				)}

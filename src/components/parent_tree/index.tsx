@@ -12,14 +12,14 @@ type Item = {
 }
 
 const convertGateToTreeItem = (gate: Gate): Item => ({
-	id: `gate-${gate.id.toString()}`,
+	id: `gate${Math.random() * (458 - 189) + 189}-${gate.id.toString()}`,
 	label: `🔲 ${gate.name}`,
 	children: gate.children?.map(convertGateToTreeItem),
 })
 
 const convertFilesToTreeItems = (files: ExperimentFiles[]): Item[] => {
 	return files.map((file) => ({
-		id: `file-${file.id.toString()}`,
+		id: `file${Math.random() * (458 - 189) + 189}-${file.id.toString()}`,
 		label: `📄 ${file.file_name}`,
 		children: file.gates.map(convertGateToTreeItem),
 	}))
@@ -37,13 +37,14 @@ export default function ParentTree({
 	gateSet: (gate: number) => void
 }) {
 	const items = convertFilesToTreeItems(files)
+	const ItemsIds = items.map((item) => item.id)
 	const handleRowClick = async (
 		event: React.MouseEvent,
 		itemId: TreeViewItemId
 	) => {
 		loadFile(true)
-		const isFile = itemId.toString().startsWith("file-")
-		const isGate = itemId.toString().startsWith("gate-")
+		const isFile = itemId.toString().startsWith("file")
+		const isGate = itemId.toString().startsWith("gate")
 		const id = parseInt(itemId.toString().split("-")[1])
 		if (isFile) {
 			try {
@@ -71,11 +72,12 @@ export default function ParentTree({
 			}
 		}
 	}
+
 	return (
 		<RichTreeView
 			items={items}
 			onItemClick={handleRowClick}
-			defaultExpandedItems={files.map((f) => f.id.toString())}
+			defaultExpandedItems={ItemsIds}
 			slots={{
 				expandIcon: ChevronRight,
 				collapseIcon: ExpandMore,

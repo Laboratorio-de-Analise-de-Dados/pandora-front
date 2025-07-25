@@ -48,7 +48,7 @@ export interface Gate {
 export interface NewGate {
 	id?: number
 	name: string
-	parent_id?: number
+	parent?: number
 	gate_coordinates: GateCoordinates
 	file_data: number
 	children?: Gate[]

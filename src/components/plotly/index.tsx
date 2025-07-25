@@ -27,6 +27,7 @@ interface ScatterPlotProps {
 	loading: boolean
 	fileId: number
 	parentId?: number
+	loadFile: () => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -35,6 +36,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	values,
 	fileId,
 	parentId,
+	loadFile,
 }) => {
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
@@ -85,7 +87,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const newSelection: NewGate = {
 				file_data: fileId,
 				name: selectedSquareName,
-				parent_id: parentId,
+				parent: parentId,
 				gate_coordinates: selectionArea,
 				dashboard: {
 					name: `${x_axix_selector} X ${y_axix_selector}`,
@@ -101,6 +103,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 			setSelectionArea(null)
 			setSelectedSquareName("")
+			handleDialogClose()
+			loadFile()
 		}
 	}
 
