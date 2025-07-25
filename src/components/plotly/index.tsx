@@ -19,25 +19,23 @@ import {
 import React, { useState } from "react"
 import Plot from "react-plotly.js"
 import CytometryApi from "../../API"
-
-interface Selection {
-	name: string
-	area: {
-		startX: number
-		startY: number
-		endX: number
-		endY: number
-	}
-	selectedIds: number[]
-}
+import { NewGate } from "../../types"
 
 interface ScatterPlotProps {
 	data: any[]
 	values: string[]
 	loading: boolean
+	fileId: number
+	parentId?: number
 }
 
-const ScatterPlot: React.FC<ScatterPlotProps> = ({ data, loading, values }) => {
+const ScatterPlot: React.FC<ScatterPlotProps> = ({
+	data,
+	loading,
+	values,
+	fileId,
+	parentId,
+}) => {
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
 	const [isSelecting, setIsSelecting] = useState(false)
@@ -48,7 +46,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ data, loading, values }) => {
 		endX: number
 		endY: number
 	} | null>(null)
-	const [selections, setSelections] = useState<Selection[]>([])
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
 
 	const handleSelectX = (e: SelectChangeEvent<string>) => {
@@ -85,39 +82,22 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ data, loading, values }) => {
 
 	const handleSquareNameSubmit = async () => {
 		if (selectedSquareName && selectionArea) {
-			const newSelection: Selection = {
+			const newSelection: NewGate = {
+				file_data: fileId,
 				name: selectedSquareName,
-				area: selectionArea,
-				selectedIds: data
-					.filter(
-						(item) =>
-							item.x >= selectionArea.startX &&
-							item.x <= selectionArea.endX &&
-							item.y >= selectionArea.startY &&
-							item.y <= selectionArea.endY
-					)
-					.map((item) => item.id),
+				parent_id: parentId,
+				gate_coordinates: selectionArea,
+				dashboard: {
+					name: `${x_axix_selector} X ${y_axix_selector}`,
+					dashboard_config: {
+						x_axis_label: x_axix_selector,
+						y_axis_label: y_axix_selector,
+					},
+					file_data: fileId,
+				},
 			}
 
-			setSelections((prevSelections) => [...prevSelections, newSelection])
-
-			const gateData = {
-				x_min: selectionArea.startX,
-				y_min: selectionArea.startY,
-				x_max: selectionArea.endX,
-				y_max: selectionArea.endY,
-				y_value: y_axix_selector
-					.toLowerCase()
-					.replace(" ", "")
-					.replace("-", "_"),
-				x_value: x_axix_selector
-					.toLowerCase()
-					.replace(" ", "")
-					.replace("-", "_"),
-				name: selectedSquareName,
-			}
-
-			const createGate = await CytometryApi.post("/experiment/gate", gateData)
+			await CytometryApi.post("analytics/gate", newSelection)
 
 			setSelectionArea(null)
 			setSelectedSquareName("")
@@ -217,7 +197,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ data, loading, values }) => {
 								yaxis: { title: `${y_axix_selector}` },
 								width: 500,
 								height: 500,
-								plot_bgcolor: "#4a1717",
+								plot_bgcolor: "#FFFFFF",
 								paper_bgcolor: "#FFFFFF",
 							}}
 							onSelected={handleSelectedArea}
@@ -234,14 +214,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ data, loading, values }) => {
 					))}
 				</Select>
 			</Box>
-			{loading && <CircularProgress />}
-
-			{selections.map((selection, index) => (
-				<div key={index}>
-					Nome: {selection.name}, Área: {JSON.stringify(selection.area)}, IDs:{" "}
-					{selection.selectedIds.join(", ")}
-				</div>
-			))}
 
 			<Dialog open={isDialogOpen} onClose={handleDialogClose}>
 				<DialogTitle>Inserir Nome da Seleção</DialogTitle>
@@ -256,28 +228,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ data, loading, values }) => {
 					<Button onClick={handleSquareNameSubmit}>Salvar</Button>
 				</DialogActions>
 			</Dialog>
-
-			{selectionArea && (
-				<>
-					<rect
-						x={selectionArea.startX}
-						y={selectionArea.startY}
-						width={selectionArea.endX - selectionArea.startX}
-						height={selectionArea.endY - selectionArea.startY}
-						fill="rgba(255, 0, 0, 0.3)"
-					/>
-					<div>
-						<TextField
-							label="Nome do Quadrado"
-							value={selectedSquareName}
-							onChange={handleSquareNameChange}
-						/>
-						<Button variant="contained" onClick={handleSquareNameSubmit}>
-							Salvar
-						</Button>
-					</div>
-				</>
-			)}
 		</Box>
 	)
 }
