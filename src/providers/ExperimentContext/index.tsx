@@ -8,10 +8,16 @@ import React, {
 	useCallback,
 } from "react"
 import CytometryApi from "../../API"
+import { AxiosResponse } from "axios"
 
 interface ExperimentContextProps {
 	experiments: any[]
 	listExperiments: () => void
+	createExperiment: (
+		title: string,
+		type: string,
+		file: File
+	) => Promise<AxiosResponse<any, any>>
 }
 
 const ExperimentContext = createContext<ExperimentContextProps | undefined>(
@@ -41,12 +47,26 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 		setExperiments([...experiments.data])
 	}, [])
 
+	const createExperiment = async (title: string, type: string, file: File) => {
+		const formData = new FormData()
+
+		formData.append("file", file)
+		formData.append("title", title)
+		formData.append("type", type)
+
+		const fetchNewExperiment = await CytometryApi.post("/experiment/", formData)
+		await listExperiments()
+		return fetchNewExperiment
+	}
+
 	useEffect(() => {
 		listExperiments()
 	}, [listExperiments])
 
 	return (
-		<ExperimentContext.Provider value={{ experiments, listExperiments }}>
+		<ExperimentContext.Provider
+			value={{ experiments, listExperiments, createExperiment }}
+		>
 			{children}
 		</ExperimentContext.Provider>
 	)
