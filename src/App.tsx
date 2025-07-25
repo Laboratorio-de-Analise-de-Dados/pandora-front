@@ -12,7 +12,12 @@ function App() {
 			<ToastContainer />
 			<CssBaseline />
 			<Box
-				sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+				sx={{
+					display: "flex",
+					flexDirection: "column",
+					minHeight: "100vh",
+					justifyContent: "space-between",
+				}}
 			>
 				<Header />
 				<Routes />
