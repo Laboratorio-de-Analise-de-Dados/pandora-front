@@ -34,7 +34,7 @@ export default function ParentTree({
 	files: ExperimentFiles[]
 	loadFile: (arg: boolean) => void
 	fileDataSet: (fileData: FileData) => void
-	gateSet: (gate: Gate) => void
+	gateSet: (gate: number) => void
 }) {
 	const items = convertFilesToTreeItems(files)
 	const handleRowClick = async (
@@ -62,6 +62,7 @@ export default function ParentTree({
 				const gate = await CytometryApi.get(
 					`/analytics/gate/${id}/list?limit=10000`
 				)
+				gateSet(id)
 				fileDataSet(gate.data)
 			} catch (error: any) {
 				toast.error(error.message)
