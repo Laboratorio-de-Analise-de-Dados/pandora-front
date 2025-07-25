@@ -34,7 +34,7 @@ const Header = () => {
 						<Typography
 							variant="h6"
 							component="div"
-							sx={{ color: "#FFFFFF", textDecoration: "none" }}
+							sx={{ color: "text", textDecoration: "none" }}
 						></Typography>
 					</Link>
 

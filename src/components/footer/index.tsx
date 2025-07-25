@@ -8,9 +8,11 @@ const Footer = () => {
 			component="footer"
 			color="secondary"
 			sx={{
-				py: 2,
-				mt: "auto",
+				display: "flex",
+				alignItems: "center",
 				textAlign: "center",
+				justifyContent: "center",
+				padding: "1rem",
 			}}
 		>
 			<Typography variant="body2">
