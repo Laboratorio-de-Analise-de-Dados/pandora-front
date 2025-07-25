@@ -4,7 +4,7 @@ import Layout from "../../../Layout"
 import { useParams } from "react-router-dom"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { Experiment, ExperimentFiles, FileData } from "../../../../types"
+import { Experiment, ExperimentFiles, FileData, Gate } from "../../../../types"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
 interface Params {
@@ -18,6 +18,7 @@ export default function ExperimentPage() {
 	const [loading, setLoading] = useState<boolean>(false)
 	const [loadFile, setLoadFile] = useState<boolean>(false)
 	const [fileData, setFileData] = useState<FileData | undefined>(undefined)
+	const [gate, setGate] = useState<Gate | undefined>()
 	const getExperimentData = useCallback(async (id: string) => {
 		setLoading(true)
 		try {
@@ -57,6 +58,7 @@ export default function ExperimentPage() {
 				<ParentTree
 					files={experimentFiles}
 					fileDataSet={setFileData}
+					gateSet={setGate}
 					loadFile={setLoadFile}
 				/>
 			</Box>
@@ -83,6 +85,8 @@ export default function ExperimentPage() {
 							data={fileData.data_set}
 							loading={loading}
 							values={experiment?.values || []}
+							fileId={fileData.id}
+							parentId={gate?.id}
 						/>
 					</>
 				)}
