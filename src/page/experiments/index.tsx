@@ -17,16 +17,25 @@ export default function ExperimentsPage() {
 
 	return (
 		<Layout>
-			<Typography sx={{ fontSize: "2rem", fontWeight: "bold" }}>
-				Experiments:
-			</Typography>
-
-			<Box>
-				<Typography sx={{ fontSize: "1.5rem" }}>
-					Chose one experiment:
+			<Box
+				sx={{
+					display: "flex",
+					flexDirection: "column",
+					flex: 1,
+					padding: "1rem",
+				}}
+			>
+				<Typography sx={{ fontSize: "2rem", fontWeight: "bold" }}>
+					Experiments:
 				</Typography>
+
 				<Box>
-					<ExperimentsContainer experiments={experiments} />
+					<Typography sx={{ fontSize: "1.5rem" }}>
+						Chose one experiment:
+					</Typography>
+					<Box>
+						<ExperimentsContainer experiments={experiments} />
+					</Box>
 				</Box>
 			</Box>
 		</Layout>
