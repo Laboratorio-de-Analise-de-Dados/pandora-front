@@ -27,6 +27,7 @@ interface ScatterPlotProps {
 	loading: boolean
 	fileId: number
 	parentId?: number
+	gateSetter: (args: any) => void
 	loadFile: () => void
 }
 
@@ -36,6 +37,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	values,
 	fileId,
 	parentId,
+	gateSetter,
 	loadFile,
 }) => {
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
@@ -100,7 +102,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			}
 
 			await CytometryApi.post("analytics/gate", newSelection)
-
+			gateSetter(undefined)
 			setSelectionArea(null)
 			setSelectedSquareName("")
 			handleDialogClose()

@@ -87,6 +87,7 @@ export default function ExperimentPage() {
 							values={experiment?.values || []}
 							fileId={fileData.id}
 							parentId={gate}
+							gateSetter={setGate}
 							loadFile={()=>getExperimentData(param.id)}
 						/>
 					</>
