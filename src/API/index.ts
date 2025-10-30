@@ -1,5 +1,6 @@
-import axios from 'axios';
+import axios from "axios"
 
-const CytometryApi = axios.create({baseURL:'http://localhost:8000'})
+const pandoraUrl = process.env.API_URL || "http://localhost:8085"
+const CytometryApi = axios.create({ baseURL: pandoraUrl })
 
 export default CytometryApi

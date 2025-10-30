@@ -1,0 +1,39 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pandora_frontend
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://pandora_backend:8085}
+    expose:
+      - "3000"
+    networks:
+      - pandora_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pandora_backend
+    expose:
+      - "8085"
+    networks:
+      - pandora_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: pandora_nginx
+    ports:
+      - "81:80" # Porta externa 81 → interna 80
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - pandora_net
+
+networks:
+  pandora_net:
+    external: true

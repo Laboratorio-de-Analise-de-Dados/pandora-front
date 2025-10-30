@@ -1,0 +1,38 @@
+name: 🚀 CI/CD Pandora Frontend
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL }}
+          FRONTEND_PORT: ${{ vars.FRONTEND_PORT }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: REACT_APP_API_URL,FRONTEND_PORT
+          script: |
+            set -e
+            cd /home/ubuntu/
+
+            echo "📦 Clonando repositório do frontend..."
+            git clone git@github.com:Laboratorio-de-Analise-de-Dados/pandora-frontend.git
+            cd pandora-frontend
+            git checkout main
+
+            echo "⚙️ Subindo frontend com Docker Compose..."
+            docker compose -f docker-compose.yml up -d --build
+
+            echo "🧹 Limpando diretório..."
+            cd ..
+            rm -rf pandora-frontend
+
+            echo "✅ Deploy do frontend concluído!"
