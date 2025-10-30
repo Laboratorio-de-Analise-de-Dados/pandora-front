@@ -1,206 +1,241 @@
-import CropFreeSharpIcon from '@mui/icons-material/CropFreeSharp';
-import GestureIcon from '@mui/icons-material/Gesture';
-import { Box, Button,ToggleButtonGroup, ToggleButton,CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import Plot from 'react-plotly.js';
-import { useSelectionContext } from '../../providers/SelectionContext';
-
-
-interface DataPoint {
-  id: number;
-  x: number;
-  y: number;
-}
-
-interface Selection {
-  name: string;
-  area: {
-    startX: number;
-    startY: number;
-    endX: number;
-    endY: number;
-  };
-  selectedIds: number[];
-}
+import CropFreeSharpIcon from "@mui/icons-material/CropFreeSharp"
+import GestureIcon from "@mui/icons-material/Gesture"
+import {
+	Box,
+	Select,
+	Button,
+	CircularProgress,
+	MenuItem,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+	TextField,
+	ToggleButton,
+	ToggleButtonGroup,
+	Typography,
+	SelectChangeEvent,
+} from "@mui/material"
+import React, { useState } from "react"
+import Plot from "react-plotly.js"
+import CytometryApi from "../../API"
+import { NewGate } from "../../types"
 
 interface ScatterPlotProps {
-  data: any[];
-  xAxisSelector: string;
-  yAxisSelector: string;
-  maxItems: number;
-  chunkSize: number;
+	data: any[]
+	values: string[]
+	loading: boolean
+	fileId: number
+	parentId?: number
+	gateSetter: (args: any) => void
+	loadFile: () => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
-  data,
-  xAxisSelector,
-  yAxisSelector,
-  maxItems,
-  chunkSize,
+	data,
+	loading,
+	values,
+	fileId,
+	parentId,
+	gateSetter,
+	loadFile,
 }) => {
-  const { addSelectedId, clearSelection } = useSelectionContext();
-  const [visibleData, setVisibleData] = useState<DataPoint[]>([]);
-  const [loadedItems, setLoadedItems] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [selectedSquareName, setSelectedSquareName] = useState('');
-  const [selectionArea, setSelectionArea] = useState<{
-    startX: number;
-    startY: number;
-    endX: number;
-    endY: number;
-  } | null>(null);
-  const [selections, setSelections] = useState<Selection[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
+	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
+	const [isSelecting, setIsSelecting] = useState(false)
+	const [selectedSquareName, setSelectedSquareName] = useState("")
+	const [selectionArea, setSelectionArea] = useState<{
+		startX: number
+		startY: number
+		endX: number
+		endY: number
+	} | null>(null)
+	const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+	const handleSelectX = (e: SelectChangeEvent<string>) => {
+		if (e.target) set_x_axis_selector(e.target.value)
+	}
+	const handleSelectY = (e: SelectChangeEvent<string>) => {
+		if (e.target) set_y_axis_selector(e.target.value)
+	}
 
-  useEffect(() => {
-    const initialData = data.slice(0, maxItems);
-    setVisibleData(initialData);
-    setLoadedItems(initialData.length);
-    console.log(initialData.length)
-  }, [data, maxItems]);
+	const handleSelectedArea = async (event: any) => {
+		if (isSelecting && event && event.range) {
+			const { x, y } = event.range
 
-  const handleSelectedArea = (event: any) => {
-    if (isSelecting && event && event.range) {
-      console.log(event.range)
-      const { x, y } = event.range;
-      setSelectionArea({
-        startX: x[0],
-        startY: y[0],
-        endX: x[1],
-        endY: y[1],
-      });
-  
-      setIsSelecting(false); 
-      setIsDialogOpen(true); 
-    }
-  };
+			setSelectionArea({
+				startX: x[0],
+				startY: y[0],
+				endX: x[1],
+				endY: y[1],
+			})
+			setIsSelecting(false)
+			setIsDialogOpen(true)
+		}
+	}
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false); 
-  };
+	const handleDialogClose = () => {
+		setIsDialogOpen(false)
+	}
 
-  const handleSquareNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedSquareName(event.target.value);
-  };
+	const handleSquareNameChange = (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		setSelectedSquareName(event.target.value)
+	}
 
-  const handleSquareNameSubmit = () => {
-    if (selectedSquareName && selectionArea) {
-      const newSelection: Selection = {
-        name: selectedSquareName,
-        area: selectionArea,
-        selectedIds: visibleData
-          .filter(
-            (item) =>
-              item.x >= selectionArea.startX &&
-              item.x <= selectionArea.endX &&
-              item.y >= selectionArea.startY &&
-              item.y <= selectionArea.endY
-          )
-          .map((item) => item.id),
-      };
+	const handleSquareNameSubmit = async () => {
+		if (selectedSquareName && selectionArea) {
+			const newSelection: NewGate = {
+				file_data: fileId,
+				name: selectedSquareName,
+				parent: parentId,
+				gate_coordinates: selectionArea,
+				dashboard: {
+					name: `${x_axix_selector} X ${y_axix_selector}`,
+					dashboard_config: {
+						x_axis_label: x_axix_selector,
+						y_axis_label: y_axix_selector,
+					},
+					file_data: fileId,
+				},
+			}
 
-      setSelections((prevSelections) => [...prevSelections, newSelection]);
+			await CytometryApi.post("analytics/gate", newSelection)
+			gateSetter(undefined)
+			setSelectionArea(null)
+			setSelectedSquareName("")
+			handleDialogClose()
+			loadFile()
+		}
+	}
 
-      setSelectionArea(null);
-      setSelectedSquareName('');
-    }
-  };
+	return (
+		<Box
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				gap: "1rem",
+			}}
+		>
+			<Box
+				sx={{
+					width: "fit-content",
+					display: "flex",
+					alignItems: "center",
+					gap: "1rem",
+				}}
+			>
+				<Typography variant="subtitle1" sx={{ marginBottom: "0.5rem" }}>
+					Ferramentas:
+				</Typography>
+				<ToggleButtonGroup
+					value={isSelecting ? "crop" : "gesture"}
+					exclusive
+					onChange={() => setIsSelecting(!isSelecting)}
+				>
+					<ToggleButton value="crop" size="small">
+						<CropFreeSharpIcon />
+					</ToggleButton>
+					<ToggleButton value="gesture" size="small">
+						<GestureIcon />
+					</ToggleButton>
+				</ToggleButtonGroup>
+			</Box>
+			<Box
+				sx={{
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "center",
+				}}
+			>
+				<Box
+					sx={{
+						display: "flex",
+						alignItems: "center",
+						gap: "1rem",
+					}}
+				>
+					<Select
+						onChange={handleSelectY}
+						value={y_axix_selector}
+						sx={{
+							transform: "rotate(-90deg)",
+						}}
+					>
+						{values.map((value, index) => (
+							<MenuItem key={index} value={value}>
+								{value}
+							</MenuItem>
+						))}
+					</Select>
+					{data.length ? (
+						<Plot
+							data={[
+								{
+									type: "scatter",
+									mode: "markers",
+									x: data.map(
+										(item) =>
+											item[
+												x_axix_selector
+													.toLowerCase()
+													.replace(" ", "")
+													.replace("-", "_")
+											]
+									),
+									y: data.map(
+										(item) =>
+											item[
+												y_axix_selector
+													.toLowerCase()
+													.replace(" ", "")
+													.replace("-", "_")
+											]
+									),
+									marker: { color: "black", size: 1 },
+								},
+							]}
+							layout={{
+								dragmode: "select",
+								xaxis: { title: `${x_axix_selector}` },
+								yaxis: { title: `${y_axix_selector}` },
+								width: 500,
+								height: 500,
+								plot_bgcolor: "#FFFFFF",
+								paper_bgcolor: "#FFFFFF",
+							}}
+							onSelected={handleSelectedArea}
+						/>
+					) : (
+						<CircularProgress />
+					)}
+				</Box>
+				<Select value={x_axix_selector} onChange={handleSelectX}>
+					{values.map((value, index) => (
+						<MenuItem key={index} value={value}>
+							{value}
+						</MenuItem>
+					))}
+				</Select>
+			</Box>
 
-  return (
-    <Box sx={{display:'flex', flexDirection:'column', alignItems:'center', gap:'1rem'}}>
-      <Box sx={{ width: 'fit-content', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <Typography variant="subtitle1" sx={{ marginBottom: '0.5rem' }}>
-          Ferramentas:
-        </Typography>
-        <ToggleButtonGroup
-          value={isSelecting ? 'crop' : 'gesture'}
-          exclusive
-          onChange={() => setIsSelecting(!isSelecting)}
-        >
-        <ToggleButton value="crop" size='small'>
-          <CropFreeSharpIcon />
-        </ToggleButton>
-        <ToggleButton value="gesture" size='small'>
-          <GestureIcon />
-        </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-      <Box >
-        {visibleData.length ? (
-          <Plot
-            data={[
-              {
-                type: 'scatter',
-                mode: 'markers',
-                x: visibleData.map((item) => item.x),
-                y: visibleData.map((item) => item.y),
-                marker: { color: 'black', size: 1 },
-              },
-            ]}
-            layout={{
-              dragmode: 'select',
-              xaxis: { title: `${xAxisSelector.toUpperCase().replace("_", '-')}` },
-              yaxis: { title: `${yAxisSelector.toUpperCase().replace("_", '-')}` },
-              width:500,
-              height:500,
-              plot_bgcolor: '#fbffcd',
-              paper_bgcolor:'#fbffcd'
-            }}
-            onSelected={handleSelectedArea}
-          />
-        ) : (
-          <CircularProgress />
-        )}
+			<Dialog open={isDialogOpen} onClose={handleDialogClose}>
+				<DialogTitle>Inserir Nome da Seleção</DialogTitle>
+				<DialogContent>
+					<TextField
+						label="Nome da Seleção"
+						value={selectedSquareName}
+						onChange={handleSquareNameChange}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={handleSquareNameSubmit}>Salvar</Button>
+				</DialogActions>
+			</Dialog>
+		</Box>
+	)
+}
 
-      </Box>
-      {loading && <CircularProgress />}
-
-
-      {selections.map((selection, index) => (
-        <div key={index}>
-          Nome: {selection.name}, Área: {JSON.stringify(selection.area)}, IDs: {selection.selectedIds.join(', ')}
-        </div>
-      ))}
-
-      <Dialog open={isDialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>Inserir Nome da Seleção</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Nome da Seleção"
-            value={selectedSquareName}
-            onChange={handleSquareNameChange}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleSquareNameSubmit}>Salvar</Button>
-        </DialogActions>
-      </Dialog>
-
-      {selectionArea && (
-        <>
-          <rect
-            x={selectionArea.startX}
-            y={selectionArea.startY}
-            width={selectionArea.endX - selectionArea.startX}
-            height={selectionArea.endY - selectionArea.startY}
-            fill="rgba(255, 0, 0, 0.3)"
-          />
-          <div>
-            <TextField
-              label="Nome do Quadrado"
-              value={selectedSquareName}
-              onChange={handleSquareNameChange}
-            />
-            <Button variant="contained" onClick={handleSquareNameSubmit}>
-              Salvar
-            </Button>
-          </div>
-        </>
-      )}
-    </Box>
-  );
-};
-
-export default ScatterPlot;
+export default ScatterPlot
