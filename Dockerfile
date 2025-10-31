@@ -5,3 +5,5 @@ COPY package*.json ./
 RUN yarn install --production=true
 COPY . .
 RUN yarn build
+
+CMD [ "yarn", "start" ]

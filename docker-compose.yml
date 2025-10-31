@@ -11,17 +11,17 @@ services:
     networks:
       - pandora_net
 
-  nginx:
-    image: nginx:alpine
-    container_name: pandora_nginx
-    ports:
-      - "81:80" # Porta externa 81 → interna 80
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
-    networks:
-      - pandora_net
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: pandora_nginx
+  #   ports:
+  #     - "81:80" # Porta externa 81 → interna 80
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - frontend
+  #   networks:
+  #     - pandora_net
 
 networks:
   pandora_net:
