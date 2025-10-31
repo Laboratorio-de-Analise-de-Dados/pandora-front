@@ -10,7 +10,7 @@ import {
 	Tooltip,
 	Typography,
 } from "@mui/material"
-import { ChangeEvent, useEffect, useRef, useState } from "react"
+import { ChangeEvent, useEffect, useState } from "react"
 import { useExperimentsContext } from "../../../../providers/ExperimentContext"
 import CloudUploadIcon from "@mui/icons-material/CloudUpload"
 export default function NewExperimentCard() {
