@@ -25,4 +25,5 @@ services:
 
 networks:
   pandora_net:
+    driver: bridge
     external: true
