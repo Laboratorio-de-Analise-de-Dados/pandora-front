@@ -11,16 +11,6 @@ services:
     networks:
       - pandora_net
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: pandora_backend
-    expose:
-      - "8085"
-    networks:
-      - pandora_net
-
   nginx:
     image: nginx:alpine
     container_name: pandora_nginx
