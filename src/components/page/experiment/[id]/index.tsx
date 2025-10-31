@@ -4,7 +4,7 @@ import Layout from "../../../Layout"
 import { useParams } from "react-router-dom"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { Experiment, ExperimentFiles, FileData, Gate } from "../../../../types"
+import { Experiment, ExperimentFiles, FileData } from "../../../../types"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
 interface Params {
@@ -88,7 +88,7 @@ export default function ExperimentPage() {
 							fileId={fileData.id}
 							parentId={gate}
 							gateSetter={setGate}
-							loadFile={()=>getExperimentData(param.id)}
+							loadFile={() => getExperimentData(param.id)}
 						/>
 					</>
 				)}

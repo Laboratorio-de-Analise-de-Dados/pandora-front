@@ -44,8 +44,6 @@ export default function NewExperimentCard() {
 		}
 	}, [experimentType, selectedFileName, title])
 
-	const fileInputRef = useRef<HTMLInputElement | null>(null)
-
 	const style = {
 		width: "25vw",
 		bgcolor: "background.paper",
