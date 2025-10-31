@@ -25,7 +25,7 @@ jobs:
             GIT_SSH_COMMAND="ssh -i ~/.ssh/pandora_frontend" \
             echo "📦 Clonando repositório do frontend..."
             git clone git@github.com:Laboratorio-de-Analise-de-Dados/pandora-front.git
-            cd pandora-frontend
+            cd pandora-front
             git checkout main
 
             echo "⚙️ Subindo frontend com Docker Compose..."
@@ -33,6 +33,6 @@ jobs:
 
             echo "🧹 Limpando diretório..."
             cd ..
-            rm -rf pandora-frontend
+            rm -rf pandora-front
 
             echo "✅ Deploy do frontend concluído!"
