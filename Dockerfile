@@ -1,7 +1,14 @@
 FROM node:22-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --production
+# Copia os arquivos de dependência do Yarn
+COPY package.json yarn.lock ./
+
+# Instala dependências (sem as dev, se for produção)
+RUN yarn install --production=true
+
+# Copia o restante do projeto
 COPY . .
-RUN npm run build
+
+# Gera o build do React
+RUN yarn build
+
 
