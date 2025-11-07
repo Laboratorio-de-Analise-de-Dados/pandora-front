@@ -25,9 +25,9 @@ const Header = () => {
 				<Box
 					sx={{
 						display: "flex",
-						justifyContent: "space-around",
-						gap: "2rem",
+						justifyContent: "space-between",
 						alignItems: "center",
+						width: "70%",
 					}}
 				>
 					<Link to="/">
