@@ -20,13 +20,11 @@ jobs:
         run: |
           IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
           COMMIT_SHA=${{ github.sha }}
-          docker build -t $IMAGE_NAME:$COMMIT_SHA -t $IMAGE_NAME:${{ github.sha }}
- .
+          docker build -t $IMAGE_NAME:$COMMIT_SHA -t $IMAGE_NAME:latest .
 
       - name: Push da imagem
         run: |
           IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
           COMMIT_SHA=${{ github.sha }}
           docker push $IMAGE_NAME:$COMMIT_SHA
-          docker push $IMAGE_NAME:${{ github.sha }}
-
+          docker push $IMAGE_NAME:latest
