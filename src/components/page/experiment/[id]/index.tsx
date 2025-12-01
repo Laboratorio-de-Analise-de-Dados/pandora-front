@@ -7,6 +7,10 @@ import CytometryApi from "../../../../API"
 import { Experiment, ExperimentFiles, FileData } from "../../../../types"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
+import DeleteIcon from "@mui/icons-material/Delete"
+import { IconButton, Tooltip } from "@mui/material"
+import { useHistory } from "react-router-dom"
+
 interface Params {
 	id: string
 }
@@ -19,6 +23,27 @@ export default function ExperimentPage() {
 	const [loadFile, setLoadFile] = useState<boolean>(false)
 	const [fileData, setFileData] = useState<FileData | undefined>(undefined)
 	const [gate, setGate] = useState<number | undefined>()
+	const router = useHistory()
+
+	const handleDelete = async (id: number) => {
+		const confirmed = window.confirm("Tem certeza que deseja excluir?")
+		if (!confirmed) return
+
+		try {
+			await CytometryApi.delete(`/experiment/${id}`)
+			toast.success("Experimento excluído com sucesso!", {
+				position: "bottom-right",
+			})
+			router.push(`/experiments`)
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao excluir o experimento: ${errorMessage}`, {
+				position: "bottom-right",
+			})
+		}
+	}
+
 	const getExperimentData = useCallback(async (id: string) => {
 		setLoading(true)
 		try {
@@ -52,8 +77,23 @@ export default function ExperimentPage() {
 					sx={(theme) => ({
 						color: theme.palette.text.primary,
 					})}
+					variant="h5"
+					fontWeight="bold"
+					display="flex"
+					alignItems="center"
+					gap="2rem"
 				>
 					{experiment?.title}
+					{experiment && (
+						<Tooltip title="Excluir experimento">
+							<IconButton
+								onClick={() => handleDelete(experiment.id)}
+								color="error"
+							>
+								<DeleteIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+					)}
 				</Typography>
 				<ParentTree
 					files={experimentFiles}
