@@ -27,7 +27,7 @@ jobs:
             cd pandora-frontend
 
             echo "⚙️ Subindo containers..."
-            docker compose -f docker-compose.yml up -d
+            docker compose -f docker-compose.yml up -d --build
 
             echo "🧹 Removendo pasta do repositório..."
             cd ..
