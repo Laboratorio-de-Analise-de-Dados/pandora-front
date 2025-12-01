@@ -8,7 +8,7 @@ import React, {
 	useCallback,
 } from "react"
 import CytometryApi from "../../API"
-import axios, { AxiosResponse } from "axios"
+import { AxiosResponse } from "axios"
 
 type ChunkStatus = "pending" | "uploaded" | "failed"
 
