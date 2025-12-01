@@ -17,20 +17,21 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             set -e
-            cd /home/ubuntu/
+            echo "🔑 Fazendo login no Docker Hub..."
+            echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
 
-            echo "🧹 Limpando deploy antigo..."
-            rm -rf pandora-frontend
+            echo "📥 Puxando imagem mais recente..."
+            docker pull ${{ secrets.DOCKER_USER }}/pandora-front:latest
 
-            echo "📥 Clonando repositório..."
-            git clone git@github.com:Laboratorio-de-Analise-de-Dados/pandora-front.git pandora-frontend
-            cd pandora-frontend
+            echo "🧹 Removendo container antigo (se existir)..."
+            docker rm -f pandora_frontend || true
 
-            echo "⚙️ Subindo containers..."
-            docker compose -f docker-compose.yml up -d --build
-
-            echo "🧹 Removendo pasta do repositório..."
-            cd ..
-            rm -rf pandora-frontend
+            echo "⚙️ Subindo novo container..."
+            docker run -d \
+              --name pandora_frontend \
+              --restart always \
+              --network pandora_net \
+              -p 8080:80 \
+              ${{ secrets.DOCKER_USER }}/pandora-front:latest
 
             echo "✅ Deploy concluído!"
