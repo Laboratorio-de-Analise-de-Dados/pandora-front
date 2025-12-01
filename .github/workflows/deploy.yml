@@ -26,9 +26,6 @@ jobs:
             git clone git@github.com:Laboratorio-de-Analise-de-Dados/pandora-front.git pandora-frontend
             cd pandora-frontend
 
-            echo "📥 Atualizando imagem do frontend..."
-            docker compose -f docker-compose.yml pull frontend
-
             echo "⚙️ Subindo containers..."
             docker compose -f docker-compose.yml up -d
 
