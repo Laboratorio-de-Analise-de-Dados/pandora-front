@@ -4,24 +4,15 @@ WORKDIR /app
 
 # Instala dependências
 COPY package*.json ./
-RUN yarn install --frozen-lockfile --production=true
+RUN yarn install --frozen-lockfile
 
 # Copia o restante do código e gera o build
 COPY . .
-RUN yarn cache clean && NODE_OPTIONS="--max-old-space-size=4096" yarn build
+RUN yarn build
 
-# Etapa final: servidor estático
-FROM node:22-alpine AS final
-WORKDIR /app
+# Etapa final: Nginx servindo os arquivos
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
 
-# Instala o servidor estático
-RUN yarn global add serve
-
-# Copia os arquivos de build
-COPY --from=build /app/build ./build
-
-# Expõe a porta padrão
-EXPOSE 3000
-
-# Comando de inicialização
-CMD ["serve", "-s", "build", "-l", "3000"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

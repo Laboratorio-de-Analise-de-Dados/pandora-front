@@ -1,29 +1,15 @@
 services:
   frontend:
-    ports:
-      - "3000:3000"
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: paulomoro/pandora-front:latest
     container_name: pandora_frontend
-    environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://pandora_backend:8085}
-    expose:
-      - "3000"
+    ports:
+      - "8080:8080"
+      - "444:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - /srv/pandora/certbot/conf:/etc/letsencrypt
     networks:
       - pandora_net
-
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: pandora_nginx
-  #   ports:
-  #     - "81:80" # Porta externa 81 → interna 80
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #   depends_on:
-  #     - frontend
-  #   networks:
-  #     - pandora_net
 
 networks:
   pandora_net:
