@@ -31,7 +31,7 @@ jobs:
               --name pandora_frontend \
               --restart always \
               --network pandora_net \
-              -p 8090:80 \
+              -p 80:80 \
               ${{ secrets.DOCKER_USER }}/pandora-front:latest
 
             echo "✅ Deploy concluído!"
