@@ -19,10 +19,21 @@ jobs:
             set -e
             cd /home/ubuntu/
 
+            echo "🧹 Limpando deploy antigo..."
+            rm -rf pandora-frontend
+
+            echo "📥 Clonando repositório..."
+            git clone git@github.com:Laboratorio-de-Analise-de-Dados/pandora-front.git pandora-frontend
+            cd pandora-frontend
+
             echo "📥 Atualizando imagem do frontend..."
             docker compose -f docker-compose.yml pull frontend
 
             echo "⚙️ Subindo containers..."
             docker compose -f docker-compose.yml up -d
+
+            echo "🧹 Removendo pasta do repositório..."
+            cd ..
+            rm -rf pandora-frontend
 
             echo "✅ Deploy concluído!"
