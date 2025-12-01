@@ -4,7 +4,8 @@ import Toolbar from "@mui/material/Toolbar"
 import Typography from "@mui/material/Typography"
 import { Link } from "react-router-dom"
 import { useThemeMode } from "../../providers/ThemeContext"
-import { Button } from "@mui/material"
+import { IconButton, Tooltip } from "@mui/material"
+import { Brightness4, Brightness7 } from "@mui/icons-material"
 
 const Header = () => {
 	const NAVLINKS = [{ id: 1, name: "Experiments", path: "/experiments" }]
@@ -13,9 +14,13 @@ const Header = () => {
 
 		return (
 			<Box sx={{ p: 2 }}>
-				<Button variant="contained" onClick={toggleMode}>
-					Mudar para {mode === "light" ? "dark" : "light"} mode
-				</Button>
+				<Tooltip
+					title={`Mudar para modo ${mode === "light" ? "escuro" : "claro"}`}
+				>
+					<IconButton onClick={toggleMode} color="inherit">
+						{mode === "light" ? <Brightness4 /> : <Brightness7 />}
+					</IconButton>
+				</Tooltip>
 			</Box>
 		)
 	}
