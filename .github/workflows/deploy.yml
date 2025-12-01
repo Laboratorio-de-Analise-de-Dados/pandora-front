@@ -21,7 +21,8 @@ jobs:
             echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
 
             echo "📥 Puxando imagem mais recente..."
-            docker pull ${{ secrets.DOCKER_USER }}/pandora-front:latest
+            docker pull ${{ secrets.DOCKER_USER }}/pandora-front:${{ github.sha }}
+
 
             echo "🧹 Removendo container antigo (se existir)..."
             docker rm -f pandora_frontend || true
@@ -31,7 +32,9 @@ jobs:
               --name pandora_frontend \
               --restart always \
               --network pandora_net \
-              -p 80:80 \
-              ${{ secrets.DOCKER_USER }}/pandora-front:latest
+              --expose 80 \
+              ${{ secrets.DOCKER_USER }}/pandora-front:${{ github.sha }}
+
+
 
             echo "✅ Deploy concluído!"
