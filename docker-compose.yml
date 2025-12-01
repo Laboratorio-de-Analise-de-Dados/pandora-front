@@ -3,7 +3,7 @@ services:
     image: paulomoro/pandora-front:latest
     container_name: pandora_frontend
     expose:
-      - "8080"
+      - "80"
     networks:
       - pandora_net
 
