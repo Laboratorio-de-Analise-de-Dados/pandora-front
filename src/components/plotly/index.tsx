@@ -8,6 +8,7 @@ import {
 	Box,
 	Divider,
 	Select,
+	Slider,
 	Button,
 	CircularProgress,
 	MenuItem,
@@ -98,6 +99,27 @@ const buildTicks = (
 	}
 	return tickvals.length ? { tickvals, ticktext } : undefined
 }
+
+// --- helpers para range sliders ---
+const rawToSlider = (raw: number, scale: Scale): number =>
+	scale === "biex" ? biex(raw, COFACTOR) : raw
+
+const sliderToRaw = (val: number, scale: Scale): number =>
+	scale === "biex" ? Math.round(Math.sinh(val) * COFACTOR) : Math.round(val)
+
+const BIEX_SLIDER_MIN = biex(-100000, COFACTOR)
+const BIEX_SLIDER_MAX = biex(1000000, COFACTOR)
+const LINEAR_SLIDER_MAX = 262144
+
+const BIEX_SLIDER_MARKS = NICE_RAW.map((raw) => ({
+	value: biex(raw, COFACTOR),
+	label: fmtTick(raw),
+}))
+
+const LINEAR_SLIDER_MARKS = [0, 65000, 130000, 200000, 262144].map((v) => ({
+	value: v,
+	label: v === 0 ? "0" : `${Math.round(v / 1000)}k`,
+}))
 
 interface ScatterPlotProps {
 	values: string[]
@@ -603,48 +625,114 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					<Typography variant="caption" color="text.secondary">
 						Eixo X
 					</Typography>
-					<TextField
-						label="Min"
-						type="number"
+					<Slider
+						value={[
+							xMin !== ""
+								? rawToSlider(Number(xMin), xScale)
+								: xScale === "biex"
+									? BIEX_SLIDER_MIN
+									: 0,
+							xMax !== ""
+								? rawToSlider(Number(xMax), xScale)
+								: xScale === "biex"
+									? BIEX_SLIDER_MAX
+									: LINEAR_SLIDER_MAX,
+						]}
+						onChange={(_, val) => {
+							const [lo, hi] = val as number[]
+							setXMin(String(sliderToRaw(lo, xScale)))
+							setXMax(String(sliderToRaw(hi, xScale)))
+						}}
+						min={xScale === "biex" ? BIEX_SLIDER_MIN : 0}
+						max={xScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
+						step={xScale === "biex" ? 0.01 : 500}
+						marks={xScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+						valueLabelDisplay="auto"
+						valueLabelFormat={(v) => {
+							const raw = sliderToRaw(v, xScale)
+							return raw === 0 ? "0" : raw.toLocaleString()
+						}}
 						size="small"
-						value={xMin}
-						onChange={(e) => setXMin(e.target.value)}
-						fullWidth
-						title="Limite inferior do eixo X (valor bruto)"
+						sx={{
+							"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
+							mb: 1,
+						}}
 					/>
-					<TextField
-						label="Max"
-						type="number"
-						size="small"
-						value={xMax}
-						onChange={(e) => setXMax(e.target.value)}
-						fullWidth
-						title="Limite superior do eixo X (valor bruto)"
-					/>
+					<Box sx={{ display: "flex", gap: "0.5rem" }}>
+						<TextField
+							label="Min"
+							type="number"
+							size="small"
+							value={xMin}
+							onChange={(e) => setXMin(e.target.value)}
+							sx={{ flex: 1 }}
+						/>
+						<TextField
+							label="Max"
+							type="number"
+							size="small"
+							value={xMax}
+							onChange={(e) => setXMax(e.target.value)}
+							sx={{ flex: 1 }}
+						/>
+					</Box>
 				</Box>
 
 				<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
 					<Typography variant="caption" color="text.secondary">
 						Eixo Y
 					</Typography>
-					<TextField
-						label="Min"
-						type="number"
+					<Slider
+						value={[
+							yMin !== ""
+								? rawToSlider(Number(yMin), yScale)
+								: yScale === "biex"
+									? BIEX_SLIDER_MIN
+									: 0,
+							yMax !== ""
+								? rawToSlider(Number(yMax), yScale)
+								: yScale === "biex"
+									? BIEX_SLIDER_MAX
+									: LINEAR_SLIDER_MAX,
+						]}
+						onChange={(_, val) => {
+							const [lo, hi] = val as number[]
+							setYMin(String(sliderToRaw(lo, yScale)))
+							setYMax(String(sliderToRaw(hi, yScale)))
+						}}
+						min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
+						max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
+						step={yScale === "biex" ? 0.01 : 500}
+						marks={yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+						valueLabelDisplay="auto"
+						valueLabelFormat={(v) => {
+							const raw = sliderToRaw(v, yScale)
+							return raw === 0 ? "0" : raw.toLocaleString()
+						}}
 						size="small"
-						value={yMin}
-						onChange={(e) => setYMin(e.target.value)}
-						fullWidth
-						title="Limite inferior do eixo Y (valor bruto)"
+						sx={{
+							"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
+							mb: 1,
+						}}
 					/>
-					<TextField
-						label="Max"
-						type="number"
-						size="small"
-						value={yMax}
-						onChange={(e) => setYMax(e.target.value)}
-						fullWidth
-						title="Limite superior do eixo Y (valor bruto)"
-					/>
+					<Box sx={{ display: "flex", gap: "0.5rem" }}>
+						<TextField
+							label="Min"
+							type="number"
+							size="small"
+							value={yMin}
+							onChange={(e) => setYMin(e.target.value)}
+							sx={{ flex: 1 }}
+						/>
+						<TextField
+							label="Max"
+							type="number"
+							size="small"
+							value={yMax}
+							onChange={(e) => setYMax(e.target.value)}
+							sx={{ flex: 1 }}
+						/>
+					</Box>
 				</Box>
 
 				{plotMode === "heatmap" && (
