@@ -42,6 +42,27 @@ export default function ExperimentPage() {
 		}
 	}
 
+	const handleDeleteGate = async (gateId: number) => {
+		try {
+			await CytometryApi.delete(`/analytics/gate/${gateId}`)
+			toast.success("Gate excluído com sucesso!", {
+				position: "bottom-right",
+			})
+			// Se o gate excluído era a source ativa, limpa a seleção
+			if (source?.type === "gate" && source.id === gateId) {
+				setSource(undefined)
+			}
+			// Recarrega a árvore de arquivos/gates
+			getExperimentData(param.id)
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao excluir o gate: ${errorMessage}`, {
+				position: "bottom-right",
+			})
+		}
+	}
+
 	const getExperimentData = useCallback(async (id: string) => {
 		setLoading(true)
 		try {
@@ -93,7 +114,7 @@ export default function ExperimentPage() {
 						</Tooltip>
 					)}
 				</Typography>
-				<ParentTree files={experimentFiles} onSelect={setSource} />
+				<ParentTree files={experimentFiles} onSelect={setSource} onDeleteGate={handleDeleteGate} />
 			</Box>
 			<Box
 				sx={{
