@@ -1,46 +1,58 @@
-# Getting Started with Create React App
+# Pandora Front
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Front-end do Projeto Pandora — uma plataforma para análise de citometria de fluxo.
 
-## Available Scripts
+Construído com [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [MUI](https://mui.com/) e empacotado com [Vite](https://vitejs.dev/).
 
-In the project directory, you can run:
+## Requisitos
 
-### `yarn start`
+- Node.js 18+ (recomendado 22)
+- Yarn
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Configuração
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Copie o arquivo de exemplo de variáveis de ambiente e ajuste conforme necessário:
 
-### `yarn test`
+```bash
+cp .env.example .env
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Variáveis de ambiente expostas ao cliente precisam do prefixo `VITE_`:
+
+- `VITE_API_URL` — URL base da API do Pandora (padrão: `http://localhost:8085`).
+
+## Scripts
+
+Na pasta do projeto, você pode rodar:
+
+### `yarn dev` (ou `yarn start`)
+
+Inicia o servidor de desenvolvimento do Vite em [http://localhost:3000](http://localhost:3000).
+A página recarrega automaticamente ao editar os arquivos.
 
 ### `yarn build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Gera o build de produção na pasta `build/`.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### `yarn preview`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Sobe um servidor local para visualizar o build de produção.
 
-### `yarn eject`
+### `yarn test`
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+Roda a suíte de testes com [Vitest](https://vitest.dev/). Use `yarn test:watch` para o modo interativo.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### `yarn typecheck`
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+Roda o verificador de tipos do TypeScript (`tsc --noEmit`).
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Docker
 
-## Learn More
+Ambiente de desenvolvimento com hot reload:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+yarn dev:docker:build   # build + up
+yarn dev:docker         # up
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+O build de produção é servido via Nginx (veja o `Dockerfile`).
