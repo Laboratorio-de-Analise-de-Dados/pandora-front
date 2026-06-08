@@ -367,8 +367,26 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			: data?.y && data.y.length
 			? [Math.min(...data.y), Math.max(...data.y)]
 			: undefined
-	const xTicks = buildTicks(xRange, effXScale, effCof)
-	const yTicks = buildTicks(yRange, effYScale, effCof)
+	// Fixa o range dos eixos com base nos seletores (se definidos).
+	const xAxisRange =
+		xMin !== "" && xMax !== ""
+			? effXScale === "biex"
+				? [biex(parseFloat(xMin), effCof), biex(parseFloat(xMax), effCof)]
+				: [parseFloat(xMin), parseFloat(xMax)]
+			: undefined
+	const yAxisRange =
+		yMin !== "" && yMax !== ""
+			? effYScale === "biex"
+				? [biex(parseFloat(yMin), effCof), biex(parseFloat(yMax), effCof)]
+				: [parseFloat(yMin), parseFloat(yMax)]
+			: undefined
+
+	// Ticks: quando o seletor de range está definido, usa o range do seletor
+	// para gerar ticks (não o range dos dados retornados).
+	const xTickSource = xAxisRange ?? xRange
+	const yTickSource = yAxisRange ?? yRange
+	const xTicks = buildTicks(xTickSource, effXScale, effCof)
+	const yTicks = buildTicks(yTickSource, effYScale, effCof)
 
 	const dragmode: "select" | "lasso" =
 		tool === "poly" ? "lasso" : "select"
@@ -512,6 +530,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: xTicks.ticktext,
 												  }
 												: {}),
+											...(xAxisRange ? { range: xAxisRange } : {}),
 											fixedrange: true,
 										},
 										yaxis: {
@@ -525,6 +544,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: yTicks.ticktext,
 												  }
 												: {}),
+											...(yAxisRange ? { range: yAxisRange } : {}),
 											fixedrange: true,
 										},
 										width: 500,
