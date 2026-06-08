@@ -2,6 +2,7 @@ import { MdCropFree as CropFreeSharpIcon } from "react-icons/md"
 import { MdGesture as GestureIcon } from "react-icons/md"
 import { MdGridOn as HeatmapIcon } from "react-icons/md"
 import { MdScatterPlot as DotPlotIcon } from "react-icons/md"
+import { MdRefresh as RefreshIcon } from "react-icons/md"
 import {
 	Box,
 	Select,
@@ -20,7 +21,7 @@ import {
 } from "@mui/material"
 import React, { useState } from "react"
 import Plot from "react-plotly.js"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import CytometryApi from "../../API"
 import { DensityResponse, NewGate } from "../../types"
 
@@ -65,6 +66,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		endY: number
 	} | null>(null)
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+	const queryClient = useQueryClient()
+
+	// Plano D: pede ao back para regenerar o cache (Parquet/Redis) a partir do
+	// .fcs original + gates. Ao concluir, descarta o cache local de density.
+	const recompute = useMutation({
+		mutationFn: async () => {
+			await CytometryApi.post(`/experiment/file/${fileDataId}/recompute`)
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["density"] })
+		},
+	})
 
 	// Busca os dados agregados no backend (cacheados pelo React Query enquanto
 	// o experimento está aberto). O cálculo pesado fica 100% no back.
@@ -228,6 +242,22 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						<DotPlotIcon />
 					</ToggleButton>
 				</ToggleButtonGroup>
+				<Button
+					size="small"
+					variant="outlined"
+					startIcon={
+						recompute.isPending ? (
+							<CircularProgress size={16} />
+						) : (
+							<RefreshIcon />
+						)
+					}
+					disabled={recompute.isPending}
+					onClick={() => recompute.mutate()}
+					title="Reprocessar a partir do .fcs original + gates"
+				>
+					Reprocessar
+				</Button>
 			</Box>
 			{data && (
 				<Typography variant="caption" color="text.secondary">
