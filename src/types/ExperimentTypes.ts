@@ -82,9 +82,11 @@ export interface DensityResponse {
 	x_label: string
 	y_label: string
 	// heatmap mode
-	histogram?: number[][]
+	// bins com contagem <= cutoff vêm como null (transparentes no Plotly)
+	histogram?: (number | null)[][]
 	x_edges?: number[]
 	y_edges?: number[]
+	cutoff?: number
 	// scatter mode
 	x?: number[]
 	y?: number[]
