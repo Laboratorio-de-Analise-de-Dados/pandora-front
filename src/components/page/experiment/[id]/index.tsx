@@ -7,7 +7,7 @@ import CytometryApi from "../../../../API"
 import { Experiment, ExperimentFiles, FileData } from "../../../../types"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
-import DeleteIcon from "@mui/icons-material/Delete"
+import { MdDelete as DeleteIcon } from "react-icons/md"
 import { IconButton, Tooltip } from "@mui/material"
 import { useHistory } from "react-router-dom"
 
@@ -50,7 +50,7 @@ export default function ExperimentPage() {
 			const experiment = await CytometryApi.get(`/experiment/${id}`)
 			setExperiment(experiment.data)
 			const experimentFiles = await CytometryApi.get(
-				`/experiment/list/data/${id}`
+				`/experiment/list/data/${id}`,
 			)
 			setExperimentFiles(experimentFiles.data)
 		} catch (error: any) {

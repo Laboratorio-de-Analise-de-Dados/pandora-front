@@ -1,5 +1,5 @@
-import AddIcon from "@mui/icons-material/Add"
-import CloudUploadIcon from "@mui/icons-material/CloudUpload"
+import { MdAdd as AddIcon } from "react-icons/md"
+import { MdCloudUpload as CloudUploadIcon } from "react-icons/md"
 import {
 	Box,
 	Button,
@@ -79,7 +79,7 @@ export default function NewExperimentCard() {
 
 	// calcula progresso geral
 	const uploadedChunks = progress.filter(
-		(c: any) => c.status === "uploaded"
+		(c: any) => c.status === "uploaded",
 	).length
 	const totalChunks = progress.length
 	const percent =

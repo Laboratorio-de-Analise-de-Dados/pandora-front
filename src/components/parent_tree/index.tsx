@@ -1,6 +1,9 @@
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView"
 import { TreeItem } from "@mui/x-tree-view/TreeItem"
-import { ExpandMore, ChevronRight } from "@mui/icons-material"
+import {
+	MdExpandMore as ExpandMore,
+	MdChevronRight as ChevronRight,
+} from "react-icons/md"
 import { ExperimentFiles, FileData, Gate } from "../../types"
 import React from "react"
 import CytometryApi from "../../API"
@@ -56,12 +59,12 @@ export default function ParentTree({
 		try {
 			if (isFile) {
 				const fileData = await CytometryApi.get(
-					`/experiment/file/${id}/list?limit=10000`
+					`/experiment/file/${id}/list?limit=10000`,
 				)
 				fileDataSet(fileData.data)
 			} else if (isGate) {
 				const gate = await CytometryApi.get(
-					`/analytics/gate/${id}/list?limit=10000`
+					`/analytics/gate/${id}/list?limit=10000`,
 				)
 				gateSet(id)
 				fileDataSet(gate.data)

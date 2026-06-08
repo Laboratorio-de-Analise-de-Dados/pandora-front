@@ -5,7 +5,10 @@ import Typography from "@mui/material/Typography"
 import { Link } from "react-router-dom"
 import { useThemeMode } from "../../providers/ThemeContext"
 import { IconButton, Tooltip } from "@mui/material"
-import { Brightness4, Brightness7 } from "@mui/icons-material"
+import {
+	MdBrightness4 as Brightness4,
+	MdBrightness7 as Brightness7,
+} from "react-icons/md"
 
 const Header = () => {
 	const NAVLINKS = [{ id: 1, name: "Experiments", path: "/experiments" }]

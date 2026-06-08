@@ -1,5 +1,5 @@
-import CropFreeSharpIcon from "@mui/icons-material/CropFreeSharp"
-import GestureIcon from "@mui/icons-material/Gesture"
+import { MdCropFree as CropFreeSharpIcon } from "react-icons/md"
+import { MdGesture as GestureIcon } from "react-icons/md"
 import {
 	Box,
 	Select,
@@ -79,7 +79,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	const handleSquareNameChange = (
-		event: React.ChangeEvent<HTMLInputElement>
+		event: React.ChangeEvent<HTMLInputElement>,
 	) => {
 		setSelectedSquareName(event.target.value)
 	}
@@ -183,7 +183,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 													.toLowerCase()
 													.replace(" ", "")
 													.replace("-", "_")
-											]
+											],
 									),
 									y: data.map(
 										(item) =>
@@ -192,7 +192,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 													.toLowerCase()
 													.replace(" ", "")
 													.replace("-", "_")
-											]
+											],
 									),
 									marker: { color: "black", size: 1 },
 								},
