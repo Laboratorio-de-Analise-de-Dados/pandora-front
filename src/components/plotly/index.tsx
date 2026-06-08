@@ -1,8 +1,9 @@
 import { MdCropFree as CropFreeSharpIcon } from "react-icons/md"
-import { MdGesture as GestureIcon } from "react-icons/md"
 import { MdGridOn as HeatmapIcon } from "react-icons/md"
 import { MdScatterPlot as DotPlotIcon } from "react-icons/md"
 import { MdRefresh as RefreshIcon } from "react-icons/md"
+import { MdPentagon as PolygonIcon } from "react-icons/md"
+import { MdPanTool as PanIcon } from "react-icons/md"
 import {
 	Box,
 	Select,
@@ -23,9 +24,53 @@ import React, { useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import CytometryApi from "../../API"
-import { DensityResponse, NewGate } from "../../types"
+import { DensityResponse, GateCoordinates, NewGate, Scale } from "../../types"
 
 type PlotMode = "heatmap" | "scatter"
+type GateTool = "pan" | "rect" | "poly"
+
+const COFACTOR = 150
+
+// arcsinh (biex) e seu inverso, para converter entre espaço cru e exibido.
+const toRaw = (v: number, scale: Scale, cof: number): number =>
+	scale === "biex" ? Math.sinh(v) * cof : v
+
+const biex = (v: number, cof: number): number => Math.asinh(v / cof)
+
+// FSC/SSC/Time são lineares; demais canais usam biex por padrão (igual ao back).
+const defaultScale = (param: string): Scale => {
+	const p = param.toLowerCase()
+	return p.startsWith("fsc") || p.startsWith("ssc") || p === "time"
+		? "linear"
+		: "biex"
+}
+
+const NICE_RAW = [-1000, -100, 0, 100, 1000, 10000, 100000, 1000000]
+const fmtTick = (raw: number): string => {
+	if (raw === 0) return "0"
+	return Math.abs(raw) >= 1000 ? raw.toExponential(0) : String(raw)
+}
+
+// Em biex, gera ticks em unidades reais posicionados no espaço transformado.
+const buildTicks = (
+	edges: number[] | undefined,
+	scale: Scale,
+	cof: number,
+): { tickvals: number[]; ticktext: string[] } | undefined => {
+	if (scale !== "biex" || !edges || edges.length < 2) return undefined
+	const min = edges[0]
+	const max = edges[edges.length - 1]
+	const tickvals: number[] = []
+	const ticktext: string[] = []
+	for (const raw of NICE_RAW) {
+		const t = biex(raw, cof)
+		if (t >= min && t <= max) {
+			tickvals.push(t)
+			ticktext.push(fmtTick(raw))
+		}
+	}
+	return tickvals.length ? { tickvals, ticktext } : undefined
+}
 
 interface ScatterPlotProps {
 	values: string[]
@@ -57,14 +102,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
 	const [plotMode, setPlotMode] = useState<PlotMode>("heatmap")
-	const [isSelecting, setIsSelecting] = useState(false)
+	const [tool, setTool] = useState<GateTool>("pan")
+	const [xScale, setXScale] = useState<Scale>(defaultScale("FSC-A"))
+	const [yScale, setYScale] = useState<Scale>(defaultScale("SSC-A"))
 	const [selectedSquareName, setSelectedSquareName] = useState("")
-	const [selectionArea, setSelectionArea] = useState<{
-		startX: number
-		startY: number
-		endX: number
-		endY: number
-	} | null>(null)
+	// Coordenadas do gate já convertidas para espaço CRU (linear), prontas p/ salvar.
+	const [pendingGate, setPendingGate] = useState<GateCoordinates | null>(null)
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
 
 	const queryClient = useQueryClient()
@@ -90,6 +133,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			x_axix_selector,
 			y_axix_selector,
 			plotMode,
+			xScale,
+			yScale,
 		],
 		queryFn: async () => {
 			const base =
@@ -100,37 +145,79 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				plotMode === "heatmap"
 					? "mode=heatmap&bins=200"
 					: "mode=scatter&sample=5000"
+			const scaleParams = `xscale=${xScale}&yscale=${yScale}&cofactor=${COFACTOR}`
 			const res = await CytometryApi.get<DensityResponse>(
 				`${base}/density?x=${encodeURIComponent(
 					x_axix_selector,
-				)}&y=${encodeURIComponent(y_axix_selector)}&${params}`,
+				)}&y=${encodeURIComponent(
+					y_axix_selector,
+				)}&${params}&${scaleParams}`,
 			)
 			return res.data
 		},
 	})
 
 	const handleSelectX = (e: SelectChangeEvent<string>) => {
-		if (e.target) set_x_axis_selector(e.target.value)
+		if (e.target) {
+			set_x_axis_selector(e.target.value)
+			setXScale(defaultScale(e.target.value))
+		}
 	}
 	const handleSelectY = (e: SelectChangeEvent<string>) => {
-		if (e.target) set_y_axis_selector(e.target.value)
+		if (e.target) {
+			set_y_axis_selector(e.target.value)
+			setYScale(defaultScale(e.target.value))
+		}
 	}
 
 	const handlePlotMode = (_: React.MouseEvent, mode: PlotMode | null) => {
 		if (mode) setPlotMode(mode)
 	}
 
-	const handleSelectedArea = async (event: any) => {
-		if (isSelecting && event && event.range) {
-			const { x, y } = event.range
+	// Escalas efetivamente usadas no desenho atual (eco do back, com fallback).
+	const effXScale: Scale = data?.x_scale ?? xScale
+	const effYScale: Scale = data?.y_scale ?? yScale
+	const effCof = data?.cofactor ?? COFACTOR
 
-			setSelectionArea({
-				startX: x[0],
-				startY: y[0],
-				endX: x[1],
-				endY: y[1],
+	// Recebe seleção do Plotly (box=retângulo, lasso=polígono) e converte os
+	// vértices do espaço EXIBIDO (biex) de volta para CRU antes de guardar.
+	const handleSelectedArea = async (event: any) => {
+		if (!event) return
+
+		if (tool === "poly" && event.lassoPoints) {
+			const lx: number[] = event.lassoPoints.x || []
+			const ly: number[] = event.lassoPoints.y || []
+			if (lx.length < 3) return
+			const vertices = lx.map(
+				(vx, i) =>
+					[
+						toRaw(vx, effXScale, effCof),
+						toRaw(ly[i], effYScale, effCof),
+					] as [number, number],
+			)
+			setPendingGate({
+				type: "polygon",
+				x_axis: x_axix_selector,
+				y_axis: y_axix_selector,
+				vertices,
 			})
-			setIsSelecting(false)
+			setTool("pan")
+			setIsDialogOpen(true)
+			return
+		}
+
+		if (tool === "rect" && event.range) {
+			const { x, y } = event.range
+			const xs = [toRaw(x[0], effXScale, effCof), toRaw(x[1], effXScale, effCof)]
+			const ys = [toRaw(y[0], effYScale, effCof), toRaw(y[1], effYScale, effCof)]
+			setPendingGate({
+				type: "rectangle",
+				startX: Math.min(...xs),
+				endX: Math.max(...xs),
+				startY: Math.min(...ys),
+				endY: Math.max(...ys),
+			})
+			setTool("pan")
 			setIsDialogOpen(true)
 		}
 	}
@@ -146,12 +233,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	const handleSquareNameSubmit = async () => {
-		if (selectedSquareName && selectionArea) {
+		if (selectedSquareName && pendingGate) {
 			const newSelection: NewGate = {
 				file_data: fileDataId,
 				name: selectedSquareName,
 				parent: parentId,
-				gate_coordinates: selectionArea,
+				gate_coordinates: pendingGate,
 				dashboard: {
 					name: `${x_axix_selector} X ${y_axix_selector}`,
 					dashboard_config: {
@@ -163,7 +250,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			}
 
 			await CytometryApi.post("analytics/gate", newSelection)
-			setSelectionArea(null)
+			setPendingGate(null)
 			setSelectedSquareName("")
 			handleDialogClose()
 			loadFile()
@@ -198,6 +285,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			? !!data?.histogram?.length
 			: !!data?.x?.length
 
+	// Em biex, mapeia os ticks de volta para unidades reais (10², 10³, ...).
+	const xRange =
+		plotMode === "heatmap"
+			? data?.x_edges
+			: data?.x && data.x.length
+			? [Math.min(...data.x), Math.max(...data.x)]
+			: undefined
+	const yRange =
+		plotMode === "heatmap"
+			? data?.y_edges
+			: data?.y && data.y.length
+			? [Math.min(...data.y), Math.max(...data.y)]
+			: undefined
+	const xTicks = buildTicks(xRange, effXScale, effCof)
+	const yTicks = buildTicks(yRange, effYScale, effCof)
+
+	const dragmode =
+		tool === "rect" ? "select" : tool === "poly" ? "lasso" : "pan"
+
 	return (
 		<Box
 			sx={{
@@ -219,15 +325,42 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					Ferramentas:
 				</Typography>
 				<ToggleButtonGroup
-					value={isSelecting ? "crop" : "gesture"}
+					value={tool}
 					exclusive
-					onChange={() => setIsSelecting(!isSelecting)}
+					onChange={(_, v: GateTool | null) => v && setTool(v)}
 				>
-					<ToggleButton value="crop" size="small">
+					<ToggleButton value="pan" size="small" title="Mover / zoom">
+						<PanIcon />
+					</ToggleButton>
+					<ToggleButton value="rect" size="small" title="Gate retangular">
 						<CropFreeSharpIcon />
 					</ToggleButton>
-					<ToggleButton value="gesture" size="small">
-						<GestureIcon />
+					<ToggleButton value="poly" size="small" title="Gate poligonal (laço)">
+						<PolygonIcon />
+					</ToggleButton>
+				</ToggleButtonGroup>
+				<ToggleButtonGroup
+					value={xScale}
+					exclusive
+					onChange={(_, v: Scale | null) => v && setXScale(v)}
+				>
+					<ToggleButton value="linear" size="small" title="Eixo X linear">
+						X lin
+					</ToggleButton>
+					<ToggleButton value="biex" size="small" title="Eixo X biex (arcsinh)">
+						X biex
+					</ToggleButton>
+				</ToggleButtonGroup>
+				<ToggleButtonGroup
+					value={yScale}
+					exclusive
+					onChange={(_, v: Scale | null) => v && setYScale(v)}
+				>
+					<ToggleButton value="linear" size="small" title="Eixo Y linear">
+						Y lin
+					</ToggleButton>
+					<ToggleButton value="biex" size="small" title="Eixo Y biex (arcsinh)">
+						Y biex
 					</ToggleButton>
 				</ToggleButtonGroup>
 				<ToggleButtonGroup
@@ -302,9 +435,31 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						<Plot
 							data={plotData}
 							layout={{
-								dragmode: "select",
-								xaxis: { title: `${x_axix_selector}` },
-								yaxis: { title: `${y_axix_selector}` },
+								dragmode,
+								xaxis: {
+									title: `${x_axix_selector}${
+										effXScale === "biex" ? " (biex)" : ""
+									}`,
+									...(xTicks
+										? {
+												tickmode: "array",
+												tickvals: xTicks.tickvals,
+												ticktext: xTicks.ticktext,
+										  }
+										: {}),
+								},
+								yaxis: {
+									title: `${y_axix_selector}${
+										effYScale === "biex" ? " (biex)" : ""
+									}`,
+									...(yTicks
+										? {
+												tickmode: "array",
+												tickvals: yTicks.tickvals,
+												ticktext: yTicks.ticktext,
+										  }
+										: {}),
+								},
 								width: 500,
 								height: 500,
 								plot_bgcolor: "#FFFFFF",

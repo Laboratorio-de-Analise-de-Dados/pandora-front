@@ -19,12 +19,24 @@ export interface FileData {
 	gates: Gate[]
 }
 
-export interface GateCoordinates {
+export type Scale = "linear" | "biex"
+
+export interface RectGateCoordinates {
+	type?: "rectangle"
 	startX: number
 	startY: number
 	endX: number
 	endY: number
 }
+
+export interface PolygonGateCoordinates {
+	type: "polygon"
+	x_axis?: string
+	y_axis?: string
+	vertices: [number, number][]
+}
+
+export type GateCoordinates = RectGateCoordinates | PolygonGateCoordinates
 
 export interface Gate {
 	id: number
@@ -77,6 +89,10 @@ export interface DensityResponse {
 	x?: number[]
 	y?: number[]
 	sampled_events?: number
+	// escala aplicada para exibicao (valores ja transformados quando "biex")
+	x_scale?: Scale
+	y_scale?: Scale
+	cofactor?: number
 }
 
 export interface DashboardConfig {
