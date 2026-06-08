@@ -4,9 +4,9 @@ import Layout from "../../../Layout"
 import { useParams } from "react-router-dom"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { Experiment, ExperimentFiles, FileData } from "../../../../types"
+import { Experiment, ExperimentFiles } from "../../../../types"
 import ScatterPlot from "../../../plotly"
-import ParentTree from "../../../parent_tree"
+import ParentTree, { SelectedSource } from "../../../parent_tree"
 import { MdDelete as DeleteIcon } from "react-icons/md"
 import { IconButton, Tooltip } from "@mui/material"
 import { useHistory } from "react-router-dom"
@@ -20,9 +20,7 @@ export default function ExperimentPage() {
 	const [experiment, setExperiment] = useState<Experiment>()
 	const [experimentFiles, setExperimentFiles] = useState<ExperimentFiles[]>([])
 	const [loading, setLoading] = useState<boolean>(false)
-	const [loadFile, setLoadFile] = useState<boolean>(false)
-	const [fileData, setFileData] = useState<FileData | undefined>(undefined)
-	const [gate, setGate] = useState<number | undefined>()
+	const [source, setSource] = useState<SelectedSource | undefined>(undefined)
 	const router = useHistory()
 
 	const handleDelete = async (id: number) => {
@@ -95,12 +93,7 @@ export default function ExperimentPage() {
 						</Tooltip>
 					)}
 				</Typography>
-				<ParentTree
-					files={experimentFiles}
-					fileDataSet={setFileData}
-					gateSet={setGate}
-					loadFile={setLoadFile}
-				/>
+				<ParentTree files={experimentFiles} onSelect={setSource} />
 			</Box>
 			<Box
 				sx={{
@@ -112,22 +105,22 @@ export default function ExperimentPage() {
 					gap: "1rem",
 				}}
 			>
-				{loadFile && <CircularProgress />}
-				{!fileData && !loadFile && (
+				{loading && <CircularProgress />}
+				{!loading && !source && (
 					<Box>
 						<Typography>Select a file to load</Typography>
 					</Box>
 				)}
-				{!loadFile && fileData?.data_set && (
+				{source && (
 					<>
-						<Typography>{fileData.file_name}</Typography>
+						<Typography>{source.name}</Typography>
 						<ScatterPlot
-							data={fileData.data_set}
-							loading={loading}
+							key={`${source.type}-${source.id}`}
 							values={experiment?.values || []}
-							fileId={fileData.id}
-							parentId={gate}
-							gateSetter={setGate}
+							sourceType={source.type}
+							sourceId={source.id}
+							fileDataId={source.fileDataId}
+							parentId={source.type === "gate" ? source.id : undefined}
 							loadFile={() => getExperimentData(param.id)}
 						/>
 					</>
