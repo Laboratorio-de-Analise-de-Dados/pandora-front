@@ -105,6 +105,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [tool, setTool] = useState<GateTool>("pan")
 	const [xScale, setXScale] = useState<Scale>(defaultScale("FSC-A"))
 	const [yScale, setYScale] = useState<Scale>(defaultScale("SSC-A"))
+	// Cutoff de densidade: bins com contagem <= cutoff somem (transparentes).
+	const [cutoff, setCutoff] = useState(0)
 	const [selectedSquareName, setSelectedSquareName] = useState("")
 	// Coordenadas do gate já convertidas para espaço CRU (linear), prontas p/ salvar.
 	const [pendingGate, setPendingGate] = useState<GateCoordinates | null>(null)
@@ -135,6 +137,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			plotMode,
 			xScale,
 			yScale,
+			cutoff,
 		],
 		queryFn: async () => {
 			const base =
@@ -143,7 +146,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					: `/analytics/gate/${sourceId}`
 			const params =
 				plotMode === "heatmap"
-					? "mode=heatmap&bins=200"
+					? `mode=heatmap&bins=200&cutoff=${cutoff}`
 					: "mode=scatter&sample=5000"
 			const scaleParams = `xscale=${xScale}&yscale=${yScale}&cofactor=${COFACTOR}`
 			const res = await CytometryApi.get<DensityResponse>(
@@ -375,6 +378,20 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						<DotPlotIcon />
 					</ToggleButton>
 				</ToggleButtonGroup>
+				{plotMode === "heatmap" && (
+					<TextField
+						label="Cutoff"
+						type="number"
+						size="small"
+						value={cutoff}
+						onChange={(e) =>
+							setCutoff(Math.max(0, Number(e.target.value) || 0))
+						}
+						inputProps={{ min: 0, step: 1 }}
+						sx={{ width: 96 }}
+						title="Bins com contagem <= cutoff ficam transparentes (corta fundo/ruído)"
+					/>
+				)}
 				<Button
 					size="small"
 					variant="outlined"
