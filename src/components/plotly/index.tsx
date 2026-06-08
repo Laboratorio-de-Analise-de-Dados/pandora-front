@@ -3,7 +3,7 @@ import { MdGridOn as HeatmapIcon } from "react-icons/md"
 import { MdScatterPlot as DotPlotIcon } from "react-icons/md"
 import { MdRefresh as RefreshIcon } from "react-icons/md"
 import { MdPentagon as PolygonIcon } from "react-icons/md"
-import { MdPanTool as PanIcon } from "react-icons/md"
+
 import {
 	Box,
 	Divider,
@@ -29,7 +29,7 @@ import CytometryApi from "../../API"
 import { DensityResponse, GateCoordinates, NewGate, Scale } from "../../types"
 
 type PlotMode = "heatmap" | "scatter"
-type GateTool = "pan" | "rect" | "poly"
+type GateTool = "rect" | "poly"
 
 const COFACTOR = 150
 
@@ -151,7 +151,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
 	const [plotMode, setPlotMode] = useState<PlotMode>("scatter")
-	const [tool, setTool] = useState<GateTool>("pan")
+	const [tool, setTool] = useState<GateTool>("rect")
 	const [xScale, setXScale] = useState<Scale>(defaultScale("FSC-A"))
 	const [yScale, setYScale] = useState<Scale>(defaultScale("SSC-A"))
 	// Cutoff de densidade: bins com contagem <= cutoff somem (transparentes).
@@ -270,7 +270,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				y_axis: y_axix_selector,
 				vertices,
 			})
-			setTool("pan")
+			setTool("rect")
 			setIsDialogOpen(true)
 			return
 		}
@@ -286,7 +286,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				startY: Math.min(...ys),
 				endY: Math.max(...ys),
 			})
-			setTool("pan")
+			setTool("rect")
 			setIsDialogOpen(true)
 		}
 	}
@@ -370,8 +370,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const xTicks = buildTicks(xRange, effXScale, effCof)
 	const yTicks = buildTicks(yRange, effYScale, effCof)
 
-	const dragmode =
-		tool === "rect" ? "select" : tool === "poly" ? "lasso" : "pan"
+	const dragmode: "select" | "lasso" =
+		tool === "poly" ? "lasso" : "select"
 
 	return (
 		<Box sx={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
@@ -398,9 +398,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						exclusive
 						onChange={(_, v: GateTool | null) => v && setTool(v)}
 					>
-						<ToggleButton value="pan" size="small" title="Mover / zoom">
-							<PanIcon />
-						</ToggleButton>
 						<ToggleButton value="rect" size="small" title="Gate retangular">
 							<CropFreeSharpIcon />
 						</ToggleButton>
@@ -501,6 +498,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							) : hasData ? (
 								<Plot
 									data={plotData}
+									config={{ scrollZoom: false, displayModeBar: false }}
 									layout={{
 										dragmode,
 										xaxis: {
@@ -514,6 +512,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: xTicks.ticktext,
 												  }
 												: {}),
+											fixedrange: true,
 										},
 										yaxis: {
 											title: `${y_axix_selector}${
@@ -526,6 +525,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: yTicks.ticktext,
 												  }
 												: {}),
+											fixedrange: true,
 										},
 										width: 500,
 										height: 500,
