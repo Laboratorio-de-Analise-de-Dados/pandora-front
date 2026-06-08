@@ -64,6 +64,21 @@ export interface NewGate {
 	}
 }
 
+export interface DensityResponse {
+	mode: "heatmap" | "scatter"
+	total_events: number
+	x_label: string
+	y_label: string
+	// heatmap mode
+	histogram?: number[][]
+	x_edges?: number[]
+	y_edges?: number[]
+	// scatter mode
+	x?: number[]
+	y?: number[]
+	sampled_events?: number
+}
+
 export interface DashboardConfig {
 	x_axis_label: string
 	y_axis_label: string

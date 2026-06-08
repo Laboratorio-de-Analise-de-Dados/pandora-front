@@ -4,16 +4,21 @@ import {
 	MdExpandMore as ExpandMore,
 	MdChevronRight as ChevronRight,
 } from "react-icons/md"
-import { ExperimentFiles, FileData, Gate } from "../../types"
+import { ExperimentFiles, Gate } from "../../types"
 import React from "react"
-import CytometryApi from "../../API"
-import { toast } from "react-toastify"
+
+export interface SelectedSource {
+	type: "file" | "gate"
+	id: number
+	name: string
+	fileDataId: number
+}
 
 // Função recursiva para renderizar os gates e seus sub-gates
 const renderGate = (gate: Gate, parentId: string) => {
 	const itemId = `gate-${gate.id}-${parentId}`
 	return (
-		<TreeItem key={itemId} itemId={itemId} label={`🔲 ${gate.name}`}>
+		<TreeItem key={itemId} itemId={itemId} label={`🔲${gate.name}`}>
 			{gate.children?.map((childGate) => renderGate(childGate, itemId))}
 		</TreeItem>
 	)
@@ -23,56 +28,61 @@ const renderGate = (gate: Gate, parentId: string) => {
 const renderFile = (file: ExperimentFiles) => {
 	const fileId = `file-${file.id}`
 	return (
-		<TreeItem key={fileId} itemId={fileId} label={`📄 ${file.file_name}`}>
+		<TreeItem key={fileId} itemId={fileId} label={`📄${file.file_name}`}>
 			{file.gates.map((gate) => renderGate(gate, fileId))}
 		</TreeItem>
 	)
 }
 
+// Procura recursivamente um gate (e seu file_data raiz) pela id.
+const findGate = (gates: Gate[], id: number): Gate | undefined => {
+	for (const gate of gates) {
+		if (gate.id === id) return gate
+		if (gate.children) {
+			const found = findGate(gate.children, id)
+			if (found) return found
+		}
+	}
+	return undefined
+}
+
 export default function ParentTree({
 	files,
-	loadFile,
-	fileDataSet,
-	gateSet,
+	onSelect,
 }: {
 	files: ExperimentFiles[]
-	loadFile: (arg: boolean) => void
-	fileDataSet: (fileData: FileData) => void
-	gateSet: (gate: number) => void
+	onSelect: (source: SelectedSource) => void
 }) {
-	// Lógica de carregamento de dados unificada e segura
-	const handleItemClick = async (event: React.MouseEvent, itemId: string) => {
+	const handleItemClick = (event: React.MouseEvent, itemId: string) => {
 		// Paramos a propagação para evitar o evento do pai quando o filho é clicado
 		event.stopPropagation()
 
-		// Centralizamos a verificação aqui
 		const isFile = itemId.startsWith("file-")
 		const isGate = itemId.startsWith("gate-")
 		const id = parseInt(itemId.split("-")[1])
 
-		if (!isFile && !isGate) {
-			// Item não é um arquivo nem um gate, então não fazemos nada.
-			return
-		}
+		if (!isFile && !isGate) return
 
-		loadFile(true)
-		try {
-			if (isFile) {
-				const fileData = await CytometryApi.get(
-					`/experiment/file/${id}/list?limit=10000`,
-				)
-				fileDataSet(fileData.data)
-			} else if (isGate) {
-				const gate = await CytometryApi.get(
-					`/analytics/gate/${id}/list?limit=10000`,
-				)
-				gateSet(id)
-				fileDataSet(gate.data)
+		if (isFile) {
+			const file = files.find((f) => f.id === id)
+			onSelect({
+				type: "file",
+				id,
+				name: file?.file_name ?? `Arquivo ${id}`,
+				fileDataId: id,
+			})
+		} else {
+			let gate: Gate | undefined
+			for (const file of files) {
+				gate = findGate(file.gates, id)
+				if (gate) break
 			}
-		} catch (error: any) {
-			toast.error(error.message)
-		} finally {
-			loadFile(false)
+			onSelect({
+				type: "gate",
+				id,
+				name: gate?.name ?? `Gate ${id}`,
+				fileDataId: gate?.file_data ?? id,
+			})
 		}
 	}
 
