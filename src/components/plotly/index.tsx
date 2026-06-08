@@ -5,10 +5,8 @@ import { MdRefresh as RefreshIcon } from "react-icons/md"
 import { MdPentagon as PolygonIcon } from "react-icons/md"
 import { MdPanTool as PanIcon } from "react-icons/md"
 import {
-	Accordion,
-	AccordionDetails,
-	AccordionSummary,
 	Box,
+	Divider,
 	Select,
 	Button,
 	CircularProgress,
@@ -23,7 +21,6 @@ import {
 	Typography,
 	SelectChangeEvent,
 } from "@mui/material"
-import { MdExpandMore as ExpandMoreIcon } from "react-icons/md"
 import React, { useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -131,7 +128,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 }) => {
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
-	const [plotMode, setPlotMode] = useState<PlotMode>("heatmap")
+	const [plotMode, setPlotMode] = useState<PlotMode>("scatter")
 	const [tool, setTool] = useState<GateTool>("pan")
 	const [xScale, setXScale] = useState<Scale>(defaultScale("FSC-A"))
 	const [yScale, setYScale] = useState<Scale>(defaultScale("SSC-A"))
@@ -355,304 +352,329 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		tool === "rect" ? "select" : tool === "poly" ? "lasso" : "pan"
 
 	return (
-		<Box
-			sx={{
-				display: "flex",
-				flexDirection: "column",
-				alignItems: "center",
-				gap: "1rem",
-			}}
-		>
-			<Box
-				sx={{
-					width: "fit-content",
-					display: "flex",
-					alignItems: "center",
-					gap: "1rem",
-				}}
-			>
-				<Typography variant="subtitle1" sx={{ marginBottom: "0.5rem" }}>
-					Ferramentas:
-				</Typography>
-				<ToggleButtonGroup
-					value={tool}
-					exclusive
-					onChange={(_, v: GateTool | null) => v && setTool(v)}
-				>
-					<ToggleButton value="pan" size="small" title="Mover / zoom">
-						<PanIcon />
-					</ToggleButton>
-					<ToggleButton value="rect" size="small" title="Gate retangular">
-						<CropFreeSharpIcon />
-					</ToggleButton>
-					<ToggleButton value="poly" size="small" title="Gate poligonal (laço)">
-						<PolygonIcon />
-					</ToggleButton>
-				</ToggleButtonGroup>
-				<ToggleButtonGroup
-					value={plotMode}
-					exclusive
-					onChange={handlePlotMode}
-				>
-					<ToggleButton value="heatmap" size="small" title="Heatmap (densidade)">
-						<HeatmapIcon />
-					</ToggleButton>
-					<ToggleButton value="scatter" size="small" title="Dot plot (amostra)">
-						<DotPlotIcon />
-					</ToggleButton>
-				</ToggleButtonGroup>
-				<Button
-					size="small"
-					variant="outlined"
-					startIcon={
-						recompute.isPending ? (
-							<CircularProgress size={16} />
-						) : (
-							<RefreshIcon />
-						)
-					}
-					disabled={recompute.isPending}
-					onClick={() => recompute.mutate()}
-					title="Reprocessar a partir do .fcs original + gates"
-				>
-					Reprocessar
-				</Button>
-			</Box>
-
-			<Accordion
-				defaultExpanded={false}
-				sx={{ width: "100%", maxWidth: 600 }}
-				disableGutters
-			>
-				<AccordionSummary expandIcon={<ExpandMoreIcon />}>
-					<Typography variant="subtitle2">Configurações do gráfico</Typography>
-				</AccordionSummary>
-				<AccordionDetails>
-					<Box
-						sx={{
-							display: "flex",
-							flexDirection: "column",
-							gap: "0.75rem",
-						}}
-					>
-						<Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-							<Typography variant="body2" sx={{ minWidth: 50 }}>
-								Escala:
-							</Typography>
-							<ToggleButtonGroup
-								value={xScale}
-								exclusive
-								onChange={(_, v: Scale | null) => v && setXScale(v)}
-								size="small"
-							>
-								<ToggleButton value="linear" title="Eixo X linear">
-									X lin
-								</ToggleButton>
-								<ToggleButton value="biex" title="Eixo X biex (arcsinh)">
-									X biex
-								</ToggleButton>
-							</ToggleButtonGroup>
-							<ToggleButtonGroup
-								value={yScale}
-								exclusive
-								onChange={(_, v: Scale | null) => v && setYScale(v)}
-								size="small"
-							>
-								<ToggleButton value="linear" title="Eixo Y linear">
-									Y lin
-								</ToggleButton>
-								<ToggleButton value="biex" title="Eixo Y biex (arcsinh)">
-									Y biex
-								</ToggleButton>
-							</ToggleButtonGroup>
-						</Box>
-
-						<Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-							<Typography variant="body2" sx={{ minWidth: 50 }}>
-								Eixo X:
-							</Typography>
-							<TextField
-								label="Min"
-								type="number"
-								size="small"
-								value={xMin}
-								onChange={(e) => setXMin(e.target.value)}
-								sx={{ width: 110 }}
-								title="Limite inferior do eixo X (valor bruto)"
-							/>
-							<TextField
-								label="Max"
-								type="number"
-								size="small"
-								value={xMax}
-								onChange={(e) => setXMax(e.target.value)}
-								sx={{ width: 110 }}
-								title="Limite superior do eixo X (valor bruto)"
-							/>
-						</Box>
-
-						<Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-							<Typography variant="body2" sx={{ minWidth: 50 }}>
-								Eixo Y:
-							</Typography>
-							<TextField
-								label="Min"
-								type="number"
-								size="small"
-								value={yMin}
-								onChange={(e) => setYMin(e.target.value)}
-								sx={{ width: 110 }}
-								title="Limite inferior do eixo Y (valor bruto)"
-							/>
-							<TextField
-								label="Max"
-								type="number"
-								size="small"
-								value={yMax}
-								onChange={(e) => setYMax(e.target.value)}
-								sx={{ width: 110 }}
-								title="Limite superior do eixo Y (valor bruto)"
-							/>
-						</Box>
-
-						{plotMode === "heatmap" && (
-							<Box
-								sx={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-							>
-								<Typography variant="body2" sx={{ minWidth: 50 }}>
-									Densidade:
-								</Typography>
-								<TextField
-									label="Cutoff"
-									type="number"
-									size="small"
-									value={cutoff}
-									onChange={(e) =>
-										setCutoff(Math.max(0, Number(e.target.value) || 0))
-									}
-									inputProps={{ min: 0, step: 1 }}
-									sx={{ width: 96 }}
-									title="Bins com contagem <= cutoff ficam transparentes (corta fundo/ruído)"
-								/>
-							</Box>
-						)}
-					</Box>
-				</AccordionDetails>
-			</Accordion>
-			{data && (
-				<Typography variant="caption" color="text.secondary">
-					{data.total_events.toLocaleString()} eventos
-					{plotMode === "scatter" && data.sampled_events
-						? ` · amostra de ${data.sampled_events.toLocaleString()}`
-						: " · heatmap (100% dos dados)"}
-				</Typography>
-			)}
+		<Box sx={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
+			{/* Centro: toolbar + gráfico */}
 			<Box
 				sx={{
 					display: "flex",
 					flexDirection: "column",
 					alignItems: "center",
+					gap: "0.75rem",
 				}}
 			>
 				<Box
 					sx={{
+						width: "fit-content",
 						display: "flex",
 						alignItems: "center",
 						gap: "1rem",
 					}}
 				>
-					<Select
-						onChange={handleSelectY}
-						value={y_axix_selector}
+					<Typography variant="subtitle1">Ferramentas:</Typography>
+					<ToggleButtonGroup
+						value={tool}
+						exclusive
+						onChange={(_, v: GateTool | null) => v && setTool(v)}
+					>
+						<ToggleButton value="pan" size="small" title="Mover / zoom">
+							<PanIcon />
+						</ToggleButton>
+						<ToggleButton value="rect" size="small" title="Gate retangular">
+							<CropFreeSharpIcon />
+						</ToggleButton>
+						<ToggleButton
+							value="poly"
+							size="small"
+							title="Gate poligonal (laço)"
+						>
+							<PolygonIcon />
+						</ToggleButton>
+					</ToggleButtonGroup>
+					<ToggleButtonGroup
+						value={plotMode}
+						exclusive
+						onChange={handlePlotMode}
+					>
+						<ToggleButton
+							value="heatmap"
+							size="small"
+							title="Heatmap (densidade)"
+						>
+							<HeatmapIcon />
+						</ToggleButton>
+						<ToggleButton
+							value="scatter"
+							size="small"
+							title="Dot plot (amostra)"
+						>
+							<DotPlotIcon />
+						</ToggleButton>
+					</ToggleButtonGroup>
+					<Button
+						size="small"
+						variant="outlined"
+						startIcon={
+							recompute.isPending ? (
+								<CircularProgress size={16} />
+							) : (
+								<RefreshIcon />
+							)
+						}
+						disabled={recompute.isPending}
+						onClick={() => recompute.mutate()}
+						title="Reprocessar a partir do .fcs original + gates"
+					>
+						Reprocessar
+					</Button>
+				</Box>
+
+				{data && (
+					<Typography variant="caption" color="text.secondary">
+						{data.total_events.toLocaleString()} eventos
+						{plotMode === "scatter" && data.sampled_events
+							? ` · amostra de ${data.sampled_events.toLocaleString()}`
+							: " · heatmap (100% dos dados)"}
+					</Typography>
+				)}
+
+				<Box
+					sx={{
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+					}}
+				>
+					<Box
 						sx={{
-							transform: "rotate(-90deg)",
+							display: "flex",
+							alignItems: "center",
+							gap: "1rem",
 						}}
 					>
+						<Select
+							onChange={handleSelectY}
+							value={y_axix_selector}
+							sx={{ transform: "rotate(-90deg)" }}
+						>
+							{values.map((value, index) => (
+								<MenuItem key={index} value={value}>
+									{value}
+								</MenuItem>
+							))}
+						</Select>
+						<Box
+							sx={{
+								width: 500,
+								height: 500,
+								position: "relative",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
+						>
+							{isError && !data ? (
+								<Typography color="error">
+									Erro ao carregar dados.
+								</Typography>
+							) : hasData ? (
+								<Plot
+									data={plotData}
+									layout={{
+										dragmode,
+										xaxis: {
+											title: `${x_axix_selector}${
+												effXScale === "biex" ? " (biex)" : ""
+											}`,
+											...(xTicks
+												? {
+														tickmode: "array" as const,
+														tickvals: xTicks.tickvals,
+														ticktext: xTicks.ticktext,
+												  }
+												: {}),
+										},
+										yaxis: {
+											title: `${y_axix_selector}${
+												effYScale === "biex" ? " (biex)" : ""
+											}`,
+											...(yTicks
+												? {
+														tickmode: "array" as const,
+														tickvals: yTicks.tickvals,
+														ticktext: yTicks.ticktext,
+												  }
+												: {}),
+										},
+										width: 500,
+										height: 500,
+										plot_bgcolor: "#FFFFFF",
+										paper_bgcolor: "#FFFFFF",
+									}}
+									onSelected={handleSelectedArea}
+								/>
+							) : isLoading ? null : (
+								<Typography>
+									Sem dados para os eixos selecionados.
+								</Typography>
+							)}
+							{(isLoading || isFetching) && (
+								<Box
+									sx={{
+										position: "absolute",
+										inset: 0,
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										bgcolor: "rgba(255,255,255,0.6)",
+										zIndex: 10,
+									}}
+								>
+									<CircularProgress />
+								</Box>
+							)}
+						</Box>
+					</Box>
+					<Select value={x_axix_selector} onChange={handleSelectX}>
 						{values.map((value, index) => (
 							<MenuItem key={index} value={value}>
 								{value}
 							</MenuItem>
 						))}
 					</Select>
-					<Box
-						sx={{
-							width: 500,
-							height: 500,
-							position: "relative",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						{isError && !data ? (
-							<Typography color="error">
-								Erro ao carregar dados.
-							</Typography>
-						) : hasData ? (
-							<Plot
-								data={plotData}
-								layout={{
-									dragmode,
-									xaxis: {
-										title: `${x_axix_selector}${
-											effXScale === "biex" ? " (biex)" : ""
-										}`,
-										...(xTicks
-											? {
-													tickmode: "array" as const,
-													tickvals: xTicks.tickvals,
-													ticktext: xTicks.ticktext,
-											  }
-											: {}),
-									},
-									yaxis: {
-										title: `${y_axix_selector}${
-											effYScale === "biex" ? " (biex)" : ""
-										}`,
-										...(yTicks
-											? {
-													tickmode: "array" as const,
-													tickvals: yTicks.tickvals,
-													ticktext: yTicks.ticktext,
-											  }
-											: {}),
-									},
-									width: 500,
-									height: 500,
-									plot_bgcolor: "#FFFFFF",
-									paper_bgcolor: "#FFFFFF",
-								}}
-								onSelected={handleSelectedArea}
-							/>
-						) : isLoading ? null : (
-							<Typography>
-								Sem dados para os eixos selecionados.
-							</Typography>
-						)}
-						{(isLoading || isFetching) && (
-							<Box
-								sx={{
-									position: "absolute",
-									inset: 0,
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									bgcolor: "rgba(255,255,255,0.6)",
-									zIndex: 10,
-								}}
-							>
-								<CircularProgress />
-							</Box>
-						)}
-					</Box>
 				</Box>
-				<Select value={x_axix_selector} onChange={handleSelectX}>
-					{values.map((value, index) => (
-						<MenuItem key={index} value={value}>
-							{value}
-						</MenuItem>
-					))}
-				</Select>
+			</Box>
+
+			{/* Direita: painel de configurações */}
+			<Box
+				sx={{
+					width: 220,
+					flexShrink: 0,
+					borderLeft: "1px solid",
+					borderColor: "divider",
+					pl: "1rem",
+					display: "flex",
+					flexDirection: "column",
+					gap: "1rem",
+					overflowY: "auto",
+					maxHeight: 600,
+				}}
+			>
+				<Typography variant="subtitle2" fontWeight="bold">
+					Configurações
+				</Typography>
+
+				<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+					<Typography variant="caption" color="text.secondary">
+						Escala
+					</Typography>
+					<ToggleButtonGroup
+						value={xScale}
+						exclusive
+						onChange={(_, v: Scale | null) => v && setXScale(v)}
+						size="small"
+						fullWidth
+					>
+						<ToggleButton value="linear" title="Eixo X linear">
+							X lin
+						</ToggleButton>
+						<ToggleButton value="biex" title="Eixo X biex">
+							X biex
+						</ToggleButton>
+					</ToggleButtonGroup>
+					<ToggleButtonGroup
+						value={yScale}
+						exclusive
+						onChange={(_, v: Scale | null) => v && setYScale(v)}
+						size="small"
+						fullWidth
+					>
+						<ToggleButton value="linear" title="Eixo Y linear">
+							Y lin
+						</ToggleButton>
+						<ToggleButton value="biex" title="Eixo Y biex">
+							Y biex
+						</ToggleButton>
+					</ToggleButtonGroup>
+				</Box>
+
+				<Divider />
+
+				<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+					<Typography variant="caption" color="text.secondary">
+						Eixo X
+					</Typography>
+					<TextField
+						label="Min"
+						type="number"
+						size="small"
+						value={xMin}
+						onChange={(e) => setXMin(e.target.value)}
+						fullWidth
+						title="Limite inferior do eixo X (valor bruto)"
+					/>
+					<TextField
+						label="Max"
+						type="number"
+						size="small"
+						value={xMax}
+						onChange={(e) => setXMax(e.target.value)}
+						fullWidth
+						title="Limite superior do eixo X (valor bruto)"
+					/>
+				</Box>
+
+				<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+					<Typography variant="caption" color="text.secondary">
+						Eixo Y
+					</Typography>
+					<TextField
+						label="Min"
+						type="number"
+						size="small"
+						value={yMin}
+						onChange={(e) => setYMin(e.target.value)}
+						fullWidth
+						title="Limite inferior do eixo Y (valor bruto)"
+					/>
+					<TextField
+						label="Max"
+						type="number"
+						size="small"
+						value={yMax}
+						onChange={(e) => setYMax(e.target.value)}
+						fullWidth
+						title="Limite superior do eixo Y (valor bruto)"
+					/>
+				</Box>
+
+				{plotMode === "heatmap" && (
+					<>
+						<Divider />
+						<Box
+							sx={{
+								display: "flex",
+								flexDirection: "column",
+								gap: "0.5rem",
+							}}
+						>
+							<Typography variant="caption" color="text.secondary">
+								Densidade
+							</Typography>
+							<TextField
+								label="Cutoff"
+								type="number"
+								size="small"
+								value={cutoff}
+								onChange={(e) =>
+									setCutoff(Math.max(0, Number(e.target.value) || 0))
+								}
+								inputProps={{ min: 0, step: 1 }}
+								fullWidth
+								title="Bins com contagem <= cutoff ficam transparentes"
+							/>
+						</Box>
+					</>
+				)}
 			</Box>
 
 			<Dialog open={isDialogOpen} onClose={handleDialogClose}>
