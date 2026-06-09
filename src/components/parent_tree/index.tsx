@@ -15,8 +15,10 @@ import {
 	Button,
 	IconButton,
 	TextField,
+	Tooltip,
 	Typography,
 } from "@mui/material"
+import { MdInfoOutline as InfoIcon } from "react-icons/md"
 import { ExperimentFiles, Gate } from "../../types"
 import React, { useState } from "react"
 
@@ -27,6 +29,10 @@ export interface SelectedSource {
 	fileDataId: number
 }
 
+// Formata percentual no estilo FlowJo/Cytobank (2 casas decimais)
+const fmtPct = (v: number | undefined) =>
+	v != null ? `${(v * 100).toFixed(2)}%` : "–"
+
 // Função recursiva para renderizar os gates e seus sub-gates
 const renderGate = (
 	gate: Gate,
@@ -35,6 +41,7 @@ const renderGate = (
 	onRequestRename?: (gateId: number, gateName: string) => void,
 ) => {
 	const itemId = `gate-${gate.id}-${parentId}`
+	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
 	return (
 		<TreeItem
 			key={itemId}
@@ -50,11 +57,13 @@ const renderGate = (
 				>
 					<Box sx={{ display: "flex", flexDirection: "column" }}>
 						<span>🔲{gate.name}</span>
-						{gate.analysis_result?.analysis_result?.summary_metrics && (
-							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", pl: 2.5 }}>
-								{gate.analysis_result.analysis_result.summary_metrics.count.toLocaleString()} eventos
-								{" · "}
-								{gate.analysis_result.analysis_result.summary_metrics.percent_of_parent_population.toFixed(1)}%
+						{metrics && (
+							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", pl: 2.5, lineHeight: 1.2 }}>
+								{metrics.count.toLocaleString()} events
+								{" | "}
+								%P {fmtPct(metrics.percent_of_parent_population)}
+								{" | "}
+								%T {fmtPct(metrics.percent_of_total_population)}
 							</Typography>
 						)}
 					</Box>
@@ -218,6 +227,20 @@ export default function ParentTree({
 
 	return (
 		<>
+			<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+				<Tooltip
+					title="%P = % of Parent (eventos no gate / eventos no gate pai) · %T = % of Total (eventos no gate / total do arquivo)"
+					arrow
+					placement="bottom-start"
+				>
+					<Box sx={{ display: "inline-flex", alignItems: "center", cursor: "help" }}>
+						<InfoIcon style={{ fontSize: 14, opacity: 0.6 }} />
+						<Typography variant="caption" sx={{ ml: 0.5, color: "text.secondary", fontSize: "0.7rem" }}>
+							%P = Parent · %T = Total
+						</Typography>
+					</Box>
+				</Tooltip>
+			</Box>
 			<SimpleTreeView
 				slots={{
 					expandIcon: ChevronRight,
