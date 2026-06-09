@@ -266,7 +266,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const newGate: NewGate = {
 				file_data: fileDataId,
 				name: gateName,
-				parent: parentId,
+				parent: parentId ?? null,
 				gate_coordinates: coords,
 				dashboard: {
 					name: dashName,
@@ -363,7 +363,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				const newGate: NewGate = {
 					file_data: fileDataId,
 					name: q.label,
-					parent: parentId,
+					parent: parentId ?? null,
 					gate_coordinates: {
 						type: "quadrant",
 						quadrant: q.quadrant,

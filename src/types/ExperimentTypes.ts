@@ -80,7 +80,7 @@ export interface Gate {
 export interface NewGate {
 	id?: number
 	name: string
-	parent?: number
+	parent?: number | null
 	gate_coordinates: GateCoordinates
 	file_data: number
 	children?: Gate[]
