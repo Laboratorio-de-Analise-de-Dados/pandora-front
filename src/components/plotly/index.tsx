@@ -429,22 +429,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					}}
 				>
 					<Typography variant="subtitle1">Ferramentas:</Typography>
-					<ToggleButtonGroup
-						value={tool}
-						exclusive
-						onChange={(_, v: GateTool | null) => v && setTool(v)}
-					>
-						<ToggleButton value="rect" size="small" title="Gate retangular">
-							<CropFreeSharpIcon />
-						</ToggleButton>
-						<ToggleButton
-							value="poly"
-							size="small"
-							title="Gate poligonal (laço)"
+					{plotMode !== "histogram" && (
+						<ToggleButtonGroup
+							value={tool}
+							exclusive
+							onChange={(_, v: GateTool | null) => v && setTool(v)}
 						>
-							<PolygonIcon />
-						</ToggleButton>
-					</ToggleButtonGroup>
+							<ToggleButton value="rect" size="small" title="Gate retangular">
+								<CropFreeSharpIcon />
+							</ToggleButton>
+							<ToggleButton
+								value="poly"
+								size="small"
+								title="Gate poligonal (laço)"
+							>
+								<PolygonIcon />
+							</ToggleButton>
+						</ToggleButtonGroup>
+					)}
 					<ToggleButtonGroup
 						value={plotMode}
 						exclusive
@@ -515,17 +517,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							gap: "1rem",
 						}}
 					>
-						<Select
-							onChange={handleSelectY}
-							value={y_axix_selector}
-							sx={{ transform: "rotate(-90deg)" }}
-						>
-							{values.map((value, index) => (
-								<MenuItem key={index} value={value}>
-									{value}
-								</MenuItem>
-							))}
-						</Select>
+						{plotMode !== "histogram" && (
+							<Select
+								onChange={handleSelectY}
+								value={y_axix_selector}
+								sx={{ transform: "rotate(-90deg)" }}
+							>
+								{values.map((value, index) => (
+									<MenuItem key={index} value={value}>
+										{value}
+									</MenuItem>
+								))}
+							</Select>
+						)}
 						<Box
 							sx={{
 								width: 500,
@@ -658,20 +662,22 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							X biex
 						</ToggleButton>
 					</ToggleButtonGroup>
-					<ToggleButtonGroup
-						value={yScale}
-						exclusive
-						onChange={(_, v: Scale | null) => v && setYScale(v)}
-						size="small"
-						fullWidth
-					>
-						<ToggleButton value="linear" title="Eixo Y linear">
-							Y lin
-						</ToggleButton>
-						<ToggleButton value="biex" title="Eixo Y biex">
-							Y biex
-						</ToggleButton>
-					</ToggleButtonGroup>
+					{plotMode !== "histogram" && (
+						<ToggleButtonGroup
+							value={yScale}
+							exclusive
+							onChange={(_, v: Scale | null) => v && setYScale(v)}
+							size="small"
+							fullWidth
+						>
+							<ToggleButton value="linear" title="Eixo Y linear">
+								Y lin
+							</ToggleButton>
+							<ToggleButton value="biex" title="Eixo Y biex">
+								Y biex
+							</ToggleButton>
+						</ToggleButtonGroup>
+					)}
 				</Box>
 
 				<Divider />
@@ -733,62 +739,64 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					</Box>
 				</Box>
 
-				<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-					<Typography variant="caption" color="text.secondary">
-						Eixo Y
-					</Typography>
-					<Slider
-						value={[
-							yMin !== ""
-								? rawToSlider(Number(yMin), yScale)
-								: yScale === "biex"
-									? BIEX_SLIDER_MIN
-									: 0,
-							yMax !== ""
-								? rawToSlider(Number(yMax), yScale)
-								: yScale === "biex"
-									? BIEX_SLIDER_MAX
-									: LINEAR_SLIDER_MAX,
-						]}
-						onChange={(_, val) => {
-							const [lo, hi] = val as number[]
-							setYMin(String(sliderToRaw(lo, yScale)))
-							setYMax(String(sliderToRaw(hi, yScale)))
-						}}
-						min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
-						max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-						step={yScale === "biex" ? 0.01 : 500}
-						marks={yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
-						valueLabelDisplay="auto"
-						valueLabelFormat={(v) => {
-							const raw = sliderToRaw(v, yScale)
-							return raw === 0 ? "0" : raw.toLocaleString()
-						}}
-						size="small"
-						sx={{
-							"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
-							mb: 1,
-						}}
-					/>
-					<Box sx={{ display: "flex", gap: "0.5rem" }}>
-						<TextField
-							label="Min"
-							type="number"
+				{plotMode !== "histogram" && (
+					<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+						<Typography variant="caption" color="text.secondary">
+							Eixo Y
+						</Typography>
+						<Slider
+							value={[
+								yMin !== ""
+									? rawToSlider(Number(yMin), yScale)
+									: yScale === "biex"
+										? BIEX_SLIDER_MIN
+										: 0,
+								yMax !== ""
+									? rawToSlider(Number(yMax), yScale)
+									: yScale === "biex"
+										? BIEX_SLIDER_MAX
+										: LINEAR_SLIDER_MAX,
+							]}
+							onChange={(_, val) => {
+								const [lo, hi] = val as number[]
+								setYMin(String(sliderToRaw(lo, yScale)))
+								setYMax(String(sliderToRaw(hi, yScale)))
+							}}
+							min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
+							max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
+							step={yScale === "biex" ? 0.01 : 500}
+							marks={yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+							valueLabelDisplay="auto"
+							valueLabelFormat={(v) => {
+								const raw = sliderToRaw(v, yScale)
+								return raw === 0 ? "0" : raw.toLocaleString()
+							}}
 							size="small"
-							value={yMin}
-							onChange={(e) => setYMin(e.target.value)}
-							sx={{ flex: 1 }}
+							sx={{
+								"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
+								mb: 1,
+							}}
 						/>
-						<TextField
-							label="Max"
-							type="number"
-							size="small"
-							value={yMax}
-							onChange={(e) => setYMax(e.target.value)}
-							sx={{ flex: 1 }}
-						/>
+						<Box sx={{ display: "flex", gap: "0.5rem" }}>
+							<TextField
+								label="Min"
+								type="number"
+								size="small"
+								value={yMin}
+								onChange={(e) => setYMin(e.target.value)}
+								sx={{ flex: 1 }}
+							/>
+							<TextField
+								label="Max"
+								type="number"
+								size="small"
+								value={yMax}
+								onChange={(e) => setYMax(e.target.value)}
+								sx={{ flex: 1 }}
+							/>
+						</Box>
 					</Box>
-				</Box>
+				)}
 
 				{plotMode === "heatmap" && (
 					<>
