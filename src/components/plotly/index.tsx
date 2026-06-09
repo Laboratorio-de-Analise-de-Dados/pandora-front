@@ -1,6 +1,7 @@
 import { MdCropFree as CropFreeSharpIcon } from "react-icons/md"
 import { MdGridOn as HeatmapIcon } from "react-icons/md"
 import { MdScatterPlot as DotPlotIcon } from "react-icons/md"
+import { MdBarChart as HistogramIcon } from "react-icons/md"
 import { MdRefresh as RefreshIcon } from "react-icons/md"
 import { MdPentagon as PolygonIcon } from "react-icons/md"
 
@@ -28,7 +29,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import CytometryApi from "../../API"
 import { DensityResponse, GateCoordinates, NewGate, Scale } from "../../types"
 
-type PlotMode = "heatmap" | "scatter"
+type PlotMode = "heatmap" | "scatter" | "histogram"
 type GateTool = "rect" | "poly"
 
 const COFACTOR = 150
@@ -204,6 +205,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const params =
 				plotMode === "heatmap"
 					? `mode=heatmap&bins=200&cutoff=${cutoff}`
+					: plotMode === "histogram"
+					? "mode=histogram&bins=256"
 					: "mode=scatter&sample=5000"
 			const scaleParams = `xscale=${xScale}&yscale=${yScale}&cofactor=${COFACTOR}`
 			const rangeParams = [
@@ -339,6 +342,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						showscale: true,
 					},
 			  ]
+			: plotMode === "histogram"
+			? [
+					{
+						type: "bar",
+						x: edgesToCenters(data?.edges),
+						y: data?.counts ?? [],
+						marker: { color: "#1976d2" },
+					},
+			  ]
 			: [
 					{
 						type: "scattergl",
@@ -352,18 +364,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const hasData =
 		plotMode === "heatmap"
 			? !!data?.histogram?.length
+			: plotMode === "histogram"
+			? !!data?.counts?.length
 			: !!data?.x?.length
 
 	// Em biex, mapeia os ticks de volta para unidades reais (10², 10³, ...).
 	const xRange =
 		plotMode === "heatmap"
 			? data?.x_edges
+			: plotMode === "histogram"
+			? data?.edges
 			: data?.x && data.x.length
 			? [Math.min(...data.x), Math.max(...data.x)]
 			: undefined
 	const yRange =
 		plotMode === "heatmap"
 			? data?.y_edges
+			: plotMode === "histogram"
+			? undefined
 			: data?.y && data.y.length
 			? [Math.min(...data.y), Math.max(...data.y)]
 			: undefined
@@ -388,8 +406,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const xTicks = buildTicks(xTickSource, effXScale, effCof)
 	const yTicks = buildTicks(yTickSource, effYScale, effCof)
 
-	const dragmode: "select" | "lasso" =
-		tool === "poly" ? "lasso" : "select"
+	const dragmode: "select" | "lasso" | false =
+		plotMode === "histogram" ? false : tool === "poly" ? "lasso" : "select"
 
 	return (
 		<Box sx={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
@@ -446,6 +464,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						>
 							<DotPlotIcon />
 						</ToggleButton>
+						<ToggleButton
+							value="histogram"
+							size="small"
+							title="Histograma (distribuição)"
+						>
+							<HistogramIcon />
+						</ToggleButton>
 					</ToggleButtonGroup>
 					<Button
 						size="small"
@@ -470,6 +495,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						{data.total_events.toLocaleString()} eventos
 						{plotMode === "scatter" && data.sampled_events
 							? ` · amostra de ${data.sampled_events.toLocaleString()}`
+							: plotMode === "histogram"
+							? " · histograma (100% dos dados)"
 							: " · heatmap (100% dos dados)"}
 					</Typography>
 				)}
@@ -534,23 +561,31 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											fixedrange: true,
 										},
 										yaxis: {
-											title: `${y_axix_selector}${
-												effYScale === "biex" ? " (biex)" : ""
-											}`,
-											...(yTicks
+											title:
+												plotMode === "histogram"
+													? "Contagem"
+													: `${y_axix_selector}${
+															effYScale === "biex"
+																? " (biex)"
+																: ""
+													  }`,
+											...(plotMode !== "histogram" && yTicks
 												? {
 														tickmode: "array" as const,
 														tickvals: yTicks.tickvals,
 														ticktext: yTicks.ticktext,
 												  }
 												: {}),
-											...(yAxisRange ? { range: yAxisRange } : {}),
+											...(plotMode !== "histogram" && yAxisRange
+												? { range: yAxisRange }
+												: {}),
 											fixedrange: true,
 										},
 										width: 500,
 										height: 500,
 										plot_bgcolor: "#FFFFFF",
 										paper_bgcolor: "#FFFFFF",
+										bargap: 0,
 									}}
 									onSelected={handleSelectedArea}
 								/>
