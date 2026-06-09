@@ -23,6 +23,7 @@ import {
 import React, { useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { toast } from "react-toastify"
 import CytometryApi from "../../API"
 import { DensityResponse, GateCoordinates, NewGate, Scale } from "../../types"
 
@@ -256,27 +257,34 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	// Helper to create a gate directly with auto-generated name
 	const createGateDirectly = async (coords: GateCoordinates) => {
-		const gateName = getNextGateName(siblingGateNames)
-		const isInterval = coords.type === "interval"
-		const dashName = isInterval
-			? `${x_axix_selector} (histogram)`
-			: `${x_axix_selector} X ${y_axix_selector}`
-		const newGate: NewGate = {
-			file_data: fileDataId,
-			name: gateName,
-			parent: parentId,
-			gate_coordinates: coords,
-			dashboard: {
-				name: dashName,
-				dashboard_config: {
-					x_axis_label: x_axix_selector,
-					y_axis_label: isInterval ? x_axix_selector : y_axix_selector,
-				},
+		try {
+			const gateName = getNextGateName(siblingGateNames)
+			const isInterval = coords.type === "interval"
+			const dashName = isInterval
+				? `${x_axix_selector} (histogram)`
+				: `${x_axix_selector} X ${y_axix_selector}`
+			const newGate: NewGate = {
 				file_data: fileDataId,
-			},
+				name: gateName,
+				parent: parentId,
+				gate_coordinates: coords,
+				dashboard: {
+					name: dashName,
+					dashboard_config: {
+						x_axis_label: x_axix_selector,
+						y_axis_label: isInterval ? x_axix_selector : y_axix_selector,
+					},
+					file_data: fileDataId,
+				},
+			}
+			await CytometryApi.post("analytics/gate", newGate)
+			loadFile()
+		} catch (error: any) {
+			const msg = error?.response?.data
+				? JSON.stringify(error.response.data)
+				: error?.message ?? "Erro desconhecido"
+			toast.error(`Erro ao criar gate: ${msg}`, { position: "bottom-right" })
 		}
-		await CytometryApi.post("analytics/gate", newGate)
-		loadFile()
 	}
 
 	// Recebe seleção do Plotly (box=retângulo, lasso=polígono) e converte os
@@ -350,31 +358,38 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			{ quadrant: "Q3", label: `Q${n} (X-Y-)` },
 			{ quadrant: "Q4", label: `Q${n} (X+Y-)` },
 		]
-		for (const q of quadrants) {
-			const newGate: NewGate = {
-				file_data: fileDataId,
-				name: q.label,
-				parent: parentId,
-				gate_coordinates: {
-					type: "quadrant",
-					quadrant: q.quadrant,
-					x_axis: x_axix_selector,
-					y_axis: y_axix_selector,
-					center_x: cx,
-					center_y: cy,
-				},
-				dashboard: {
-					name: `${x_axix_selector} X ${y_axix_selector}`,
-					dashboard_config: {
-						x_axis_label: x_axix_selector,
-						y_axis_label: y_axix_selector,
-					},
+		try {
+			for (const q of quadrants) {
+				const newGate: NewGate = {
 					file_data: fileDataId,
-				},
+					name: q.label,
+					parent: parentId,
+					gate_coordinates: {
+						type: "quadrant",
+						quadrant: q.quadrant,
+						x_axis: x_axix_selector,
+						y_axis: y_axix_selector,
+						center_x: cx,
+						center_y: cy,
+					},
+					dashboard: {
+						name: `${x_axix_selector} X ${y_axix_selector}`,
+						dashboard_config: {
+							x_axis_label: x_axix_selector,
+							y_axis_label: y_axix_selector,
+						},
+						file_data: fileDataId,
+					},
+				}
+				await CytometryApi.post("analytics/gate", newGate)
 			}
-			await CytometryApi.post("analytics/gate", newGate)
+			loadFile()
+		} catch (error: any) {
+			const msg = error?.response?.data
+				? JSON.stringify(error.response.data)
+				: error?.message ?? "Erro desconhecido"
+			toast.error(`Erro ao criar quadrante: ${msg}`, { position: "bottom-right" })
 		}
-		loadFile()
 	}
 
 

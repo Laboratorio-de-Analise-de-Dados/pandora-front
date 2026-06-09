@@ -48,7 +48,16 @@ const renderGate = (
 						width: "100%",
 					}}
 				>
-					<span>🔲{gate.name}</span>
+					<Box sx={{ display: "flex", flexDirection: "column" }}>
+						<span>🔲{gate.name}</span>
+						{gate.analysis_result?.analysis_result?.summary_metrics && (
+							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", pl: 2.5 }}>
+								{gate.analysis_result.analysis_result.summary_metrics.count.toLocaleString()} eventos
+								{" · "}
+								{gate.analysis_result.analysis_result.summary_metrics.percent_of_parent_population.toFixed(1)}%
+							</Typography>
+						)}
+					</Box>
 					<Box sx={{ display: "flex", gap: 0 }}>
 						{onRequestRename && (
 							<IconButton
@@ -190,15 +199,19 @@ export default function ParentTree({
 			})
 		} else {
 			let gate: Gate | undefined
+			let fileDataId = id
 			for (const file of files) {
 				gate = findGate(file.gates, id)
-				if (gate) break
+				if (gate) {
+					fileDataId = file.id
+					break
+				}
 			}
 			onSelect({
 				type: "gate",
 				id,
 				name: gate?.name ?? `Gate ${id}`,
-				fileDataId: gate?.file_data ?? id,
+				fileDataId,
 			})
 		}
 	}
