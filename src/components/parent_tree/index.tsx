@@ -4,6 +4,7 @@ import {
 	MdExpandMore as ExpandMore,
 	MdChevronRight as ChevronRight,
 	MdDelete as DeleteIcon,
+	MdEdit as EditIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -13,6 +14,7 @@ import {
 	DialogTitle,
 	Button,
 	IconButton,
+	TextField,
 	Typography,
 } from "@mui/material"
 import { ExperimentFiles, Gate } from "../../types"
@@ -30,6 +32,7 @@ const renderGate = (
 	gate: Gate,
 	parentId: string,
 	onRequestDelete?: (gateId: number, gateName: string) => void,
+	onRequestRename?: (gateId: number, gateName: string) => void,
 ) => {
 	const itemId = `gate-${gate.id}-${parentId}`
 	return (
@@ -45,26 +48,50 @@ const renderGate = (
 						width: "100%",
 					}}
 				>
-					<span>🔲{gate.name}</span>
-					{onRequestDelete && (
-						<IconButton
-							size="small"
-							color="error"
-							onClick={(e) => {
-								e.stopPropagation()
-								onRequestDelete(gate.id, gate.name)
-							}}
-							sx={{ p: 0.25 }}
-							title="Excluir gate"
-						>
-							<DeleteIcon style={{ fontSize: 16 }} />
-						</IconButton>
-					)}
+					<Box sx={{ display: "flex", flexDirection: "column" }}>
+						<span>🔲{gate.name}</span>
+						{gate.analysis_result?.analysis_result?.summary_metrics && (
+							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", pl: 2.5 }}>
+								{gate.analysis_result.analysis_result.summary_metrics.count.toLocaleString()} eventos
+								{" · "}
+								{gate.analysis_result.analysis_result.summary_metrics.percent_of_parent_population.toFixed(1)}%
+							</Typography>
+						)}
+					</Box>
+					<Box sx={{ display: "flex", gap: 0 }}>
+						{onRequestRename && (
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									onRequestRename(gate.id, gate.name)
+								}}
+								sx={{ p: 0.25 }}
+								title="Renomear gate"
+							>
+								<EditIcon style={{ fontSize: 16 }} />
+							</IconButton>
+						)}
+						{onRequestDelete && (
+							<IconButton
+								size="small"
+								color="error"
+								onClick={(e) => {
+									e.stopPropagation()
+									onRequestDelete(gate.id, gate.name)
+								}}
+								sx={{ p: 0.25 }}
+								title="Excluir gate"
+							>
+								<DeleteIcon style={{ fontSize: 16 }} />
+							</IconButton>
+						)}
+					</Box>
 				</Box>
 			}
 		>
 			{gate.children?.map((childGate) =>
-				renderGate(childGate, itemId, onRequestDelete),
+				renderGate(childGate, itemId, onRequestDelete, onRequestRename),
 			)}
 		</TreeItem>
 	)
@@ -74,12 +101,13 @@ const renderGate = (
 const renderFile = (
 	file: ExperimentFiles,
 	onRequestDelete?: (gateId: number, gateName: string) => void,
+	onRequestRename?: (gateId: number, gateName: string) => void,
 ) => {
 	const fileId = `file-${file.id}`
 	return (
 		<TreeItem key={fileId} itemId={fileId} label={`📄${file.file_name}`}>
 			{file.gates.map((gate) =>
-				renderGate(gate, fileId, onRequestDelete),
+				renderGate(gate, fileId, onRequestDelete, onRequestRename),
 			)}
 		</TreeItem>
 	)
@@ -101,18 +129,43 @@ export default function ParentTree({
 	files,
 	onSelect,
 	onDeleteGate,
+	onRenameGate,
 }: {
 	files: ExperimentFiles[]
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number) => void
+	onRenameGate?: (gateId: number, newName: string) => void
 }) {
 	const [deleteTarget, setDeleteTarget] = useState<{
 		id: number
 		name: string
 	} | null>(null)
+	const [renameTarget, setRenameTarget] = useState<{
+		id: number
+		name: string
+	} | null>(null)
+	const [renameValue, setRenameValue] = useState("")
 
 	const handleRequestDelete = (gateId: number, gateName: string) => {
 		setDeleteTarget({ id: gateId, name: gateName })
+	}
+
+	const handleRequestRename = (gateId: number, gateName: string) => {
+		setRenameTarget({ id: gateId, name: gateName })
+		setRenameValue(gateName)
+	}
+
+	const handleConfirmRename = () => {
+		if (renameTarget && onRenameGate && renameValue.trim()) {
+			onRenameGate(renameTarget.id, renameValue.trim())
+		}
+		setRenameTarget(null)
+		setRenameValue("")
+	}
+
+	const handleCancelRename = () => {
+		setRenameTarget(null)
+		setRenameValue("")
 	}
 
 	const handleConfirmDelete = () => {
@@ -146,15 +199,19 @@ export default function ParentTree({
 			})
 		} else {
 			let gate: Gate | undefined
+			let fileDataId = id
 			for (const file of files) {
 				gate = findGate(file.gates, id)
-				if (gate) break
+				if (gate) {
+					fileDataId = file.id
+					break
+				}
 			}
 			onSelect({
 				type: "gate",
 				id,
 				name: gate?.name ?? `Gate ${id}`,
-				fileDataId: gate?.file_data ?? id,
+				fileDataId,
 			})
 		}
 	}
@@ -177,6 +234,7 @@ export default function ParentTree({
 					renderFile(
 						file,
 						onDeleteGate ? handleRequestDelete : undefined,
+						onRenameGate ? handleRequestRename : undefined,
 					),
 				)}
 			</SimpleTreeView>
@@ -198,6 +256,33 @@ export default function ParentTree({
 						variant="contained"
 					>
 						Excluir
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			<Dialog open={!!renameTarget} onClose={handleCancelRename}>
+				<DialogTitle>Renomear Gate</DialogTitle>
+				<DialogContent>
+					<TextField
+						autoFocus
+						label="Novo nome"
+						value={renameValue}
+						onChange={(e) => setRenameValue(e.target.value)}
+						fullWidth
+						sx={{ mt: 1 }}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") handleConfirmRename()
+						}}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={handleCancelRename}>Cancelar</Button>
+					<Button
+						onClick={handleConfirmRename}
+						variant="contained"
+						disabled={!renameValue.trim()}
+					>
+						Salvar
 					</Button>
 				</DialogActions>
 			</Dialog>

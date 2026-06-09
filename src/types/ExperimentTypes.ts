@@ -23,6 +23,8 @@ export type Scale = "linear" | "biex"
 
 export interface RectGateCoordinates {
 	type?: "rectangle"
+	x_axis?: string
+	y_axis?: string
 	startX: number
 	startY: number
 	endX: number
@@ -36,7 +38,27 @@ export interface PolygonGateCoordinates {
 	vertices: [number, number][]
 }
 
-export type GateCoordinates = RectGateCoordinates | PolygonGateCoordinates
+export interface IntervalGateCoordinates {
+	type: "interval"
+	x_axis: string
+	startX: number
+	endX: number
+}
+
+export interface QuadrantGateCoordinates {
+	type: "quadrant"
+	quadrant: "Q1" | "Q2" | "Q3" | "Q4"
+	x_axis: string
+	y_axis: string
+	center_x: number
+	center_y: number
+}
+
+export type GateCoordinates =
+	| RectGateCoordinates
+	| PolygonGateCoordinates
+	| IntervalGateCoordinates
+	| QuadrantGateCoordinates
 
 export interface Gate {
 	id: number
@@ -60,7 +82,7 @@ export interface Gate {
 export interface NewGate {
 	id?: number
 	name: string
-	parent?: number
+	parent?: number | null
 	gate_coordinates: GateCoordinates
 	file_data: number
 	children?: Gate[]
