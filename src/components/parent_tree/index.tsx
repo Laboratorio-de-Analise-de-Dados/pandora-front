@@ -25,6 +25,10 @@ export interface SelectedSource {
 	fileDataId: number
 }
 
+// Formata percentual no estilo FlowJo/Cytobank (2 casas decimais)
+const fmtPct = (v: number | undefined) =>
+	v != null ? `${(v * 100).toFixed(2)}%` : "–"
+
 // Função recursiva para renderizar os gates e seus sub-gates
 const renderGate = (
 	gate: Gate,
@@ -32,6 +36,7 @@ const renderGate = (
 	onRequestDelete?: (gateId: number, gateName: string) => void,
 ) => {
 	const itemId = `gate-${gate.id}-${parentId}`
+	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
 	return (
 		<TreeItem
 			key={itemId}
@@ -45,7 +50,21 @@ const renderGate = (
 						width: "100%",
 					}}
 				>
-					<span>🔲{gate.name}</span>
+					<Box sx={{ display: "flex", flexDirection: "column" }}>
+						<span>🔲{gate.name}</span>
+						{metrics && (
+							<Typography
+								variant="caption"
+								sx={{ color: "text.secondary", lineHeight: 1.2 }}
+							>
+								{metrics.count} events
+								{" | "}
+								%P {fmtPct(metrics.percent_of_parent_population)}
+								{" | "}
+								%T {fmtPct(metrics.percent_of_total_population)}
+							</Typography>
+						)}
+					</Box>
 					{onRequestDelete && (
 						<IconButton
 							size="small"
