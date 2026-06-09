@@ -14,10 +14,6 @@ import {
 	Button,
 	CircularProgress,
 	MenuItem,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
 	TextField,
 	ToggleButton,
 	ToggleButtonGroup,
@@ -130,6 +126,7 @@ interface ScatterPlotProps {
 	fileDataId: number
 	parentId?: number
 	loadFile: () => void
+	siblingGateNames?: string[]
 }
 
 // Converte as bordas (n+1) do histograma em centros (n) para o eixo do heatmap.
@@ -149,6 +146,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	fileDataId,
 	parentId,
 	loadFile,
+	siblingGateNames = [],
 }) => {
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
@@ -162,14 +160,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [xMax, setXMax] = useState("")
 	const [yMin, setYMin] = useState("")
 	const [yMax, setYMax] = useState("")
-	const [selectedSquareName, setSelectedSquareName] = useState("")
-	// Coordenadas do gate já convertidas para espaço CRU (linear), prontas p/ salvar.
-	const [pendingGate, setPendingGate] = useState<GateCoordinates | null>(null)
-	const [isDialogOpen, setIsDialogOpen] = useState(false)
-	// Quadrant gate state
-	const [isQuadrantDialogOpen, setIsQuadrantDialogOpen] = useState(false)
-	const [quadrantCenter, setQuadrantCenter] = useState<{ x: number; y: number } | null>(null)
-	const [quadrantBaseName, setQuadrantBaseName] = useState("")
+
+
+	// Auto-generates next gate name: "Gate 1", "Gate 2", ...
+	const getNextGateName = (existingNames: string[]): string => {
+		let n = 1
+		while (existingNames.includes(`Gate ${n}`)) n++
+		return `Gate ${n}`
+	}
 
 	const queryClient = useQueryClient()
 
@@ -256,6 +254,31 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const effYScale: Scale = data?.y_scale ?? yScale
 	const effCof = data?.cofactor ?? COFACTOR
 
+	// Helper to create a gate directly with auto-generated name
+	const createGateDirectly = async (coords: GateCoordinates) => {
+		const gateName = getNextGateName(siblingGateNames)
+		const isInterval = coords.type === "interval"
+		const dashName = isInterval
+			? `${x_axix_selector} (histogram)`
+			: `${x_axix_selector} X ${y_axix_selector}`
+		const newGate: NewGate = {
+			file_data: fileDataId,
+			name: gateName,
+			parent: parentId,
+			gate_coordinates: coords,
+			dashboard: {
+				name: dashName,
+				dashboard_config: {
+					x_axis_label: x_axix_selector,
+					y_axis_label: isInterval ? x_axix_selector : y_axix_selector,
+				},
+				file_data: fileDataId,
+			},
+		}
+		await CytometryApi.post("analytics/gate", newGate)
+		loadFile()
+	}
+
 	// Recebe seleção do Plotly (box=retângulo, lasso=polígono) e converte os
 	// vértices do espaço EXIBIDO (biex) de volta para CRU antes de guardar.
 	const handleSelectedArea = async (event: any) => {
@@ -272,14 +295,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						toRaw(ly[i], effYScale, effCof),
 					] as [number, number],
 			)
-			setPendingGate({
+			await createGateDirectly({
 				type: "polygon",
 				x_axis: x_axix_selector,
 				y_axis: y_axix_selector,
 				vertices,
 			})
 			setTool("rect")
-			setIsDialogOpen(true)
 			return
 		}
 
@@ -289,18 +311,17 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 			// Histogram mode: create 1D interval gate (X-axis only)
 			if (plotMode === "histogram") {
-				setPendingGate({
+				await createGateDirectly({
 					type: "interval",
 					x_axis: x_axix_selector,
 					startX: Math.min(...xs),
 					endX: Math.max(...xs),
 				})
-				setIsDialogOpen(true)
 				return
 			}
 
 			const ys = [toRaw(y[0], effYScale, effCof), toRaw(y[1], effYScale, effCof)]
-			setPendingGate({
+			await createGateDirectly({
 				type: "rectangle",
 				startX: Math.min(...xs),
 				endX: Math.max(...xs),
@@ -308,29 +329,26 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				endY: Math.max(...ys),
 			})
 			setTool("rect")
-			setIsDialogOpen(true)
 		}
 	}
 
-	// Quadrant tool: click on plot to place the cross center
-	const handlePlotClick = (event: any) => {
+	// Quadrant tool: click on plot to place the cross center and auto-create 4 gates
+	const handlePlotClick = async (event: any) => {
 		if (tool !== "quad" || plotMode === "histogram") return
 		if (!event?.points?.[0]) return
 		const pt = event.points[0]
-		const rawX = toRaw(pt.x, effXScale, effCof)
-		const rawY = toRaw(pt.y, effYScale, effCof)
-		setQuadrantCenter({ x: rawX, y: rawY })
-		setIsQuadrantDialogOpen(true)
-	}
+		const cx = toRaw(pt.x, effXScale, effCof)
+		const cy = toRaw(pt.y, effYScale, effCof)
 
-	const handleQuadrantSubmit = async () => {
-		if (!quadrantBaseName || !quadrantCenter) return
-		const { x: cx, y: cy } = quadrantCenter
+		// Auto-generate quadrant base number
+		let n = 1
+		while (siblingGateNames.includes(`Q${n} (X+Y+)`)) n++
+
 		const quadrants: Array<{ quadrant: "Q1" | "Q2" | "Q3" | "Q4"; label: string }> = [
-			{ quadrant: "Q1", label: `${quadrantBaseName} Q1 (X+Y+)` },
-			{ quadrant: "Q2", label: `${quadrantBaseName} Q2 (X-Y+)` },
-			{ quadrant: "Q3", label: `${quadrantBaseName} Q3 (X-Y-)` },
-			{ quadrant: "Q4", label: `${quadrantBaseName} Q4 (X+Y-)` },
+			{ quadrant: "Q1", label: `Q${n} (X+Y+)` },
+			{ quadrant: "Q2", label: `Q${n} (X-Y+)` },
+			{ quadrant: "Q3", label: `Q${n} (X-Y-)` },
+			{ quadrant: "Q4", label: `Q${n} (X+Y-)` },
 		]
 		for (const q of quadrants) {
 			const newGate: NewGate = {
@@ -356,50 +374,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			}
 			await CytometryApi.post("analytics/gate", newGate)
 		}
-		setQuadrantCenter(null)
-		setQuadrantBaseName("")
-		setIsQuadrantDialogOpen(false)
 		loadFile()
 	}
 
-	const handleDialogClose = () => {
-		setIsDialogOpen(false)
-	}
 
-	const handleSquareNameChange = (
-		event: React.ChangeEvent<HTMLInputElement>,
-	) => {
-		setSelectedSquareName(event.target.value)
-	}
-
-	const handleSquareNameSubmit = async () => {
-		if (selectedSquareName && pendingGate) {
-			const isInterval = pendingGate.type === "interval"
-			const dashName = isInterval
-				? `${x_axix_selector} (histogram)`
-				: `${x_axix_selector} X ${y_axix_selector}`
-			const newSelection: NewGate = {
-				file_data: fileDataId,
-				name: selectedSquareName,
-				parent: parentId,
-				gate_coordinates: pendingGate,
-				dashboard: {
-					name: dashName,
-					dashboard_config: {
-						x_axis_label: x_axix_selector,
-						y_axis_label: isInterval ? x_axix_selector : y_axix_selector,
-					},
-					file_data: fileDataId,
-				},
-			}
-
-			await CytometryApi.post("analytics/gate", newSelection)
-			setPendingGate(null)
-			setSelectedSquareName("")
-			handleDialogClose()
-			loadFile()
-		}
-	}
 
 	// Monta os traces do Plotly conforme o modo selecionado.
 	const plotData: any[] =
@@ -635,6 +613,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									config={{ scrollZoom: false, displayModeBar: false }}
 									layout={{
 										dragmode,
+										...(plotMode === "histogram" ? { selectdirection: "h" as const } : {}),
 										xaxis: {
 											title: `${x_axix_selector}${
 												effXScale === "biex" ? " (biex)" : ""
@@ -913,41 +892,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					</>
 				)}
 			</Box>
-
-			<Dialog open={isDialogOpen} onClose={handleDialogClose}>
-				<DialogTitle>Inserir Nome da Seleção</DialogTitle>
-				<DialogContent>
-					<TextField
-						label="Nome da Seleção"
-						value={selectedSquareName}
-						onChange={handleSquareNameChange}
-					/>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleSquareNameSubmit}>Salvar</Button>
-				</DialogActions>
-			</Dialog>
-
-			<Dialog open={isQuadrantDialogOpen} onClose={() => setIsQuadrantDialogOpen(false)}>
-				<DialogTitle>Gate de Quadrante</DialogTitle>
-				<DialogContent>
-					<Typography variant="body2" sx={{ mb: 2 }}>
-						Serão criados 4 gates (Q1–Q4) a partir do ponto selecionado.
-					</Typography>
-					<TextField
-						label="Nome base (ex: CD3/CD4)"
-						value={quadrantBaseName}
-						onChange={(e) => setQuadrantBaseName(e.target.value)}
-						fullWidth
-					/>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setIsQuadrantDialogOpen(false)}>Cancelar</Button>
-					<Button onClick={handleQuadrantSubmit} disabled={!quadrantBaseName}>
-						Criar 4 Gates
-					</Button>
-				</DialogActions>
-			</Dialog>
 		</Box>
 	)
 }

@@ -4,7 +4,7 @@ import Layout from "../../../Layout"
 import { useParams } from "react-router-dom"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { Experiment, ExperimentFiles } from "../../../../types"
+import { Experiment, ExperimentFiles, Gate } from "../../../../types"
 import ScatterPlot from "../../../plotly"
 import ParentTree, { SelectedSource } from "../../../parent_tree"
 import { MdDelete as DeleteIcon } from "react-icons/md"
@@ -42,6 +42,31 @@ export default function ExperimentPage() {
 		}
 	}
 
+	// Computes sibling gate names for the currently selected source
+	const getSiblingGateNames = (): string[] => {
+		if (!source) return []
+		if (source.type === "file") {
+			const file = experimentFiles.find((f) => f.id === source.id)
+			return file?.gates.map((g) => g.name) ?? []
+		}
+		// Gate selected: children of this gate
+		const findGateById = (gates: Gate[], id: number): Gate | undefined => {
+			for (const g of gates) {
+				if (g.id === id) return g
+				if (g.children) {
+					const found = findGateById(g.children, id)
+					if (found) return found
+				}
+			}
+			return undefined
+		}
+		for (const file of experimentFiles) {
+			const gate = findGateById(file.gates, source.id)
+			if (gate) return gate.children?.map((g) => g.name) ?? []
+		}
+		return []
+	}
+
 	const handleDeleteGate = async (gateId: number) => {
 		try {
 			await CytometryApi.delete(`/analytics/gate/${gateId}`)
@@ -58,6 +83,22 @@ export default function ExperimentPage() {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error)
 			toast.error(`Erro ao excluir o gate: ${errorMessage}`, {
+				position: "bottom-right",
+			})
+		}
+	}
+
+	const handleRenameGate = async (gateId: number, newName: string) => {
+		try {
+			await CytometryApi.patch(`/analytics/gate/${gateId}`, { name: newName })
+			toast.success("Gate renomeado com sucesso!", {
+				position: "bottom-right",
+			})
+			getExperimentData(param.id)
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao renomear o gate: ${errorMessage}`, {
 				position: "bottom-right",
 			})
 		}
@@ -114,7 +155,7 @@ export default function ExperimentPage() {
 						</Tooltip>
 					)}
 				</Typography>
-				<ParentTree files={experimentFiles} onSelect={setSource} onDeleteGate={handleDeleteGate} />
+				<ParentTree files={experimentFiles} onSelect={setSource} onDeleteGate={handleDeleteGate} onRenameGate={handleRenameGate} />
 			</Box>
 			<Box
 				sx={{
@@ -143,6 +184,7 @@ export default function ExperimentPage() {
 							fileDataId={source.fileDataId}
 							parentId={source.type === "gate" ? source.id : undefined}
 							loadFile={() => getExperimentData(param.id)}
+							siblingGateNames={getSiblingGateNames()}
 						/>
 					</>
 				)}
