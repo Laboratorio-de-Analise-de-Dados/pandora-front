@@ -23,6 +23,8 @@ export type Scale = "linear" | "biex"
 
 export interface RectGateCoordinates {
 	type?: "rectangle"
+	x_axis?: string
+	y_axis?: string
 	startX: number
 	startY: number
 	endX: number

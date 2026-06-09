@@ -42,12 +42,12 @@ export default function ExperimentPage() {
 		}
 	}
 
-	// Computes sibling gate names for the currently selected source
-	const getSiblingGateNames = (): string[] => {
+	// Computes child gates for the currently selected source
+	const getChildGates = (): Gate[] => {
 		if (!source) return []
 		if (source.type === "file") {
 			const file = experimentFiles.find((f) => f.id === source.id)
-			return file?.gates.map((g) => g.name) ?? []
+			return file?.gates ?? []
 		}
 		// Gate selected: children of this gate
 		const findGateById = (gates: Gate[], id: number): Gate | undefined => {
@@ -62,10 +62,13 @@ export default function ExperimentPage() {
 		}
 		for (const file of experimentFiles) {
 			const gate = findGateById(file.gates, source.id)
-			if (gate) return gate.children?.map((g) => g.name) ?? []
+			if (gate) return gate.children ?? []
 		}
 		return []
 	}
+
+	const childGates = getChildGates()
+	const siblingGateNames = childGates.map((g) => g.name)
 
 	const handleDeleteGate = async (gateId: number) => {
 		try {
@@ -184,7 +187,8 @@ export default function ExperimentPage() {
 							fileDataId={source.fileDataId}
 							parentId={source.type === "gate" ? source.id : undefined}
 							loadFile={() => getExperimentData(param.id)}
-							siblingGateNames={getSiblingGateNames()}
+							siblingGateNames={siblingGateNames}
+							childGates={childGates}
 						/>
 					</>
 				)}

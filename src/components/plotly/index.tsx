@@ -7,6 +7,9 @@ import { MdPentagon as PolygonIcon } from "react-icons/md"
 import { MdAddBox as QuadrantIcon } from "react-icons/md"
 
 import {
+	Accordion,
+	AccordionDetails,
+	AccordionSummary,
 	Box,
 	Divider,
 	Select,
@@ -20,12 +23,13 @@ import {
 	Typography,
 	SelectChangeEvent,
 } from "@mui/material"
+import { MdExpandMore as ExpandMoreIcon } from "react-icons/md"
 import React, { useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import CytometryApi from "../../API"
-import { DensityResponse, GateCoordinates, NewGate, Scale } from "../../types"
+import { DensityResponse, Gate, GateCoordinates, NewGate, Scale } from "../../types"
 
 type PlotMode = "heatmap" | "scatter" | "histogram"
 type GateTool = "rect" | "poly" | "quad"
@@ -128,6 +132,7 @@ interface ScatterPlotProps {
 	parentId?: number
 	loadFile: () => void
 	siblingGateNames?: string[]
+	childGates?: Gate[]
 }
 
 // Converte as bordas (n+1) do histograma em centros (n) para o eixo do heatmap.
@@ -148,6 +153,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	parentId,
 	loadFile,
 	siblingGateNames = [],
+	childGates = [],
 }) => {
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
@@ -331,6 +337,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const ys = [toRaw(y[0], effYScale, effCof), toRaw(y[1], effYScale, effCof)]
 			await createGateDirectly({
 				type: "rectangle",
+				x_axis: x_axix_selector,
+				y_axis: y_axix_selector,
 				startX: Math.min(...xs),
 				endX: Math.max(...xs),
 				startY: Math.min(...ys),
@@ -393,6 +401,85 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 
+
+	// Converte child gates em Plotly shapes para exibir no plot.
+	const gateShapes: any[] = childGates
+		.filter((gate) => {
+			const gc = gate.gate_coordinates
+			if (!gc) return false
+			const gateType = gc.type ?? "rectangle"
+			if (gateType === "interval" && "x_axis" in gc) {
+				return gc.x_axis === x_axix_selector && plotMode === "histogram"
+			}
+			if (gateType === "quadrant" && "x_axis" in gc && "y_axis" in gc) {
+				return gc.x_axis === x_axix_selector && gc.y_axis === y_axix_selector && plotMode !== "histogram"
+			}
+			// rectangle or polygon
+			const xAxis = "x_axis" in gc ? (gc as any).x_axis : undefined
+			const yAxis = "y_axis" in gc ? (gc as any).y_axis : undefined
+			if (xAxis && yAxis) {
+				return xAxis === x_axix_selector && yAxis === y_axix_selector && plotMode !== "histogram"
+			}
+			return false
+		})
+		.flatMap((gate): any[] => {
+			const gc = gate.gate_coordinates
+			const gateType = gc.type ?? "rectangle"
+			const cof = COFACTOR
+
+			if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
+				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
+				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
+				const y0 = effYScale === "biex" ? biex(gc.startY, cof) : gc.startY
+				const y1 = effYScale === "biex" ? biex(gc.endY, cof) : gc.endY
+				return [{
+					type: "rect",
+					x0, x1, y0, y1,
+					line: { color: "rgba(0,120,255,0.7)", width: 2 },
+					fillcolor: "rgba(0,120,255,0.05)",
+					label: { text: gate.name, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+				}]
+			}
+
+			if (gateType === "interval" && "startX" in gc && "endX" in gc) {
+				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
+				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
+				return [
+					{ type: "line", x0, x1: x0, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.7)", width: 2 } },
+					{ type: "line", x0: x1, x1, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.7)", width: 2 } },
+					{ type: "rect", x0, x1, y0: 0, y1: 1, yref: "paper", line: { width: 0 }, fillcolor: "rgba(0,120,255,0.08)",
+					  label: { text: gate.name, font: { size: 11, color: "rgba(0,120,255,0.9)" } } },
+				]
+			}
+
+			if (gateType === "polygon" && "vertices" in gc) {
+				const path = gc.vertices
+					.map((v: [number, number], i: number) => {
+						const px = effXScale === "biex" ? biex(v[0], cof) : v[0]
+						const py = effYScale === "biex" ? biex(v[1], cof) : v[1]
+						return `${i === 0 ? "M" : "L"} ${px} ${py}`
+					})
+					.join(" ") + " Z"
+				return [{
+					type: "path",
+					path,
+					line: { color: "rgba(0,120,255,0.7)", width: 2 },
+					fillcolor: "rgba(0,120,255,0.05)",
+					label: { text: gate.name, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+				}]
+			}
+
+			if (gateType === "quadrant" && "center_x" in gc && "center_y" in gc) {
+				const cx = effXScale === "biex" ? biex(gc.center_x, cof) : gc.center_x
+				const cy = effYScale === "biex" ? biex(gc.center_y, cof) : gc.center_y
+				return [
+					{ type: "line", x0: cx, x1: cx, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
+					{ type: "line", x0: 0, x1: 1, xref: "paper", y0: cy, y1: cy, line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
+				]
+			}
+
+			return []
+		})
 
 	// Monta os traces do Plotly conforme o modo selecionado.
 	const plotData: any[] =
@@ -475,8 +562,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
 
 	return (
-		<Box sx={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
-			{/* Centro: toolbar + gráfico */}
+		<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+			{/* Toolbar + gráfico */}
 			<Box
 				sx={{
 					display: "flex",
@@ -628,6 +715,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									config={{ scrollZoom: false, displayModeBar: false }}
 									layout={{
 										dragmode,
+										shapes: gateShapes,
 										...(plotMode === "histogram" ? { selectdirection: "h" as const } : {}),
 										xaxis: {
 											title: `${x_axix_selector}${
@@ -705,208 +793,200 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				</Box>
 			</Box>
 
-			{/* Direita: painel de configurações */}
-			<Box
-				sx={{
-					width: 220,
-					flexShrink: 0,
-					borderLeft: "1px solid",
-					borderColor: "divider",
-					pl: "1rem",
-					display: "flex",
-					flexDirection: "column",
-					gap: "1rem",
-					overflowY: "auto",
-					maxHeight: 600,
-				}}
-			>
-				<Typography variant="subtitle2" fontWeight="bold">
-					Configurações
-				</Typography>
-
-				<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-					<Typography variant="caption" color="text.secondary">
-						Escala
+			{/* Configurações em accordion colapsável abaixo do plot */}
+			<Accordion sx={{ width: "100%", maxWidth: 540 }} defaultExpanded={false}>
+				<AccordionSummary expandIcon={<ExpandMoreIcon />}>
+					<Typography variant="subtitle2" fontWeight="bold">
+						Configurações
 					</Typography>
-					<ToggleButtonGroup
-						value={xScale}
-						exclusive
-						onChange={(_, v: Scale | null) => v && setXScale(v)}
-						size="small"
-						fullWidth
-					>
-						<ToggleButton value="linear" title="Eixo X linear">
-							X lin
-						</ToggleButton>
-						<ToggleButton value="biex" title="Eixo X biex">
-							X biex
-						</ToggleButton>
-					</ToggleButtonGroup>
-					{plotMode !== "histogram" && (
-						<ToggleButtonGroup
-							value={yScale}
-							exclusive
-							onChange={(_, v: Scale | null) => v && setYScale(v)}
-							size="small"
-							fullWidth
-						>
-							<ToggleButton value="linear" title="Eixo Y linear">
-								Y lin
-							</ToggleButton>
-							<ToggleButton value="biex" title="Eixo Y biex">
-								Y biex
-							</ToggleButton>
-						</ToggleButtonGroup>
-					)}
-				</Box>
-
-				<Divider />
-
-				<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-					<Typography variant="caption" color="text.secondary">
-						Eixo X
-					</Typography>
-					<Slider
-						value={[
-							xMin !== ""
-								? rawToSlider(Number(xMin), xScale)
-								: xScale === "biex"
-									? BIEX_SLIDER_MIN
-									: 0,
-							xMax !== ""
-								? rawToSlider(Number(xMax), xScale)
-								: xScale === "biex"
-									? BIEX_SLIDER_MAX
-									: LINEAR_SLIDER_MAX,
-						]}
-						onChange={(_, val) => {
-							const [lo, hi] = val as number[]
-							setXMin(String(sliderToRaw(lo, xScale)))
-							setXMax(String(sliderToRaw(hi, xScale)))
-						}}
-						min={xScale === "biex" ? BIEX_SLIDER_MIN : 0}
-						max={xScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-						step={xScale === "biex" ? 0.01 : 500}
-						marks={xScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
-						valueLabelDisplay="auto"
-						valueLabelFormat={(v) => {
-							const raw = sliderToRaw(v, xScale)
-							return raw === 0 ? "0" : raw.toLocaleString()
-						}}
-						size="small"
-						sx={{
-							"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
-							mb: 1,
-						}}
-					/>
-					<Box sx={{ display: "flex", gap: "0.5rem" }}>
-						<TextField
-							label="Min"
-							type="number"
-							size="small"
-							value={xMin}
-							onChange={(e) => setXMin(e.target.value)}
-							sx={{ flex: 1 }}
-						/>
-						<TextField
-							label="Max"
-							type="number"
-							size="small"
-							value={xMax}
-							onChange={(e) => setXMax(e.target.value)}
-							sx={{ flex: 1 }}
-						/>
-					</Box>
-				</Box>
-
-				{plotMode !== "histogram" && (
-					<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-						<Typography variant="caption" color="text.secondary">
-							Eixo Y
-						</Typography>
-						<Slider
-							value={[
-								yMin !== ""
-									? rawToSlider(Number(yMin), yScale)
-									: yScale === "biex"
-										? BIEX_SLIDER_MIN
-										: 0,
-								yMax !== ""
-									? rawToSlider(Number(yMax), yScale)
-									: yScale === "biex"
-										? BIEX_SLIDER_MAX
-										: LINEAR_SLIDER_MAX,
-							]}
-							onChange={(_, val) => {
-								const [lo, hi] = val as number[]
-								setYMin(String(sliderToRaw(lo, yScale)))
-								setYMax(String(sliderToRaw(hi, yScale)))
-							}}
-							min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
-							max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-							step={yScale === "biex" ? 0.01 : 500}
-							marks={yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
-							valueLabelDisplay="auto"
-							valueLabelFormat={(v) => {
-								const raw = sliderToRaw(v, yScale)
-								return raw === 0 ? "0" : raw.toLocaleString()
-							}}
-							size="small"
-							sx={{
-								"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
-								mb: 1,
-							}}
-						/>
-						<Box sx={{ display: "flex", gap: "0.5rem" }}>
-							<TextField
-								label="Min"
-								type="number"
-								size="small"
-								value={yMin}
-								onChange={(e) => setYMin(e.target.value)}
-								sx={{ flex: 1 }}
-							/>
-							<TextField
-								label="Max"
-								type="number"
-								size="small"
-								value={yMax}
-								onChange={(e) => setYMax(e.target.value)}
-								sx={{ flex: 1 }}
-							/>
-						</Box>
-					</Box>
-				)}
-
-				{plotMode === "heatmap" && (
-					<>
-						<Divider />
-						<Box
-							sx={{
-								display: "flex",
-								flexDirection: "column",
-								gap: "0.5rem",
-							}}
-						>
+				</AccordionSummary>
+				<AccordionDetails>
+					<Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+						<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
 							<Typography variant="caption" color="text.secondary">
-								Densidade
+								Escala
 							</Typography>
-							<TextField
-								label="Cutoff"
-								type="number"
+							<ToggleButtonGroup
+								value={xScale}
+								exclusive
+								onChange={(_, v: Scale | null) => v && setXScale(v)}
 								size="small"
-								value={cutoff}
-								onChange={(e) =>
-									setCutoff(Math.max(0, Number(e.target.value) || 0))
-								}
-								inputProps={{ min: 0, step: 1 }}
 								fullWidth
-								title="Bins com contagem <= cutoff ficam transparentes"
-							/>
+							>
+								<ToggleButton value="linear" title="Eixo X linear">
+									X lin
+								</ToggleButton>
+								<ToggleButton value="biex" title="Eixo X biex">
+									X biex
+								</ToggleButton>
+							</ToggleButtonGroup>
+							{plotMode !== "histogram" && (
+								<ToggleButtonGroup
+									value={yScale}
+									exclusive
+									onChange={(_, v: Scale | null) => v && setYScale(v)}
+									size="small"
+									fullWidth
+								>
+									<ToggleButton value="linear" title="Eixo Y linear">
+										Y lin
+									</ToggleButton>
+									<ToggleButton value="biex" title="Eixo Y biex">
+										Y biex
+									</ToggleButton>
+								</ToggleButtonGroup>
+							)}
 						</Box>
-					</>
-				)}
-			</Box>
+
+						<Divider />
+
+						<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+							<Typography variant="caption" color="text.secondary">
+								Eixo X
+							</Typography>
+							<Slider
+								value={[
+									xMin !== ""
+										? rawToSlider(Number(xMin), xScale)
+										: xScale === "biex"
+											? BIEX_SLIDER_MIN
+											: 0,
+									xMax !== ""
+										? rawToSlider(Number(xMax), xScale)
+										: xScale === "biex"
+											? BIEX_SLIDER_MAX
+											: LINEAR_SLIDER_MAX,
+								]}
+								onChange={(_, val) => {
+									const [lo, hi] = val as number[]
+									setXMin(String(sliderToRaw(lo, xScale)))
+									setXMax(String(sliderToRaw(hi, xScale)))
+								}}
+								min={xScale === "biex" ? BIEX_SLIDER_MIN : 0}
+								max={xScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
+								step={xScale === "biex" ? 0.01 : 500}
+								marks={xScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+								valueLabelDisplay="auto"
+								valueLabelFormat={(v) => {
+									const raw = sliderToRaw(v, xScale)
+									return raw === 0 ? "0" : raw.toLocaleString()
+								}}
+								size="small"
+								sx={{
+									"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
+									mb: 1,
+								}}
+							/>
+							<Box sx={{ display: "flex", gap: "0.5rem" }}>
+								<TextField
+									label="Min"
+									type="number"
+									size="small"
+									value={xMin}
+									onChange={(e) => setXMin(e.target.value)}
+									sx={{ flex: 1 }}
+								/>
+								<TextField
+									label="Max"
+									type="number"
+									size="small"
+									value={xMax}
+									onChange={(e) => setXMax(e.target.value)}
+									sx={{ flex: 1 }}
+								/>
+							</Box>
+						</Box>
+
+						{plotMode !== "histogram" && (
+							<Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+								<Typography variant="caption" color="text.secondary">
+									Eixo Y
+								</Typography>
+								<Slider
+									value={[
+										yMin !== ""
+											? rawToSlider(Number(yMin), yScale)
+											: yScale === "biex"
+												? BIEX_SLIDER_MIN
+												: 0,
+										yMax !== ""
+											? rawToSlider(Number(yMax), yScale)
+											: yScale === "biex"
+												? BIEX_SLIDER_MAX
+												: LINEAR_SLIDER_MAX,
+									]}
+									onChange={(_, val) => {
+										const [lo, hi] = val as number[]
+										setYMin(String(sliderToRaw(lo, yScale)))
+										setYMax(String(sliderToRaw(hi, yScale)))
+									}}
+									min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
+									max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
+									step={yScale === "biex" ? 0.01 : 500}
+									marks={yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+									valueLabelDisplay="auto"
+									valueLabelFormat={(v) => {
+										const raw = sliderToRaw(v, yScale)
+										return raw === 0 ? "0" : raw.toLocaleString()
+									}}
+									size="small"
+									sx={{
+										"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
+										mb: 1,
+									}}
+								/>
+								<Box sx={{ display: "flex", gap: "0.5rem" }}>
+									<TextField
+										label="Min"
+										type="number"
+										size="small"
+										value={yMin}
+										onChange={(e) => setYMin(e.target.value)}
+										sx={{ flex: 1 }}
+									/>
+									<TextField
+										label="Max"
+										type="number"
+										size="small"
+										value={yMax}
+										onChange={(e) => setYMax(e.target.value)}
+										sx={{ flex: 1 }}
+									/>
+								</Box>
+							</Box>
+						)}
+
+						{plotMode === "heatmap" && (
+							<>
+								<Divider />
+								<Box
+									sx={{
+										display: "flex",
+										flexDirection: "column",
+										gap: "0.5rem",
+									}}
+								>
+									<Typography variant="caption" color="text.secondary">
+										Densidade
+									</Typography>
+									<TextField
+										label="Cutoff"
+										type="number"
+										size="small"
+										value={cutoff}
+										onChange={(e) =>
+											setCutoff(Math.max(0, Number(e.target.value) || 0))
+										}
+										inputProps={{ min: 0, step: 1 }}
+										fullWidth
+										title="Bins com contagem <= cutoff ficam transparentes"
+									/>
+								</Box>
+							</>
+						)}
+					</Box>
+				</AccordionDetails>
+			</Accordion>
 		</Box>
 	)
 }
