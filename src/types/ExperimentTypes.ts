@@ -36,7 +36,27 @@ export interface PolygonGateCoordinates {
 	vertices: [number, number][]
 }
 
-export type GateCoordinates = RectGateCoordinates | PolygonGateCoordinates
+export interface IntervalGateCoordinates {
+	type: "interval"
+	x_axis: string
+	startX: number
+	endX: number
+}
+
+export interface QuadrantGateCoordinates {
+	type: "quadrant"
+	quadrant: "Q1" | "Q2" | "Q3" | "Q4"
+	x_axis: string
+	y_axis: string
+	center_x: number
+	center_y: number
+}
+
+export type GateCoordinates =
+	| RectGateCoordinates
+	| PolygonGateCoordinates
+	| IntervalGateCoordinates
+	| QuadrantGateCoordinates
 
 export interface Gate {
 	id: number

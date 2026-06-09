@@ -4,6 +4,7 @@ import { MdScatterPlot as DotPlotIcon } from "react-icons/md"
 import { MdBarChart as HistogramIcon } from "react-icons/md"
 import { MdRefresh as RefreshIcon } from "react-icons/md"
 import { MdPentagon as PolygonIcon } from "react-icons/md"
+import { MdAddBox as QuadrantIcon } from "react-icons/md"
 
 import {
 	Box,
@@ -30,7 +31,7 @@ import CytometryApi from "../../API"
 import { DensityResponse, GateCoordinates, NewGate, Scale } from "../../types"
 
 type PlotMode = "heatmap" | "scatter" | "histogram"
-type GateTool = "rect" | "poly"
+type GateTool = "rect" | "poly" | "quad"
 
 const COFACTOR = 150
 
@@ -165,6 +166,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// Coordenadas do gate já convertidas para espaço CRU (linear), prontas p/ salvar.
 	const [pendingGate, setPendingGate] = useState<GateCoordinates | null>(null)
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
+	// Quadrant gate state
+	const [isQuadrantDialogOpen, setIsQuadrantDialogOpen] = useState(false)
+	const [quadrantCenter, setQuadrantCenter] = useState<{ x: number; y: number } | null>(null)
+	const [quadrantBaseName, setQuadrantBaseName] = useState("")
 
 	const queryClient = useQueryClient()
 
@@ -281,6 +286,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		if (tool === "rect" && event.range) {
 			const { x, y } = event.range
 			const xs = [toRaw(x[0], effXScale, effCof), toRaw(x[1], effXScale, effCof)]
+
+			// Histogram mode: create 1D interval gate (X-axis only)
+			if (plotMode === "histogram") {
+				setPendingGate({
+					type: "interval",
+					x_axis: x_axix_selector,
+					startX: Math.min(...xs),
+					endX: Math.max(...xs),
+				})
+				setIsDialogOpen(true)
+				return
+			}
+
 			const ys = [toRaw(y[0], effYScale, effCof), toRaw(y[1], effYScale, effCof)]
 			setPendingGate({
 				type: "rectangle",
@@ -292,6 +310,56 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			setTool("rect")
 			setIsDialogOpen(true)
 		}
+	}
+
+	// Quadrant tool: click on plot to place the cross center
+	const handlePlotClick = (event: any) => {
+		if (tool !== "quad" || plotMode === "histogram") return
+		if (!event?.points?.[0]) return
+		const pt = event.points[0]
+		const rawX = toRaw(pt.x, effXScale, effCof)
+		const rawY = toRaw(pt.y, effYScale, effCof)
+		setQuadrantCenter({ x: rawX, y: rawY })
+		setIsQuadrantDialogOpen(true)
+	}
+
+	const handleQuadrantSubmit = async () => {
+		if (!quadrantBaseName || !quadrantCenter) return
+		const { x: cx, y: cy } = quadrantCenter
+		const quadrants: Array<{ quadrant: "Q1" | "Q2" | "Q3" | "Q4"; label: string }> = [
+			{ quadrant: "Q1", label: `${quadrantBaseName} Q1 (X+Y+)` },
+			{ quadrant: "Q2", label: `${quadrantBaseName} Q2 (X-Y+)` },
+			{ quadrant: "Q3", label: `${quadrantBaseName} Q3 (X-Y-)` },
+			{ quadrant: "Q4", label: `${quadrantBaseName} Q4 (X+Y-)` },
+		]
+		for (const q of quadrants) {
+			const newGate: NewGate = {
+				file_data: fileDataId,
+				name: q.label,
+				parent: parentId,
+				gate_coordinates: {
+					type: "quadrant",
+					quadrant: q.quadrant,
+					x_axis: x_axix_selector,
+					y_axis: y_axix_selector,
+					center_x: cx,
+					center_y: cy,
+				},
+				dashboard: {
+					name: `${x_axix_selector} X ${y_axix_selector}`,
+					dashboard_config: {
+						x_axis_label: x_axix_selector,
+						y_axis_label: y_axix_selector,
+					},
+					file_data: fileDataId,
+				},
+			}
+			await CytometryApi.post("analytics/gate", newGate)
+		}
+		setQuadrantCenter(null)
+		setQuadrantBaseName("")
+		setIsQuadrantDialogOpen(false)
+		loadFile()
 	}
 
 	const handleDialogClose = () => {
@@ -306,16 +374,20 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const handleSquareNameSubmit = async () => {
 		if (selectedSquareName && pendingGate) {
+			const isInterval = pendingGate.type === "interval"
+			const dashName = isInterval
+				? `${x_axix_selector} (histogram)`
+				: `${x_axix_selector} X ${y_axix_selector}`
 			const newSelection: NewGate = {
 				file_data: fileDataId,
 				name: selectedSquareName,
 				parent: parentId,
 				gate_coordinates: pendingGate,
 				dashboard: {
-					name: `${x_axix_selector} X ${y_axix_selector}`,
+					name: dashName,
 					dashboard_config: {
 						x_axis_label: x_axix_selector,
-						y_axis_label: y_axix_selector,
+						y_axis_label: isInterval ? x_axix_selector : y_axix_selector,
 					},
 					file_data: fileDataId,
 				},
@@ -407,7 +479,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const yTicks = buildTicks(yTickSource, effYScale, effCof)
 
 	const dragmode: "select" | "lasso" | false =
-		plotMode === "histogram" ? false : tool === "poly" ? "lasso" : "select"
+		tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
 
 	return (
 		<Box sx={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
@@ -429,15 +501,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					}}
 				>
 					<Typography variant="subtitle1">Ferramentas:</Typography>
-					{plotMode !== "histogram" && (
-						<ToggleButtonGroup
-							value={tool}
-							exclusive
-							onChange={(_, v: GateTool | null) => v && setTool(v)}
+					<ToggleButtonGroup
+						value={tool}
+						exclusive
+						onChange={(_, v: GateTool | null) => v && setTool(v)}
+					>
+						<ToggleButton
+							value="rect"
+							size="small"
+							title={plotMode === "histogram" ? "Gate de intervalo (1D)" : "Gate retangular"}
 						>
-							<ToggleButton value="rect" size="small" title="Gate retangular">
-								<CropFreeSharpIcon />
-							</ToggleButton>
+							<CropFreeSharpIcon />
+						</ToggleButton>
+						{plotMode !== "histogram" && (
 							<ToggleButton
 								value="poly"
 								size="small"
@@ -445,8 +521,17 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							>
 								<PolygonIcon />
 							</ToggleButton>
-						</ToggleButtonGroup>
-					)}
+						)}
+						{plotMode !== "histogram" && (
+							<ToggleButton
+								value="quad"
+								size="small"
+								title="Gate de quadrante (cruz)"
+							>
+								<QuadrantIcon />
+							</ToggleButton>
+						)}
+					</ToggleButtonGroup>
 					<ToggleButtonGroup
 						value={plotMode}
 						exclusive
@@ -592,6 +677,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										bargap: 0,
 									}}
 									onSelected={handleSelectedArea}
+									onClick={handlePlotClick}
 								/>
 							) : isLoading ? null : (
 								<Typography>
@@ -839,6 +925,27 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={handleSquareNameSubmit}>Salvar</Button>
+				</DialogActions>
+			</Dialog>
+
+			<Dialog open={isQuadrantDialogOpen} onClose={() => setIsQuadrantDialogOpen(false)}>
+				<DialogTitle>Gate de Quadrante</DialogTitle>
+				<DialogContent>
+					<Typography variant="body2" sx={{ mb: 2 }}>
+						Serão criados 4 gates (Q1–Q4) a partir do ponto selecionado.
+					</Typography>
+					<TextField
+						label="Nome base (ex: CD3/CD4)"
+						value={quadrantBaseName}
+						onChange={(e) => setQuadrantBaseName(e.target.value)}
+						fullWidth
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setIsQuadrantDialogOpen(false)}>Cancelar</Button>
+					<Button onClick={handleQuadrantSubmit} disabled={!quadrantBaseName}>
+						Criar 4 Gates
+					</Button>
 				</DialogActions>
 			</Dialog>
 		</Box>
