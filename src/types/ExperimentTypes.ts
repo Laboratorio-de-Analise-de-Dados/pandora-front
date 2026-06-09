@@ -77,7 +77,7 @@ export interface NewGate {
 }
 
 export interface DensityResponse {
-	mode: "heatmap" | "scatter"
+	mode: "heatmap" | "scatter" | "histogram"
 	total_events: number
 	x_label: string
 	y_label: string
@@ -91,6 +91,9 @@ export interface DensityResponse {
 	x?: number[]
 	y?: number[]
 	sampled_events?: number
+	// histogram mode (1D)
+	counts?: number[]
+	edges?: number[]
 	// escala aplicada para exibicao (valores ja transformados quando "biex")
 	x_scale?: Scale
 	y_scale?: Scale
