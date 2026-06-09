@@ -22,6 +22,10 @@ import {
 	ToggleButtonGroup,
 	Typography,
 	SelectChangeEvent,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
 } from "@mui/material"
 import { MdExpandMore as ExpandMoreIcon } from "react-icons/md"
 import React, { useState } from "react"
@@ -133,6 +137,7 @@ interface ScatterPlotProps {
 	loadFile: () => void
 	siblingGateNames?: string[]
 	childGates?: Gate[]
+	onEditGate?: (gate: Gate) => void
 }
 
 // Converte as bordas (n+1) do histograma em centros (n) para o eixo do heatmap.
@@ -154,6 +159,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	loadFile,
 	siblingGateNames = [],
 	childGates = [],
+	onEditGate,
 }) => {
 	const [y_axix_selector, set_y_axis_selector] = useState("SSC-A")
 	const [x_axix_selector, set_x_axis_selector] = useState("FSC-A")
@@ -167,7 +173,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [xMax, setXMax] = useState("")
 	const [yMin, setYMin] = useState("")
 	const [yMax, setYMax] = useState("")
-
+	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
+	const [editDialogOpen, setEditDialogOpen] = useState(false)
+	const [editGateName, setEditGateName] = useState("")
 
 	// Auto-generates next gate name: "Gate 1", "Gate 2", ...
 	const getNextGateName = (existingNames: string[]): string => {
@@ -400,7 +408,33 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		}
 	}
 
+	// Handler para quando um gate é clicado no gráfico
+	const handleGateClick = (gate: Gate) => {
+		setSelectedGate(gate)
+		setEditGateName(gate.name)
+		setEditDialogOpen(true)
+	}
 
+	// Atualizar nome do gate
+	const handleSaveGateName = async () => {
+		if (!selectedGate || !editGateName.trim()) {
+			toast.error("Nome do gate não pode estar vazio", { position: "bottom-right" })
+			return
+		}
+
+		try {
+			await CytometryApi.patch(`/analytics/gate/${selectedGate.id}`, { name: editGateName })
+			toast.success("Gate atualizado com sucesso!", { position: "bottom-right" })
+			setEditDialogOpen(false)
+			setSelectedGate(null)
+			loadFile()
+		} catch (error: any) {
+			const msg = error?.response?.data
+				? JSON.stringify(error.response.data)
+				: error?.message ?? "Erro desconhecido"
+			toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+		}
+	}
 
 	// Converte child gates em Plotly shapes para exibir no plot.
 	const gateShapes: any[] = childGates
@@ -427,6 +461,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const gateType = gc.type ?? "rectangle"
 			const cof = COFACTOR
 
+			// Extrair percentual do gate
+			const percent = gate.analysis_result?.analysis_result?.summary_metrics?.percent_of_parent_population
+			const gateLabel = percent !== undefined && percent !== null
+				? `${gate.name}\n(${percent.toFixed(1)}%)`
+				: gate.name
+
 			if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
 				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
 				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
@@ -437,7 +477,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					x0, x1, y0, y1,
 					line: { color: "rgba(0,120,255,0.7)", width: 2 },
 					fillcolor: "rgba(0,120,255,0.05)",
-					label: { text: gate.name, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					_gateId: gate.id,
+					_gateData: gate,
 				}]
 			}
 
@@ -448,7 +490,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					{ type: "line", x0, x1: x0, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.7)", width: 2 } },
 					{ type: "line", x0: x1, x1, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.7)", width: 2 } },
 					{ type: "rect", x0, x1, y0: 0, y1: 1, yref: "paper", line: { width: 0 }, fillcolor: "rgba(0,120,255,0.08)",
-					  label: { text: gate.name, font: { size: 11, color: "rgba(0,120,255,0.9)" } } },
+					  label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					  _gateId: gate.id,
+					  _gateData: gate,
+					},
 				]
 			}
 
@@ -465,7 +510,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					path,
 					line: { color: "rgba(0,120,255,0.7)", width: 2 },
 					fillcolor: "rgba(0,120,255,0.05)",
-					label: { text: gate.name, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					_gateId: gate.id,
+					_gateData: gate,
 				}]
 			}
 
@@ -560,6 +607,35 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const dragmode: "select" | "lasso" | false =
 		tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
+
+	// Handler para cliques no gráfico que podem ser em shapes
+	const handlePlotHover = (event: any) => {
+		// Se houver uma shape com _gateData, torná-la clicável
+		if (event?.shapes) {
+			// O Plotly passa informações de shapes ao hover, mas vamos usar o onClick
+		}
+	}
+
+	// Wrapper para plotly click que detecta cliques em shapes
+	const handlePlotClickWrapper = async (event: any) => {
+		// Se estamos em modo quadrante, usar o handler original
+		if (tool === "quad" && plotMode !== "histogram") {
+			await handlePlotClick(event)
+			return
+		}
+
+		// Verificar se clicou em uma shape (gate)
+		if (event?.shapes && event.shapes.length > 0) {
+			const clickedShape = event.shapes[0]
+			if (clickedShape._gateData) {
+				handleGateClick(clickedShape._gateData)
+				return
+			}
+		}
+
+		// Comportamento padrão se não clicou em um gate
+		await handlePlotClick(event)
+	}
 
 	return (
 		<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
@@ -759,7 +835,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										bargap: 0,
 									}}
 									onSelected={handleSelectedArea}
-									onClick={handlePlotClick}
+									onClick={handlePlotClickWrapper}
+									onHover={handlePlotHover}
 								/>
 							) : isLoading ? null : (
 								<Typography>
@@ -987,6 +1064,45 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					</Box>
 				</AccordionDetails>
 			</Accordion>
+
+			{/* Dialog para editar nome do gate */}
+			<Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle>Editar Gate</DialogTitle>
+				<DialogContent sx={{ pt: 2 }}>
+					<TextField
+						fullWidth
+						label="Nome do Gate"
+						value={editGateName}
+						onChange={(e) => setEditGateName(e.target.value)}
+						placeholder="Digite o novo nome"
+						autoFocus
+					/>
+					{selectedGate?.analysis_result?.analysis_result?.summary_metrics && (
+						<Box sx={{ mt: 2, p: 1.5, bgcolor: "background.paper", borderRadius: 1 }}>
+							<Typography variant="caption" color="text.secondary">
+								Estatísticas:
+							</Typography>
+							<Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+								<Typography variant="body2">
+									<strong>Eventos:</strong> {selectedGate.analysis_result.analysis_result.summary_metrics.count.toLocaleString()}
+								</Typography>
+								<Typography variant="body2">
+									<strong>% do total:</strong> {selectedGate.analysis_result.analysis_result.summary_metrics.percent_of_total_population.toFixed(1)}%
+								</Typography>
+								<Typography variant="body2">
+									<strong>% do pai:</strong> {selectedGate.analysis_result.analysis_result.summary_metrics.percent_of_parent_population.toFixed(1)}%
+								</Typography>
+							</Box>
+						</Box>
+					)}
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
+					<Button onClick={handleSaveGateName} variant="contained" color="primary">
+						Salvar
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	)
 }
