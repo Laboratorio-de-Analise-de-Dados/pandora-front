@@ -436,42 +436,63 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		}
 	}
 
+	// Detecta se os eixos do gate conferem com os seletores (direto ou invertido).
+	type AxisMatch = "exact" | "swapped" | "none"
+	const matchAxes = (gateX: string | undefined, gateY: string | undefined): AxisMatch => {
+		if (!gateX || !gateY) return "none"
+		if (gateX === x_axix_selector && gateY === y_axix_selector) return "exact"
+		if (gateX === y_axix_selector && gateY === x_axix_selector) return "swapped"
+		return "none"
+	}
+
 	// Converte child gates em Plotly shapes para exibir no plot.
 	const gateShapes: any[] = childGates
-		.filter((gate) => {
+		.map((gate) => {
 			const gc = gate.gate_coordinates
-			if (!gc) return false
+			if (!gc) return null
 			const gateType = gc.type ?? "rectangle"
+
 			if (gateType === "interval" && "x_axis" in gc) {
-				return gc.x_axis === x_axix_selector && plotMode === "histogram"
+				if (gc.x_axis === x_axix_selector && plotMode === "histogram") return { gate, swapped: false }
+				return null
 			}
 			if (gateType === "quadrant" && "x_axis" in gc && "y_axis" in gc) {
-				return gc.x_axis === x_axix_selector && gc.y_axis === y_axix_selector && plotMode !== "histogram"
+				const m = matchAxes(gc.x_axis, gc.y_axis)
+				if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped" }
+				return null
 			}
 			// rectangle or polygon
 			const xAxis = "x_axis" in gc ? (gc as any).x_axis : undefined
 			const yAxis = "y_axis" in gc ? (gc as any).y_axis : undefined
-			if (xAxis && yAxis) {
-				return xAxis === x_axix_selector && yAxis === y_axix_selector && plotMode !== "histogram"
-			}
-			return false
+			const m = matchAxes(xAxis, yAxis)
+			if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped" }
+			return null
 		})
-		.flatMap((gate): any[] => {
+		.filter((item): item is { gate: Gate; swapped: boolean } => item !== null)
+		.flatMap(({ gate, swapped }): any[] => {
 			const gc = gate.gate_coordinates
 			const gateType = gc.type ?? "rectangle"
 			const cof = COFACTOR
 
+			// Quando os eixos estão invertidos, troca a escala usada para cada dimensão.
+			const xScale = swapped ? effYScale : effXScale
+			const yScale = swapped ? effXScale : effYScale
+
 			// Extrair percentual do gate
 			const percent = gate.analysis_result?.analysis_result?.summary_metrics?.percent_of_parent_population
 			const gateLabel = percent !== undefined && percent !== null
-				? `${gate.name}\n(${percent.toFixed(1)}%)`
+				? `${gate.name}\n(${(percent * 100).toFixed(1)}%)`
 				: gate.name
 
 			if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
-				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
-				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
-				const y0 = effYScale === "biex" ? biex(gc.startY, cof) : gc.startY
-				const y1 = effYScale === "biex" ? biex(gc.endY, cof) : gc.endY
+				const rawX0 = swapped ? gc.startY : gc.startX
+				const rawX1 = swapped ? gc.endY : gc.endX
+				const rawY0 = swapped ? gc.startX : gc.startY
+				const rawY1 = swapped ? gc.endX : gc.endY
+				const x0 = xScale === "biex" ? biex(rawX0, cof) : rawX0
+				const x1 = xScale === "biex" ? biex(rawX1, cof) : rawX1
+				const y0 = yScale === "biex" ? biex(rawY0, cof) : rawY0
+				const y1 = yScale === "biex" ? biex(rawY1, cof) : rawY1
 				return [{
 					type: "rect",
 					x0, x1, y0, y1,
@@ -500,8 +521,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			if (gateType === "polygon" && "vertices" in gc) {
 				const path = gc.vertices
 					.map((v: [number, number], i: number) => {
-						const px = effXScale === "biex" ? biex(v[0], cof) : v[0]
-						const py = effYScale === "biex" ? biex(v[1], cof) : v[1]
+						const rawX = swapped ? v[1] : v[0]
+						const rawY = swapped ? v[0] : v[1]
+						const px = xScale === "biex" ? biex(rawX, cof) : rawX
+						const py = yScale === "biex" ? biex(rawY, cof) : rawY
 						return `${i === 0 ? "M" : "L"} ${px} ${py}`
 					})
 					.join(" ") + " Z"
@@ -517,8 +540,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			}
 
 			if (gateType === "quadrant" && "center_x" in gc && "center_y" in gc) {
-				const cx = effXScale === "biex" ? biex(gc.center_x, cof) : gc.center_x
-				const cy = effYScale === "biex" ? biex(gc.center_y, cof) : gc.center_y
+				const rawCx = swapped ? gc.center_y : gc.center_x
+				const rawCy = swapped ? gc.center_x : gc.center_y
+				const cx = xScale === "biex" ? biex(rawCx, cof) : rawCx
+				const cy = yScale === "biex" ? biex(rawCy, cof) : rawCy
 				return [
 					{ type: "line", x0: cx, x1: cx, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
 					{ type: "line", x0: 0, x1: 1, xref: "paper", y0: cy, y1: cy, line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },

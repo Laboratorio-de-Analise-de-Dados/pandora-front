@@ -7,6 +7,7 @@ import CytometryApi from "../../../../API"
 import { Experiment, ExperimentFiles, Gate } from "../../../../types"
 import ScatterPlot from "../../../plotly"
 import ParentTree, { SelectedSource } from "../../../parent_tree"
+import ApplyGateDialog from "../../../apply_gate_dialog"
 import { MdDelete as DeleteIcon } from "react-icons/md"
 import { IconButton, Tooltip } from "@mui/material"
 import { useHistory } from "react-router-dom"
@@ -21,6 +22,8 @@ export default function ExperimentPage() {
 	const [experimentFiles, setExperimentFiles] = useState<ExperimentFiles[]>([])
 	const [loading, setLoading] = useState<boolean>(false)
 	const [source, setSource] = useState<SelectedSource | undefined>(undefined)
+	const [applyTarget, setApplyTarget] = useState<{ id: number; name: string; fileDataId: number } | null>(null)
+	const [applyLoading, setApplyLoading] = useState(false)
 	const router = useHistory()
 
 	const handleDelete = async (id: number) => {
@@ -91,6 +94,46 @@ export default function ExperimentPage() {
 		}
 	}
 
+	const handleApplyGate = (gateId: number, gateName: string) => {
+		// Find which file this gate belongs to
+		let fileDataId = 0
+		const findGateFile = (gates: Gate[], id: number): boolean => {
+			for (const g of gates) {
+				if (g.id === id) return true
+				if (g.children && findGateFile(g.children, id)) return true
+			}
+			return false
+		}
+		for (const file of experimentFiles) {
+			if (findGateFile(file.gates, gateId)) {
+				fileDataId = file.id
+				break
+			}
+		}
+		setApplyTarget({ id: gateId, name: gateName, fileDataId })
+	}
+
+	const handleConfirmApply = async (targetFileDataIds: number[], recursive: boolean) => {
+		if (!applyTarget) return
+		setApplyLoading(true)
+		try {
+			await CytometryApi.post("/analytics/gate/apply", {
+				source_gate_ids: [applyTarget.id],
+				target_file_data_ids: targetFileDataIds,
+				recursive,
+				on_conflict: "rename",
+			})
+			toast.success("Gates aplicados com sucesso!", { position: "bottom-right" })
+			setApplyTarget(null)
+			getExperimentData(param.id)
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao aplicar gates: ${errorMessage}`, { position: "bottom-right" })
+		} finally {
+			setApplyLoading(false)
+		}
+	}
+
 	const handleRenameGate = async (gateId: number, newName: string) => {
 		try {
 			await CytometryApi.patch(`/analytics/gate/${gateId}`, { name: newName })
@@ -158,7 +201,7 @@ export default function ExperimentPage() {
 						</Tooltip>
 					)}
 				</Typography>
-				<ParentTree files={experimentFiles} onSelect={setSource} onDeleteGate={handleDeleteGate} onRenameGate={handleRenameGate} />
+				<ParentTree files={experimentFiles} onSelect={setSource} onDeleteGate={handleDeleteGate} onRenameGate={handleRenameGate} onApplyGate={handleApplyGate} />
 			</Box>
 			<Box
 				sx={{
@@ -193,6 +236,18 @@ export default function ExperimentPage() {
 					</>
 				)}
 			</Box>
+			{applyTarget && (
+				<ApplyGateDialog
+					open={!!applyTarget}
+					gateName={applyTarget.name}
+					gateId={applyTarget.id}
+					files={experimentFiles}
+					sourceFileDataId={applyTarget.fileDataId}
+					onClose={() => setApplyTarget(null)}
+					onApply={handleConfirmApply}
+					loading={applyLoading}
+				/>
+			)}
 		</Layout>
 	)
 }
