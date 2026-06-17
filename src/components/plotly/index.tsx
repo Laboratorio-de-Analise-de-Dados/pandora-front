@@ -5,6 +5,7 @@ import { MdBarChart as HistogramIcon } from "react-icons/md"
 import { MdRefresh as RefreshIcon } from "react-icons/md"
 import { MdPentagon as PolygonIcon } from "react-icons/md"
 import { MdAddBox as QuadrantIcon } from "react-icons/md"
+import { MdNearMe as CursorIcon } from "react-icons/md"
 
 import {
 	Accordion,
@@ -28,7 +29,7 @@ import {
 	DialogActions,
 } from "@mui/material"
 import { MdExpandMore as ExpandMoreIcon } from "react-icons/md"
-import React, { useState } from "react"
+import React, { useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
@@ -36,7 +37,7 @@ import CytometryApi from "../../API"
 import { DensityResponse, Gate, GateCoordinates, NewGate, Scale } from "../../types"
 
 type PlotMode = "heatmap" | "scatter" | "histogram"
-type GateTool = "rect" | "poly" | "quad"
+type GateTool = "rect" | "poly" | "quad" | "edit"
 
 const COFACTOR = 150
 
@@ -501,6 +502,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
 					_gateId: gate.id,
 					_gateData: gate,
+					_swapped: swapped,
 				}]
 			}
 
@@ -514,6 +516,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					  label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
 					  _gateId: gate.id,
 					  _gateData: gate,
+					  _swapped: false,
 					},
 				]
 			}
@@ -536,6 +539,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
 					_gateId: gate.id,
 					_gateData: gate,
+					_swapped: swapped,
 				}]
 			}
 
@@ -552,6 +556,95 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 			return []
 		})
+
+	// Build shape index → gate mapping for edit mode, and set editable flag.
+	const shapeGateMap = useRef<Array<{ gate: Gate; swapped: boolean } | null>>([])
+	const editableShapes = gateShapes.map((shape, i) => {
+		// Find gate data attached to this shape
+		const gateData = shape._gateData ?? null
+		const swappedFlag = shape._swapped ?? false
+		shapeGateMap.current[i] = gateData ? { gate: gateData, swapped: swappedFlag } : null
+		const isEditable = tool === "edit" && shape.type === "rect"
+		return { ...shape, editable: isEditable }
+	})
+	shapeGateMap.current.length = editableShapes.length
+
+	// Handle shape drag/resize in edit mode via Plotly's onRelayout event.
+	const handleRelayout = async (relayoutData: Record<string, any>) => {
+		if (tool !== "edit") return
+		// Plotly emits keys like "shapes[0].x0", "shapes[0].x1", etc.
+		const shapeUpdates = new Map<number, Record<string, number>>()
+		for (const key of Object.keys(relayoutData)) {
+			const m = key.match(/^shapes\[(\d+)\]\.(\w+)$/)
+			if (!m) continue
+			const idx = parseInt(m[1], 10)
+			const prop = m[2]
+			if (!shapeUpdates.has(idx)) shapeUpdates.set(idx, {})
+			shapeUpdates.get(idx)![prop] = relayoutData[key]
+		}
+		for (const [idx, props] of shapeUpdates) {
+			const entry = shapeGateMap.current[idx]
+			if (!entry) continue
+			const { gate, swapped } = entry
+			const gc = gate.gate_coordinates
+			const gateType = gc.type ?? "rectangle"
+			if (gateType !== "rectangle" && gateType !== "interval") continue
+
+			const cof = COFACTOR
+			if (gateType === "rectangle") {
+				const shape = editableShapes[idx]
+				const x0 = props.x0 ?? shape.x0
+				const x1 = props.x1 ?? shape.x1
+				const y0 = props.y0 ?? shape.y0
+				const y1 = props.y1 ?? shape.y1
+				const xSc = swapped ? effYScale : effXScale
+				const ySc = swapped ? effXScale : effYScale
+				const rawX0 = toRaw(Math.min(x0, x1), xSc, cof)
+				const rawX1 = toRaw(Math.max(x0, x1), xSc, cof)
+				const rawY0 = toRaw(Math.min(y0, y1), ySc, cof)
+				const rawY1 = toRaw(Math.max(y0, y1), ySc, cof)
+				const newCoords = {
+					type: "rectangle" as const,
+					x_axis: (gc as any).x_axis,
+					y_axis: (gc as any).y_axis,
+					startX: swapped ? rawY0 : rawX0,
+					endX: swapped ? rawY1 : rawX1,
+					startY: swapped ? rawX0 : rawY0,
+					endY: swapped ? rawX1 : rawY1,
+				}
+				try {
+					await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+					loadFile()
+				} catch (error: any) {
+					const msg = error?.response?.data
+						? JSON.stringify(error.response.data)
+						: error?.message ?? "Erro desconhecido"
+					toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+				}
+			} else if (gateType === "interval") {
+				const shape = editableShapes[idx]
+				const x0 = props.x0 ?? shape.x0
+				const x1 = props.x1 ?? shape.x1
+				const rawX0 = toRaw(Math.min(x0, x1), effXScale, cof)
+				const rawX1 = toRaw(Math.max(x0, x1), effXScale, cof)
+				const newCoords = {
+					type: "interval" as const,
+					x_axis: (gc as any).x_axis,
+					startX: rawX0,
+					endX: rawX1,
+				}
+				try {
+					await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+					loadFile()
+				} catch (error: any) {
+					const msg = error?.response?.data
+						? JSON.stringify(error.response.data)
+						: error?.message ?? "Erro desconhecido"
+					toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+				}
+			}
+		}
+	}
 
 	// Monta os traces do Plotly conforme o modo selecionado.
 	const plotData: any[] =
@@ -631,7 +724,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const yTicks = buildTicks(yTickSource, effYScale, effCof)
 
 	const dragmode: "select" | "lasso" | false =
-		tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
+		tool === "edit" ? false : tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
 
 	// Handler para cliques no gráfico que podem ser em shapes
 	const handlePlotHover = (event: any) => {
@@ -712,6 +805,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								<QuadrantIcon />
 							</ToggleButton>
 						)}
+						<ToggleButton
+							value="edit"
+							size="small"
+							title="Editar gate (arrastar/redimensionar)"
+						>
+							<CursorIcon />
+						</ToggleButton>
 					</ToggleButtonGroup>
 					<ToggleButtonGroup
 						value={plotMode}
@@ -816,7 +916,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									config={{ scrollZoom: false, displayModeBar: false }}
 									layout={{
 										dragmode,
-										shapes: gateShapes,
+										shapes: editableShapes,
 										...(plotMode === "histogram" ? { selectdirection: "h" as const } : {}),
 										xaxis: {
 											title: `${x_axix_selector}${
@@ -862,6 +962,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									onSelected={handleSelectedArea}
 									onClick={handlePlotClickWrapper}
 									onHover={handlePlotHover}
+									onRelayout={handleRelayout}
 								/>
 							) : isLoading ? null : (
 								<Typography>
