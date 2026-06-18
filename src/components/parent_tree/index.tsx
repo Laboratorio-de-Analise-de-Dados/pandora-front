@@ -5,15 +5,26 @@ import {
 	MdChevronRight as ChevronRight,
 	MdDelete as DeleteIcon,
 	MdEdit as EditIcon,
+	MdMoreVert as MoreVertIcon,
+	MdLink as LinkIcon,
 } from "react-icons/md"
 import {
 	Box,
+	Checkbox,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
 	Button,
+	FormControlLabel,
 	IconButton,
+	List,
+	ListItem,
+	ListItemButton,
+	ListItemIcon,
+	ListItemText,
+	Menu,
+	MenuItem as MuiMenuItem,
 	TextField,
 	Tooltip,
 	Typography,
@@ -39,6 +50,7 @@ const renderGate = (
 	parentId: string,
 	onRequestDelete?: (gateId: number, gateName: string) => void,
 	onRequestRename?: (gateId: number, gateName: string) => void,
+	onRequestApply?: (gateId: number, gateName: string) => void,
 ) => {
 	const itemId = `gate-${gate.id}-${parentId}`
 	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
@@ -56,7 +68,16 @@ const renderGate = (
 					}}
 				>
 					<Box sx={{ display: "flex", flexDirection: "column" }}>
-						<span>🔲{gate.name}</span>
+						<Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+							<span>🔲{gate.name}</span>
+							{gate.copied_from_id && (
+								<Tooltip title={`Copiado de gate #${gate.copied_from_id}`} arrow>
+									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
+										<LinkIcon style={{ fontSize: 14, color: "rgba(0,120,255,0.7)" }} />
+									</Box>
+								</Tooltip>
+							)}
+						</Box>
 						{metrics && (
 							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", pl: 2.5, lineHeight: 1.2 }}>
 								{metrics.count.toLocaleString()} events
@@ -68,6 +89,19 @@ const renderGate = (
 						)}
 					</Box>
 					<Box sx={{ display: "flex", gap: 0 }}>
+						{onRequestApply && (
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									onRequestApply(gate.id, gate.name)
+								}}
+								sx={{ p: 0.25 }}
+								title="Aplicar em outros arquivos"
+							>
+								<MoreVertIcon style={{ fontSize: 16 }} />
+							</IconButton>
+						)}
 						{onRequestRename && (
 							<IconButton
 								size="small"
@@ -100,7 +134,7 @@ const renderGate = (
 			}
 		>
 			{gate.children?.map((childGate) =>
-				renderGate(childGate, itemId, onRequestDelete, onRequestRename),
+				renderGate(childGate, itemId, onRequestDelete, onRequestRename, onRequestApply),
 			)}
 		</TreeItem>
 	)
@@ -111,12 +145,13 @@ const renderFile = (
 	file: ExperimentFiles,
 	onRequestDelete?: (gateId: number, gateName: string) => void,
 	onRequestRename?: (gateId: number, gateName: string) => void,
+	onRequestApply?: (gateId: number, gateName: string) => void,
 ) => {
 	const fileId = `file-${file.id}`
 	return (
 		<TreeItem key={fileId} itemId={fileId} label={`📄${file.file_name}`}>
 			{file.gates.map((gate) =>
-				renderGate(gate, fileId, onRequestDelete, onRequestRename),
+				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply),
 			)}
 		</TreeItem>
 	)
@@ -139,11 +174,13 @@ export default function ParentTree({
 	onSelect,
 	onDeleteGate,
 	onRenameGate,
+	onApplyGate,
 }: {
 	files: ExperimentFiles[]
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number) => void
 	onRenameGate?: (gateId: number, newName: string) => void
+	onApplyGate?: (gateId: number, gateName: string) => void
 }) {
 	const [deleteTarget, setDeleteTarget] = useState<{
 		id: number
@@ -258,6 +295,7 @@ export default function ParentTree({
 						file,
 						onDeleteGate ? handleRequestDelete : undefined,
 						onRenameGate ? handleRequestRename : undefined,
+						onApplyGate,
 					),
 				)}
 			</SimpleTreeView>
