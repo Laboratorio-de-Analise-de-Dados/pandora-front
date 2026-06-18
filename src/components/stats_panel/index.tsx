@@ -4,6 +4,10 @@ import {
 	Button,
 	Checkbox,
 	Chip,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 	FormControlLabel,
 	IconButton,
 	Table,
@@ -24,6 +28,7 @@ import {
 	MdFilterList as FilterIcon,
 	MdClose as CloseIcon,
 	MdCompareArrows as CompareIcon,
+	MdEdit as EditIcon,
 } from "react-icons/md"
 import type { SelectedSource } from "../parent_tree"
 import type {
@@ -85,6 +90,7 @@ const normalizeChannelName = (name: string): string =>
 
 const LS_KEY_CHANNELS = "pandora_stats_selectedChannels"
 const LS_KEY_METRICS = "pandora_stats_visibleMetrics"
+const LS_KEY_LABELS = "pandora_channel_labels"
 
 // --- Helpers ---
 
@@ -137,6 +143,15 @@ export default function StatsPanel({
 	const [selectedChannels, setSelectedChannels] = useState<Set<string> | null>(null)
 	const [compareMode, setCompareMode] = useState(false)
 	const [compareGateIds, setCompareGateIds] = useState<number[]>([])
+	const [customLabels, setCustomLabels] = useState<Record<string, string>>(() => {
+		try {
+			const saved = localStorage.getItem(LS_KEY_LABELS)
+			if (saved) return JSON.parse(saved) as Record<string, string>
+		} catch { /* ignore */ }
+		return {}
+	})
+	const [labelDialogOpen, setLabelDialogOpen] = useState(false)
+	const [editingLabels, setEditingLabels] = useState<Record<string, string>>({})
 
 	// Resolve current gate
 	const currentGate = useMemo(() => {
@@ -158,9 +173,31 @@ export default function StatsPanel({
 	}, [values])
 
 	const channelLabel = useCallback(
-		(ch: string) => channelLabelMap[ch] ?? ch,
-		[channelLabelMap],
+		(ch: string) => {
+			if (customLabels[ch]) return customLabels[ch]
+			return channelLabelMap[ch] ?? ch
+		},
+		[channelLabelMap, customLabels],
 	)
+
+	// Persist custom labels
+	useEffect(() => {
+		localStorage.setItem(LS_KEY_LABELS, JSON.stringify(customLabels))
+	}, [customLabels])
+
+	const openLabelDialog = useCallback(() => {
+		setEditingLabels({ ...customLabels })
+		setLabelDialogOpen(true)
+	}, [customLabels])
+
+	const saveLabelDialog = useCallback(() => {
+		const cleaned: Record<string, string> = {}
+		for (const [key, val] of Object.entries(editingLabels)) {
+			if (val.trim()) cleaned[key] = val.trim()
+		}
+		setCustomLabels(cleaned)
+		setLabelDialogOpen(false)
+	}, [editingLabels])
 
 	// All channels from current gate's analysis or values
 	const allChannels = useMemo(() => {
@@ -281,6 +318,39 @@ export default function StatsPanel({
 		}
 		return gates
 	}, [files])
+
+	// Multi-file analysis: find same-named gates across different files
+	const multiFileData = useMemo(() => {
+		if (!currentGate) return null
+		const gateName = currentGate.name
+		const entries: { fileName: string; gate: Gate }[] = []
+		for (const f of files) {
+			const allG = collectAllGates(f.gates)
+			for (const g of allG) {
+				if (g.name === gateName && g.id !== currentGate.id) {
+					entries.push({ fileName: f.file_name, gate: g })
+				}
+			}
+		}
+		if (entries.length === 0) return null
+		// Add current gate's file too
+		const currentFile = files.find((f) => {
+			const allG = collectAllGates(f.gates)
+			return allG.some((g) => g.id === currentGate.id)
+		})
+		const all = [
+			{ fileName: currentFile?.file_name ?? "Arquivo atual", gate: currentGate },
+			...entries,
+		]
+		// Compute aggregate stats
+		const counts = all.map((e) => e.gate.analysis_result?.analysis_result?.summary_metrics?.count ?? 0)
+		const avgCount = counts.reduce((a, b) => a + b, 0) / counts.length
+		const pcts = all
+			.map((e) => e.gate.analysis_result?.analysis_result?.summary_metrics?.percent_of_parent_population)
+			.filter((v): v is number => v != null)
+		const avgPct = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : undefined
+		return { entries: all, avgCount, avgPct }
+	}, [currentGate, files])
 
 	const toggleCompareGate = useCallback((id: number) => {
 		setCompareGateIds((prev) =>
@@ -576,6 +646,11 @@ export default function StatsPanel({
 							Parâmetros
 						</Typography>
 						<Box sx={{ flex: 1 }} />
+						<Tooltip title="Editar labels">
+							<IconButton size="small" onClick={openLabelDialog} sx={{ p: 0.25 }}>
+								<EditIcon style={{ fontSize: 14 }} />
+							</IconButton>
+						</Tooltip>
 						<Tooltip title="Todos">
 							<IconButton size="small" onClick={selectAll} sx={{ p: 0.25 }}>
 								<SelectAllIcon style={{ fontSize: 14 }} />
@@ -709,6 +784,59 @@ export default function StatsPanel({
 				</>
 			)}
 
+			{/* Multi-file analysis */}
+			{multiFileData && (
+				<Box sx={{ mt: 1 }}>
+					<Typography variant="caption" fontWeight="bold" sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+						<CompareIcon style={{ fontSize: 14 }} />
+						Multi-Arquivo: "{currentGate?.name}" em {multiFileData.entries.length} arquivos
+					</Typography>
+					<TableContainer sx={{ maxHeight: 180, overflow: "auto" }}>
+						<Table size="small" stickyHeader>
+							<TableHead>
+								<TableRow>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }}>Arquivo</TableCell>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">Count</TableCell>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">%P</TableCell>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">%T</TableCell>
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{multiFileData.entries.map((entry) => {
+									const sm = entry.gate.analysis_result?.analysis_result?.summary_metrics
+									return (
+										<TableRow key={entry.gate.id} hover>
+											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+												{entry.fileName}
+											</TableCell>
+											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">
+												{sm?.count?.toLocaleString() ?? "–"}
+											</TableCell>
+											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">
+												{fmtPct(sm?.percent_of_parent_population)}
+											</TableCell>
+											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">
+												{fmtPct(sm?.percent_of_total_population)}
+											</TableCell>
+										</TableRow>
+									)
+								})}
+								<TableRow sx={{ bgcolor: "action.hover" }}>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }}>Média</TableCell>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">
+										{Math.round(multiFileData.avgCount).toLocaleString()}
+									</TableCell>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">
+										{multiFileData.avgPct != null ? fmtPct(multiFileData.avgPct) : "–"}
+									</TableCell>
+									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">–</TableCell>
+								</TableRow>
+							</TableBody>
+						</Table>
+					</TableContainer>
+				</Box>
+			)}
+
 			{/* Loading state */}
 			{!channelStats && source.type === "gate" && (
 				<Box sx={{ textAlign: "center", py: 3 }}>
@@ -720,6 +848,51 @@ export default function StatsPanel({
 					</Typography>
 				</Box>
 			)}
+
+			{/* Label editing dialog */}
+			<Dialog open={labelDialogOpen} onClose={() => setLabelDialogOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle sx={{ fontSize: "0.95rem" }}>Editar Labels dos Canais</DialogTitle>
+				<DialogContent>
+					<Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+						Adicione labels customizados (ex: FITC-A → CFSE). O nome original do canal é preservado.
+					</Typography>
+					<Table size="small">
+						<TableHead>
+							<TableRow>
+								<TableCell sx={{ py: 0.5, fontSize: "0.75rem", fontWeight: "bold" }}>Canal Original</TableCell>
+								<TableCell sx={{ py: 0.5, fontSize: "0.75rem", fontWeight: "bold" }}>Label Customizado</TableCell>
+							</TableRow>
+						</TableHead>
+						<TableBody>
+							{allChannels.map((ch) => (
+								<TableRow key={ch}>
+									<TableCell sx={{ py: 0.5, fontSize: "0.75rem" }}>
+										{channelLabelMap[ch] ?? ch}
+									</TableCell>
+									<TableCell sx={{ py: 0.25 }}>
+										<TextField
+											size="small"
+											placeholder={channelLabelMap[ch] ?? ch}
+											value={editingLabels[ch] ?? ""}
+											onChange={(e) => setEditingLabels((prev) => ({ ...prev, [ch]: e.target.value }))}
+											sx={{ "& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 } }}
+											fullWidth
+										/>
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</DialogContent>
+				<DialogActions>
+					<Button size="small" onClick={() => { setEditingLabels({}); }}>
+						Limpar Todos
+					</Button>
+					<Box sx={{ flex: 1 }} />
+					<Button size="small" onClick={() => setLabelDialogOpen(false)}>Cancelar</Button>
+					<Button size="small" variant="contained" onClick={saveLabelDialog}>Salvar</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	)
 }

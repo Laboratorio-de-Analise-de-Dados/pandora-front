@@ -30,7 +30,7 @@ import {
 	Typography,
 } from "@mui/material"
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
-import { ExperimentFiles, Gate } from "../../types"
+import { ExperimentFiles, Gate, GateCoordinates } from "../../types"
 import React, { useState } from "react"
 
 export interface SelectedSource {
@@ -43,6 +43,16 @@ export interface SelectedSource {
 // Formata percentual no estilo FlowJo/Cytobank (2 casas decimais)
 const fmtPct = (v: number | undefined) =>
 	v != null ? `${(v * 100).toFixed(2)}%` : "–"
+
+// Extrai a descrição dos eixos usados para construir o gate
+const gateAxesLabel = (gc: GateCoordinates): string | null => {
+	const gateType = gc.type ?? "rectangle"
+	const xAxis = "x_axis" in gc ? gc.x_axis : undefined
+	const yAxis = "y_axis" in gc ? gc.y_axis : undefined
+	if (gateType === "interval" && xAxis) return xAxis
+	if (xAxis && yAxis) return `${xAxis} × ${yAxis}`
+	return null
+}
 
 // Função recursiva para renderizar os gates e seus sub-gates
 const renderGate = (
@@ -69,7 +79,7 @@ const renderGate = (
 				>
 					<Box sx={{ display: "flex", flexDirection: "column" }}>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-							<span>🔲{gate.name}</span>
+							<span style={{ fontSize: "0.85rem" }}>🔲{gate.name}</span>
 							{gate.copied_from_id && (
 								<Tooltip title={`Copiado de gate #${gate.copied_from_id}`} arrow>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
@@ -78,8 +88,13 @@ const renderGate = (
 								</Tooltip>
 							)}
 						</Box>
+						{gateAxesLabel(gate.gate_coordinates) && (
+							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem", pl: 2.5, lineHeight: 1.1, fontStyle: "italic" }}>
+								{gateAxesLabel(gate.gate_coordinates)}
+							</Typography>
+						)}
 						{metrics && (
-							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", pl: 2.5, lineHeight: 1.2 }}>
+							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem", pl: 2.5, lineHeight: 1.2 }}>
 								{metrics.count.toLocaleString()} events
 								{" | "}
 								%P {fmtPct(metrics.percent_of_parent_population)}
@@ -149,7 +164,9 @@ const renderFile = (
 ) => {
 	const fileId = `file-${file.id}`
 	return (
-		<TreeItem key={fileId} itemId={fileId} label={`📄${file.file_name}`}>
+		<TreeItem key={fileId} itemId={fileId} label={
+		<Typography sx={{ fontSize: "0.8rem" }}>📄{file.file_name}</Typography>
+	}>
 			{file.gates.map((gate) =>
 				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply),
 			)}
