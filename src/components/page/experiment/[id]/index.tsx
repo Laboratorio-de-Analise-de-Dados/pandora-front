@@ -121,7 +121,7 @@ export default function ExperimentPage() {
 				source_gate_ids: [applyTarget.id],
 				target_file_data_ids: targetFileDataIds,
 				recursive,
-				on_conflict: "rename",
+				on_conflict: "replace",
 			})
 			toast.success("Gates aplicados com sucesso!", { position: "bottom-right" })
 			setApplyTarget(null)

@@ -723,8 +723,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const xTicks = buildTicks(xTickSource, effXScale, effCof)
 	const yTicks = buildTicks(yTickSource, effYScale, effCof)
 
-	const dragmode: "select" | "lasso" | false =
-		tool === "edit" ? false : tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
+	const dragmode: "select" | "lasso" | "pan" | false =
+		tool === "edit" ? "pan" : tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
 
 	// Handler para cliques no gráfico que podem ser em shapes
 	const handlePlotHover = (event: any) => {
@@ -912,8 +912,27 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								</Typography>
 							) : hasData ? (
 								<Plot
+									key={tool === "edit" ? "edit-mode" : "draw-mode"}
 									data={plotData}
-									config={{ scrollZoom: false, displayModeBar: false }}
+									config={tool === "edit" ? {
+										scrollZoom: false,
+										displayModeBar: false,
+										edits: {
+											shapePosition: true,
+											annotationPosition: false,
+											annotationTail: false,
+											annotationText: false,
+											axisTitleText: false,
+											colorbarPosition: false,
+											colorbarTitleText: false,
+											legendPosition: false,
+											legendText: false,
+											titleText: false,
+										},
+								 	} : {
+										scrollZoom: false,
+										displayModeBar: false,
+								 	}}
 									layout={{
 										dragmode,
 										shapes: editableShapes,
