@@ -29,7 +29,7 @@ import {
 	DialogActions,
 } from "@mui/material"
 import { MdExpandMore as ExpandMoreIcon } from "react-icons/md"
-import React, { useRef, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
@@ -177,6 +177,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
 	const [editDialogOpen, setEditDialogOpen] = useState(false)
 	const [editGateName, setEditGateName] = useState("")
+	// Polygon vertex editing state
+	const [editingPolyGate, setEditingPolyGate] = useState<{ gate: Gate; swapped: boolean } | null>(null)
+	const [editingVertices, setEditingVertices] = useState<[number, number][]>([])
+	const editingVerticesRef = useRef<[number, number][]>([])
+	editingVerticesRef.current = editingVertices
+	const plotContainerRef = useRef<HTMLDivElement>(null)
 
 	// Auto-generates next gate name: "Gate 1", "Gate 2", ...
 	const getNextGateName = (existingNames: string[]): string => {
@@ -558,9 +564,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		})
 
 	// Build shape index → gate mapping for edit mode, and set editable flag.
+	// Hide the polygon being edited (the SVG overlay replaces it).
 	const shapeGateMap = useRef<Array<{ gate: Gate; swapped: boolean } | null>>([])
-	const editableShapes = gateShapes.map((shape, i) => {
-		// Find gate data attached to this shape
+	const filteredShapes = editingPolyGate
+		? gateShapes.filter((s) => !(s._gateData && s._gateData.id === editingPolyGate.gate.id))
+		: gateShapes
+	const editableShapes = filteredShapes.map((shape, i) => {
 		const gateData = shape._gateData ?? null
 		const swappedFlag = shape._swapped ?? false
 		shapeGateMap.current[i] = gateData ? { gate: gateData, swapped: swappedFlag } : null
@@ -742,6 +751,41 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			return
 		}
 
+		// In edit mode, clicking on a polygon gate activates vertex editing
+		if (tool === "edit" && event?.points?.[0]) {
+			const clickPt = event.points[0]
+			const clickDataX = clickPt.x as number
+			const clickDataY = clickPt.y as number
+			// Find polygon gates that contain this click point
+			for (const entry of gateShapes) {
+				if (!entry._gateData) continue
+				const gc = entry._gateData.gate_coordinates
+				if (gc.type !== "polygon" || !("vertices" in gc)) continue
+				const swapped = entry._swapped ?? false
+				// Check if click is inside polygon (ray casting in display space)
+				const verts = (gc.vertices as [number, number][]).map((v) => {
+					const rawX = swapped ? v[1] : v[0]
+					const rawY = swapped ? v[0] : v[1]
+					const xSc = swapped ? effYScale : effXScale
+					const ySc = swapped ? effXScale : effYScale
+					const dx = xSc === "biex" ? biex(rawX, COFACTOR) : rawX
+					const dy = ySc === "biex" ? biex(rawY, COFACTOR) : rawY
+					return [dx, dy] as [number, number]
+				})
+				if (pointInPolygon(clickDataX, clickDataY, verts)) {
+					setEditingPolyGate({ gate: entry._gateData, swapped })
+					setEditingVertices(gc.vertices as [number, number][])
+					return
+				}
+			}
+			// Click outside any polygon → deactivate
+			if (editingPolyGate) {
+				setEditingPolyGate(null)
+				setEditingVertices([])
+			}
+			return
+		}
+
 		// Verificar se clicou em uma shape (gate)
 		if (event?.shapes && event.shapes.length > 0) {
 			const clickedShape = event.shapes[0]
@@ -753,6 +797,172 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 		// Comportamento padrão se não clicou em um gate
 		await handlePlotClick(event)
+	}
+
+	// Deactivate polygon editing when switching tools
+	useEffect(() => {
+		if (tool !== "edit") {
+			setEditingPolyGate(null)
+			setEditingVertices([])
+		}
+	}, [tool])
+
+	// Point-in-polygon test (ray casting)
+	const pointInPolygon = (px: number, py: number, verts: [number, number][]): boolean => {
+		let inside = false
+		const n = verts.length
+		for (let i = 0, j = n - 1; i < n; j = i++) {
+			const [xi, yi] = verts[i]
+			const [xj, yj] = verts[j]
+			if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+				inside = !inside
+			}
+		}
+		return inside
+	}
+
+	// Convert data coords to pixel coords using Plotly's internal axis objects
+	const dataToPixel = useCallback((dataX: number, dataY: number): { px: number; py: number } | null => {
+		const container = plotContainerRef.current
+		if (!container) return null
+		const plotDiv = container.querySelector(".js-plotly-plot") as any
+		if (!plotDiv?._fullLayout) return null
+		const layout = plotDiv._fullLayout
+		const xax = layout.xaxis
+		const yax = layout.yaxis
+		if (!xax || !yax) return null
+		const px = xax.l2p(dataX) + xax._offset
+		const py = yax.l2p(dataY) + yax._offset
+		return { px, py }
+	}, [])
+
+	// Convert pixel coords back to data coords
+	const pixelToData = useCallback((px: number, py: number): { dataX: number; dataY: number } | null => {
+		const container = plotContainerRef.current
+		if (!container) return null
+		const plotDiv = container.querySelector(".js-plotly-plot") as any
+		if (!plotDiv?._fullLayout) return null
+		const layout = plotDiv._fullLayout
+		const xax = layout.xaxis
+		const yax = layout.yaxis
+		if (!xax || !yax) return null
+		const dataX = xax.p2l(px - xax._offset)
+		const dataY = yax.p2l(py - yax._offset)
+		return { dataX, dataY }
+	}, [])
+
+	// Save edited polygon vertices to backend
+	const savePolygonVertices = useCallback(async (gate: Gate, vertices: [number, number][], swapped: boolean) => {
+		const gc = gate.gate_coordinates
+		const newCoords = {
+			type: "polygon" as const,
+			x_axis: (gc as any).x_axis,
+			y_axis: (gc as any).y_axis,
+			vertices,
+		}
+		try {
+			await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+			loadFile()
+		} catch (error: any) {
+			const msg = error?.response?.data
+				? JSON.stringify(error.response.data)
+				: error?.message ?? "Erro desconhecido"
+			toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+		}
+	}, [loadFile])
+
+	// Render polygon vertex handles as an SVG overlay
+	const renderPolyEditOverlay = () => {
+		if (!editingPolyGate || editingVertices.length === 0) return null
+		const { swapped } = editingPolyGate
+		const xSc = swapped ? effYScale : effXScale
+		const ySc = swapped ? effXScale : effYScale
+		const cof = COFACTOR
+
+		// Convert vertices to display coords then to pixel coords
+		const pixelVerts = editingVertices.map((v) => {
+			const rawX = swapped ? v[1] : v[0]
+			const rawY = swapped ? v[0] : v[1]
+			const dispX = xSc === "biex" ? biex(rawX, cof) : rawX
+			const dispY = ySc === "biex" ? biex(rawY, cof) : rawY
+			return dataToPixel(dispX, dispY)
+		})
+
+		if (pixelVerts.some((p) => p === null)) return null
+		const validVerts = pixelVerts as { px: number; py: number }[]
+
+		// Build polygon path for the overlay preview
+		const polyPath = validVerts.map((v, i) => `${i === 0 ? "M" : "L"}${v.px},${v.py}`).join(" ") + " Z"
+
+		const handleVertexDrag = (idx: number) => (e: React.MouseEvent) => {
+			e.preventDefault()
+			e.stopPropagation()
+			const container = plotContainerRef.current
+			if (!container) return
+			const containerRect = container.getBoundingClientRect()
+
+			const onMouseMove = (me: MouseEvent) => {
+				const relX = me.clientX - containerRect.left
+				const relY = me.clientY - containerRect.top
+				const dataCoords = pixelToData(relX, relY)
+				if (!dataCoords) return
+				// Convert display coords back to raw coords
+				const rawX = toRaw(dataCoords.dataX, xSc, cof)
+				const rawY = toRaw(dataCoords.dataY, ySc, cof)
+				setEditingVertices((prev) => {
+					const next = [...prev] as [number, number][]
+					next[idx] = swapped ? [rawY, rawX] : [rawX, rawY]
+					return next
+				})
+			}
+
+			const onMouseUp = () => {
+				document.removeEventListener("mousemove", onMouseMove)
+				document.removeEventListener("mouseup", onMouseUp)
+				// Save to backend using ref for latest vertices
+				savePolygonVertices(editingPolyGate!.gate, editingVerticesRef.current, swapped)
+			}
+
+			document.addEventListener("mousemove", onMouseMove)
+			document.addEventListener("mouseup", onMouseUp)
+		}
+
+		return (
+			<svg
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					pointerEvents: "none",
+					zIndex: 10,
+				}}
+			>
+				{/* Polygon outline */}
+				<path
+					d={polyPath}
+					fill="rgba(0,120,255,0.05)"
+					stroke="rgba(0,120,255,0.9)"
+					strokeWidth={2}
+					pointerEvents="none"
+				/>
+				{/* Vertex handles */}
+				{validVerts.map((v, i) => (
+					<circle
+						key={i}
+						cx={v.px}
+						cy={v.py}
+						r={6}
+						fill="white"
+						stroke="rgba(0,120,255,0.9)"
+						strokeWidth={2}
+						style={{ cursor: "grab", pointerEvents: "all" }}
+						onMouseDown={handleVertexDrag(i)}
+					/>
+				))}
+			</svg>
+		)
 	}
 
 	return (
@@ -897,6 +1107,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							</Select>
 						)}
 						<Box
+							ref={plotContainerRef}
 							sx={{
 								width: 500,
 								height: 500,
@@ -997,12 +1208,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										alignItems: "center",
 										justifyContent: "center",
 										bgcolor: "rgba(255,255,255,0.6)",
-										zIndex: 10,
+										zIndex: 20,
 									}}
 								>
 									<CircularProgress />
 								</Box>
 							)}
+							{tool === "edit" && renderPolyEditOverlay()}
 						</Box>
 					</Box>
 					<Select value={x_axix_selector} onChange={handleSelectX}>
