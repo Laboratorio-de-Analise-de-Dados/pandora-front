@@ -80,6 +80,9 @@ const SCATTER_CHANNELS = ["fsc", "ssc", "time"]
 const isFluorescence = (ch: string) =>
 	!SCATTER_CHANNELS.some((s) => ch.toLowerCase().startsWith(s))
 
+const normalizeChannelName = (name: string): string =>
+	name.toLowerCase().replace(/ /g, "").replace(/-/g, "_")
+
 const LS_KEY_CHANNELS = "pandora_stats_selectedChannels"
 const LS_KEY_METRICS = "pandora_stats_visibleMetrics"
 
@@ -145,6 +148,20 @@ export default function StatsPanel({
 		return undefined
 	}, [source, files])
 
+	// Build mapping from normalized channel name to original label
+	const channelLabelMap = useMemo(() => {
+		const map: Record<string, string> = {}
+		for (const v of values) {
+			map[normalizeChannelName(v)] = v
+		}
+		return map
+	}, [values])
+
+	const channelLabel = useCallback(
+		(ch: string) => channelLabelMap[ch] ?? ch,
+		[channelLabelMap],
+	)
+
 	// All channels from current gate's analysis or values
 	const allChannels = useMemo(() => {
 		const analysis = currentGate?.analysis_result?.analysis_result
@@ -154,7 +171,7 @@ export default function StatsPanel({
 		if (fileStats?.channel_statistics) {
 			return Object.keys(fileStats.channel_statistics)
 		}
-		return values.map((v) => v.toLowerCase().replace(/-/g, "_").replace(/ /g, ""))
+		return values.map((v) => normalizeChannelName(v))
 	}, [currentGate, fileStats, values])
 
 	// Initialize selectedChannels from localStorage or all
@@ -222,10 +239,12 @@ export default function StatsPanel({
 		let filtered = allChannels.filter((ch) => channels.has(ch))
 		if (search.trim()) {
 			const q = search.toLowerCase()
-			filtered = filtered.filter((ch) => ch.toLowerCase().includes(q))
+			filtered = filtered.filter(
+				(ch) => ch.toLowerCase().includes(q) || channelLabel(ch).toLowerCase().includes(q),
+			)
 		}
 		return filtered
-	}, [allChannels, selectedChannels, search])
+	}, [allChannels, selectedChannels, search, channelLabel])
 
 	// Analysis data to display
 	const analysisData: AnalysisResultData | undefined = useMemo(() => {
@@ -280,7 +299,7 @@ export default function StatsPanel({
 			const header = ["Gate", "Count", "%Parent", "%Total"]
 			for (const ch of channelList) {
 				for (const m of metricCols) {
-					header.push(`${ch}_${m.shortLabel}`)
+					header.push(`${channelLabel(ch)}_${m.shortLabel}`)
 				}
 			}
 			rows.push(header)
@@ -341,7 +360,7 @@ export default function StatsPanel({
 			a.click()
 			URL.revokeObjectURL(url)
 		},
-		[currentGate, files, displayChannels, visibleMetrics, source, fileStats],
+		[currentGate, files, displayChannels, visibleMetrics, source, fileStats, channelLabel],
 	)
 
 	// --- Render ---
@@ -589,11 +608,11 @@ export default function StatsPanel({
 
 					<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.25, mb: 1, maxHeight: 80, overflow: "auto" }}>
 						{allChannels
-							.filter((ch) => !search.trim() || ch.toLowerCase().includes(search.toLowerCase()))
+							.filter((ch) => !search.trim() || ch.toLowerCase().includes(search.toLowerCase()) || channelLabel(ch).toLowerCase().includes(search.toLowerCase()))
 							.map((ch) => (
 								<Chip
 									key={ch}
-									label={ch}
+									label={channelLabel(ch)}
 									size="small"
 									variant={selectedChannels?.has(ch) ? "filled" : "outlined"}
 									color={selectedChannels?.has(ch) ? "primary" : "default"}
@@ -660,7 +679,7 @@ export default function StatsPanel({
 													zIndex: 1,
 												}}
 											>
-												{ch}
+												{channelLabel(ch)}
 											</TableCell>
 											{activeMetrics.map((m) => (
 												<TableCell

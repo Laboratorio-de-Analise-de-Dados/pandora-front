@@ -437,26 +437,28 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	// Converte child gates em Plotly shapes para exibir no plot.
-	const gateShapes: any[] = childGates
-		.filter((gate) => {
+	// Determine which child gates match current axes (including swapped)
+	const matchedGates: { gate: Gate; swapped: boolean }[] = childGates
+		.map((gate) => {
 			const gc = gate.gate_coordinates
-			if (!gc) return false
+			if (!gc) return null
 			const gateType = gc.type ?? "rectangle"
 			if (gateType === "interval" && "x_axis" in gc) {
-				return gc.x_axis === x_axix_selector && plotMode === "histogram"
+				if (gc.x_axis === x_axix_selector && plotMode === "histogram") return { gate, swapped: false }
+				return null
 			}
-			if (gateType === "quadrant" && "x_axis" in gc && "y_axis" in gc) {
-				return gc.x_axis === x_axix_selector && gc.y_axis === y_axix_selector && plotMode !== "histogram"
-			}
-			// rectangle or polygon
 			const xAxis = "x_axis" in gc ? (gc as any).x_axis : undefined
 			const yAxis = "y_axis" in gc ? (gc as any).y_axis : undefined
-			if (xAxis && yAxis) {
-				return xAxis === x_axix_selector && yAxis === y_axix_selector && plotMode !== "histogram"
+			if (xAxis && yAxis && plotMode !== "histogram") {
+				if (xAxis === x_axix_selector && yAxis === y_axix_selector) return { gate, swapped: false }
+				if (xAxis === y_axix_selector && yAxis === x_axix_selector) return { gate, swapped: true }
 			}
-			return false
+			return null
 		})
-		.flatMap((gate): any[] => {
+		.filter((m): m is { gate: Gate; swapped: boolean } => m !== null)
+
+	const gateShapes: any[] = matchedGates
+		.flatMap(({ gate, swapped }): any[] => {
 			const gc = gate.gate_coordinates
 			const gateType = gc.type ?? "rectangle"
 			const cof = COFACTOR
@@ -468,10 +470,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				: gate.name
 
 			if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
-				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
-				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
-				const y0 = effYScale === "biex" ? biex(gc.startY, cof) : gc.startY
-				const y1 = effYScale === "biex" ? biex(gc.endY, cof) : gc.endY
+				const rawX0 = swapped ? gc.startY : gc.startX
+				const rawX1 = swapped ? gc.endY : gc.endX
+				const rawY0 = swapped ? gc.startX : gc.startY
+				const rawY1 = swapped ? gc.endX : gc.endY
+				const x0 = effXScale === "biex" ? biex(rawX0, cof) : rawX0
+				const x1 = effXScale === "biex" ? biex(rawX1, cof) : rawX1
+				const y0 = effYScale === "biex" ? biex(rawY0, cof) : rawY0
+				const y1 = effYScale === "biex" ? biex(rawY1, cof) : rawY1
 				return [{
 					type: "rect",
 					x0, x1, y0, y1,
@@ -500,8 +506,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			if (gateType === "polygon" && "vertices" in gc) {
 				const path = gc.vertices
 					.map((v: [number, number], i: number) => {
-						const px = effXScale === "biex" ? biex(v[0], cof) : v[0]
-						const py = effYScale === "biex" ? biex(v[1], cof) : v[1]
+						const rawX = swapped ? v[1] : v[0]
+						const rawY = swapped ? v[0] : v[1]
+						const px = effXScale === "biex" ? biex(rawX, cof) : rawX
+						const py = effYScale === "biex" ? biex(rawY, cof) : rawY
 						return `${i === 0 ? "M" : "L"} ${px} ${py}`
 					})
 					.join(" ") + " Z"
@@ -517,8 +525,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			}
 
 			if (gateType === "quadrant" && "center_x" in gc && "center_y" in gc) {
-				const cx = effXScale === "biex" ? biex(gc.center_x, cof) : gc.center_x
-				const cy = effYScale === "biex" ? biex(gc.center_y, cof) : gc.center_y
+				const rawCx = swapped ? gc.center_y : gc.center_x
+				const rawCy = swapped ? gc.center_x : gc.center_y
+				const cx = effXScale === "biex" ? biex(rawCx, cof) : rawCx
+				const cy = effYScale === "biex" ? biex(rawCy, cof) : rawCy
 				return [
 					{ type: "line", x0: cx, x1: cx, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
 					{ type: "line", x0: 0, x1: 1, xref: "paper", y0: cy, y1: cy, line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
@@ -584,19 +594,27 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			: data?.y && data.y.length
 			? [Math.min(...data.y), Math.max(...data.y)]
 			: undefined
-	// Fixa o range dos eixos com base nos seletores (se definidos).
+	// Fixa o range dos eixos. Quando o usuário não define um range manual,
+	// usa o range completo do instrumento (linear: 0–262144, biex: -100k–1M)
+	// em vez de deixar o Plotly auto-escalar para a faixa dos dados visíveis.
+	const defaultXRange = effXScale === "biex"
+		? [biex(-100000, effCof), biex(1000000, effCof)]
+		: [0, LINEAR_SLIDER_MAX]
+	const defaultYRange = effYScale === "biex"
+		? [biex(-100000, effCof), biex(1000000, effCof)]
+		: [0, LINEAR_SLIDER_MAX]
 	const xAxisRange =
 		xMin !== "" && xMax !== ""
 			? effXScale === "biex"
 				? [biex(parseFloat(xMin), effCof), biex(parseFloat(xMax), effCof)]
 				: [parseFloat(xMin), parseFloat(xMax)]
-			: undefined
+			: defaultXRange
 	const yAxisRange =
 		yMin !== "" && yMax !== ""
 			? effYScale === "biex"
 				? [biex(parseFloat(yMin), effCof), biex(parseFloat(yMax), effCof)]
 				: [parseFloat(yMin), parseFloat(yMax)]
-			: undefined
+			: defaultYRange
 
 	// Ticks: quando o seletor de range está definido, usa o range do seletor
 	// para gerar ticks (não o range dos dados retornados).
@@ -804,7 +822,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: xTicks.ticktext,
 												  }
 												: {}),
-											...(xAxisRange ? { range: xAxisRange } : {}),
+											range: xAxisRange,
+											autorange: false,
 											fixedrange: true,
 										},
 										yaxis: {
@@ -823,8 +842,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: yTicks.ticktext,
 												  }
 												: {}),
-											...(plotMode !== "histogram" && yAxisRange
-												? { range: yAxisRange }
+											...(plotMode !== "histogram"
+												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
 										},
