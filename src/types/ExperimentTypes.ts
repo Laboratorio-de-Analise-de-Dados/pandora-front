@@ -60,6 +60,24 @@ export type GateCoordinates =
 	| IntervalGateCoordinates
 	| QuadrantGateCoordinates
 
+export interface ChannelStat {
+	mean_mfi: number
+	median_mfi: number
+	std_dev: number
+	cv: number
+}
+
+export interface SummaryMetrics {
+	count: number
+	percent_of_total_population: number
+	percent_of_parent_population: number
+}
+
+export interface AnalysisResultData {
+	summary_metrics?: SummaryMetrics
+	channel_statistics?: Record<string, ChannelStat>
+}
+
 export interface Gate {
 	id: number
 	name: string
@@ -70,13 +88,7 @@ export interface Gate {
 	dashboard: number
 	copied_from_id?: number | null
 	analysis_result?: {
-		analysis_result: {
-			summary_metrics?: {
-				count: number
-				percent_of_total_population: number
-				percent_of_parent_population: number
-			}
-		}
+		analysis_result: AnalysisResultData
 	}
 }
 
@@ -89,13 +101,7 @@ export interface NewGate {
 	children?: Gate[]
 	dashboard: Dashboard
 	analysis_result?: {
-		analysis_result: {
-			summary_metrics?: {
-				count: number
-				percent_of_total_population: number
-				percent_of_parent_population: number
-			}
-		}
+		analysis_result: AnalysisResultData
 	}
 }
 

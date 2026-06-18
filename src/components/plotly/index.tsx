@@ -711,19 +711,27 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			: data?.y && data.y.length
 			? [Math.min(...data.y), Math.max(...data.y)]
 			: undefined
-	// Fixa o range dos eixos com base nos seletores (se definidos).
+	// Fixa o range dos eixos. Quando o usuário não define um range manual,
+	// usa o range completo do instrumento (linear: 0–262144, biex: -100k–1M)
+	// em vez de deixar o Plotly auto-escalar para a faixa dos dados visíveis.
+	const defaultXRange = effXScale === "biex"
+		? [biex(-100000, effCof), biex(1000000, effCof)]
+		: [0, LINEAR_SLIDER_MAX]
+	const defaultYRange = effYScale === "biex"
+		? [biex(-100000, effCof), biex(1000000, effCof)]
+		: [0, LINEAR_SLIDER_MAX]
 	const xAxisRange =
 		xMin !== "" && xMax !== ""
 			? effXScale === "biex"
 				? [biex(parseFloat(xMin), effCof), biex(parseFloat(xMax), effCof)]
 				: [parseFloat(xMin), parseFloat(xMax)]
-			: undefined
+			: defaultXRange
 	const yAxisRange =
 		yMin !== "" && yMax !== ""
 			? effYScale === "biex"
 				? [biex(parseFloat(yMin), effCof), biex(parseFloat(yMax), effCof)]
 				: [parseFloat(yMin), parseFloat(yMax)]
-			: undefined
+			: defaultYRange
 
 	// Ticks: quando o seletor de range está definido, usa o range do seletor
 	// para gerar ticks (não o range dos dados retornados).
@@ -1159,7 +1167,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: xTicks.ticktext,
 												  }
 												: {}),
-											...(xAxisRange ? { range: xAxisRange } : {}),
+											range: xAxisRange,
+											autorange: false,
 											fixedrange: true,
 										},
 										yaxis: {
@@ -1178,8 +1187,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 														ticktext: yTicks.ticktext,
 												  }
 												: {}),
-											...(plotMode !== "histogram" && yAxisRange
-												? { range: yAxisRange }
+											...(plotMode !== "histogram"
+												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
 										},
