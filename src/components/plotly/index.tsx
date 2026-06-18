@@ -5,6 +5,7 @@ import { MdBarChart as HistogramIcon } from "react-icons/md"
 import { MdRefresh as RefreshIcon } from "react-icons/md"
 import { MdPentagon as PolygonIcon } from "react-icons/md"
 import { MdAddBox as QuadrantIcon } from "react-icons/md"
+import { MdNearMe as CursorIcon } from "react-icons/md"
 
 import {
 	Accordion,
@@ -28,7 +29,7 @@ import {
 	DialogActions,
 } from "@mui/material"
 import { MdExpandMore as ExpandMoreIcon } from "react-icons/md"
-import React, { useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
@@ -36,7 +37,7 @@ import CytometryApi from "../../API"
 import { DensityResponse, Gate, GateCoordinates, NewGate, Scale } from "../../types"
 
 type PlotMode = "heatmap" | "scatter" | "histogram"
-type GateTool = "rect" | "poly" | "quad"
+type GateTool = "rect" | "poly" | "quad" | "edit"
 
 const COFACTOR = 150
 
@@ -176,6 +177,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
 	const [editDialogOpen, setEditDialogOpen] = useState(false)
 	const [editGateName, setEditGateName] = useState("")
+	// Polygon vertex editing state
+	const [editingPolyGate, setEditingPolyGate] = useState<{ gate: Gate; swapped: boolean } | null>(null)
+	const [editingVertices, setEditingVertices] = useState<[number, number][]>([])
+	const editingVerticesRef = useRef<[number, number][]>([])
+	editingVerticesRef.current = editingVertices
+	const plotContainerRef = useRef<HTMLDivElement>(null)
 
 	// Auto-generates next gate name: "Gate 1", "Gate 2", ...
 	const getNextGateName = (existingNames: string[]): string => {
@@ -436,42 +443,63 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		}
 	}
 
+	// Detecta se os eixos do gate conferem com os seletores (direto ou invertido).
+	type AxisMatch = "exact" | "swapped" | "none"
+	const matchAxes = (gateX: string | undefined, gateY: string | undefined): AxisMatch => {
+		if (!gateX || !gateY) return "none"
+		if (gateX === x_axix_selector && gateY === y_axix_selector) return "exact"
+		if (gateX === y_axix_selector && gateY === x_axix_selector) return "swapped"
+		return "none"
+	}
+
 	// Converte child gates em Plotly shapes para exibir no plot.
 	const gateShapes: any[] = childGates
-		.filter((gate) => {
+		.map((gate) => {
 			const gc = gate.gate_coordinates
-			if (!gc) return false
+			if (!gc) return null
 			const gateType = gc.type ?? "rectangle"
+
 			if (gateType === "interval" && "x_axis" in gc) {
-				return gc.x_axis === x_axix_selector && plotMode === "histogram"
+				if (gc.x_axis === x_axix_selector && plotMode === "histogram") return { gate, swapped: false }
+				return null
 			}
 			if (gateType === "quadrant" && "x_axis" in gc && "y_axis" in gc) {
-				return gc.x_axis === x_axix_selector && gc.y_axis === y_axix_selector && plotMode !== "histogram"
+				const m = matchAxes(gc.x_axis, gc.y_axis)
+				if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped" }
+				return null
 			}
 			// rectangle or polygon
 			const xAxis = "x_axis" in gc ? (gc as any).x_axis : undefined
 			const yAxis = "y_axis" in gc ? (gc as any).y_axis : undefined
-			if (xAxis && yAxis) {
-				return xAxis === x_axix_selector && yAxis === y_axix_selector && plotMode !== "histogram"
-			}
-			return false
+			const m = matchAxes(xAxis, yAxis)
+			if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped" }
+			return null
 		})
-		.flatMap((gate): any[] => {
+		.filter((item): item is { gate: Gate; swapped: boolean } => item !== null)
+		.flatMap(({ gate, swapped }): any[] => {
 			const gc = gate.gate_coordinates
 			const gateType = gc.type ?? "rectangle"
 			const cof = COFACTOR
 
+			// Quando os eixos estão invertidos, troca a escala usada para cada dimensão.
+			const xScale = swapped ? effYScale : effXScale
+			const yScale = swapped ? effXScale : effYScale
+
 			// Extrair percentual do gate
 			const percent = gate.analysis_result?.analysis_result?.summary_metrics?.percent_of_parent_population
 			const gateLabel = percent !== undefined && percent !== null
-				? `${gate.name}\n(${percent.toFixed(1)}%)`
+				? `${gate.name}\n(${(percent * 100).toFixed(1)}%)`
 				: gate.name
 
 			if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
-				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
-				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
-				const y0 = effYScale === "biex" ? biex(gc.startY, cof) : gc.startY
-				const y1 = effYScale === "biex" ? biex(gc.endY, cof) : gc.endY
+				const rawX0 = swapped ? gc.startY : gc.startX
+				const rawX1 = swapped ? gc.endY : gc.endX
+				const rawY0 = swapped ? gc.startX : gc.startY
+				const rawY1 = swapped ? gc.endX : gc.endY
+				const x0 = xScale === "biex" ? biex(rawX0, cof) : rawX0
+				const x1 = xScale === "biex" ? biex(rawX1, cof) : rawX1
+				const y0 = yScale === "biex" ? biex(rawY0, cof) : rawY0
+				const y1 = yScale === "biex" ? biex(rawY1, cof) : rawY1
 				return [{
 					type: "rect",
 					x0, x1, y0, y1,
@@ -480,6 +508,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
 					_gateId: gate.id,
 					_gateData: gate,
+					_swapped: swapped,
 				}]
 			}
 
@@ -493,6 +522,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					  label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
 					  _gateId: gate.id,
 					  _gateData: gate,
+					  _swapped: false,
 					},
 				]
 			}
@@ -500,8 +530,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			if (gateType === "polygon" && "vertices" in gc) {
 				const path = gc.vertices
 					.map((v: [number, number], i: number) => {
-						const px = effXScale === "biex" ? biex(v[0], cof) : v[0]
-						const py = effYScale === "biex" ? biex(v[1], cof) : v[1]
+						const rawX = swapped ? v[1] : v[0]
+						const rawY = swapped ? v[0] : v[1]
+						const px = xScale === "biex" ? biex(rawX, cof) : rawX
+						const py = yScale === "biex" ? biex(rawY, cof) : rawY
 						return `${i === 0 ? "M" : "L"} ${px} ${py}`
 					})
 					.join(" ") + " Z"
@@ -513,12 +545,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
 					_gateId: gate.id,
 					_gateData: gate,
+					_swapped: swapped,
 				}]
 			}
 
 			if (gateType === "quadrant" && "center_x" in gc && "center_y" in gc) {
-				const cx = effXScale === "biex" ? biex(gc.center_x, cof) : gc.center_x
-				const cy = effYScale === "biex" ? biex(gc.center_y, cof) : gc.center_y
+				const rawCx = swapped ? gc.center_y : gc.center_x
+				const rawCy = swapped ? gc.center_x : gc.center_y
+				const cx = xScale === "biex" ? biex(rawCx, cof) : rawCx
+				const cy = yScale === "biex" ? biex(rawCy, cof) : rawCy
 				return [
 					{ type: "line", x0: cx, x1: cx, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
 					{ type: "line", x0: 0, x1: 1, xref: "paper", y0: cy, y1: cy, line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
@@ -527,6 +562,98 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 			return []
 		})
+
+	// Build shape index → gate mapping for edit mode, and set editable flag.
+	// Hide the polygon being edited (the SVG overlay replaces it).
+	const shapeGateMap = useRef<Array<{ gate: Gate; swapped: boolean } | null>>([])
+	const filteredShapes = editingPolyGate
+		? gateShapes.filter((s) => !(s._gateData && s._gateData.id === editingPolyGate.gate.id))
+		: gateShapes
+	const editableShapes = filteredShapes.map((shape, i) => {
+		const gateData = shape._gateData ?? null
+		const swappedFlag = shape._swapped ?? false
+		shapeGateMap.current[i] = gateData ? { gate: gateData, swapped: swappedFlag } : null
+		const isEditable = tool === "edit" && shape.type === "rect"
+		return { ...shape, editable: isEditable }
+	})
+	shapeGateMap.current.length = editableShapes.length
+
+	// Handle shape drag/resize in edit mode via Plotly's onRelayout event.
+	const handleRelayout = async (relayoutData: Record<string, any>) => {
+		if (tool !== "edit") return
+		// Plotly emits keys like "shapes[0].x0", "shapes[0].x1", etc.
+		const shapeUpdates = new Map<number, Record<string, number>>()
+		for (const key of Object.keys(relayoutData)) {
+			const m = key.match(/^shapes\[(\d+)\]\.(\w+)$/)
+			if (!m) continue
+			const idx = parseInt(m[1], 10)
+			const prop = m[2]
+			if (!shapeUpdates.has(idx)) shapeUpdates.set(idx, {})
+			shapeUpdates.get(idx)![prop] = relayoutData[key]
+		}
+		for (const [idx, props] of shapeUpdates) {
+			const entry = shapeGateMap.current[idx]
+			if (!entry) continue
+			const { gate, swapped } = entry
+			const gc = gate.gate_coordinates
+			const gateType = gc.type ?? "rectangle"
+			if (gateType !== "rectangle" && gateType !== "interval") continue
+
+			const cof = COFACTOR
+			if (gateType === "rectangle") {
+				const shape = editableShapes[idx]
+				const x0 = props.x0 ?? shape.x0
+				const x1 = props.x1 ?? shape.x1
+				const y0 = props.y0 ?? shape.y0
+				const y1 = props.y1 ?? shape.y1
+				const xSc = swapped ? effYScale : effXScale
+				const ySc = swapped ? effXScale : effYScale
+				const rawX0 = toRaw(Math.min(x0, x1), xSc, cof)
+				const rawX1 = toRaw(Math.max(x0, x1), xSc, cof)
+				const rawY0 = toRaw(Math.min(y0, y1), ySc, cof)
+				const rawY1 = toRaw(Math.max(y0, y1), ySc, cof)
+				const newCoords = {
+					type: "rectangle" as const,
+					x_axis: (gc as any).x_axis,
+					y_axis: (gc as any).y_axis,
+					startX: swapped ? rawY0 : rawX0,
+					endX: swapped ? rawY1 : rawX1,
+					startY: swapped ? rawX0 : rawY0,
+					endY: swapped ? rawX1 : rawY1,
+				}
+				try {
+					await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+					loadFile()
+				} catch (error: any) {
+					const msg = error?.response?.data
+						? JSON.stringify(error.response.data)
+						: error?.message ?? "Erro desconhecido"
+					toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+				}
+			} else if (gateType === "interval") {
+				const shape = editableShapes[idx]
+				const x0 = props.x0 ?? shape.x0
+				const x1 = props.x1 ?? shape.x1
+				const rawX0 = toRaw(Math.min(x0, x1), effXScale, cof)
+				const rawX1 = toRaw(Math.max(x0, x1), effXScale, cof)
+				const newCoords = {
+					type: "interval" as const,
+					x_axis: (gc as any).x_axis,
+					startX: rawX0,
+					endX: rawX1,
+				}
+				try {
+					await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+					loadFile()
+				} catch (error: any) {
+					const msg = error?.response?.data
+						? JSON.stringify(error.response.data)
+						: error?.message ?? "Erro desconhecido"
+					toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+				}
+			}
+		}
+	}
 
 	// Monta os traces do Plotly conforme o modo selecionado.
 	const plotData: any[] =
@@ -605,8 +732,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const xTicks = buildTicks(xTickSource, effXScale, effCof)
 	const yTicks = buildTicks(yTickSource, effYScale, effCof)
 
-	const dragmode: "select" | "lasso" | false =
-		tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
+	const dragmode: "select" | "lasso" | "pan" | false =
+		tool === "edit" ? "pan" : tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
 
 	// Handler para cliques no gráfico que podem ser em shapes
 	const handlePlotHover = (event: any) => {
@@ -624,6 +751,41 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			return
 		}
 
+		// In edit mode, clicking on a polygon gate activates vertex editing
+		if (tool === "edit" && event?.points?.[0]) {
+			const clickPt = event.points[0]
+			const clickDataX = clickPt.x as number
+			const clickDataY = clickPt.y as number
+			// Find polygon gates that contain this click point
+			for (const entry of gateShapes) {
+				if (!entry._gateData) continue
+				const gc = entry._gateData.gate_coordinates
+				if (gc.type !== "polygon" || !("vertices" in gc)) continue
+				const swapped = entry._swapped ?? false
+				// Check if click is inside polygon (ray casting in display space)
+				const verts = (gc.vertices as [number, number][]).map((v) => {
+					const rawX = swapped ? v[1] : v[0]
+					const rawY = swapped ? v[0] : v[1]
+					const xSc = swapped ? effYScale : effXScale
+					const ySc = swapped ? effXScale : effYScale
+					const dx = xSc === "biex" ? biex(rawX, COFACTOR) : rawX
+					const dy = ySc === "biex" ? biex(rawY, COFACTOR) : rawY
+					return [dx, dy] as [number, number]
+				})
+				if (pointInPolygon(clickDataX, clickDataY, verts)) {
+					setEditingPolyGate({ gate: entry._gateData, swapped })
+					setEditingVertices(gc.vertices as [number, number][])
+					return
+				}
+			}
+			// Click outside any polygon → deactivate
+			if (editingPolyGate) {
+				setEditingPolyGate(null)
+				setEditingVertices([])
+			}
+			return
+		}
+
 		// Verificar se clicou em uma shape (gate)
 		if (event?.shapes && event.shapes.length > 0) {
 			const clickedShape = event.shapes[0]
@@ -635,6 +797,172 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 		// Comportamento padrão se não clicou em um gate
 		await handlePlotClick(event)
+	}
+
+	// Deactivate polygon editing when switching tools
+	useEffect(() => {
+		if (tool !== "edit") {
+			setEditingPolyGate(null)
+			setEditingVertices([])
+		}
+	}, [tool])
+
+	// Point-in-polygon test (ray casting)
+	const pointInPolygon = (px: number, py: number, verts: [number, number][]): boolean => {
+		let inside = false
+		const n = verts.length
+		for (let i = 0, j = n - 1; i < n; j = i++) {
+			const [xi, yi] = verts[i]
+			const [xj, yj] = verts[j]
+			if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+				inside = !inside
+			}
+		}
+		return inside
+	}
+
+	// Convert data coords to pixel coords using Plotly's internal axis objects
+	const dataToPixel = useCallback((dataX: number, dataY: number): { px: number; py: number } | null => {
+		const container = plotContainerRef.current
+		if (!container) return null
+		const plotDiv = container.querySelector(".js-plotly-plot") as any
+		if (!plotDiv?._fullLayout) return null
+		const layout = plotDiv._fullLayout
+		const xax = layout.xaxis
+		const yax = layout.yaxis
+		if (!xax || !yax) return null
+		const px = xax.l2p(dataX) + xax._offset
+		const py = yax.l2p(dataY) + yax._offset
+		return { px, py }
+	}, [])
+
+	// Convert pixel coords back to data coords
+	const pixelToData = useCallback((px: number, py: number): { dataX: number; dataY: number } | null => {
+		const container = plotContainerRef.current
+		if (!container) return null
+		const plotDiv = container.querySelector(".js-plotly-plot") as any
+		if (!plotDiv?._fullLayout) return null
+		const layout = plotDiv._fullLayout
+		const xax = layout.xaxis
+		const yax = layout.yaxis
+		if (!xax || !yax) return null
+		const dataX = xax.p2l(px - xax._offset)
+		const dataY = yax.p2l(py - yax._offset)
+		return { dataX, dataY }
+	}, [])
+
+	// Save edited polygon vertices to backend
+	const savePolygonVertices = useCallback(async (gate: Gate, vertices: [number, number][], swapped: boolean) => {
+		const gc = gate.gate_coordinates
+		const newCoords = {
+			type: "polygon" as const,
+			x_axis: (gc as any).x_axis,
+			y_axis: (gc as any).y_axis,
+			vertices,
+		}
+		try {
+			await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+			loadFile()
+		} catch (error: any) {
+			const msg = error?.response?.data
+				? JSON.stringify(error.response.data)
+				: error?.message ?? "Erro desconhecido"
+			toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+		}
+	}, [loadFile])
+
+	// Render polygon vertex handles as an SVG overlay
+	const renderPolyEditOverlay = () => {
+		if (!editingPolyGate || editingVertices.length === 0) return null
+		const { swapped } = editingPolyGate
+		const xSc = swapped ? effYScale : effXScale
+		const ySc = swapped ? effXScale : effYScale
+		const cof = COFACTOR
+
+		// Convert vertices to display coords then to pixel coords
+		const pixelVerts = editingVertices.map((v) => {
+			const rawX = swapped ? v[1] : v[0]
+			const rawY = swapped ? v[0] : v[1]
+			const dispX = xSc === "biex" ? biex(rawX, cof) : rawX
+			const dispY = ySc === "biex" ? biex(rawY, cof) : rawY
+			return dataToPixel(dispX, dispY)
+		})
+
+		if (pixelVerts.some((p) => p === null)) return null
+		const validVerts = pixelVerts as { px: number; py: number }[]
+
+		// Build polygon path for the overlay preview
+		const polyPath = validVerts.map((v, i) => `${i === 0 ? "M" : "L"}${v.px},${v.py}`).join(" ") + " Z"
+
+		const handleVertexDrag = (idx: number) => (e: React.MouseEvent) => {
+			e.preventDefault()
+			e.stopPropagation()
+			const container = plotContainerRef.current
+			if (!container) return
+			const containerRect = container.getBoundingClientRect()
+
+			const onMouseMove = (me: MouseEvent) => {
+				const relX = me.clientX - containerRect.left
+				const relY = me.clientY - containerRect.top
+				const dataCoords = pixelToData(relX, relY)
+				if (!dataCoords) return
+				// Convert display coords back to raw coords
+				const rawX = toRaw(dataCoords.dataX, xSc, cof)
+				const rawY = toRaw(dataCoords.dataY, ySc, cof)
+				setEditingVertices((prev) => {
+					const next = [...prev] as [number, number][]
+					next[idx] = swapped ? [rawY, rawX] : [rawX, rawY]
+					return next
+				})
+			}
+
+			const onMouseUp = () => {
+				document.removeEventListener("mousemove", onMouseMove)
+				document.removeEventListener("mouseup", onMouseUp)
+				// Save to backend using ref for latest vertices
+				savePolygonVertices(editingPolyGate!.gate, editingVerticesRef.current, swapped)
+			}
+
+			document.addEventListener("mousemove", onMouseMove)
+			document.addEventListener("mouseup", onMouseUp)
+		}
+
+		return (
+			<svg
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					pointerEvents: "none",
+					zIndex: 10,
+				}}
+			>
+				{/* Polygon outline */}
+				<path
+					d={polyPath}
+					fill="rgba(0,120,255,0.05)"
+					stroke="rgba(0,120,255,0.9)"
+					strokeWidth={2}
+					pointerEvents="none"
+				/>
+				{/* Vertex handles */}
+				{validVerts.map((v, i) => (
+					<circle
+						key={i}
+						cx={v.px}
+						cy={v.py}
+						r={6}
+						fill="white"
+						stroke="rgba(0,120,255,0.9)"
+						strokeWidth={2}
+						style={{ cursor: "grab", pointerEvents: "all" }}
+						onMouseDown={handleVertexDrag(i)}
+					/>
+				))}
+			</svg>
+		)
 	}
 
 	return (
@@ -687,6 +1015,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								<QuadrantIcon />
 							</ToggleButton>
 						)}
+						<ToggleButton
+							value="edit"
+							size="small"
+							title="Editar gate (arrastar/redimensionar)"
+						>
+							<CursorIcon />
+						</ToggleButton>
 					</ToggleButtonGroup>
 					<ToggleButtonGroup
 						value={plotMode}
@@ -772,6 +1107,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							</Select>
 						)}
 						<Box
+							ref={plotContainerRef}
 							sx={{
 								width: 500,
 								height: 500,
@@ -787,11 +1123,30 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								</Typography>
 							) : hasData ? (
 								<Plot
+									key={tool === "edit" ? "edit-mode" : "draw-mode"}
 									data={plotData}
-									config={{ scrollZoom: false, displayModeBar: false }}
+									config={tool === "edit" ? {
+										scrollZoom: false,
+										displayModeBar: false,
+										edits: {
+											shapePosition: true,
+											annotationPosition: false,
+											annotationTail: false,
+											annotationText: false,
+											axisTitleText: false,
+											colorbarPosition: false,
+											colorbarTitleText: false,
+											legendPosition: false,
+											legendText: false,
+											titleText: false,
+										},
+								 	} : {
+										scrollZoom: false,
+										displayModeBar: false,
+								 	}}
 									layout={{
 										dragmode,
-										shapes: gateShapes,
+										shapes: editableShapes,
 										...(plotMode === "histogram" ? { selectdirection: "h" as const } : {}),
 										xaxis: {
 											title: `${x_axix_selector}${
@@ -837,6 +1192,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									onSelected={handleSelectedArea}
 									onClick={handlePlotClickWrapper}
 									onHover={handlePlotHover}
+									onRelayout={handleRelayout}
 								/>
 							) : isLoading ? null : (
 								<Typography>
@@ -852,12 +1208,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										alignItems: "center",
 										justifyContent: "center",
 										bgcolor: "rgba(255,255,255,0.6)",
-										zIndex: 10,
+										zIndex: 20,
 									}}
 								>
 									<CircularProgress />
 								</Box>
 							)}
+							{tool === "edit" && renderPolyEditOverlay()}
 						</Box>
 					</Box>
 					<Select value={x_axix_selector} onChange={handleSelectX}>

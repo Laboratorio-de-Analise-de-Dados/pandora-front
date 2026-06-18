@@ -68,6 +68,7 @@ export interface Gate {
 	file_data: number
 	children?: Gate[]
 	dashboard: number
+	copied_from_id?: number | null
 	analysis_result?: {
 		analysis_result: {
 			summary_metrics?: {
