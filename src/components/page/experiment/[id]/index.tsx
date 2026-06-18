@@ -4,10 +4,11 @@ import Layout from "../../../Layout"
 import { useParams } from "react-router-dom"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { Experiment, ExperimentFiles, Gate } from "../../../../types"
+import { AnalysisResultData, Experiment, ExperimentFiles, Gate } from "../../../../types"
 import ScatterPlot from "../../../plotly"
 import ParentTree, { SelectedSource } from "../../../parent_tree"
-import { MdDelete as DeleteIcon } from "react-icons/md"
+import StatsPanel from "../../../stats_panel"
+import { MdDelete as DeleteIcon, MdBarChart as StatsIcon } from "react-icons/md"
 import { IconButton, Tooltip } from "@mui/material"
 import { useHistory } from "react-router-dom"
 
@@ -21,6 +22,8 @@ export default function ExperimentPage() {
 	const [experimentFiles, setExperimentFiles] = useState<ExperimentFiles[]>([])
 	const [loading, setLoading] = useState<boolean>(false)
 	const [source, setSource] = useState<SelectedSource | undefined>(undefined)
+	const [showStats, setShowStats] = useState(true)
+	const [fileStats, setFileStats] = useState<AnalysisResultData | null>(null)
 	const router = useHistory()
 
 	const handleDelete = async (id: number) => {
@@ -127,6 +130,17 @@ export default function ExperimentPage() {
 		getExperimentData(param.id)
 	}, [param.id, getExperimentData])
 
+	// Fetch file-level stats when a file is selected
+	useEffect(() => {
+		if (source?.type === "file") {
+			CytometryApi.get(`/experiment/file/${source.id}/stats`)
+				.then((res) => setFileStats(res.data))
+				.catch(() => setFileStats(null))
+		} else {
+			setFileStats(null)
+		}
+	}, [source])
+
 	return (
 		<Layout>
 			<Box
@@ -165,6 +179,7 @@ export default function ExperimentPage() {
 					display: "flex",
 					justifyContent: "center",
 					flex: 2,
+					minWidth: 0,
 					alignItems: "center",
 					flexDirection: "column",
 					gap: "1rem",
@@ -178,7 +193,18 @@ export default function ExperimentPage() {
 				)}
 				{source && (
 					<>
-						<Typography>{source.name}</Typography>
+						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+							<Typography>{source.name}</Typography>
+							<Tooltip title={showStats ? "Esconder estatísticas" : "Mostrar estatísticas"}>
+								<IconButton
+									size="small"
+									color={showStats ? "primary" : "default"}
+									onClick={() => setShowStats((p) => !p)}
+								>
+									<StatsIcon />
+								</IconButton>
+							</Tooltip>
+						</Box>
 						<ScatterPlot
 							key={`${source.type}-${source.id}`}
 							values={experiment?.values || []}
@@ -193,6 +219,26 @@ export default function ExperimentPage() {
 					</>
 				)}
 			</Box>
+			{showStats && (
+				<Box
+					sx={(theme) => ({
+						width: "22%",
+						minWidth: 260,
+						borderLeft: `1px solid ${theme.palette.divider}`,
+						bgcolor: theme.palette.background.default,
+						overflowY: "auto",
+						height: "100%",
+					})}
+				>
+					<StatsPanel
+						source={source}
+						files={experimentFiles}
+						values={experiment?.values || []}
+						fileStats={fileStats}
+						onClose={() => setShowStats(false)}
+					/>
+				</Box>
+			)}
 		</Layout>
 	)
 }
