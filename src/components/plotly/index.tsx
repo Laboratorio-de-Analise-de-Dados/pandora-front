@@ -18,6 +18,9 @@ import {
 	Button,
 	CircularProgress,
 	MenuItem,
+	Menu,
+	ListItemIcon,
+	ListItemText,
 	TextField,
 	ToggleButton,
 	ToggleButtonGroup,
@@ -29,6 +32,7 @@ import {
 	DialogActions,
 } from "@mui/material"
 import { MdExpandMore as ExpandMoreIcon } from "react-icons/md"
+import { MdPalette as PaletteIcon, MdEdit as EditIcon, MdDelete as DeleteIcon } from "react-icons/md"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -180,6 +184,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [editDialogOpen, setEditDialogOpen] = useState(false)
 	const [editGateName, setEditGateName] = useState("")
 	const [editGateColor, setEditGateColor] = useState("#0078FF")
+	// Context menu state
+	const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; gate: Gate; gateIndex: number } | null>(null)
 	// Polygon vertex editing state
 	const [editingPolyGate, setEditingPolyGate] = useState<{ gate: Gate; swapped: boolean } | null>(null)
 	const [editingVertices, setEditingVertices] = useState<[number, number][]>([])
@@ -425,6 +431,116 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		const idx = childGates.findIndex((g) => g.id === gate.id)
 		setEditGateColor(getGateColor(gate.color, idx < 0 ? 0 : idx))
 		setEditDialogOpen(true)
+	}
+
+	// Context menu: find gate under cursor position
+	const findGateAtPoint = (clientX: number, clientY: number): { gate: Gate; gateIndex: number } | null => {
+		const container = plotContainerRef.current
+		if (!container) return null
+		// Get the Plotly plot element to convert pixel → data coords
+		const plotEl = container.querySelector(".js-plotly-plot") as any
+		if (!plotEl?._fullLayout) return null
+		const xaxis = plotEl._fullLayout.xaxis
+		const yaxis = plotEl._fullLayout.yaxis
+		if (!xaxis || !yaxis) return null
+		const rect = plotEl.getBoundingClientRect()
+		const px = clientX - rect.left
+		const py = clientY - rect.top
+		const dataX = xaxis.p2d(px - xaxis._offset)
+		const dataY = yaxis.p2d(py - yaxis._offset)
+		if (dataX == null || dataY == null) return null
+
+		for (const shape of gateShapes) {
+			if (!shape._gateData) continue
+			const gc = shape._gateData.gate_coordinates
+			const gateType = gc.type ?? "rectangle"
+			const swapped = shape._swapped ?? false
+			const cof = COFACTOR
+			const xs = swapped ? effYScale : effXScale
+			const ys = swapped ? effXScale : effYScale
+
+			if (gateType === "rectangle" && "startX" in gc) {
+				const x0 = xs === "biex" ? biex(swapped ? gc.startY : gc.startX, cof) : (swapped ? gc.startY : gc.startX)
+				const x1 = xs === "biex" ? biex(swapped ? gc.endY : gc.endX, cof) : (swapped ? gc.endY : gc.endX)
+				const y0 = ys === "biex" ? biex(swapped ? gc.startX : gc.startY, cof) : (swapped ? gc.startX : gc.startY)
+				const y1 = ys === "biex" ? biex(swapped ? gc.endX : gc.endY, cof) : (swapped ? gc.endX : gc.endY)
+				const minX = Math.min(x0, x1), maxX = Math.max(x0, x1)
+				const minY = Math.min(y0, y1), maxY = Math.max(y0, y1)
+				if (dataX >= minX && dataX <= maxX && dataY >= minY && dataY <= maxY) {
+					const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
+					return { gate: shape._gateData, gateIndex: idx < 0 ? 0 : idx }
+				}
+			}
+
+			if (gateType === "polygon" && "vertices" in gc) {
+				const verts = (gc.vertices as [number, number][]).map((v) => {
+					const rawX = swapped ? v[1] : v[0]
+					const rawY = swapped ? v[0] : v[1]
+					const dx = xs === "biex" ? biex(rawX, cof) : rawX
+					const dy = ys === "biex" ? biex(rawY, cof) : rawY
+					return [dx, dy] as [number, number]
+				})
+				if (pointInPolygon(dataX, dataY, verts)) {
+					const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
+					return { gate: shape._gateData, gateIndex: idx < 0 ? 0 : idx }
+				}
+			}
+
+			if (gateType === "interval" && "startX" in gc && "endX" in gc) {
+				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
+				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
+				const minX = Math.min(x0, x1), maxX = Math.max(x0, x1)
+				if (dataX >= minX && dataX <= maxX) {
+					const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
+					return { gate: shape._gateData, gateIndex: idx < 0 ? 0 : idx }
+				}
+			}
+		}
+		return null
+	}
+
+	const handleContextMenu = (event: React.MouseEvent) => {
+		const hit = findGateAtPoint(event.clientX, event.clientY)
+		if (hit) {
+			event.preventDefault()
+			setContextMenu({ mouseX: event.clientX, mouseY: event.clientY, gate: hit.gate, gateIndex: hit.gateIndex })
+		}
+	}
+
+	const handleContextMenuClose = () => setContextMenu(null)
+
+	const handleContextMenuColor = () => {
+		if (!contextMenu) return
+		setSelectedGate(contextMenu.gate)
+		setEditGateName(contextMenu.gate.name)
+		setEditGateColor(getGateColor(contextMenu.gate.color, contextMenu.gateIndex))
+		setEditDialogOpen(true)
+		setContextMenu(null)
+	}
+
+	const handleContextMenuRename = () => {
+		if (!contextMenu) return
+		setSelectedGate(contextMenu.gate)
+		setEditGateName(contextMenu.gate.name)
+		setEditGateColor(getGateColor(contextMenu.gate.color, contextMenu.gateIndex))
+		setEditDialogOpen(true)
+		setContextMenu(null)
+	}
+
+	const handleContextMenuDelete = async () => {
+		if (!contextMenu) return
+		const gate = contextMenu.gate
+		setContextMenu(null)
+		try {
+			await CytometryApi.delete(`/analytics/gate/${gate.id}`)
+			toast.success(`Gate "${gate.name}" excluído`, { position: "bottom-right" })
+			loadFile()
+		} catch (error: any) {
+			const msg = error?.response?.data
+				? JSON.stringify(error.response.data)
+				: error?.message ?? "Erro desconhecido"
+			toast.error(`Erro ao excluir gate: ${msg}`, { position: "bottom-right" })
+		}
 	}
 
 	// Atualizar nome do gate
@@ -1123,6 +1239,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						)}
 						<Box
 							ref={plotContainerRef}
+							onContextMenu={handleContextMenu}
 							sx={{
 								width: 500,
 								height: 500,
@@ -1479,6 +1596,29 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					</Button>
 				</DialogActions>
 			</Dialog>
+
+			{/* Context menu (botão direito) no gate */}
+			<Menu
+				open={contextMenu !== null}
+				onClose={handleContextMenuClose}
+				anchorReference="anchorPosition"
+				anchorPosition={
+					contextMenu ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
+				}
+			>
+				<MenuItem onClick={handleContextMenuColor}>
+					<ListItemIcon><PaletteIcon fontSize="small" /></ListItemIcon>
+					<ListItemText>Trocar cor</ListItemText>
+				</MenuItem>
+				<MenuItem onClick={handleContextMenuRename}>
+					<ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+					<ListItemText>Renomear</ListItemText>
+				</MenuItem>
+				<MenuItem onClick={handleContextMenuDelete}>
+					<ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+					<ListItemText>Excluir</ListItemText>
+				</MenuItem>
+			</Menu>
 		</Box>
 	)
 }
