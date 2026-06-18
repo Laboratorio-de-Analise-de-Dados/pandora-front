@@ -87,6 +87,7 @@ export interface Gate {
 	children?: Gate[]
 	dashboard: number
 	copied_from_id?: number | null
+	color?: string | null
 	analysis_result?: {
 		analysis_result: AnalysisResultData
 	}

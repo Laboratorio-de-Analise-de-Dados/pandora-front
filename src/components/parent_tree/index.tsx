@@ -31,6 +31,7 @@ import {
 } from "@mui/material"
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
 import { ExperimentFiles, Gate, GateCoordinates } from "../../types"
+import { getGateColor } from "../../constants/gateColors"
 import React, { useState } from "react"
 
 export interface SelectedSource {
@@ -61,6 +62,7 @@ const renderGate = (
 	onRequestDelete?: (gateId: number, gateName: string) => void,
 	onRequestRename?: (gateId: number, gateName: string) => void,
 	onRequestApply?: (gateId: number, gateName: string) => void,
+	gateIndex = 0,
 ) => {
 	const itemId = `gate-${gate.id}-${parentId}`
 	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
@@ -79,7 +81,18 @@ const renderGate = (
 				>
 					<Box sx={{ display: "flex", flexDirection: "column" }}>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-							<span style={{ fontSize: "0.85rem" }}>🔲{gate.name}</span>
+							<Box
+								component="span"
+								sx={{
+									display: "inline-block",
+									width: 10,
+									height: 10,
+									borderRadius: "2px",
+									backgroundColor: getGateColor(gate.color, gateIndex),
+									flexShrink: 0,
+								}}
+							/>
+							<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
 							{gate.copied_from_id && (
 								<Tooltip title={`Copiado de gate #${gate.copied_from_id}`} arrow>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
@@ -148,8 +161,8 @@ const renderGate = (
 				</Box>
 			}
 		>
-			{gate.children?.map((childGate) =>
-				renderGate(childGate, itemId, onRequestDelete, onRequestRename, onRequestApply),
+			{gate.children?.map((childGate, childIdx) =>
+				renderGate(childGate, itemId, onRequestDelete, onRequestRename, onRequestApply, childIdx),
 			)}
 		</TreeItem>
 	)
@@ -167,8 +180,8 @@ const renderFile = (
 		<TreeItem key={fileId} itemId={fileId} label={
 		<Typography sx={{ fontSize: "0.8rem" }}>📄{file.file_name}</Typography>
 	}>
-			{file.gates.map((gate) =>
-				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply),
+			{file.gates.map((gate, idx) =>
+				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply, idx),
 			)}
 		</TreeItem>
 	)

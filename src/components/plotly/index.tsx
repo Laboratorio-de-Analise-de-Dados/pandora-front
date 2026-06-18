@@ -35,6 +35,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import CytometryApi from "../../API"
 import { DensityResponse, Gate, GateCoordinates, NewGate, Scale } from "../../types"
+import { getGateColor, hexToRgba } from "../../constants/gateColors"
+import ColorPicker from "../color_picker"
 
 type PlotMode = "heatmap" | "scatter" | "histogram"
 type GateTool = "rect" | "poly" | "quad" | "edit"
@@ -177,6 +179,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
 	const [editDialogOpen, setEditDialogOpen] = useState(false)
 	const [editGateName, setEditGateName] = useState("")
+	const [editGateColor, setEditGateColor] = useState("#0078FF")
 	// Polygon vertex editing state
 	const [editingPolyGate, setEditingPolyGate] = useState<{ gate: Gate; swapped: boolean } | null>(null)
 	const [editingVertices, setEditingVertices] = useState<[number, number][]>([])
@@ -419,6 +422,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const handleGateClick = (gate: Gate) => {
 		setSelectedGate(gate)
 		setEditGateName(gate.name)
+		const idx = childGates.findIndex((g) => g.id === gate.id)
+		setEditGateColor(getGateColor(gate.color, idx < 0 ? 0 : idx))
 		setEditDialogOpen(true)
 	}
 
@@ -430,7 +435,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		}
 
 		try {
-			await CytometryApi.patch(`/analytics/gate/${selectedGate.id}`, { name: editGateName })
+			await CytometryApi.patch(`/analytics/gate/${selectedGate.id}`, { name: editGateName, color: editGateColor })
 			toast.success("Gate atualizado com sucesso!", { position: "bottom-right" })
 			setEditDialogOpen(false)
 			setSelectedGate(null)
@@ -454,32 +459,34 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	// Converte child gates em Plotly shapes para exibir no plot.
 	const gateShapes: any[] = childGates
-		.map((gate) => {
+		.map((gate, gateIndex) => {
 			const gc = gate.gate_coordinates
 			if (!gc) return null
 			const gateType = gc.type ?? "rectangle"
 
 			if (gateType === "interval" && "x_axis" in gc) {
-				if (gc.x_axis === x_axix_selector && plotMode === "histogram") return { gate, swapped: false }
+				if (gc.x_axis === x_axix_selector && plotMode === "histogram") return { gate, swapped: false, gateIndex }
 				return null
 			}
 			if (gateType === "quadrant" && "x_axis" in gc && "y_axis" in gc) {
 				const m = matchAxes(gc.x_axis, gc.y_axis)
-				if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped" }
+				if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped", gateIndex }
 				return null
 			}
 			// rectangle or polygon
 			const xAxis = "x_axis" in gc ? (gc as any).x_axis : undefined
 			const yAxis = "y_axis" in gc ? (gc as any).y_axis : undefined
 			const m = matchAxes(xAxis, yAxis)
-			if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped" }
+			if (m !== "none" && plotMode !== "histogram") return { gate, swapped: m === "swapped", gateIndex }
 			return null
 		})
-		.filter((item): item is { gate: Gate; swapped: boolean } => item !== null)
-		.flatMap(({ gate, swapped }): any[] => {
+		.filter((item): item is { gate: Gate; swapped: boolean; gateIndex: number } => item !== null)
+		.flatMap(({ gate, swapped, gateIndex }): any[] => {
 			const gc = gate.gate_coordinates
 			const gateType = gc.type ?? "rectangle"
 			const cof = COFACTOR
+
+			const color = getGateColor(gate.color, gateIndex)
 
 			// Quando os eixos estão invertidos, troca a escala usada para cada dimensão.
 			const xScale = swapped ? effYScale : effXScale
@@ -503,9 +510,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				return [{
 					type: "rect",
 					x0, x1, y0, y1,
-					line: { color: "rgba(0,120,255,0.7)", width: 2 },
-					fillcolor: "rgba(0,120,255,0.05)",
-					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					line: { color: hexToRgba(color, 0.7), width: 2 },
+					fillcolor: hexToRgba(color, 0.05),
+					label: { text: gateLabel, font: { size: 11, color: hexToRgba(color, 0.9) } },
 					_gateId: gate.id,
 					_gateData: gate,
 					_swapped: swapped,
@@ -516,10 +523,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
 				const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
 				return [
-					{ type: "line", x0, x1: x0, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.7)", width: 2 } },
-					{ type: "line", x0: x1, x1, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.7)", width: 2 } },
-					{ type: "rect", x0, x1, y0: 0, y1: 1, yref: "paper", line: { width: 0 }, fillcolor: "rgba(0,120,255,0.08)",
-					  label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					{ type: "line", x0, x1: x0, y0: 0, y1: 1, yref: "paper", line: { color: hexToRgba(color, 0.7), width: 2 } },
+					{ type: "line", x0: x1, x1, y0: 0, y1: 1, yref: "paper", line: { color: hexToRgba(color, 0.7), width: 2 } },
+					{ type: "rect", x0, x1, y0: 0, y1: 1, yref: "paper", line: { width: 0 }, fillcolor: hexToRgba(color, 0.08),
+					  label: { text: gateLabel, font: { size: 11, color: hexToRgba(color, 0.9) } },
 					  _gateId: gate.id,
 					  _gateData: gate,
 					  _swapped: false,
@@ -540,9 +547,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				return [{
 					type: "path",
 					path,
-					line: { color: "rgba(0,120,255,0.7)", width: 2 },
-					fillcolor: "rgba(0,120,255,0.05)",
-					label: { text: gateLabel, font: { size: 11, color: "rgba(0,120,255,0.9)" } },
+					line: { color: hexToRgba(color, 0.7), width: 2 },
+					fillcolor: hexToRgba(color, 0.05),
+					label: { text: gateLabel, font: { size: 11, color: hexToRgba(color, 0.9) } },
 					_gateId: gate.id,
 					_gateData: gate,
 					_swapped: swapped,
@@ -555,8 +562,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				const cx = xScale === "biex" ? biex(rawCx, cof) : rawCx
 				const cy = yScale === "biex" ? biex(rawCy, cof) : rawCy
 				return [
-					{ type: "line", x0: cx, x1: cx, y0: 0, y1: 1, yref: "paper", line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
-					{ type: "line", x0: 0, x1: 1, xref: "paper", y0: cy, y1: cy, line: { color: "rgba(0,120,255,0.5)", width: 1.5, dash: "dash" } },
+					{ type: "line", x0: cx, x1: cx, y0: 0, y1: 1, yref: "paper", line: { color: hexToRgba(color, 0.5), width: 1.5, dash: "dash" } },
+					{ type: "line", x0: 0, x1: 1, xref: "paper", y0: cy, y1: cy, line: { color: hexToRgba(color, 0.5), width: 1.5, dash: "dash" } },
 				]
 			}
 
@@ -1435,14 +1442,17 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			<Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
 				<DialogTitle>Editar Gate</DialogTitle>
 				<DialogContent sx={{ pt: 2 }}>
-					<TextField
-						fullWidth
-						label="Nome do Gate"
-						value={editGateName}
-						onChange={(e) => setEditGateName(e.target.value)}
-						placeholder="Digite o novo nome"
-						autoFocus
-					/>
+					<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+						<ColorPicker value={editGateColor} onChange={setEditGateColor} />
+						<TextField
+							fullWidth
+							label="Nome do Gate"
+							value={editGateName}
+							onChange={(e) => setEditGateName(e.target.value)}
+							placeholder="Digite o novo nome"
+							autoFocus
+						/>
+					</Box>
 					{selectedGate?.analysis_result?.analysis_result?.summary_metrics && (
 						<Box sx={{ mt: 2, p: 1.5, bgcolor: "background.paper", borderRadius: 1 }}>
 							<Typography variant="caption" color="text.secondary">
