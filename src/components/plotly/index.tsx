@@ -5,7 +5,7 @@ import { MdBarChart as HistogramIcon } from "react-icons/md"
 import { MdRefresh as RefreshIcon } from "react-icons/md"
 import { MdPentagon as PolygonIcon } from "react-icons/md"
 import { MdAddBox as QuadrantIcon } from "react-icons/md"
-import { MdNearMe as CursorIcon } from "react-icons/md"
+import { MdOpenWith as ReshapeIcon } from "react-icons/md"
 
 import {
 	Accordion,
@@ -186,6 +186,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [editGateColor, setEditGateColor] = useState("#0078FF")
 	// Context menu state
 	const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; gate: Gate; gateIndex: number } | null>(null)
+	// Reshape mode: which gate is currently being reshaped (independent of tool selector)
+	const [reshapingGateId, setReshapingGateId] = useState<number | null>(null)
 	// Polygon vertex editing state
 	const [editingPolyGate, setEditingPolyGate] = useState<{ gate: Gate; swapped: boolean } | null>(null)
 	const [editingVertices, setEditingVertices] = useState<[number, number][]>([])
@@ -543,6 +545,32 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		}
 	}
 
+	const handleContextMenuReshape = () => {
+		if (!contextMenu) return
+		const gate = contextMenu.gate
+		const gc = gate.gate_coordinates
+		const gateType = gc.type ?? "rectangle"
+		setContextMenu(null)
+
+		if (gateType === "polygon" && "vertices" in gc) {
+			// For polygons, activate vertex editing
+			const gateShape = gateShapes.find((s) => s._gateData?.id === gate.id)
+			const swapped = gateShape?._swapped ?? false
+			setEditingPolyGate({ gate, swapped })
+			setEditingVertices(gc.vertices as [number, number][])
+			setReshapingGateId(gate.id)
+		} else {
+			// For rectangles/intervals, enable Plotly native drag
+			setReshapingGateId(gate.id)
+		}
+	}
+
+	const handleExitReshape = () => {
+		setReshapingGateId(null)
+		setEditingPolyGate(null)
+		setEditingVertices([])
+	}
+
 	// Atualizar nome do gate
 	const handleSaveGateName = async () => {
 		if (!selectedGate || !editGateName.trim()) {
@@ -696,14 +724,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		const gateData = shape._gateData ?? null
 		const swappedFlag = shape._swapped ?? false
 		shapeGateMap.current[i] = gateData ? { gate: gateData, swapped: swappedFlag } : null
-		const isEditable = tool === "edit" && shape.type === "rect"
-		return { ...shape, editable: isEditable }
+		const isEditTool = tool === "edit" && shape.type === "rect"
+		const isReshaping = reshapingGateId !== null && gateData?.id === reshapingGateId && shape.type === "rect"
+		return { ...shape, editable: isEditTool || isReshaping }
 	})
 	shapeGateMap.current.length = editableShapes.length
 
 	// Handle shape drag/resize in edit mode via Plotly's onRelayout event.
 	const handleRelayout = async (relayoutData: Record<string, any>) => {
-		if (tool !== "edit") return
+		if (tool !== "edit" && reshapingGateId === null) return
 		// Plotly emits keys like "shapes[0].x0", "shapes[0].x1", etc.
 		const shapeUpdates = new Map<number, Record<string, number>>()
 		for (const key of Object.keys(relayoutData)) {
@@ -864,7 +893,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const yTicks = buildTicks(yTickSource, effYScale, effCof)
 
 	const dragmode: "select" | "lasso" | "pan" | false =
-		tool === "edit" ? "pan" : tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
+		(tool === "edit" || reshapingGateId !== null) ? "pan" : tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
 
 	// Handler para cliques no gráfico que podem ser em shapes
 	const handlePlotHover = (event: any) => {
@@ -930,13 +959,23 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		await handlePlotClick(event)
 	}
 
-	// Deactivate polygon editing when switching tools
+	// Deactivate polygon editing when switching tools (but not if reshape is active)
 	useEffect(() => {
-		if (tool !== "edit") {
+		if (tool !== "edit" && reshapingGateId === null) {
 			setEditingPolyGate(null)
 			setEditingVertices([])
 		}
-	}, [tool])
+	}, [tool, reshapingGateId])
+
+	// Escape key exits reshape mode
+	useEffect(() => {
+		if (reshapingGateId === null) return
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") handleExitReshape()
+		}
+		document.addEventListener("keydown", handleKeyDown)
+		return () => document.removeEventListener("keydown", handleKeyDown)
+	}, [reshapingGateId])
 
 	// Point-in-polygon test (ray casting)
 	const pointInPolygon = (px: number, py: number, verts: [number, number][]): boolean => {
@@ -1146,13 +1185,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								<QuadrantIcon />
 							</ToggleButton>
 						)}
-						<ToggleButton
-							value="edit"
-							size="small"
-							title="Editar gate (arrastar/redimensionar)"
-						>
-							<CursorIcon />
-						</ToggleButton>
+
 					</ToggleButtonGroup>
 					<ToggleButtonGroup
 						value={plotMode}
@@ -1255,9 +1288,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								</Typography>
 							) : hasData ? (
 								<Plot
-									key={tool === "edit" ? "edit-mode" : "draw-mode"}
+									key={(tool === "edit" || reshapingGateId !== null) ? "edit-mode" : "draw-mode"}
 									data={plotData}
-									config={tool === "edit" ? {
+									config={(tool === "edit" || reshapingGateId !== null) ? {
 										scrollZoom: false,
 										displayModeBar: false,
 										edits: {
@@ -1347,7 +1380,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									<CircularProgress />
 								</Box>
 							)}
-							{tool === "edit" && renderPolyEditOverlay()}
+							{(tool === "edit" || reshapingGateId !== null) && renderPolyEditOverlay()}
+							{reshapingGateId !== null && (
+								<Box sx={{ position: "absolute", top: 8, right: 8, zIndex: 30 }}>
+									<Button
+										variant="contained"
+										size="small"
+										onClick={handleExitReshape}
+									>
+										Concluir
+									</Button>
+								</Box>
+							)}
 						</Box>
 					</Box>
 					<Select value={x_axix_selector} onChange={handleSelectX}>
@@ -1606,6 +1650,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					contextMenu ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
 				}
 			>
+				<MenuItem onClick={handleContextMenuReshape}>
+					<ListItemIcon><ReshapeIcon fontSize="small" /></ListItemIcon>
+					<ListItemText>Redimensionar</ListItemText>
+				</MenuItem>
 				<MenuItem onClick={handleContextMenuColor}>
 					<ListItemIcon><PaletteIcon fontSize="small" /></ListItemIcon>
 					<ListItemText>Trocar cor</ListItemText>
