@@ -10,6 +10,8 @@ import {
 	DialogTitle,
 	FormControlLabel,
 	IconButton,
+	Menu,
+	MenuItem,
 	Table,
 	TableBody,
 	TableCell,
@@ -29,7 +31,10 @@ import {
 	MdClose as CloseIcon,
 	MdCompareArrows as CompareIcon,
 	MdEdit as EditIcon,
+	MdKeyboardArrowDown as ArrowDownIcon,
+	MdChevronRight as ChevronIcon,
 } from "react-icons/md"
+import CytometryApi from "../../API"
 import type { SelectedSource } from "../parent_tree"
 import type {
 	AnalysisResultData,
@@ -92,6 +97,40 @@ const LS_KEY_CHANNELS = "pandora_stats_selectedChannels"
 const LS_KEY_METRICS = "pandora_stats_visibleMetrics"
 const LS_KEY_LABELS = "pandora_channel_labels"
 
+// --- Selectable item for the hierarchical picker ---
+
+interface SelectableItem {
+	type: "file" | "gate"
+	id: number
+	name: string
+	fileDataId: number
+	path: string // ex: "sample.fcs > Lymphocytes > CD3+"
+	depth: number
+}
+
+const buildSelectableItems = (files: ExperimentFiles[]): SelectableItem[] => {
+	const items: SelectableItem[] = []
+	for (const f of files) {
+		items.push({
+			type: "file",
+			id: f.id,
+			name: f.file_name,
+			fileDataId: f.id,
+			path: f.file_name,
+			depth: 0,
+		})
+		const addGates = (gates: Gate[], parentPath: string, fileDataId: number, depth: number) => {
+			for (const g of gates) {
+				const p = `${parentPath} > ${g.name}`
+				items.push({ type: "gate", id: g.id, name: g.name, fileDataId, path: p, depth })
+				if (g.children) addGates(g.children, p, fileDataId, depth + 1)
+			}
+		}
+		addGates(f.gates, f.file_name, f.id, 1)
+	}
+	return items
+}
+
 // --- Helpers ---
 
 const findGateInTree = (gates: Gate[], id: number): Gate | undefined => {
@@ -117,7 +156,7 @@ const collectAllGates = (gates: Gate[]): Gate[] => {
 // --- Component ---
 
 interface StatsPanelProps {
-	source: SelectedSource | undefined
+	source?: SelectedSource | undefined
 	files: ExperimentFiles[]
 	values: string[]
 	onClose?: () => void
@@ -125,12 +164,49 @@ interface StatsPanelProps {
 }
 
 export default function StatsPanel({
-	source,
+	source: externalSource,
 	files,
 	values,
 	onClose,
-	fileStats,
+	fileStats: externalFileStats,
 }: StatsPanelProps) {
+	// --- Internal source selection (independent from plot) ---
+	const [statsSource, setStatsSource] = useState<SelectableItem | null>(null)
+	const [selectorAnchor, setSelectorAnchor] = useState<HTMLElement | null>(null)
+	const [internalFileStats, setInternalFileStats] = useState<AnalysisResultData | null>(null)
+
+	// Build hierarchical list of selectable items
+	const selectableItems = useMemo(() => buildSelectableItems(files), [files])
+
+	// Derive effective source: internal selection takes priority, fallback to external
+	const source: SelectedSource | undefined = useMemo(() => {
+		if (statsSource) {
+			return { type: statsSource.type, id: statsSource.id, name: statsSource.name, fileDataId: statsSource.fileDataId }
+		}
+		return externalSource
+	}, [statsSource, externalSource])
+
+	// Derive effective fileStats
+	const fileStats = statsSource ? internalFileStats : (externalFileStats ?? internalFileStats)
+
+	// Fetch file stats when a file is selected internally
+	useEffect(() => {
+		if (source?.type === "file") {
+			CytometryApi.get(`/experiment/file/${source.id}/stats`)
+				.then((res) => setInternalFileStats(res.data))
+				.catch(() => setInternalFileStats(null))
+		} else {
+			setInternalFileStats(null)
+		}
+	}, [source?.type, source?.id])
+
+	// Auto-select first file if nothing is selected
+	useEffect(() => {
+		if (!statsSource && !externalSource && selectableItems.length > 0) {
+			setStatsSource(selectableItems[0])
+		}
+	}, [statsSource, externalSource, selectableItems])
+
 	// --- State ---
 	const [search, setSearch] = useState("")
 	const [visibleMetrics, setVisibleMetrics] = useState<Set<MetricColumn>>(() => {
@@ -435,19 +511,100 @@ export default function StatsPanel({
 
 	// --- Render ---
 
-	// Empty state
+	// Current path display
+	const currentPath = statsSource?.path ?? (source ? (source.type === "file" ? source.name : source.name) : null)
+
+	// Hierarchical selector component
+	const renderSourceSelector = () => (
+		<>
+			<Button
+				size="small"
+				variant="outlined"
+				onClick={(e) => setSelectorAnchor(e.currentTarget)}
+				endIcon={<ArrowDownIcon />}
+				sx={{
+					textTransform: "none",
+					fontSize: "0.75rem",
+					py: 0.25,
+					px: 1,
+					mb: 0.5,
+					justifyContent: "space-between",
+					width: "100%",
+					overflow: "hidden",
+				}}
+			>
+				<Typography
+					variant="caption"
+					noWrap
+					sx={{ flex: 1, textAlign: "left", fontSize: "0.75rem" }}
+				>
+					{currentPath ?? "Selecionar..."}
+				</Typography>
+			</Button>
+			<Menu
+				anchorEl={selectorAnchor}
+				open={Boolean(selectorAnchor)}
+				onClose={() => setSelectorAnchor(null)}
+				slotProps={{ paper: { sx: { maxHeight: 320, maxWidth: 340, minWidth: 220 } } }}
+			>
+				{selectableItems.map((item) => {
+					const isSelected = source?.type === item.type && source?.id === item.id
+					return (
+						<MenuItem
+							key={`${item.type}-${item.id}`}
+							selected={isSelected}
+							onClick={() => {
+								setStatsSource(item)
+								setSelectorAnchor(null)
+							}}
+							sx={{ py: 0.5, pl: 1.5 + item.depth * 2, minHeight: 0 }}
+						>
+							<Typography variant="caption" sx={{ fontSize: "0.75rem" }} noWrap>
+								{item.depth > 0 && (
+									<ChevronIcon style={{ fontSize: 12, verticalAlign: "middle", marginRight: 2, opacity: 0.5 }} />
+								)}
+								{item.type === "file" ? "📄 " : "🔲 "}
+								{item.name}
+							</Typography>
+						</MenuItem>
+					)
+				})}
+				{selectableItems.length === 0 && (
+					<MenuItem disabled>
+						<Typography variant="caption" color="text.secondary">Nenhum arquivo carregado</Typography>
+					</MenuItem>
+				)}
+			</Menu>
+		</>
+	)
+
+	// Empty state — show selector even when nothing is selected
 	if (!source) {
 		return (
-			<Box sx={{ p: 2, textAlign: "center" }}>
-				<StatsIcon style={{ fontSize: 48, opacity: 0.3 }} />
-				<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-					Selecione um gate ou arquivo na árvore para ver as estatísticas.
-				</Typography>
+			<Box sx={{ p: 2 }}>
+				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+					<Typography variant="subtitle2" fontWeight="bold">
+						<StatsIcon style={{ fontSize: 18, verticalAlign: "middle", marginRight: 4 }} />
+						Estatísticas
+					</Typography>
+					{onClose && (
+						<IconButton size="small" onClick={onClose}>
+							<CloseIcon style={{ fontSize: 16 }} />
+						</IconButton>
+					)}
+				</Box>
+				{renderSourceSelector()}
+				<Box sx={{ textAlign: "center", mt: 2 }}>
+					<StatsIcon style={{ fontSize: 36, opacity: 0.3 }} />
+					<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+						Selecione um gate ou arquivo acima para ver as estatísticas.
+					</Typography>
+				</Box>
 			</Box>
 		)
 	}
 
-	// File selected without stats
+	// File selected without stats (loading or unavailable)
 	if (source.type === "file" && !fileStats) {
 		return (
 			<Box sx={{ p: 2 }}>
@@ -462,10 +619,8 @@ export default function StatsPanel({
 						</IconButton>
 					)}
 				</Box>
-				<Typography variant="body2" fontWeight="bold" sx={{ mb: 1 }}>
-					📄 {source.name}
-				</Typography>
-				<Box sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 1 }}>
+				{renderSourceSelector()}
+				<Box sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 1, mt: 0.5 }}>
 					<Typography variant="body2" color="text.secondary">
 						Canais disponíveis:
 					</Typography>
@@ -479,7 +634,7 @@ export default function StatsPanel({
 						color="text.secondary"
 						sx={{ mt: 1, display: "block" }}
 					>
-						ℹ Crie um gate para ver estatísticas detalhadas.
+						Carregando estatísticas...
 					</Typography>
 				</Box>
 			</Box>
@@ -529,10 +684,8 @@ export default function StatsPanel({
 				</Box>
 			</Box>
 
-			{/* Gate name */}
-			<Typography variant="body2" fontWeight="bold" noWrap sx={{ mb: 0.5 }}>
-				{source.type === "gate" ? "🔲" : "📄"} {currentGate?.name ?? source.name}
-			</Typography>
+			{/* Source selector (path) */}
+			{renderSourceSelector()}
 
 			{/* Summary card */}
 			{summary && (
