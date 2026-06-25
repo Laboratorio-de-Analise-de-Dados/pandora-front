@@ -4,6 +4,7 @@ import {
 	Button,
 	Checkbox,
 	Chip,
+	Collapse,
 	Dialog,
 	DialogActions,
 	DialogContent,
@@ -33,6 +34,10 @@ import {
 	MdEdit as EditIcon,
 	MdKeyboardArrowDown as ArrowDownIcon,
 	MdChevronRight as ChevronIcon,
+	MdExpandMore as ExpandMoreIcon,
+	MdExpandLess as ExpandLessIcon,
+	MdAdd as AddIcon,
+	MdRemoveCircleOutline as RemoveIcon,
 } from "react-icons/md"
 import CytometryApi from "../../API"
 import type { SelectedSource } from "../parent_tree"
@@ -217,8 +222,10 @@ export default function StatsPanel({
 		return new Set(DEFAULT_VISIBLE_METRICS)
 	})
 	const [selectedChannels, setSelectedChannels] = useState<Set<string> | null>(null)
-	const [compareMode, setCompareMode] = useState(false)
-	const [compareGateIds, setCompareGateIds] = useState<number[]>([])
+	const [compareExpanded, setCompareExpanded] = useState(false)
+	const [compareItems, setCompareItems] = useState<SelectableItem[]>([])
+	const [compareAnchor, setCompareAnchor] = useState<HTMLElement | null>(null)
+	const [compareChannels, setCompareChannels] = useState<Set<string> | null>(null)
 	const [customLabels, setCustomLabels] = useState<Record<string, string>>(() => {
 		try {
 			const saved = localStorage.getItem(LS_KEY_LABELS)
@@ -370,68 +377,45 @@ export default function StatsPanel({
 		return undefined
 	}, [currentGate, source, fileStats])
 
-	// Comparison gates
-	const compareGates = useMemo(() => {
-		if (!compareMode || compareGateIds.length === 0) return []
-		const gates: Gate[] = []
-		for (const id of compareGateIds) {
-			for (const f of files) {
-				const g = findGateInTree(f.gates, id)
-				if (g) {
-					gates.push(g)
-					break
+	// Resolve comparison items to gates/file data
+	const compareData = useMemo(() => {
+		if (compareItems.length === 0) return []
+		return compareItems.map((item) => {
+			if (item.type === "gate") {
+				for (const f of files) {
+					const g = findGateInTree(f.gates, item.id)
+					if (g) return { item, gate: g, analysis: g.analysis_result?.analysis_result }
 				}
 			}
-		}
-		return gates
-	}, [compareMode, compareGateIds, files])
-
-	// All gates for comparison picker
-	const allGates = useMemo(() => {
-		const gates: Gate[] = []
-		for (const f of files) {
-			gates.push(...collectAllGates(f.gates))
-		}
-		return gates
-	}, [files])
-
-	// Multi-file analysis: find same-named gates across different files
-	const multiFileData = useMemo(() => {
-		if (!currentGate) return null
-		const gateName = currentGate.name
-		const entries: { fileName: string; gate: Gate }[] = []
-		for (const f of files) {
-			const allG = collectAllGates(f.gates)
-			for (const g of allG) {
-				if (g.name === gateName && g.id !== currentGate.id) {
-					entries.push({ fileName: f.file_name, gate: g })
-				}
-			}
-		}
-		if (entries.length === 0) return null
-		// Add current gate's file too
-		const currentFile = files.find((f) => {
-			const allG = collectAllGates(f.gates)
-			return allG.some((g) => g.id === currentGate.id)
+			return { item, gate: undefined, analysis: undefined }
 		})
-		const all = [
-			{ fileName: currentFile?.file_name ?? "Arquivo atual", gate: currentGate },
-			...entries,
-		]
-		// Compute aggregate stats
-		const counts = all.map((e) => e.gate.analysis_result?.analysis_result?.summary_metrics?.count ?? 0)
-		const avgCount = counts.reduce((a, b) => a + b, 0) / counts.length
-		const pcts = all
-			.map((e) => e.gate.analysis_result?.analysis_result?.summary_metrics?.percent_of_parent_population)
-			.filter((v): v is number => v != null)
-		const avgPct = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : undefined
-		return { entries: all, avgCount, avgPct }
-	}, [currentGate, files])
+	}, [compareItems, files])
 
-	const toggleCompareGate = useCallback((id: number) => {
-		setCompareGateIds((prev) =>
-			prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-		)
+	// Channels available across all compare items
+	const compareAvailableChannels = useMemo(() => {
+		const channels = new Set<string>()
+		for (const d of compareData) {
+			const cs = d.analysis?.channel_statistics
+			if (cs) Object.keys(cs).forEach((ch) => channels.add(ch))
+		}
+		return [...channels]
+	}, [compareData])
+
+	// Display channels for comparison (intersection of selected + available)
+	const compareDisplayChannels = useMemo(() => {
+		if (!compareChannels) return compareAvailableChannels
+		return compareAvailableChannels.filter((ch) => compareChannels.has(ch))
+	}, [compareAvailableChannels, compareChannels])
+
+	const addCompareItem = useCallback((item: SelectableItem) => {
+		setCompareItems((prev) => {
+			if (prev.some((i) => i.type === item.type && i.id === item.id)) return prev
+			return [...prev, item]
+		})
+	}, [])
+
+	const removeCompareItem = useCallback((item: SelectableItem) => {
+		setCompareItems((prev) => prev.filter((i) => !(i.type === item.type && i.id === item.id)))
 	}, [])
 
 	// --- Export ---
@@ -664,18 +648,6 @@ export default function StatsPanel({
 							<ExportIcon style={{ fontSize: 16, color: "#1976d2" }} />
 						</IconButton>
 					</Tooltip>
-					<Tooltip title={compareMode ? "Sair da comparação" : "Comparar gates"}>
-						<IconButton
-							size="small"
-							color={compareMode ? "primary" : "default"}
-							onClick={() => {
-								setCompareMode((p) => !p)
-								if (compareMode) setCompareGateIds([])
-							}}
-						>
-							<CompareIcon style={{ fontSize: 16 }} />
-						</IconButton>
-					</Tooltip>
 					{onClose && (
 						<IconButton size="small" onClick={onClose}>
 							<CloseIcon style={{ fontSize: 16 }} />
@@ -727,68 +699,7 @@ export default function StatsPanel({
 				</Box>
 			)}
 
-			{/* Comparison mode: gate selector */}
-			{compareMode && (
-				<Box sx={{ mb: 1, p: 1, border: "1px solid", borderColor: "divider", borderRadius: 1, maxHeight: 120, overflow: "auto" }}>
-					<Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
-						Selecione gates para comparar:
-					</Typography>
-					{allGates.map((g) => (
-						<FormControlLabel
-							key={g.id}
-							control={
-								<Checkbox
-									size="small"
-									checked={compareGateIds.includes(g.id)}
-									onChange={() => toggleCompareGate(g.id)}
-								/>
-							}
-							label={<Typography variant="caption">{g.name}</Typography>}
-							sx={{ display: "block", m: 0, height: 24 }}
-						/>
-					))}
-				</Box>
-			)}
-
-			{/* Comparison table */}
-			{compareMode && compareGates.length > 0 && (
-				<Box sx={{ mb: 1 }}>
-					<Typography variant="caption" fontWeight="bold" sx={{ mb: 0.5, display: "block" }}>
-						Comparação
-					</Typography>
-					<TableContainer sx={{ maxHeight: 200 }}>
-						<Table size="small" stickyHeader>
-							<TableHead>
-								<TableRow>
-									<TableCell sx={{ py: 0.5, px: 1, fontSize: "0.7rem", fontWeight: "bold" }}>Gate</TableCell>
-									<TableCell sx={{ py: 0.5, px: 1, fontSize: "0.7rem", fontWeight: "bold" }} align="right">Count</TableCell>
-									<TableCell sx={{ py: 0.5, px: 1, fontSize: "0.7rem", fontWeight: "bold" }} align="right">%P</TableCell>
-									<TableCell sx={{ py: 0.5, px: 1, fontSize: "0.7rem", fontWeight: "bold" }} align="right">%T</TableCell>
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{compareGates.map((g) => {
-									const sm = g.analysis_result?.analysis_result?.summary_metrics
-									return (
-										<TableRow key={g.id}>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.7rem" }}>{g.name}</TableCell>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.7rem" }} align="right">
-												{sm?.count.toLocaleString() ?? "–"}
-											</TableCell>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.7rem" }} align="right">
-												{fmtPct(sm?.percent_of_parent_population)}
-											</TableCell>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.7rem" }} align="right">
-												{fmtPct(sm?.percent_of_total_population)}
-											</TableCell>
-										</TableRow>
-									)
-								})}
-							</TableBody>
-						</Table>
-					</TableContainer>
-				</Box>
-			)}
+			{/* Collapsable comparison section */}
 
 			{/* Channel selector */}
 			{channelStats && (
@@ -937,58 +848,231 @@ export default function StatsPanel({
 				</>
 			)}
 
-			{/* Multi-file analysis */}
-			{multiFileData && (
-				<Box sx={{ mt: 1 }}>
-					<Typography variant="caption" fontWeight="bold" sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-						<CompareIcon style={{ fontSize: 14 }} />
-						Multi-Arquivo: "{currentGate?.name}" em {multiFileData.entries.length} arquivos
+			{/* Comparison panel — collapsable like Grafana row */}
+			<Box sx={{ mt: 1, border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
+				{/* Collapse header */}
+				<Box
+					sx={{
+						display: "flex",
+						alignItems: "center",
+						gap: 0.5,
+						px: 1,
+						py: 0.5,
+						bgcolor: "action.hover",
+						cursor: "pointer",
+						"&:hover": { bgcolor: "action.selected" },
+					}}
+					onClick={() => setCompareExpanded((p) => !p)}
+				>
+					{compareExpanded
+						? <ExpandLessIcon style={{ fontSize: 16 }} />
+						: <ExpandMoreIcon style={{ fontSize: 16 }} />
+					}
+					<CompareIcon style={{ fontSize: 14 }} />
+					<Typography variant="caption" fontWeight="bold" sx={{ flex: 1 }}>
+						Comparação {compareItems.length > 0 ? `(${compareItems.length})` : ""}
 					</Typography>
-					<TableContainer sx={{ maxHeight: 180, overflow: "auto" }}>
-						<Table size="small" stickyHeader>
-							<TableHead>
-								<TableRow>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }}>Arquivo</TableCell>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">Count</TableCell>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">%P</TableCell>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">%T</TableCell>
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{multiFileData.entries.map((entry) => {
-									const sm = entry.gate.analysis_result?.analysis_result?.summary_metrics
+				</Box>
+
+				<Collapse in={compareExpanded}>
+					<Box sx={{ p: 1 }}>
+						{/* Selector: add items to compare */}
+						<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+							<Typography variant="caption" color="text.secondary">
+								Populações:
+							</Typography>
+							<Button
+								size="small"
+								variant="outlined"
+								startIcon={<AddIcon style={{ fontSize: 12 }} />}
+								onClick={(e) => setCompareAnchor(e.currentTarget)}
+								sx={{ textTransform: "none", fontSize: "0.7rem", py: 0, px: 0.5, minWidth: 0, height: 22 }}
+							>
+								Adicionar
+							</Button>
+							<Menu
+								anchorEl={compareAnchor}
+								open={Boolean(compareAnchor)}
+								onClose={() => setCompareAnchor(null)}
+								slotProps={{ paper: { sx: { maxHeight: 320, maxWidth: 340, minWidth: 220 } } }}
+							>
+								{selectableItems.map((item) => {
+									const alreadyAdded = compareItems.some((i) => i.type === item.type && i.id === item.id)
 									return (
-										<TableRow key={entry.gate.id} hover>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-												{entry.fileName}
-											</TableCell>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">
-												{sm?.count?.toLocaleString() ?? "–"}
-											</TableCell>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">
-												{fmtPct(sm?.percent_of_parent_population)}
-											</TableCell>
-											<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">
-												{fmtPct(sm?.percent_of_total_population)}
-											</TableCell>
-										</TableRow>
+										<MenuItem
+											key={`cmp-${item.type}-${item.id}`}
+											disabled={alreadyAdded}
+											onClick={() => {
+												addCompareItem(item)
+												setCompareAnchor(null)
+											}}
+											sx={{ py: 0.5, pl: 1.5 + item.depth * 2, minHeight: 0 }}
+										>
+											<Typography variant="caption" sx={{ fontSize: "0.75rem" }} noWrap>
+												{item.depth > 0 && (
+													<ChevronIcon style={{ fontSize: 12, verticalAlign: "middle", marginRight: 2, opacity: 0.5 }} />
+												)}
+												{item.type === "file" ? "📄 " : "🔲 "}
+												{item.name}
+												{alreadyAdded ? " ✓" : ""}
+											</Typography>
+										</MenuItem>
 									)
 								})}
-								<TableRow sx={{ bgcolor: "action.hover" }}>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }}>Média</TableCell>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">
-										{Math.round(multiFileData.avgCount).toLocaleString()}
-									</TableCell>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem", fontWeight: "bold" }} align="right">
-										{multiFileData.avgPct != null ? fmtPct(multiFileData.avgPct) : "–"}
-									</TableCell>
-									<TableCell sx={{ py: 0.25, px: 1, fontSize: "0.65rem" }} align="right">–</TableCell>
-								</TableRow>
-							</TableBody>
-						</Table>
-					</TableContainer>
-				</Box>
-			)}
+							</Menu>
+						</Box>
+
+						{/* List of selected compare items (removable chips) */}
+						{compareItems.length > 0 && (
+							<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 0.5 }}>
+								{compareItems.map((item) => (
+									<Chip
+										key={`chip-${item.type}-${item.id}`}
+										label={item.path}
+										size="small"
+										variant="outlined"
+										onDelete={() => removeCompareItem(item)}
+										sx={{ fontSize: "0.65rem", height: 20, maxWidth: 200, "& .MuiChip-label": { px: 0.5 } }}
+									/>
+								))}
+							</Box>
+						)}
+
+						{/* Parameter selector for comparison */}
+						{compareItems.length > 0 && compareAvailableChannels.length > 0 && (
+							<Box sx={{ mb: 0.5 }}>
+								<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.25 }}>
+									<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+										Parâmetros:
+									</Typography>
+									<Chip
+										label="Todos"
+										size="small"
+										variant={!compareChannels ? "filled" : "outlined"}
+										onClick={() => setCompareChannels(null)}
+										sx={{ fontSize: "0.6rem", height: 18 }}
+									/>
+									<Chip
+										label="Fluoresc."
+										size="small"
+										variant="outlined"
+										onClick={() => setCompareChannels(new Set(compareAvailableChannels.filter(isFluorescence)))}
+										sx={{ fontSize: "0.6rem", height: 18 }}
+									/>
+									<Chip
+										label="Limpar"
+										size="small"
+										variant="outlined"
+										onClick={() => setCompareChannels(new Set())}
+										sx={{ fontSize: "0.6rem", height: 18 }}
+									/>
+								</Box>
+								<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.25 }}>
+									{compareAvailableChannels.map((ch) => {
+										const selected = !compareChannels || compareChannels.has(ch)
+										return (
+											<Chip
+												key={`cch-${ch}`}
+												label={channelLabel(ch)}
+												size="small"
+												variant={selected ? "filled" : "outlined"}
+												onClick={() => {
+													setCompareChannels((prev) => {
+														const next = new Set(prev ?? compareAvailableChannels)
+														if (next.has(ch)) next.delete(ch)
+														else next.add(ch)
+														return next
+													})
+												}}
+												sx={{ fontSize: "0.6rem", height: 18 }}
+											/>
+										)
+									})}
+								</Box>
+							</Box>
+						)}
+
+						{/* Comparison table */}
+						{compareData.length > 0 && (
+							<TableContainer sx={{ maxHeight: 300, overflow: "auto" }}>
+								<Table size="small" stickyHeader>
+									<TableHead>
+										<TableRow>
+											<TableCell
+												sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem", fontWeight: "bold", position: "sticky", left: 0, bgcolor: "background.paper", zIndex: 2, minWidth: 80 }}
+											>
+												População
+											</TableCell>
+											<TableCell sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem", fontWeight: "bold" }} align="right">Count</TableCell>
+											<TableCell sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem", fontWeight: "bold" }} align="right">%P</TableCell>
+											<TableCell sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem", fontWeight: "bold" }} align="right">%T</TableCell>
+											{compareDisplayChannels.map((ch) => (
+												activeMetrics.map((m) => (
+													<TableCell
+														key={`h-${ch}-${m.key}`}
+														sx={{ py: 0.25, px: 0.5, fontSize: "0.6rem", fontWeight: "bold", whiteSpace: "nowrap" }}
+														align="right"
+													>
+														{channelLabel(ch)} {m.shortLabel}
+													</TableCell>
+												))
+											))}
+										</TableRow>
+									</TableHead>
+									<TableBody>
+										{compareData.map((d) => {
+											const sm = d.analysis?.summary_metrics
+											const cs = d.analysis?.channel_statistics
+											return (
+												<TableRow key={`${d.item.type}-${d.item.id}`} hover>
+													<TableCell
+														sx={{
+															py: 0.25, px: 0.5, fontSize: "0.65rem",
+															position: "sticky", left: 0, bgcolor: "background.paper", zIndex: 1,
+															maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+														}}
+													>
+														<Tooltip title={d.item.path}>
+															<span>{d.item.name}</span>
+														</Tooltip>
+													</TableCell>
+													<TableCell sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem" }} align="right">
+														{sm?.count?.toLocaleString() ?? "–"}
+													</TableCell>
+													<TableCell sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem" }} align="right">
+														{fmtPct(sm?.percent_of_parent_population)}
+													</TableCell>
+													<TableCell sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem" }} align="right">
+														{fmtPct(sm?.percent_of_total_population)}
+													</TableCell>
+													{compareDisplayChannels.map((ch) => {
+														const stat = cs?.[ch]
+														return activeMetrics.map((m) => (
+															<TableCell
+																key={`${d.item.id}-${ch}-${m.key}`}
+																sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem" }}
+																align="right"
+															>
+																{stat ? m.format(stat[m.key]) : "–"}
+															</TableCell>
+														))
+													})}
+												</TableRow>
+											)
+										})}
+									</TableBody>
+								</Table>
+							</TableContainer>
+						)}
+
+						{compareItems.length === 0 && (
+							<Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "center", py: 1 }}>
+								Adicione populações acima para comparar (ex: controle vs marcado)
+							</Typography>
+						)}
+					</Box>
+				</Collapse>
+			</Box>
 
 			{/* Loading state */}
 			{!channelStats && source.type === "gate" && (
