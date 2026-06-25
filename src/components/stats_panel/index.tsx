@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
+import * as XLSX from "xlsx"
 import {
 	Box,
 	Button,
@@ -38,6 +39,7 @@ import {
 	MdExpandLess as ExpandLessIcon,
 	MdAdd as AddIcon,
 	MdRemoveCircleOutline as RemoveIcon,
+	MdScience as SampleIcon,
 } from "react-icons/md"
 import CytometryApi from "../../API"
 import type { SelectedSource } from "../parent_tree"
@@ -158,6 +160,35 @@ const collectAllGates = (gates: Gate[]): Gate[] => {
 	return result
 }
 
+// --- Gate path/file helpers ---
+
+const findFileForGate = (files: ExperimentFiles[], gateId: number): ExperimentFiles | undefined => {
+	for (const f of files) {
+		if (findGateInTree(f.gates, gateId)) return f
+	}
+	return undefined
+}
+
+const buildGateStrategy = (gates: Gate[], targetId: number, path: string[] = []): string | null => {
+	for (const g of gates) {
+		const current = [...path, g.name]
+		if (g.id === targetId) return current.join(" > ")
+		if (g.children) {
+			const found = buildGateStrategy(g.children, targetId, current)
+			if (found) return found
+		}
+	}
+	return null
+}
+
+const getGateStrategy = (files: ExperimentFiles[], gateId: number): string => {
+	for (const f of files) {
+		const strategy = buildGateStrategy(f.gates, gateId)
+		if (strategy) return strategy
+	}
+	return ""
+}
+
 // --- Component ---
 
 interface StatsPanelProps {
@@ -222,6 +253,7 @@ export default function StatsPanel({
 		return new Set(DEFAULT_VISIBLE_METRICS)
 	})
 	const [selectedChannels, setSelectedChannels] = useState<Set<string> | null>(null)
+	const [statsExpanded, setStatsExpanded] = useState(true)
 	const [compareExpanded, setCompareExpanded] = useState(false)
 	const [compareItems, setCompareItems] = useState<SelectableItem[]>([])
 	const [compareAnchor, setCompareAnchor] = useState<HTMLElement | null>(null)
@@ -418,15 +450,46 @@ export default function StatsPanel({
 		setCompareItems((prev) => prev.filter((i) => !(i.type === item.type && i.id === item.id)))
 	}, [])
 
-	// --- Export ---
+	// --- Export helpers ---
+
+	const downloadFile = useCallback((blob: Blob, fileName: string) => {
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement("a")
+		a.href = url
+		a.download = fileName
+		a.click()
+		URL.revokeObjectURL(url)
+	}, [])
+
+	const exportRows = useCallback(
+		(rows: string[][], fileName: string, format: "csv" | "xlsx") => {
+			if (format === "xlsx") {
+				const ws = XLSX.utils.aoa_to_sheet(rows)
+				// Auto-size columns
+				const colWidths = rows[0].map((_, i) =>
+					Math.max(...rows.map((r) => (r[i]?.length ?? 0))) + 2,
+				)
+				ws["!cols"] = colWidths.map((w) => ({ wch: Math.min(w, 40) }))
+				const wb = XLSX.utils.book_new()
+				XLSX.utils.book_append_sheet(wb, ws, "Estatísticas")
+				const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" })
+				downloadFile(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileName)
+			} else {
+				const csvContent = "\uFEFF" + rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n")
+				downloadFile(new Blob([csvContent], { type: "text/csv;charset=utf-8;" }), fileName)
+			}
+		},
+		[downloadFile],
+	)
+
+	// Export stats (top section)
 	const handleExport = useCallback(
-		(scope: "current" | "all") => {
+		(scope: "current" | "all", format: "csv" | "xlsx" = "csv") => {
 			const rows: string[][] = []
 			const metricCols = METRIC_COLUMNS.filter((m) => visibleMetrics.has(m.key))
 			const channelList = displayChannels
 
-			// Header
-			const header = ["Gate", "Count", "%Parent", "%Total"]
+			const header = ["Arquivo", "Gate Strategy", "Gate", "Count", "%Parent", "%Total"]
 			for (const ch of channelList) {
 				for (const m of metricCols) {
 					header.push(`${channelLabel(ch)}_${m.shortLabel}`)
@@ -434,11 +497,15 @@ export default function StatsPanel({
 			}
 			rows.push(header)
 
-			const addGateRow = (gate: Gate) => {
+			const addGateRow = (gate: Gate, file?: ExperimentFiles) => {
 				const ar = gate.analysis_result?.analysis_result
 				const sm = ar?.summary_metrics
 				const cs = ar?.channel_statistics
+				const fileName = file?.file_name ?? findFileForGate(files, gate.id)?.file_name ?? ""
+				const strategy = getGateStrategy(files, gate.id)
 				const row: string[] = [
+					fileName,
+					strategy,
 					gate.name,
 					String(sm?.count ?? ""),
 					sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "",
@@ -458,14 +525,14 @@ export default function StatsPanel({
 			} else if (scope === "all") {
 				for (const f of files) {
 					for (const g of collectAllGates(f.gates)) {
-						addGateRow(g)
+						addGateRow(g, f)
 					}
 				}
 			} else if (scope === "current" && source?.type === "file" && fileStats) {
 				const sm = fileStats.summary_metrics
 				const cs = fileStats.channel_statistics
 				const row: string[] = [
-					source.name,
+					source.name, "", source.name,
 					String(sm?.count ?? ""),
 					sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "",
 					sm ? (sm.percent_of_total_population * 100).toFixed(2) : "",
@@ -479,18 +546,56 @@ export default function StatsPanel({
 				rows.push(row)
 			}
 
-			// BOM + CSV
-			const csvContent =
-				"\uFEFF" + rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n")
-			const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-			const url = URL.createObjectURL(blob)
-			const a = document.createElement("a")
-			a.href = url
-			a.download = `stats_${scope === "all" ? "all_gates" : (currentGate?.name ?? source?.name ?? "file")}.csv`
-			a.click()
-			URL.revokeObjectURL(url)
+			const baseName = `stats_${scope === "all" ? "all_gates" : (currentGate?.name ?? source?.name ?? "file")}`
+			exportRows(rows, `${baseName}.${format}`, format)
 		},
-		[currentGate, files, displayChannels, visibleMetrics, source, fileStats, channelLabel],
+		[currentGate, files, displayChannels, visibleMetrics, source, fileStats, channelLabel, exportRows],
+	)
+
+	// Export comparison table
+	const handleExportComparison = useCallback(
+		(format: "csv" | "xlsx" = "csv") => {
+			if (compareData.length === 0) return
+			const rows: string[][] = []
+			const metricCols = METRIC_COLUMNS.filter((m) => visibleMetrics.has(m.key))
+			const channels = compareDisplayChannels
+
+			const header = ["Arquivo", "Gate Strategy", "População", "Count", "%Parent", "%Total"]
+			for (const ch of channels) {
+				for (const m of metricCols) {
+					header.push(`${channelLabel(ch)}_${m.shortLabel}`)
+				}
+			}
+			rows.push(header)
+
+			for (const d of compareData) {
+				const sm = d.analysis?.summary_metrics
+				const cs = d.analysis?.channel_statistics
+				// Find file name for this item
+				const fileName = d.item.type === "file"
+					? d.item.name
+					: findFileForGate(files, d.item.id)?.file_name ?? ""
+				const strategy = d.item.type === "gate" ? getGateStrategy(files, d.item.id) : ""
+				const row: string[] = [
+					fileName,
+					strategy,
+					d.item.name,
+					String(sm?.count ?? ""),
+					sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "",
+					sm ? (sm.percent_of_total_population * 100).toFixed(2) : "",
+				]
+				for (const ch of channels) {
+					const stat = cs?.[ch]
+					for (const m of metricCols) {
+						row.push(stat ? String(stat[m.key]) : "")
+					}
+				}
+				rows.push(row)
+			}
+
+			exportRows(rows, `comparacao.${format}`, format)
+		},
+		[compareData, compareDisplayChannels, visibleMetrics, channelLabel, files, exportRows],
 	)
 
 	// --- Render ---
@@ -631,75 +736,102 @@ export default function StatsPanel({
 
 	return (
 		<Box sx={{ p: 1.5, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-			{/* Header */}
-			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+			{/* Header with close */}
+			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
 				<Typography variant="subtitle2" fontWeight="bold">
 					<StatsIcon style={{ fontSize: 18, verticalAlign: "middle", marginRight: 4 }} />
 					Estatísticas
 				</Typography>
-				<Box sx={{ display: "flex", gap: 0.5 }}>
-					<Tooltip title="Exportar gate atual (CSV)">
-						<IconButton size="small" onClick={() => handleExport("current")}>
-							<ExportIcon style={{ fontSize: 16 }} />
-						</IconButton>
-					</Tooltip>
-					<Tooltip title="Exportar todos os gates (CSV)">
-						<IconButton size="small" onClick={() => handleExport("all")}>
-							<ExportIcon style={{ fontSize: 16, color: "#1976d2" }} />
-						</IconButton>
-					</Tooltip>
-					{onClose && (
-						<IconButton size="small" onClick={onClose}>
-							<CloseIcon style={{ fontSize: 16 }} />
-						</IconButton>
-					)}
-				</Box>
+				{onClose && (
+					<IconButton size="small" onClick={onClose}>
+						<CloseIcon style={{ fontSize: 16 }} />
+					</IconButton>
+				)}
 			</Box>
 
 			{/* Source selector (path) */}
 			{renderSourceSelector()}
 
-			{/* Summary card */}
-			{summary && (
+			{/* Collapsable stats section */}
+			<Box sx={{ mt: 0.5, border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
+				{/* Stats collapse header */}
 				<Box
 					sx={{
-						display: "grid",
-						gridTemplateColumns: "1fr 1fr 1fr",
+						display: "flex",
+						alignItems: "center",
 						gap: 0.5,
-						mb: 1,
-						p: 1,
+						px: 1,
+						py: 0.5,
 						bgcolor: "action.hover",
-						borderRadius: 1,
+						cursor: "pointer",
+						"&:hover": { bgcolor: "action.selected" },
 					}}
+					onClick={() => setStatsExpanded((p) => !p)}
 				>
-					<Box sx={{ textAlign: "center" }}>
-						<Typography variant="caption" color="text.secondary">
-							Count
-						</Typography>
-						<Typography variant="body2" fontWeight="bold">
-							{summary.count.toLocaleString()}
-						</Typography>
-					</Box>
-					<Box sx={{ textAlign: "center" }}>
-						<Typography variant="caption" color="text.secondary">
-							%P
-						</Typography>
-						<Typography variant="body2" fontWeight="bold">
-							{fmtPct(summary.percent_of_parent_population)}
-						</Typography>
-					</Box>
-					<Box sx={{ textAlign: "center" }}>
-						<Typography variant="caption" color="text.secondary">
-							%T
-						</Typography>
-						<Typography variant="body2" fontWeight="bold">
-							{fmtPct(summary.percent_of_total_population)}
-						</Typography>
+					{statsExpanded
+						? <ExpandLessIcon style={{ fontSize: 16 }} />
+						: <ExpandMoreIcon style={{ fontSize: 16 }} />
+					}
+					<StatsIcon style={{ fontSize: 14 }} />
+					<Typography variant="caption" fontWeight="bold" sx={{ flex: 1 }}>
+						Detalhes {currentGate ? `— ${currentGate.name}` : ""}
+					</Typography>
+					{/* Export buttons (stop propagation to avoid toggling collapse) */}
+					<Box sx={{ display: "flex", gap: 0.25 }} onClick={(e) => e.stopPropagation()}>
+						<Tooltip title="Exportar CSV">
+							<IconButton size="small" onClick={() => handleExport("current", "csv")} sx={{ p: 0.25 }}>
+								<ExportIcon style={{ fontSize: 14 }} />
+							</IconButton>
+						</Tooltip>
+						<Tooltip title="Exportar Excel (.xlsx)">
+							<IconButton size="small" onClick={() => handleExport("current", "xlsx")} sx={{ p: 0.25 }}>
+								<ExportIcon style={{ fontSize: 14, color: "#1976d2" }} />
+							</IconButton>
+						</Tooltip>
 					</Box>
 				</Box>
-			)}
 
-			{/* Collapsable comparison section */}
+				<Collapse in={statsExpanded}>
+					<Box sx={{ p: 1 }}>
+						{/* Summary card */}
+						{summary && (
+							<Box
+								sx={{
+									display: "grid",
+									gridTemplateColumns: "1fr 1fr 1fr",
+									gap: 0.5,
+									mb: 1,
+									p: 1,
+									bgcolor: "action.hover",
+									borderRadius: 1,
+								}}
+							>
+								<Box sx={{ textAlign: "center" }}>
+									<Typography variant="caption" color="text.secondary">
+										Count
+									</Typography>
+									<Typography variant="body2" fontWeight="bold">
+										{summary.count.toLocaleString()}
+									</Typography>
+								</Box>
+								<Box sx={{ textAlign: "center" }}>
+									<Typography variant="caption" color="text.secondary">
+										%P
+									</Typography>
+									<Typography variant="body2" fontWeight="bold">
+										{fmtPct(summary.percent_of_parent_population)}
+									</Typography>
+								</Box>
+								<Box sx={{ textAlign: "center" }}>
+									<Typography variant="caption" color="text.secondary">
+										%T
+									</Typography>
+									<Typography variant="body2" fontWeight="bold">
+										{fmtPct(summary.percent_of_total_population)}
+									</Typography>
+								</Box>
+							</Box>
+						)}
 
 			{/* Channel selector */}
 			{channelStats && (
@@ -847,6 +979,9 @@ export default function StatsPanel({
 					</TableContainer>
 				</>
 			)}
+					</Box>
+				</Collapse>
+			</Box>
 
 			{/* Comparison panel — collapsable like Grafana row */}
 			<Box sx={{ mt: 1, border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
@@ -872,6 +1007,21 @@ export default function StatsPanel({
 					<Typography variant="caption" fontWeight="bold" sx={{ flex: 1 }}>
 						Comparação {compareItems.length > 0 ? `(${compareItems.length})` : ""}
 					</Typography>
+					{/* Export buttons for comparison */}
+					{compareData.length > 0 && (
+						<Box sx={{ display: "flex", gap: 0.25 }} onClick={(e) => e.stopPropagation()}>
+							<Tooltip title="Exportar CSV">
+								<IconButton size="small" onClick={() => handleExportComparison("csv")} sx={{ p: 0.25 }}>
+									<ExportIcon style={{ fontSize: 14 }} />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Exportar Excel (.xlsx)">
+								<IconButton size="small" onClick={() => handleExportComparison("xlsx")} sx={{ p: 0.25 }}>
+									<ExportIcon style={{ fontSize: 14, color: "#1976d2" }} />
+								</IconButton>
+							</Tooltip>
+						</Box>
+					)}
 				</Box>
 
 				<Collapse in={compareExpanded}>
@@ -1032,9 +1182,16 @@ export default function StatsPanel({
 															maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
 														}}
 													>
-														<Tooltip title={d.item.path}>
-															<span>{d.item.name}</span>
-														</Tooltip>
+														<Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+															<Tooltip title={d.item.type === "file" ? d.item.name : (findFileForGate(files, d.item.id)?.file_name ?? "")}>
+																<span style={{ display: "inline-flex", cursor: "help" }}>
+																	<SampleIcon style={{ fontSize: 12, opacity: 0.5 }} />
+																</span>
+															</Tooltip>
+															<Tooltip title={d.item.path}>
+																<span>{d.item.name}</span>
+															</Tooltip>
+														</Box>
 													</TableCell>
 													<TableCell sx={{ py: 0.25, px: 0.5, fontSize: "0.65rem" }} align="right">
 														{sm?.count?.toLocaleString() ?? "–"}
