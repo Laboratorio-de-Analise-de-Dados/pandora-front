@@ -262,7 +262,7 @@ export default function ExperimentPage() {
 					</>
 				)}
 			</Box>
-			{showStats && (
+			{showStats ? (
 				<Box
 					sx={(theme) => ({
 						width: "22%",
@@ -280,6 +280,29 @@ export default function ExperimentPage() {
 						fileStats={fileStats}
 						onClose={() => setShowStats(false)}
 					/>
+				</Box>
+			) : (
+				<Box
+					sx={(theme) => ({
+						width: 36,
+						minWidth: 36,
+						borderLeft: `1px solid ${theme.palette.divider}`,
+						bgcolor: theme.palette.background.default,
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+						pt: 1,
+						height: "100%",
+						cursor: "pointer",
+						"&:hover": { bgcolor: theme.palette.action.hover },
+					})}
+					onClick={() => setShowStats(true)}
+				>
+					<Tooltip title="Mostrar estatísticas" placement="left">
+						<IconButton size="small" color="default">
+							<StatsIcon style={{ fontSize: 18 }} />
+						</IconButton>
+					</Tooltip>
 				</Box>
 			)}
 			{applyTarget && (
