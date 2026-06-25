@@ -36,9 +36,9 @@ import {
 	MdExpandMore as ExpandMoreIcon,
 	MdExpandLess as ExpandLessIcon,
 	MdAdd as AddIcon,
-	MdBiotech as SampleIcon,
 	MdTune as TuneIcon,
 } from "react-icons/md"
+import { FaVial as VialIcon } from "react-icons/fa"
 import CytometryApi from "../../API"
 import type { SelectedSource } from "../parent_tree"
 import type {
@@ -111,6 +111,7 @@ interface SelectableItem {
 	fileDataId: number
 	path: string // ex: "sample.fcs > Lymphocytes > CD3+"
 	depth: number
+	color?: string | null
 }
 
 const buildSelectableItems = (files: ExperimentFiles[]): SelectableItem[] => {
@@ -127,7 +128,7 @@ const buildSelectableItems = (files: ExperimentFiles[]): SelectableItem[] => {
 		const addGates = (gates: Gate[], parentPath: string, fileDataId: number, depth: number) => {
 			for (const g of gates) {
 				const p = `${parentPath} > ${g.name}`
-				items.push({ type: "gate", id: g.id, name: g.name, fileDataId, path: p, depth })
+				items.push({ type: "gate", id: g.id, name: g.name, fileDataId, path: p, depth, color: g.color })
 				if (g.children) addGates(g.children, p, fileDataId, depth + 1)
 			}
 		}
@@ -1231,7 +1232,7 @@ export default function StatsPanel({
 														<Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
 															<Tooltip title={d.item.type === "file" ? d.item.name : (findFileForGate(files, d.item.id)?.file_name ?? "")}>
 																<span style={{ display: "inline-flex", cursor: "help" }}>
-																	<SampleIcon style={{ fontSize: 12, opacity: 0.5 }} />
+																	<VialIcon style={{ fontSize: 11, color: d.item.color ?? "#999" }} />
 																</span>
 															</Tooltip>
 															<Tooltip title={d.item.path}>
