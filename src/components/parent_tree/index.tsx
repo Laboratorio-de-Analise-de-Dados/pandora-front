@@ -7,20 +7,16 @@ import {
 	MdEdit as EditIcon,
 	MdMoreVert as MoreVertIcon,
 	MdLink as LinkIcon,
+	MdDriveFileMove as TransferIcon,
 } from "react-icons/md"
 import {
 	Box,
-	Checkbox,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
 	Button,
-	FormControlLabel,
 	IconButton,
-	List,
-	ListItem,
-	ListItemButton,
 	ListItemIcon,
 	ListItemText,
 	Menu,
@@ -28,6 +24,7 @@ import {
 	TextField,
 	Tooltip,
 	Typography,
+	Divider,
 } from "@mui/material"
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
 import { ExperimentFiles, Gate, GateCoordinates } from "../../types"
@@ -63,6 +60,8 @@ const renderGate = (
 	onRequestRename?: (gateId: number, gateName: string) => void,
 	onRequestApply?: (gateId: number, gateName: string) => void,
 	gateIndex = 0,
+	onMenuOpen?: (event: React.MouseEvent, gate: Gate) => void,
+	onContextMenu?: (event: React.MouseEvent, gate: Gate) => void,
 ) => {
 	const itemId = `gate-${gate.id}-${parentId}`
 	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
@@ -78,8 +77,15 @@ const renderGate = (
 						justifyContent: "space-between",
 						width: "100%",
 					}}
+					onContextMenu={(e) => {
+						if (onContextMenu) {
+							e.preventDefault()
+							e.stopPropagation()
+							onContextMenu(e, gate)
+						}
+					}}
 				>
-					<Box sx={{ display: "flex", flexDirection: "column" }}>
+					<Box sx={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
 							<Box
 								component="span"
@@ -116,53 +122,24 @@ const renderGate = (
 							</Typography>
 						)}
 					</Box>
-					<Box sx={{ display: "flex", gap: 0 }}>
-						{onRequestApply && (
-							<IconButton
-								size="small"
-								onClick={(e) => {
-									e.stopPropagation()
-									onRequestApply(gate.id, gate.name)
-								}}
-								sx={{ p: 0.25 }}
-								title="Aplicar em outros arquivos"
-							>
-								<MoreVertIcon style={{ fontSize: 16 }} />
-							</IconButton>
-						)}
-						{onRequestRename && (
-							<IconButton
-								size="small"
-								onClick={(e) => {
-									e.stopPropagation()
-									onRequestRename(gate.id, gate.name)
-								}}
-								sx={{ p: 0.25 }}
-								title="Renomear gate"
-							>
-								<EditIcon style={{ fontSize: 16 }} />
-							</IconButton>
-						)}
-						{onRequestDelete && (
-							<IconButton
-								size="small"
-								color="error"
-								onClick={(e) => {
-									e.stopPropagation()
-									onRequestDelete(gate.id, gate.name)
-								}}
-								sx={{ p: 0.25 }}
-								title="Excluir gate"
-							>
-								<DeleteIcon style={{ fontSize: 16 }} />
-							</IconButton>
-						)}
-					</Box>
+					{(onRequestApply || onRequestRename || onRequestDelete) && (
+						<IconButton
+							size="small"
+							onClick={(e) => {
+								e.stopPropagation()
+								if (onMenuOpen) onMenuOpen(e, gate)
+							}}
+							sx={{ p: 0.25, flexShrink: 0 }}
+							title="Opções do gate"
+						>
+							<MoreVertIcon style={{ fontSize: 16 }} />
+						</IconButton>
+					)}
 				</Box>
 			}
 		>
 			{gate.children?.map((childGate, childIdx) =>
-				renderGate(childGate, itemId, onRequestDelete, onRequestRename, onRequestApply, childIdx),
+				renderGate(childGate, itemId, onRequestDelete, onRequestRename, onRequestApply, childIdx, onMenuOpen, onContextMenu),
 			)}
 		</TreeItem>
 	)
@@ -174,6 +151,8 @@ const renderFile = (
 	onRequestDelete?: (gateId: number, gateName: string) => void,
 	onRequestRename?: (gateId: number, gateName: string) => void,
 	onRequestApply?: (gateId: number, gateName: string) => void,
+	onMenuOpen?: (event: React.MouseEvent, gate: Gate) => void,
+	onContextMenu?: (event: React.MouseEvent, gate: Gate) => void,
 ) => {
 	const fileId = `file-${file.id}`
 	return (
@@ -181,7 +160,7 @@ const renderFile = (
 		<Typography sx={{ fontSize: "0.8rem" }}>📄{file.file_name}</Typography>
 	}>
 			{file.gates.map((gate, idx) =>
-				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply, idx),
+				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply, idx, onMenuOpen, onContextMenu),
 			)}
 		</TreeItem>
 	)
@@ -221,6 +200,75 @@ export default function ParentTree({
 		name: string
 	} | null>(null)
 	const [renameValue, setRenameValue] = useState("")
+
+	// Hamburger menu state
+	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
+	const [menuGate, setMenuGate] = useState<Gate | null>(null)
+
+	// Context menu state (right-click)
+	const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+	const [contextGate, setContextGate] = useState<Gate | null>(null)
+
+	const handleMenuOpen = (event: React.MouseEvent, gate: Gate) => {
+		event.stopPropagation()
+		setMenuAnchor(event.currentTarget as HTMLElement)
+		setMenuGate(gate)
+	}
+
+	const handleMenuClose = () => {
+		setMenuAnchor(null)
+		setMenuGate(null)
+	}
+
+	const handleContextMenu = (event: React.MouseEvent, gate: Gate) => {
+		event.preventDefault()
+		event.stopPropagation()
+		setContextMenu({ x: event.clientX, y: event.clientY })
+		setContextGate(gate)
+	}
+
+	const handleContextMenuClose = () => {
+		setContextMenu(null)
+		setContextGate(null)
+	}
+
+	// Menu actions
+	const handleMenuApply = () => {
+		if (menuGate && onApplyGate) onApplyGate(menuGate.id, menuGate.name)
+		handleMenuClose()
+	}
+
+	const handleMenuRename = () => {
+		if (menuGate) {
+			setRenameTarget({ id: menuGate.id, name: menuGate.name })
+			setRenameValue(menuGate.name)
+		}
+		handleMenuClose()
+	}
+
+	const handleMenuDelete = () => {
+		if (menuGate) setDeleteTarget({ id: menuGate.id, name: menuGate.name })
+		handleMenuClose()
+	}
+
+	// Context menu actions
+	const handleCtxApply = () => {
+		if (contextGate && onApplyGate) onApplyGate(contextGate.id, contextGate.name)
+		handleContextMenuClose()
+	}
+
+	const handleCtxRename = () => {
+		if (contextGate) {
+			setRenameTarget({ id: contextGate.id, name: contextGate.name })
+			setRenameValue(contextGate.name)
+		}
+		handleContextMenuClose()
+	}
+
+	const handleCtxDelete = () => {
+		if (contextGate) setDeleteTarget({ id: contextGate.id, name: contextGate.name })
+		handleContextMenuClose()
+	}
 
 	const handleRequestDelete = (gateId: number, gateName: string) => {
 		setDeleteTarget({ id: gateId, name: gateName })
@@ -326,9 +374,98 @@ export default function ParentTree({
 						onDeleteGate ? handleRequestDelete : undefined,
 						onRenameGate ? handleRequestRename : undefined,
 						onApplyGate,
+						handleMenuOpen,
+						handleContextMenu,
 					),
 				)}
 			</SimpleTreeView>
+
+			{/* Hamburger dropdown menu (⋮ button) */}
+			<Menu
+				anchorEl={menuAnchor}
+				open={Boolean(menuAnchor)}
+				onClose={handleMenuClose}
+				anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+				transformOrigin={{ vertical: "top", horizontal: "right" }}
+				slotProps={{ paper: { sx: { minWidth: 180 } } }}
+			>
+				{onApplyGate && (
+					<MuiMenuItem onClick={handleMenuApply} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<TransferIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Transferir para arquivos
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+				{onRenameGate && (
+					<MuiMenuItem onClick={handleMenuRename} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<EditIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Renomear
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
+				{onDeleteGate && (
+					<MuiMenuItem onClick={handleMenuDelete} dense sx={{ color: "error.main" }}>
+						<ListItemIcon sx={{ minWidth: 28, color: "error.main" }}>
+							<DeleteIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Excluir
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+			</Menu>
+
+			{/* Right-click context menu */}
+			<Menu
+				open={contextMenu !== null}
+				onClose={handleContextMenuClose}
+				anchorReference="anchorPosition"
+				anchorPosition={
+					contextMenu !== null
+						? { top: contextMenu.y, left: contextMenu.x }
+						: undefined
+				}
+				slotProps={{ paper: { sx: { minWidth: 180 } } }}
+			>
+				{onApplyGate && (
+					<MuiMenuItem onClick={handleCtxApply} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<TransferIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Transferir para arquivos
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+				{onRenameGate && (
+					<MuiMenuItem onClick={handleCtxRename} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<EditIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Renomear
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
+				{onDeleteGate && (
+					<MuiMenuItem onClick={handleCtxDelete} dense sx={{ color: "error.main" }}>
+						<ListItemIcon sx={{ minWidth: 28, color: "error.main" }}>
+							<DeleteIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Excluir
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+			</Menu>
 
 			<Dialog open={!!deleteTarget} onClose={handleCancelDelete}>
 				<DialogTitle>Excluir Gate</DialogTitle>
