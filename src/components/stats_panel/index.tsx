@@ -14,6 +14,7 @@ import {
 	IconButton,
 	Menu,
 	MenuItem,
+	Popover,
 	Table,
 	TableBody,
 	TableCell,
@@ -27,9 +28,6 @@ import {
 import {
 	MdBarChart as StatsIcon,
 	MdFileDownload as ExportIcon,
-	MdSelectAll as SelectAllIcon,
-	MdDeselect as DeselectIcon,
-	MdFilterList as FilterIcon,
 	MdClose as CloseIcon,
 	MdCompareArrows as CompareIcon,
 	MdEdit as EditIcon,
@@ -38,8 +36,8 @@ import {
 	MdExpandMore as ExpandMoreIcon,
 	MdExpandLess as ExpandLessIcon,
 	MdAdd as AddIcon,
-	MdRemoveCircleOutline as RemoveIcon,
-	MdScience as SampleIcon,
+	MdBiotech as SampleIcon,
+	MdTune as TuneIcon,
 } from "react-icons/md"
 import CytometryApi from "../../API"
 import type { SelectedSource } from "../parent_tree"
@@ -244,7 +242,6 @@ export default function StatsPanel({
 	}, [statsSource, externalSource, selectableItems])
 
 	// --- State ---
-	const [search, setSearch] = useState("")
 	const [visibleMetrics, setVisibleMetrics] = useState<Set<MetricColumn>>(() => {
 		try {
 			const saved = localStorage.getItem(LS_KEY_METRICS)
@@ -258,6 +255,17 @@ export default function StatsPanel({
 	const [compareItems, setCompareItems] = useState<SelectableItem[]>([])
 	const [compareAnchor, setCompareAnchor] = useState<HTMLElement | null>(null)
 	const [compareChannels, setCompareChannels] = useState<Set<string> | null>(null)
+	const [exportDialog, setExportDialog] = useState<{
+		open: boolean
+		defaultName: string
+		format: "csv" | "xlsx"
+		handler: (fileName: string, format: "csv" | "xlsx") => void
+	}>({ open: false, defaultName: "", format: "csv", handler: () => {} })
+	const [exportFileName, setExportFileName] = useState("")
+	const [channelMenuAnchor, setChannelMenuAnchor] = useState<HTMLElement | null>(null)
+	const [channelMenuSearch, setChannelMenuSearch] = useState("")
+	const [compareChannelMenuAnchor, setCompareChannelMenuAnchor] = useState<HTMLElement | null>(null)
+	const [compareChannelMenuSearch, setCompareChannelMenuSearch] = useState("")
 	const [customLabels, setCustomLabels] = useState<Record<string, string>>(() => {
 		try {
 			const saved = localStorage.getItem(LS_KEY_LABELS)
@@ -388,15 +396,8 @@ export default function StatsPanel({
 	// Filtered channels for the table
 	const displayChannels = useMemo(() => {
 		const channels = selectedChannels ?? new Set(allChannels)
-		let filtered = allChannels.filter((ch) => channels.has(ch))
-		if (search.trim()) {
-			const q = search.toLowerCase()
-			filtered = filtered.filter(
-				(ch) => ch.toLowerCase().includes(q) || channelLabel(ch).toLowerCase().includes(q),
-			)
-		}
-		return filtered
-	}, [allChannels, selectedChannels, search, channelLabel])
+		return allChannels.filter((ch) => channels.has(ch))
+	}, [allChannels, selectedChannels])
 
 	// Analysis data to display
 	const analysisData: AnalysisResultData | undefined = useMemo(() => {
@@ -482,9 +483,9 @@ export default function StatsPanel({
 		[downloadFile],
 	)
 
-	// Export stats (top section)
-	const handleExport = useCallback(
-		(scope: "current" | "all", format: "csv" | "xlsx" = "csv") => {
+	// Build stats export rows
+	const buildStatsRows = useCallback(
+		(scope: "current" | "all") => {
 			const rows: string[][] = []
 			const metricCols = METRIC_COLUMNS.filter((m) => visibleMetrics.has(m.key))
 			const channelList = displayChannels
@@ -504,9 +505,7 @@ export default function StatsPanel({
 				const fileName = file?.file_name ?? findFileForGate(files, gate.id)?.file_name ?? ""
 				const strategy = getGateStrategy(files, gate.id)
 				const row: string[] = [
-					fileName,
-					strategy,
-					gate.name,
+					fileName, strategy, gate.name,
 					String(sm?.count ?? ""),
 					sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "",
 					sm ? (sm.percent_of_total_population * 100).toFixed(2) : "",
@@ -524,9 +523,7 @@ export default function StatsPanel({
 				addGateRow(currentGate)
 			} else if (scope === "all") {
 				for (const f of files) {
-					for (const g of collectAllGates(f.gates)) {
-						addGateRow(g, f)
-					}
+					for (const g of collectAllGates(f.gates)) addGateRow(g, f)
 				}
 			} else if (scope === "current" && source?.type === "file" && fileStats) {
 				const sm = fileStats.summary_metrics
@@ -539,63 +536,78 @@ export default function StatsPanel({
 				]
 				for (const ch of channelList) {
 					const stat = cs?.[ch]
-					for (const m of metricCols) {
-						row.push(stat ? String(stat[m.key]) : "")
-					}
+					for (const m of metricCols) row.push(stat ? String(stat[m.key]) : "")
 				}
 				rows.push(row)
 			}
-
-			const baseName = `stats_${scope === "all" ? "all_gates" : (currentGate?.name ?? source?.name ?? "file")}`
-			exportRows(rows, `${baseName}.${format}`, format)
+			return rows
 		},
-		[currentGate, files, displayChannels, visibleMetrics, source, fileStats, channelLabel, exportRows],
+		[currentGate, files, displayChannels, visibleMetrics, source, fileStats, channelLabel],
 	)
 
-	// Export comparison table
-	const handleExportComparison = useCallback(
-		(format: "csv" | "xlsx" = "csv") => {
-			if (compareData.length === 0) return
-			const rows: string[][] = []
-			const metricCols = METRIC_COLUMNS.filter((m) => visibleMetrics.has(m.key))
-			const channels = compareDisplayChannels
+	// Build comparison export rows
+	const buildCompareRows = useCallback(() => {
+		const rows: string[][] = []
+		const metricCols = METRIC_COLUMNS.filter((m) => visibleMetrics.has(m.key))
+		const channels = compareDisplayChannels
 
-			const header = ["Arquivo", "Gate Strategy", "População", "Count", "%Parent", "%Total"]
+		const header = ["Arquivo", "Gate Strategy", "População", "Count", "%Parent", "%Total"]
+		for (const ch of channels) {
+			for (const m of metricCols) header.push(`${channelLabel(ch)}_${m.shortLabel}`)
+		}
+		rows.push(header)
+
+		for (const d of compareData) {
+			const sm = d.analysis?.summary_metrics
+			const cs = d.analysis?.channel_statistics
+			const fileName = d.item.type === "file"
+				? d.item.name
+				: findFileForGate(files, d.item.id)?.file_name ?? ""
+			const strategy = d.item.type === "gate" ? getGateStrategy(files, d.item.id) : ""
+			const row: string[] = [
+				fileName, strategy, d.item.name,
+				String(sm?.count ?? ""),
+				sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "",
+				sm ? (sm.percent_of_total_population * 100).toFixed(2) : "",
+			]
 			for (const ch of channels) {
-				for (const m of metricCols) {
-					header.push(`${channelLabel(ch)}_${m.shortLabel}`)
-				}
+				const stat = cs?.[ch]
+				for (const m of metricCols) row.push(stat ? String(stat[m.key]) : "")
 			}
-			rows.push(header)
+			rows.push(row)
+		}
+		return rows
+	}, [compareData, compareDisplayChannels, visibleMetrics, channelLabel, files])
 
-			for (const d of compareData) {
-				const sm = d.analysis?.summary_metrics
-				const cs = d.analysis?.channel_statistics
-				// Find file name for this item
-				const fileName = d.item.type === "file"
-					? d.item.name
-					: findFileForGate(files, d.item.id)?.file_name ?? ""
-				const strategy = d.item.type === "gate" ? getGateStrategy(files, d.item.id) : ""
-				const row: string[] = [
-					fileName,
-					strategy,
-					d.item.name,
-					String(sm?.count ?? ""),
-					sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "",
-					sm ? (sm.percent_of_total_population * 100).toFixed(2) : "",
-				]
-				for (const ch of channels) {
-					const stat = cs?.[ch]
-					for (const m of metricCols) {
-						row.push(stat ? String(stat[m.key]) : "")
-					}
-				}
-				rows.push(row)
-			}
-
-			exportRows(rows, `comparacao.${format}`, format)
+	// Open export dialog with filename prompt
+	const handleExport = useCallback(
+		(scope: "current" | "all", format: "csv" | "xlsx") => {
+			const baseName = `stats_${scope === "all" ? "all_gates" : (currentGate?.name ?? source?.name ?? "file")}`
+			const rows = buildStatsRows(scope)
+			setExportFileName(baseName)
+			setExportDialog({
+				open: true,
+				defaultName: baseName,
+				format,
+				handler: (fileName, fmt) => exportRows(rows, `${fileName}.${fmt}`, fmt),
+			})
 		},
-		[compareData, compareDisplayChannels, visibleMetrics, channelLabel, files, exportRows],
+		[currentGate, source, buildStatsRows, exportRows],
+	)
+
+	const handleExportComparison = useCallback(
+		(format: "csv" | "xlsx") => {
+			if (compareData.length === 0) return
+			const rows = buildCompareRows()
+			setExportFileName("comparacao")
+			setExportDialog({
+				open: true,
+				defaultName: "comparacao",
+				format,
+				handler: (fileName, fmt) => exportRows(rows, `${fileName}.${fmt}`, fmt),
+			})
+		},
+		[compareData, buildCompareRows, exportRows],
 	)
 
 	// --- Render ---
@@ -833,13 +845,21 @@ export default function StatsPanel({
 							</Box>
 						)}
 
-			{/* Channel selector */}
+			{/* Channel selector — hamburger menu */}
 			{channelStats && (
 				<>
 					<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-						<FilterIcon style={{ fontSize: 14, opacity: 0.6 }} />
-						<Typography variant="caption" fontWeight="bold">
-							Parâmetros
+						<Tooltip title="Configurar parâmetros e colunas">
+							<IconButton
+								size="small"
+								onClick={(e) => setChannelMenuAnchor(e.currentTarget)}
+								sx={{ p: 0.25 }}
+							>
+								<TuneIcon style={{ fontSize: 16 }} />
+							</IconButton>
+						</Tooltip>
+						<Typography variant="caption" color="text.secondary">
+							{selectedChannels ? selectedChannels.size : allChannels.length}/{allChannels.length} parâmetros
 						</Typography>
 						<Box sx={{ flex: 1 }} />
 						<Tooltip title="Editar labels">
@@ -847,73 +867,77 @@ export default function StatsPanel({
 								<EditIcon style={{ fontSize: 14 }} />
 							</IconButton>
 						</Tooltip>
-						<Tooltip title="Todos">
-							<IconButton size="small" onClick={selectAll} sx={{ p: 0.25 }}>
-								<SelectAllIcon style={{ fontSize: 14 }} />
-							</IconButton>
-						</Tooltip>
-						<Tooltip title="Fluorescência">
-							<Chip
-								label="Fluoresc."
-								size="small"
-								variant="outlined"
-								onClick={selectFluorescence}
-								sx={{ height: 20, fontSize: "0.65rem" }}
-							/>
-						</Tooltip>
-						<Tooltip title="Limpar">
-							<IconButton size="small" onClick={clearAll} sx={{ p: 0.25 }}>
-								<DeselectIcon style={{ fontSize: 14 }} />
-							</IconButton>
-						</Tooltip>
 					</Box>
 
-					<TextField
-						size="small"
-						placeholder="Buscar canal..."
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-						sx={{ mb: 0.5, "& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 } }}
-						fullWidth
-					/>
-
-					<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.25, mb: 1, maxHeight: 80, overflow: "auto" }}>
-						{allChannels
-							.filter((ch) => !search.trim() || ch.toLowerCase().includes(search.toLowerCase()) || channelLabel(ch).toLowerCase().includes(search.toLowerCase()))
-							.map((ch) => (
-								<Chip
-									key={ch}
-									label={channelLabel(ch)}
-									size="small"
-									variant={selectedChannels?.has(ch) ? "filled" : "outlined"}
-									color={selectedChannels?.has(ch) ? "primary" : "default"}
-									onClick={() => toggleChannel(ch)}
-									sx={{ height: 22, fontSize: "0.65rem" }}
+					{/* Channel config popover */}
+					<Popover
+						open={Boolean(channelMenuAnchor)}
+						anchorEl={channelMenuAnchor}
+						onClose={() => { setChannelMenuAnchor(null); setChannelMenuSearch("") }}
+						anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+						slotProps={{ paper: { sx: { width: 280, maxHeight: 420, p: 1.5 } } }}
+					>
+						<Typography variant="caption" fontWeight="bold" sx={{ mb: 0.5, display: "block" }}>
+							Parâmetros
+						</Typography>
+						<TextField
+							size="small"
+							placeholder="Buscar canal..."
+							value={channelMenuSearch}
+							onChange={(e) => setChannelMenuSearch(e.target.value)}
+							sx={{ mb: 0.5, "& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 } }}
+							fullWidth
+							autoFocus
+						/>
+						<Box sx={{ display: "flex", gap: 0.5, mb: 0.5 }}>
+							<Chip label="Todos" size="small" variant="outlined" onClick={selectAll} sx={{ fontSize: "0.6rem", height: 20 }} />
+							<Chip label="Fluoresc." size="small" variant="outlined" onClick={selectFluorescence} sx={{ fontSize: "0.6rem", height: 20 }} />
+							<Chip label="Limpar" size="small" variant="outlined" onClick={clearAll} sx={{ fontSize: "0.6rem", height: 20 }} />
+						</Box>
+						<Box sx={{ maxHeight: 220, overflow: "auto" }}>
+							{allChannels
+								.filter((ch) => {
+									if (!channelMenuSearch.trim()) return true
+									const q = channelMenuSearch.toLowerCase()
+									return ch.toLowerCase().includes(q) || channelLabel(ch).toLowerCase().includes(q)
+								})
+								.map((ch) => (
+									<FormControlLabel
+										key={ch}
+										control={
+											<Checkbox
+												size="small"
+												checked={selectedChannels?.has(ch) ?? true}
+												onChange={() => toggleChannel(ch)}
+												sx={{ p: 0.25 }}
+											/>
+										}
+										label={<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>{channelLabel(ch)}</Typography>}
+										sx={{ display: "block", m: 0, height: 26 }}
+									/>
+								))}
+						</Box>
+						<Box sx={{ borderTop: "1px solid", borderColor: "divider", pt: 0.5, mt: 0.5 }}>
+							<Typography variant="caption" fontWeight="bold" sx={{ mb: 0.25, display: "block" }}>
+								Colunas
+							</Typography>
+							{METRIC_COLUMNS.map((m) => (
+								<FormControlLabel
+									key={m.key}
+									control={
+										<Checkbox
+											size="small"
+											checked={visibleMetrics.has(m.key)}
+											onChange={() => toggleMetric(m.key)}
+											sx={{ p: 0.25 }}
+										/>
+									}
+									label={<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>{m.label}</Typography>}
+									sx={{ display: "block", m: 0, height: 26 }}
 								/>
 							))}
-					</Box>
-
-					{/* Metric columns toggle */}
-					<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-						<Typography variant="caption" fontWeight="bold">
-							Colunas:
-						</Typography>
-						{METRIC_COLUMNS.map((m) => (
-							<FormControlLabel
-								key={m.key}
-								control={
-									<Checkbox
-										size="small"
-										checked={visibleMetrics.has(m.key)}
-										onChange={() => toggleMetric(m.key)}
-										sx={{ p: 0.25 }}
-									/>
-								}
-								label={<Typography variant="caption" sx={{ fontSize: "0.65rem" }}>{m.shortLabel}</Typography>}
-								sx={{ m: 0, mr: 0.5 }}
-							/>
-						))}
-					</Box>
+						</Box>
+					</Popover>
 
 					{/* Stats table */}
 					<TableContainer sx={{ flex: 1, overflow: "auto" }}>
@@ -1088,59 +1112,81 @@ export default function StatsPanel({
 							</Box>
 						)}
 
-						{/* Parameter selector for comparison */}
+						{/* Parameter selector for comparison — hamburger menu */}
 						{compareItems.length > 0 && compareAvailableChannels.length > 0 && (
-							<Box sx={{ mb: 0.5 }}>
-								<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.25 }}>
-									<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
-										Parâmetros:
-									</Typography>
-									<Chip
-										label="Todos"
+							<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+								<Tooltip title="Configurar parâmetros da comparação">
+									<IconButton
 										size="small"
-										variant={!compareChannels ? "filled" : "outlined"}
-										onClick={() => setCompareChannels(null)}
-										sx={{ fontSize: "0.6rem", height: 18 }}
-									/>
-									<Chip
-										label="Fluoresc."
-										size="small"
-										variant="outlined"
-										onClick={() => setCompareChannels(new Set(compareAvailableChannels.filter(isFluorescence)))}
-										sx={{ fontSize: "0.6rem", height: 18 }}
-									/>
-									<Chip
-										label="Limpar"
-										size="small"
-										variant="outlined"
-										onClick={() => setCompareChannels(new Set())}
-										sx={{ fontSize: "0.6rem", height: 18 }}
-									/>
-								</Box>
-								<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.25 }}>
-									{compareAvailableChannels.map((ch) => {
+										onClick={(e) => setCompareChannelMenuAnchor(e.currentTarget)}
+										sx={{ p: 0.25 }}
+									>
+										<TuneIcon style={{ fontSize: 14 }} />
+									</IconButton>
+								</Tooltip>
+								<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+									{compareChannels ? compareChannels.size : compareAvailableChannels.length}/{compareAvailableChannels.length} parâmetros
+								</Typography>
+							</Box>
+						)}
+						<Popover
+							open={Boolean(compareChannelMenuAnchor)}
+							anchorEl={compareChannelMenuAnchor}
+							onClose={() => { setCompareChannelMenuAnchor(null); setCompareChannelMenuSearch("") }}
+							anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+							slotProps={{ paper: { sx: { width: 280, maxHeight: 380, p: 1.5 } } }}
+						>
+							<Typography variant="caption" fontWeight="bold" sx={{ mb: 0.5, display: "block" }}>
+								Parâmetros da Comparação
+							</Typography>
+							<TextField
+								size="small"
+								placeholder="Buscar canal..."
+								value={compareChannelMenuSearch}
+								onChange={(e) => setCompareChannelMenuSearch(e.target.value)}
+								sx={{ mb: 0.5, "& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 } }}
+								fullWidth
+								autoFocus
+							/>
+							<Box sx={{ display: "flex", gap: 0.5, mb: 0.5 }}>
+								<Chip label="Todos" size="small" variant="outlined" onClick={() => setCompareChannels(null)} sx={{ fontSize: "0.6rem", height: 20 }} />
+								<Chip label="Fluoresc." size="small" variant="outlined" onClick={() => setCompareChannels(new Set(compareAvailableChannels.filter(isFluorescence)))} sx={{ fontSize: "0.6rem", height: 20 }} />
+								<Chip label="Limpar" size="small" variant="outlined" onClick={() => setCompareChannels(new Set())} sx={{ fontSize: "0.6rem", height: 20 }} />
+							</Box>
+							<Box sx={{ maxHeight: 240, overflow: "auto" }}>
+								{compareAvailableChannels
+									.filter((ch) => {
+										if (!compareChannelMenuSearch.trim()) return true
+										const q = compareChannelMenuSearch.toLowerCase()
+										return ch.toLowerCase().includes(q) || channelLabel(ch).toLowerCase().includes(q)
+									})
+									.map((ch) => {
 										const selected = !compareChannels || compareChannels.has(ch)
 										return (
-											<Chip
+											<FormControlLabel
 												key={`cch-${ch}`}
-												label={channelLabel(ch)}
-												size="small"
-												variant={selected ? "filled" : "outlined"}
-												onClick={() => {
-													setCompareChannels((prev) => {
-														const next = new Set(prev ?? compareAvailableChannels)
-														if (next.has(ch)) next.delete(ch)
-														else next.add(ch)
-														return next
-													})
-												}}
-												sx={{ fontSize: "0.6rem", height: 18 }}
+												control={
+													<Checkbox
+														size="small"
+														checked={selected}
+														onChange={() => {
+															setCompareChannels((prev) => {
+																const next = new Set(prev ?? compareAvailableChannels)
+																if (next.has(ch)) next.delete(ch)
+																else next.add(ch)
+																return next
+															})
+														}}
+														sx={{ p: 0.25 }}
+													/>
+												}
+												label={<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>{channelLabel(ch)}</Typography>}
+												sx={{ display: "block", m: 0, height: 26 }}
 											/>
 										)
 									})}
-								</Box>
 							</Box>
-						)}
+						</Popover>
 
 						{/* Comparison table */}
 						{compareData.length > 0 && (
@@ -1285,6 +1331,60 @@ export default function StatsPanel({
 					<Box sx={{ flex: 1 }} />
 					<Button size="small" onClick={() => setLabelDialogOpen(false)}>Cancelar</Button>
 					<Button size="small" variant="contained" onClick={saveLabelDialog}>Salvar</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Export filename dialog */}
+			<Dialog
+				open={exportDialog.open}
+				onClose={() => setExportDialog((p) => ({ ...p, open: false }))}
+				maxWidth="xs"
+				fullWidth
+			>
+				<DialogTitle sx={{ fontSize: "0.95rem", pb: 0.5 }}>Exportar Estatísticas</DialogTitle>
+				<DialogContent>
+					<Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+						Escolha o nome do arquivo e o formato:
+					</Typography>
+					<TextField
+						size="small"
+						label="Nome do arquivo"
+						value={exportFileName}
+						onChange={(e) => setExportFileName(e.target.value)}
+						sx={{ mb: 1, "& .MuiInputBase-input": { fontSize: "0.85rem" } }}
+						fullWidth
+						autoFocus
+					/>
+					<Box sx={{ display: "flex", gap: 1 }}>
+						<Chip
+							label="CSV"
+							variant={exportDialog.format === "csv" ? "filled" : "outlined"}
+							color={exportDialog.format === "csv" ? "primary" : "default"}
+							onClick={() => setExportDialog((p) => ({ ...p, format: "csv" }))}
+						/>
+						<Chip
+							label="Excel (.xlsx)"
+							variant={exportDialog.format === "xlsx" ? "filled" : "outlined"}
+							color={exportDialog.format === "xlsx" ? "primary" : "default"}
+							onClick={() => setExportDialog((p) => ({ ...p, format: "xlsx" }))}
+						/>
+					</Box>
+				</DialogContent>
+				<DialogActions>
+					<Button size="small" onClick={() => setExportDialog((p) => ({ ...p, open: false }))}>
+						Cancelar
+					</Button>
+					<Button
+						size="small"
+						variant="contained"
+						onClick={() => {
+							const name = exportFileName.trim() || exportDialog.defaultName
+							exportDialog.handler(name, exportDialog.format)
+							setExportDialog((p) => ({ ...p, open: false }))
+						}}
+					>
+						Exportar
+					</Button>
 				</DialogActions>
 			</Dialog>
 		</Box>
