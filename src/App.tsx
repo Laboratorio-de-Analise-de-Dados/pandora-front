@@ -3,7 +3,7 @@ import Footer from "./components/footer"
 import CssBaseline from "@mui/material/CssBaseline"
 import { ThemeModeProvider } from "./providers/ThemeContext"
 import { Box } from "@mui/material"
-import Routes from "./router"
+import AppRoutes from "./router"
 import { ToastContainer } from "react-toastify"
 
 function App() {
@@ -20,7 +20,7 @@ function App() {
 				}}
 			>
 				<Header />
-				<Routes />
+				<AppRoutes />
 				<Footer />
 			</Box>
 		</ThemeModeProvider>

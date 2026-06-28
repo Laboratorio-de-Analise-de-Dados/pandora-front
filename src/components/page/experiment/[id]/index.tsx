@@ -1,45 +1,39 @@
 import { Box, CircularProgress, Typography } from "@mui/material"
 import { useState } from "react"
 import Layout from "../../../Layout"
-import { useParams } from "react-router-dom"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { getChildGatesForSource, findGateInTree } from "../../../../features/gate/utils"
+import { findGateInTree } from "../../../../features/gate/utils"
 import {
-	useExperimentQuery,
-	useExperimentFilesQuery,
-	useFileStatsQuery,
-	useInvalidateExperiment,
-} from "../../../../features/experiment/hooks/useExperimentData"
+	ExperimentWorkspaceProvider,
+	useExperimentWorkspace,
+} from "../../../../features/experiment/context/ExperimentWorkspaceContext"
 import ScatterPlot from "../../../plotly"
-import ParentTree, { SelectedSource } from "../../../parent_tree"
+import ParentTree from "../../../parent_tree"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
 import { MdDelete as DeleteIcon, MdBarChart as StatsIcon } from "react-icons/md"
 import { IconButton, Tooltip } from "@mui/material"
-import { useHistory } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
-interface Params {
-	id: string
-}
+function ExperimentPageContent() {
+	const {
+		experiment,
+		experimentFiles,
+		isLoading,
+		source,
+		setSource,
+		fileStats,
+		invalidateExperiment,
+		childGates,
+		siblingGateNames,
+		values,
+	} = useExperimentWorkspace()
 
-export default function ExperimentPage() {
-	const param = useParams<Params>()
-	const router = useHistory()
-
-	const { data: experiment, isLoading } = useExperimentQuery(param.id)
-	const { data: experimentFiles = [] } = useExperimentFilesQuery(param.id)
-	const invalidateExperiment = useInvalidateExperiment(param.id)
-
-	const [source, setSource] = useState<SelectedSource | undefined>(undefined)
+	const navigate = useNavigate()
 	const [showStats, setShowStats] = useState(true)
 	const [applyTarget, setApplyTarget] = useState<{ id: number; name: string; fileDataId: number } | null>(null)
 	const [applyLoading, setApplyLoading] = useState(false)
-
-	const { data: fileStats } = useFileStatsQuery(source?.type, source?.id)
-
-	const childGates = getChildGatesForSource(experimentFiles, source)
-	const siblingGateNames = childGates.map((g) => g.name)
 
 	const handleDelete = async (id: number) => {
 		const confirmed = window.confirm("Tem certeza que deseja excluir?")
@@ -47,7 +41,7 @@ export default function ExperimentPage() {
 		try {
 			await CytometryApi.delete(`/experiment/${id}`)
 			toast.success("Experimento excluído com sucesso!", { position: "bottom-right" })
-			router.push(`/experiments`)
+			navigate(`/experiments`)
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
 			toast.error(`Erro ao excluir o experimento: ${errorMessage}`, { position: "bottom-right" })
@@ -178,7 +172,7 @@ export default function ExperimentPage() {
 						</Box>
 						<ScatterPlot
 							key={`${source.type}-${source.id}`}
-							values={experiment?.values || []}
+							values={values}
 							sourceType={source.type}
 							sourceId={source.id}
 							fileDataId={source.fileDataId}
@@ -204,7 +198,7 @@ export default function ExperimentPage() {
 					<StatsPanel
 						source={source}
 						files={experimentFiles}
-						values={experiment?.values || []}
+						values={values}
 						fileStats={fileStats}
 						onClose={() => setShowStats(false)}
 					/>
@@ -246,5 +240,13 @@ export default function ExperimentPage() {
 				/>
 			)}
 		</Layout>
+	)
+}
+
+export default function ExperimentPage() {
+	return (
+		<ExperimentWorkspaceProvider>
+			<ExperimentPageContent />
+		</ExperimentWorkspaceProvider>
 	)
 }
