@@ -27,8 +27,10 @@ import {
 	Divider,
 } from "@mui/material"
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
-import { ExperimentFiles, Gate, GateCoordinates } from "../../types"
+import { ExperimentFiles, Gate } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
+import { gateAxesLabel, findGateInTree } from "../../features/gate/utils"
+import { fmtPct } from "../../utils/format"
 import React, { useState } from "react"
 
 export interface SelectedSource {
@@ -38,19 +40,7 @@ export interface SelectedSource {
 	fileDataId: number
 }
 
-// Formata percentual no estilo FlowJo/Cytobank (2 casas decimais)
-const fmtPct = (v: number | undefined) =>
-	v != null ? `${(v * 100).toFixed(2)}%` : "–"
 
-// Extrai a descrição dos eixos usados para construir o gate
-const gateAxesLabel = (gc: GateCoordinates): string | null => {
-	const gateType = gc.type ?? "rectangle"
-	const xAxis = "x_axis" in gc ? gc.x_axis : undefined
-	const yAxis = "y_axis" in gc ? gc.y_axis : undefined
-	if (gateType === "interval" && xAxis) return xAxis
-	if (xAxis && yAxis) return `${xAxis} × ${yAxis}`
-	return null
-}
 
 // Função recursiva para renderizar os gates e seus sub-gates
 const renderGate = (
@@ -166,17 +156,7 @@ const renderFile = (
 	)
 }
 
-// Procura recursivamente um gate (e seu file_data raiz) pela id.
-const findGate = (gates: Gate[], id: number): Gate | undefined => {
-	for (const gate of gates) {
-		if (gate.id === id) return gate
-		if (gate.children) {
-			const found = findGate(gate.children, id)
-			if (found) return found
-		}
-	}
-	return undefined
-}
+
 
 export default function ParentTree({
 	files,
@@ -325,7 +305,7 @@ export default function ParentTree({
 			let gate: Gate | undefined
 			let fileDataId = id
 			for (const file of files) {
-				gate = findGate(file.gates, id)
+				gate = findGateInTree(file.gates, id)
 				if (gate) {
 					fileDataId = file.id
 					break

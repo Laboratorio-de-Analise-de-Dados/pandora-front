@@ -9,6 +9,7 @@ import React, {
 } from "react"
 import CytometryApi from "../../API"
 import { AxiosResponse } from "axios"
+import type { Experiment } from "../../types"
 
 type ChunkStatus = "pending" | "uploaded" | "failed"
 
@@ -18,13 +19,13 @@ interface ChunkProgress {
 }
 
 interface ExperimentContextProps {
-	experiments: any[]
+	experiments: Experiment[]
 	listExperiments: () => void
 	createExperiment: (
 		title: string,
 		type: string,
 		file: File
-	) => Promise<AxiosResponse<any, any>>
+	) => Promise<AxiosResponse>
 	progress: ChunkProgress[]
 }
 
@@ -49,7 +50,7 @@ interface ExperimentProviderProps {
 export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	children,
 }) => {
-	const [experiments, setExperiments] = useState<any[]>([])
+	const [experiments, setExperiments] = useState<Experiment[]>([])
 	const [progress, setProgress] = useState<ChunkProgress[]>([])
 	const listExperiments = useCallback(async function nts() {
 		const experiments = await CytometryApi.get("/experiment")

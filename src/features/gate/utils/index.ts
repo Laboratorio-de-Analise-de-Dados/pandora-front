@@ -1,0 +1,9 @@
+export {
+	findGateInTree,
+	collectAllGates,
+	findFileForGate,
+	buildGateStrategy,
+	getGateStrategy,
+	gateAxesLabel,
+	getChildGatesForSource,
+} from "./gateTreeHelpers"
