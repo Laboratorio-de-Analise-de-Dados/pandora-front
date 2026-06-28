@@ -15,7 +15,7 @@ export interface ExperimentFiles {
 export interface FileData {
 	id: number
 	file_name: string
-	data_set: any
+	data_set: Record<string, unknown>
 	gates: Gate[]
 }
 
