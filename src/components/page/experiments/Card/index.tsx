@@ -1,15 +1,15 @@
 import { ExperimentComponent } from "./style"
 import { Experiment } from "../../../../types"
-import { useHistory } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 interface ExperimentCardProps {
 	experiment: Experiment
 }
 
 export default function ExperimentCard({ experiment }: ExperimentCardProps) {
-	const router = useHistory()
+	const navigate = useNavigate()
 	const redirectPage = () => {
-		router.push(`/experiments/${experiment.id}`)
+		navigate(`/experiments/${experiment.id}`)
 	}
 	return (
 		<ExperimentComponent onClick={redirectPage}>

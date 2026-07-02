@@ -1,22 +1,16 @@
-import { Route, Switch } from "react-router-dom"
+import { Route, Routes } from "react-router-dom"
 import HomePage from "../page/home"
 import ExperimentsPage from "../page/experiments"
 import ExperimentPage from "../components/page/experiment/[id]"
-const Routes = () => {
-	return (
-		<Switch>
-			<Route exact path="/">
-				<HomePage />
-			</Route>
 
-			<Route exact path="/experiments">
-				<ExperimentsPage />
-			</Route>
-			<Route path="/experiments/:id">
-				<ExperimentPage />
-			</Route>
-		</Switch>
+const AppRoutes = () => {
+	return (
+		<Routes>
+			<Route path="/" element={<HomePage />} />
+			<Route path="/experiments" element={<ExperimentsPage />} />
+			<Route path="/experiments/:id" element={<ExperimentPage />} />
+		</Routes>
 	)
 }
 
-export default Routes
+export default AppRoutes
