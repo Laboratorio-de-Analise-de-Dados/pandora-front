@@ -13,6 +13,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "*"
   workflow_dispatch: {}
 
 jobs:
@@ -28,7 +30,7 @@ jobs:
 
       - name: Calcula a tag da imagem
         id: meta
-        run: echo "image_tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        run: echo "image_tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Login no Docker Hub
         run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
