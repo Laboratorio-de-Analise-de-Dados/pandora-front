@@ -34,10 +34,14 @@ import { COFACTOR, biex, toRaw } from "../../features/plot/utils/biex"
 import { buildTicks } from "../../features/plot/utils/ticks"
 import { LINEAR_SLIDER_MAX } from "../../features/plot/utils/sliders"
 import { pointInPolygon, edgesToCenters } from "../../features/plot/utils/geometry"
+import { supportsWebGL } from "../../features/plot/utils/webgl"
 
 import PlotToolbar from "../../features/plot/components/PlotToolbar"
 import PlotSettings from "../../features/plot/components/PlotSettings"
 import GateEditDialog from "../../features/plot/components/GateEditDialog"
+
+// scattergl (GPU) onde há WebGL; senão cai pro scatter SVG, sem erro pro usuário.
+const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = supportsWebGL() ? "scattergl" : "scatter"
 
 interface ScatterPlotProps {
 	values: string[]
@@ -393,7 +397,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				marker: { color: "#1976d2" },
 			}]
 			: [{
-				type: "scatter" as const,
+				type: SCATTER_TRACE_TYPE,
 				mode: "markers" as const,
 				x: data?.x ?? [],
 				y: data?.y ?? [],
