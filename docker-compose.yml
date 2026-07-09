@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: paulomoro/pandora-front:latest
+    image: "${DOCKER_USER}/pandora-front:${IMAGE_TAG}"
     container_name: pandora_frontend
     expose:
       - "80"

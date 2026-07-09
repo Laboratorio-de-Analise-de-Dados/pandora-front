@@ -33,7 +33,10 @@ import type { GateShape } from "../../features/plot/hooks/useGateShapes"
 import { COFACTOR, biex, toRaw } from "../../features/plot/utils/biex"
 import { buildTicks } from "../../features/plot/utils/ticks"
 import { LINEAR_SLIDER_MAX } from "../../features/plot/utils/sliders"
-import { pointInPolygon, edgesToCenters } from "../../features/plot/utils/geometry"
+import {
+	pointInPolygon,
+	edgesToCenters,
+} from "../../features/plot/utils/geometry"
 import { supportsWebGL } from "../../features/plot/utils/webgl"
 
 import PlotToolbar from "../../features/plot/components/PlotToolbar"
@@ -41,7 +44,7 @@ import PlotSettings from "../../features/plot/components/PlotSettings"
 import GateEditDialog from "../../features/plot/components/GateEditDialog"
 
 // scattergl (GPU) onde há WebGL; senão cai pro scatter SVG, sem erro pro usuário.
-const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = supportsWebGL() ? "scattergl" : "scatter"
+const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
 
 interface ScatterPlotProps {
 	values: string[]
@@ -67,11 +70,28 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 }) => {
 	const plotState = usePlotState()
 	const {
-		xAxis, yAxis, plotMode, tool, xScale, yScale, cutoff,
-		xMin, xMax, yMin, yMax,
-		handleSelectX, handleSelectY, setPlotMode, setTool,
-		setXScale, setYScale, setCutoff,
-		setXMin, setXMax, setYMin, setYMax,
+		xAxis,
+		yAxis,
+		plotMode,
+		tool,
+		xScale,
+		yScale,
+		cutoff,
+		xMin,
+		xMax,
+		yMin,
+		yMax,
+		handleSelectX,
+		handleSelectY,
+		setPlotMode,
+		setTool,
+		setXScale,
+		setYScale,
+		setCutoff,
+		setXMin,
+		setXMax,
+		setYMin,
+		setYMax,
 	} = plotState
 
 	// Gate edit dialog state
@@ -80,11 +100,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [editGateName, setEditGateName] = useState("")
 	const [editGateColor, setEditGateColor] = useState("#0078FF")
 	// Context menu state
-	const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; gate: Gate; gateIndex: number } | null>(null)
+	const [contextMenu, setContextMenu] = useState<{
+		mouseX: number
+		mouseY: number
+		gate: Gate
+		gateIndex: number
+	} | null>(null)
 	// Reshape mode
 	const [reshapingGateId, setReshapingGateId] = useState<number | null>(null)
 	// Polygon vertex editing state
-	const [editingPolyGate, setEditingPolyGate] = useState<{ gate: Gate; swapped: boolean } | null>(null)
+	const [editingPolyGate, setEditingPolyGate] = useState<{
+		gate: Gate
+		swapped: boolean
+	} | null>(null)
 	const [editingVertices, setEditingVertices] = useState<[number, number][]>([])
 	const editingVerticesRef = useRef<[number, number][]>([])
 	editingVerticesRef.current = editingVertices
@@ -102,8 +130,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	})
 
 	const { data, isLoading, isFetching, isError } = useDensityQuery({
-		sourceType, sourceId, xAxis, yAxis, plotMode, xScale, yScale,
-		cutoff, xMin, xMax, yMin, yMax,
+		sourceType,
+		sourceId,
+		xAxis,
+		yAxis,
+		plotMode,
+		xScale,
+		yScale,
+		cutoff,
+		xMin,
+		xMax,
+		yMin,
+		yMax,
 	})
 
 	const effXScale: Scale = data?.x_scale ?? xScale
@@ -111,13 +149,27 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const effCof = data?.cofactor ?? COFACTOR
 
 	const { handleSelectedArea, handleQuadrantClick } = useGateDrawing({
-		fileDataId, parentId, xAxis, yAxis,
-		effXScale, effYScale, effCof,
-		tool, plotMode, siblingGateNames, loadFile, setTool,
+		fileDataId,
+		parentId,
+		xAxis,
+		yAxis,
+		effXScale,
+		effYScale,
+		effCof,
+		tool,
+		plotMode,
+		siblingGateNames,
+		loadFile,
+		setTool,
 	})
 
 	const gateShapes = useGateShapes({
-		childGates, xAxis, yAxis, effXScale, effYScale, plotMode,
+		childGates,
+		xAxis,
+		yAxis,
+		effXScale,
+		effYScale,
+		plotMode,
 	})
 
 	// --- Gate click/context menu handlers ---
@@ -129,10 +181,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setEditDialogOpen(true)
 	}
 
-	const findGateAtPoint = (clientX: number, clientY: number): { gate: Gate; gateIndex: number } | null => {
+	const findGateAtPoint = (
+		clientX: number,
+		clientY: number,
+	): { gate: Gate; gateIndex: number } | null => {
 		const container = plotContainerRef.current
 		if (!container) return null
-		const plotEl = container.querySelector(".js-plotly-plot") as HTMLElement & { _fullLayout?: Record<string, Record<string, (v: number) => number>> }
+		const plotEl = container.querySelector(".js-plotly-plot") as HTMLElement & {
+			_fullLayout?: Record<string, Record<string, (v: number) => number>>
+		}
 		if (!plotEl?._fullLayout) return null
 		const xaxis = plotEl._fullLayout.xaxis
 		const yaxis = plotEl._fullLayout.yaxis
@@ -140,8 +197,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		const rect = plotEl.getBoundingClientRect()
 		const px = clientX - rect.left
 		const py = clientY - rect.top
-		const xaxisObj = xaxis as unknown as { p2d: (v: number) => number; _offset: number }
-		const yaxisObj = yaxis as unknown as { p2d: (v: number) => number; _offset: number }
+		const xaxisObj = xaxis as unknown as {
+			p2d: (v: number) => number
+			_offset: number
+		}
+		const yaxisObj = yaxis as unknown as {
+			p2d: (v: number) => number
+			_offset: number
+		}
 		const dataX = xaxisObj.p2d(px - xaxisObj._offset)
 		const dataY = yaxisObj.p2d(py - yaxisObj._offset)
 		if (dataX == null || dataY == null) return null
@@ -155,14 +218,41 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const xs = swapped ? effYScale : effXScale
 			const ys = swapped ? effXScale : effYScale
 
-				if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
-				const rect = gc as { startX: number; startY: number; endX: number; endY: number }
-				const x0 = xs === "biex" ? biex(swapped ? rect.startY : rect.startX, cof) : (swapped ? rect.startY : rect.startX)
-				const x1 = xs === "biex" ? biex(swapped ? rect.endY : rect.endX, cof) : (swapped ? rect.endY : rect.endX)
-				const y0 = ys === "biex" ? biex(swapped ? rect.startX : rect.startY, cof) : (swapped ? rect.startX : rect.startY)
-				const y1 = ys === "biex" ? biex(swapped ? rect.endX : rect.endY, cof) : (swapped ? rect.endX : rect.endY)
-				const minX = Math.min(x0, x1), maxX = Math.max(x0, x1)
-				const minY = Math.min(y0, y1), maxY = Math.max(y0, y1)
+			if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
+				const rect = gc as {
+					startX: number
+					startY: number
+					endX: number
+					endY: number
+				}
+				const x0 =
+					xs === "biex"
+						? biex(swapped ? rect.startY : rect.startX, cof)
+						: swapped
+							? rect.startY
+							: rect.startX
+				const x1 =
+					xs === "biex"
+						? biex(swapped ? rect.endY : rect.endX, cof)
+						: swapped
+							? rect.endY
+							: rect.endX
+				const y0 =
+					ys === "biex"
+						? biex(swapped ? rect.startX : rect.startY, cof)
+						: swapped
+							? rect.startX
+							: rect.startY
+				const y1 =
+					ys === "biex"
+						? biex(swapped ? rect.endX : rect.endY, cof)
+						: swapped
+							? rect.endX
+							: rect.endY
+				const minX = Math.min(x0, x1),
+					maxX = Math.max(x0, x1)
+				const minY = Math.min(y0, y1),
+					maxY = Math.max(y0, y1)
 				if (dataX >= minX && dataX <= maxX && dataY >= minY && dataY <= maxY) {
 					const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
 					return { gate: shape._gateData, gateIndex: idx < 0 ? 0 : idx }
@@ -187,7 +277,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				const intv = gc as { startX: number; endX: number }
 				const x0 = effXScale === "biex" ? biex(intv.startX, cof) : intv.startX
 				const x1 = effXScale === "biex" ? biex(intv.endX, cof) : intv.endX
-				const minX = Math.min(x0, x1), maxX = Math.max(x0, x1)
+				const minX = Math.min(x0, x1),
+					maxX = Math.max(x0, x1)
 				if (dataX >= minX && dataX <= maxX) {
 					const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
 					return { gate: shape._gateData, gateIndex: idx < 0 ? 0 : idx }
@@ -201,7 +292,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		const hit = findGateAtPoint(event.clientX, event.clientY)
 		if (hit) {
 			event.preventDefault()
-			setContextMenu({ mouseX: event.clientX, mouseY: event.clientY, gate: hit.gate, gateIndex: hit.gateIndex })
+			setContextMenu({
+				mouseX: event.clientX,
+				mouseY: event.clientY,
+				gate: hit.gate,
+				gateIndex: hit.gateIndex,
+			})
 		}
 	}
 
@@ -211,7 +307,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		if (!contextMenu) return
 		setSelectedGate(contextMenu.gate)
 		setEditGateName(contextMenu.gate.name)
-		setEditGateColor(getGateColor(contextMenu.gate.color, contextMenu.gateIndex))
+		setEditGateColor(
+			getGateColor(contextMenu.gate.color, contextMenu.gateIndex),
+		)
 		setEditDialogOpen(true)
 		setContextMenu(null)
 	}
@@ -220,7 +318,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		if (!contextMenu) return
 		setSelectedGate(contextMenu.gate)
 		setEditGateName(contextMenu.gate.name)
-		setEditGateColor(getGateColor(contextMenu.gate.color, contextMenu.gateIndex))
+		setEditGateColor(
+			getGateColor(contextMenu.gate.color, contextMenu.gateIndex),
+		)
 		setEditDialogOpen(true)
 		setContextMenu(null)
 	}
@@ -231,13 +331,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setContextMenu(null)
 		try {
 			await CytometryApi.delete(`/analytics/gate/${gate.id}`)
-			toast.success(`Gate "${gate.name}" excluído`, { position: "bottom-right" })
+			toast.success(`Gate "${gate.name}" excluído`, {
+				position: "bottom-right",
+			})
 			loadFile()
 		} catch (error: unknown) {
 			const err = error as { response?: { data?: unknown }; message?: string }
 			const msg = err?.response?.data
 				? JSON.stringify(err.response.data)
-				: err?.message ?? "Erro desconhecido"
+				: (err?.message ?? "Erro desconhecido")
 			toast.error(`Erro ao excluir gate: ${msg}`, { position: "bottom-right" })
 		}
 	}
@@ -268,12 +370,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const handleSaveGateName = async () => {
 		if (!selectedGate || !editGateName.trim()) {
-			toast.error("Nome do gate não pode estar vazio", { position: "bottom-right" })
+			toast.error("Nome do gate não pode estar vazio", {
+				position: "bottom-right",
+			})
 			return
 		}
 		try {
-			await CytometryApi.patch(`/analytics/gate/${selectedGate.id}`, { name: editGateName, color: editGateColor })
-			toast.success("Gate atualizado com sucesso!", { position: "bottom-right" })
+			await CytometryApi.patch(`/analytics/gate/${selectedGate.id}`, {
+				name: editGateName,
+				color: editGateColor,
+			})
+			toast.success("Gate atualizado com sucesso!", {
+				position: "bottom-right",
+			})
 			setEditDialogOpen(false)
 			setSelectedGate(null)
 			loadFile()
@@ -281,22 +390,33 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const err = error as { response?: { data?: unknown }; message?: string }
 			const msg = err?.response?.data
 				? JSON.stringify(err.response.data)
-				: err?.message ?? "Erro desconhecido"
-			toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+				: (err?.message ?? "Erro desconhecido")
+			toast.error(`Erro ao atualizar gate: ${msg}`, {
+				position: "bottom-right",
+			})
 		}
 	}
 
 	// Build shape index -> gate mapping for edit mode
-	const shapeGateMap = useRef<Array<{ gate: Gate; swapped: boolean } | null>>([])
+	const shapeGateMap = useRef<Array<{ gate: Gate; swapped: boolean } | null>>(
+		[],
+	)
 	const filteredShapes = editingPolyGate
-		? gateShapes.filter((s) => !(s._gateData && s._gateData.id === editingPolyGate.gate.id))
+		? gateShapes.filter(
+				(s) => !(s._gateData && s._gateData.id === editingPolyGate.gate.id),
+			)
 		: gateShapes
 	const editableShapes = filteredShapes.map((shape, i) => {
 		const gateData = shape._gateData ?? null
 		const swappedFlag = shape._swapped ?? false
-		shapeGateMap.current[i] = gateData ? { gate: gateData, swapped: swappedFlag } : null
+		shapeGateMap.current[i] = gateData
+			? { gate: gateData, swapped: swappedFlag }
+			: null
 		const isEditTool = tool === "edit" && shape.type === "rect"
-		const isReshaping = reshapingGateId !== null && gateData?.id === reshapingGateId && shape.type === "rect"
+		const isReshaping =
+			reshapingGateId !== null &&
+			gateData?.id === reshapingGateId &&
+			shape.type === "rect"
 		return { ...shape, editable: isEditTool || isReshaping }
 	})
 	shapeGateMap.current.length = editableShapes.length
@@ -346,12 +466,21 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					endY: swapped ? rawX1 : rawY1,
 				}
 				try {
-					await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+					await CytometryApi.patch(`/analytics/gate/${gate.id}`, {
+						gate_coordinates: newCoords,
+					})
 					loadFile()
 				} catch (error: unknown) {
-					const err = error as { response?: { data?: unknown }; message?: string }
-					const msg = err?.response?.data ? JSON.stringify(err.response.data) : err?.message ?? "Erro desconhecido"
-					toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+					const err = error as {
+						response?: { data?: unknown }
+						message?: string
+					}
+					const msg = err?.response?.data
+						? JSON.stringify(err.response.data)
+						: (err?.message ?? "Erro desconhecido")
+					toast.error(`Erro ao atualizar gate: ${msg}`, {
+						position: "bottom-right",
+					})
 				}
 			} else if (gateType === "interval") {
 				const shape = editableShapes[idx]
@@ -367,12 +496,21 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					endX: rawX1,
 				}
 				try {
-					await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
+					await CytometryApi.patch(`/analytics/gate/${gate.id}`, {
+						gate_coordinates: newCoords,
+					})
 					loadFile()
 				} catch (error: unknown) {
-					const err = error as { response?: { data?: unknown }; message?: string }
-					const msg = err?.response?.data ? JSON.stringify(err.response.data) : err?.message ?? "Erro desconhecido"
-					toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
+					const err = error as {
+						response?: { data?: unknown }
+						message?: string
+					}
+					const msg = err?.response?.data
+						? JSON.stringify(err.response.data)
+						: (err?.message ?? "Erro desconhecido")
+					toast.error(`Erro ao atualizar gate: ${msg}`, {
+						position: "bottom-right",
+					})
 				}
 			}
 		}
@@ -381,41 +519,51 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// Build Plotly trace data
 	const plotData: Plotly.Data[] =
 		plotMode === "heatmap"
-			? [{
-				type: "heatmap" as const,
-				z: data?.histogram ?? [],
-				x: edgesToCenters(data?.x_edges),
-				y: edgesToCenters(data?.y_edges),
-				colorscale: "Jet" as const,
-				showscale: true,
-			}]
+			? [
+					{
+						type: "heatmap" as const,
+						z: data?.histogram ?? [],
+						x: edgesToCenters(data?.x_edges),
+						y: edgesToCenters(data?.y_edges),
+						colorscale: "Jet" as const,
+						showscale: true,
+					},
+				]
 			: plotMode === "histogram"
-			? [{
-				type: "bar" as const,
-				x: edgesToCenters(data?.edges),
-				y: data?.counts ?? [],
-				marker: { color: "#1976d2" },
-			}]
-			: [{
-				type: SCATTER_TRACE_TYPE,
-				mode: "markers" as const,
-				x: data?.x ?? [],
-				y: data?.y ?? [],
-				marker: { color: "black", size: 2 },
-			}]
+				? [
+						{
+							type: "bar" as const,
+							x: edgesToCenters(data?.edges),
+							y: data?.counts ?? [],
+							marker: { color: "#1976d2" },
+						},
+					]
+				: [
+						{
+							type: SCATTER_TRACE_TYPE,
+							mode: "markers" as const,
+							x: data?.x ?? [],
+							y: data?.y ?? [],
+							marker: { color: "black", size: 2 },
+						},
+					]
 
 	const hasData =
-		plotMode === "heatmap" ? !!data?.histogram?.length
-			: plotMode === "histogram" ? !!data?.counts?.length
-			: !!data?.x?.length
+		plotMode === "heatmap"
+			? !!data?.histogram?.length
+			: plotMode === "histogram"
+				? !!data?.counts?.length
+				: !!data?.x?.length
 
 	// Axis ranges and ticks
-	const defaultXRange = effXScale === "biex"
-		? [biex(-100000, effCof), biex(1000000, effCof)]
-		: [0, LINEAR_SLIDER_MAX]
-	const defaultYRange = effYScale === "biex"
-		? [biex(-100000, effCof), biex(1000000, effCof)]
-		: [0, LINEAR_SLIDER_MAX]
+	const defaultXRange =
+		effXScale === "biex"
+			? [biex(-100000, effCof), biex(1000000, effCof)]
+			: [0, LINEAR_SLIDER_MAX]
+	const defaultYRange =
+		effYScale === "biex"
+			? [biex(-100000, effCof), biex(1000000, effCof)]
+			: [0, LINEAR_SLIDER_MAX]
 	const xAxisRange =
 		xMin !== "" && xMax !== ""
 			? effXScale === "biex"
@@ -432,7 +580,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const yTicks = buildTicks(yAxisRange, effYScale, effCof)
 
 	const dragmode: "select" | "lasso" | "pan" | false =
-		(tool === "edit" || reshapingGateId !== null) ? "pan" : tool === "quad" ? false : tool === "poly" ? "lasso" : "select"
+		tool === "edit" || reshapingGateId !== null
+			? "pan"
+			: tool === "quad"
+				? false
+				: tool === "poly"
+					? "lasso"
+					: "select"
 
 	// Plot click handler
 	const handlePlotClickWrapper = async (event: Plotly.PlotMouseEvent) => {
@@ -491,54 +645,83 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}, [reshapingGateId])
 
 	// Convert data coords to pixel coords
-	const dataToPixel = useCallback((dataX: number, dataY: number): { px: number; py: number } | null => {
-		const container = plotContainerRef.current
-		if (!container) return null
-		const plotDiv = container.querySelector(".js-plotly-plot") as HTMLElement & { _fullLayout?: Record<string, Record<string, unknown>> }
-		if (!plotDiv?._fullLayout) return null
-		const layout = plotDiv._fullLayout
-		const xax = layout.xaxis as Record<string, unknown>
-		const yax = layout.yaxis as Record<string, unknown>
-		if (!xax || !yax) return null
-		const px = (xax.l2p as (v: number) => number)(dataX) + (xax._offset as number)
-		const py = (yax.l2p as (v: number) => number)(dataY) + (yax._offset as number)
-		return { px, py }
-	}, [])
+	const dataToPixel = useCallback(
+		(dataX: number, dataY: number): { px: number; py: number } | null => {
+			const container = plotContainerRef.current
+			if (!container) return null
+			const plotDiv = container.querySelector(
+				".js-plotly-plot",
+			) as HTMLElement & {
+				_fullLayout?: Record<string, Record<string, unknown>>
+			}
+			if (!plotDiv?._fullLayout) return null
+			const layout = plotDiv._fullLayout
+			const xax = layout.xaxis as Record<string, unknown>
+			const yax = layout.yaxis as Record<string, unknown>
+			if (!xax || !yax) return null
+			const px =
+				(xax.l2p as (v: number) => number)(dataX) + (xax._offset as number)
+			const py =
+				(yax.l2p as (v: number) => number)(dataY) + (yax._offset as number)
+			return { px, py }
+		},
+		[],
+	)
 
-	const pixelToData = useCallback((px: number, py: number): { dataX: number; dataY: number } | null => {
-		const container = plotContainerRef.current
-		if (!container) return null
-		const plotDiv = container.querySelector(".js-plotly-plot") as HTMLElement & { _fullLayout?: Record<string, Record<string, unknown>> }
-		if (!plotDiv?._fullLayout) return null
-		const layout = plotDiv._fullLayout
-		const xax = layout.xaxis as Record<string, unknown>
-		const yax = layout.yaxis as Record<string, unknown>
-		if (!xax || !yax) return null
-		const dataX = (xax.p2l as (v: number) => number)(px - (xax._offset as number))
-		const dataY = (yax.p2l as (v: number) => number)(py - (yax._offset as number))
-		return { dataX, dataY }
-	}, [])
+	const pixelToData = useCallback(
+		(px: number, py: number): { dataX: number; dataY: number } | null => {
+			const container = plotContainerRef.current
+			if (!container) return null
+			const plotDiv = container.querySelector(
+				".js-plotly-plot",
+			) as HTMLElement & {
+				_fullLayout?: Record<string, Record<string, unknown>>
+			}
+			if (!plotDiv?._fullLayout) return null
+			const layout = plotDiv._fullLayout
+			const xax = layout.xaxis as Record<string, unknown>
+			const yax = layout.yaxis as Record<string, unknown>
+			if (!xax || !yax) return null
+			const dataX = (xax.p2l as (v: number) => number)(
+				px - (xax._offset as number),
+			)
+			const dataY = (yax.p2l as (v: number) => number)(
+				py - (yax._offset as number),
+			)
+			return { dataX, dataY }
+		},
+		[],
+	)
 
 	// Save edited polygon vertices
-	const savePolygonVertices = useCallback(async (gate: Gate, vertices: [number, number][]) => {
-		const gc = gate.gate_coordinates
-		const xAxisLabel = "x_axis" in gc ? gc.x_axis : undefined
-		const yAxisLabel = "y_axis" in gc ? gc.y_axis : undefined
-		const newCoords = {
-			type: "polygon" as const,
-			x_axis: xAxisLabel,
-			y_axis: yAxisLabel,
-			vertices,
-		}
-		try {
-			await CytometryApi.patch(`/analytics/gate/${gate.id}`, { gate_coordinates: newCoords })
-			loadFile()
-		} catch (error: unknown) {
-			const err = error as { response?: { data?: unknown }; message?: string }
-			const msg = err?.response?.data ? JSON.stringify(err.response.data) : err?.message ?? "Erro desconhecido"
-			toast.error(`Erro ao atualizar gate: ${msg}`, { position: "bottom-right" })
-		}
-	}, [loadFile])
+	const savePolygonVertices = useCallback(
+		async (gate: Gate, vertices: [number, number][]) => {
+			const gc = gate.gate_coordinates
+			const xAxisLabel = "x_axis" in gc ? gc.x_axis : undefined
+			const yAxisLabel = "y_axis" in gc ? gc.y_axis : undefined
+			const newCoords = {
+				type: "polygon" as const,
+				x_axis: xAxisLabel,
+				y_axis: yAxisLabel,
+				vertices,
+			}
+			try {
+				await CytometryApi.patch(`/analytics/gate/${gate.id}`, {
+					gate_coordinates: newCoords,
+				})
+				loadFile()
+			} catch (error: unknown) {
+				const err = error as { response?: { data?: unknown }; message?: string }
+				const msg = err?.response?.data
+					? JSON.stringify(err.response.data)
+					: (err?.message ?? "Erro desconhecido")
+				toast.error(`Erro ao atualizar gate: ${msg}`, {
+					position: "bottom-right",
+				})
+			}
+		},
+		[loadFile],
+	)
 
 	// Render polygon vertex handles as SVG overlay
 	const renderPolyEditOverlay = () => {
@@ -558,7 +741,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 		if (pixelVerts.some((p) => p === null)) return null
 		const validVerts = pixelVerts as { px: number; py: number }[]
-		const polyPath = validVerts.map((v, i) => `${i === 0 ? "M" : "L"}${v.px},${v.py}`).join(" ") + " Z"
+		const polyPath =
+			validVerts
+				.map((v, i) => `${i === 0 ? "M" : "L"}${v.px},${v.py}`)
+				.join(" ") + " Z"
 
 		const handleVertexDrag = (idx: number) => (e: React.MouseEvent) => {
 			e.preventDefault()
@@ -592,8 +778,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		}
 
 		return (
-			<svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 10 }}>
-				<path d={polyPath} fill="rgba(0,120,255,0.05)" stroke="rgba(0,120,255,0.9)" strokeWidth={2} pointerEvents="none" />
+			<svg
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					pointerEvents: "none",
+					zIndex: 10,
+				}}
+			>
+				<path
+					d={polyPath}
+					fill="rgba(0,120,255,0.05)"
+					stroke="rgba(0,120,255,0.9)"
+					strokeWidth={2}
+					pointerEvents="none"
+				/>
 				{validVerts.map((v, i) => (
 					<circle
 						key={i}
@@ -612,8 +814,22 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	return (
-		<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-			<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+		<Box
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				gap: "0.75rem",
+			}}
+		>
+			<Box
+				sx={{
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "center",
+					gap: "0.75rem",
+				}}
+			>
 				<PlotToolbar
 					tool={tool}
 					plotMode={plotMode}
@@ -629,83 +845,175 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						{plotMode === "scatter" && data.sampled_events
 							? ` · amostra de ${data.sampled_events.toLocaleString()}`
 							: plotMode === "histogram"
-							? " · histograma (100% dos dados)"
-							: " · heatmap (100% dos dados)"}
+								? " · histograma (100% dos dados)"
+								: " · heatmap (100% dos dados)"}
 					</Typography>
 				)}
 
-				<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+				<Box
+					sx={{
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+					}}
+				>
 					<Box sx={{ display: "flex", alignItems: "center", gap: "1rem" }}>
 						{plotMode !== "histogram" && (
 							<Select
-								onChange={(e: SelectChangeEvent<string>) => handleSelectY(e.target.value)}
+								onChange={(e: SelectChangeEvent<string>) =>
+									handleSelectY(e.target.value)
+								}
 								value={yAxis}
 								sx={{ transform: "rotate(-90deg)" }}
 							>
 								{values.map((value, index) => (
-									<MenuItem key={index} value={value}>{value}</MenuItem>
+									<MenuItem key={index} value={value}>
+										{value}
+									</MenuItem>
 								))}
 							</Select>
 						)}
 						<Box
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
-							sx={{ width: 500, height: 500, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+							sx={{
+								width: 500,
+								height: 500,
+								position: "relative",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
 						>
 							{isError && !data ? (
 								<Typography color="error">Erro ao carregar dados.</Typography>
 							) : hasData ? (
 								<Plot
-									key={(tool === "edit" || reshapingGateId !== null) ? "edit-mode" : "draw-mode"}
+									key={
+										tool === "edit" || reshapingGateId !== null
+											? "edit-mode"
+											: "draw-mode"
+									}
 									data={plotData}
-									config={(tool === "edit" || reshapingGateId !== null) ? {
-										scrollZoom: false, displayModeBar: false,
-										edits: { shapePosition: true, annotationPosition: false, annotationTail: false, annotationText: false, axisTitleText: false, colorbarPosition: false, colorbarTitleText: false, legendPosition: false, legendText: false, titleText: false },
-									} : { scrollZoom: false, displayModeBar: false }}
+									config={
+										tool === "edit" || reshapingGateId !== null
+											? {
+													scrollZoom: false,
+													displayModeBar: false,
+													edits: {
+														shapePosition: true,
+														annotationPosition: false,
+														annotationTail: false,
+														annotationText: false,
+														axisTitleText: false,
+														colorbarPosition: false,
+														colorbarTitleText: false,
+														legendPosition: false,
+														legendText: false,
+														titleText: false,
+													},
+												}
+											: { scrollZoom: false, displayModeBar: false }
+									}
 									layout={{
 										dragmode,
 										shapes: editableShapes as Plotly.Layout["shapes"],
-										...(plotMode === "histogram" ? { selectdirection: "h" as const } : {}),
+										...(plotMode === "histogram"
+											? { selectdirection: "h" as const }
+											: {}),
 										xaxis: {
 											title: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
-											...(xTicks ? { tickmode: "array" as const, tickvals: xTicks.tickvals, ticktext: xTicks.ticktext } : {}),
+											...(xTicks
+												? {
+														tickmode: "array" as const,
+														tickvals: xTicks.tickvals,
+														ticktext: xTicks.ticktext,
+													}
+												: {}),
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
 										},
 										yaxis: {
-											title: plotMode === "histogram" ? "Contagem" : `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
-											...(plotMode !== "histogram" && yTicks ? { tickmode: "array" as const, tickvals: yTicks.tickvals, ticktext: yTicks.ticktext } : {}),
-											...(plotMode !== "histogram" ? { range: yAxisRange, autorange: false } : {}),
+											title:
+												plotMode === "histogram"
+													? "Contagem"
+													: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
+											...(plotMode !== "histogram" && yTicks
+												? {
+														tickmode: "array" as const,
+														tickvals: yTicks.tickvals,
+														ticktext: yTicks.ticktext,
+													}
+												: {}),
+											...(plotMode !== "histogram"
+												? { range: yAxisRange, autorange: false }
+												: {}),
 											fixedrange: true,
 										},
-										width: 500, height: 500,
-										plot_bgcolor: "#FFFFFF", paper_bgcolor: "#FFFFFF",
+										width: 500,
+										height: 500,
+										plot_bgcolor: "#FFFFFF",
+										paper_bgcolor: "#FFFFFF",
 										bargap: 0,
 									}}
-									onSelected={handleSelectedArea as (event: Readonly<Plotly.PlotSelectionEvent>) => void}
+									onSelected={
+										handleSelectedArea as (
+											event: Readonly<Plotly.PlotSelectionEvent>,
+										) => void
+									}
 									onClick={handlePlotClickWrapper}
-									onRelayout={handleRelayout as unknown as (event: Readonly<Plotly.PlotRelayoutEvent>) => void}
+									onRelayout={
+										handleRelayout as unknown as (
+											event: Readonly<Plotly.PlotRelayoutEvent>,
+										) => void
+									}
 								/>
 							) : isLoading ? null : (
 								<Typography>Sem dados para os eixos selecionados.</Typography>
 							)}
 							{(isLoading || isFetching) && (
-								<Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(255,255,255,0.6)", zIndex: 20 }}>
+								<Box
+									sx={{
+										position: "absolute",
+										inset: 0,
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										bgcolor: "rgba(255,255,255,0.6)",
+										zIndex: 20,
+									}}
+								>
 									<CircularProgress />
 								</Box>
 							)}
-							{(tool === "edit" || reshapingGateId !== null) && renderPolyEditOverlay()}
+							{(tool === "edit" || reshapingGateId !== null) &&
+								renderPolyEditOverlay()}
 							{reshapingGateId !== null && (
-								<Box sx={{ position: "absolute", top: 8, right: 8, zIndex: 30 }}>
-									<Button variant="contained" size="small" onClick={handleExitReshape}>Concluir</Button>
+								<Box
+									sx={{ position: "absolute", top: 8, right: 8, zIndex: 30 }}
+								>
+									<Button
+										variant="contained"
+										size="small"
+										onClick={handleExitReshape}
+									>
+										Concluir
+									</Button>
 								</Box>
 							)}
 						</Box>
 					</Box>
-					<Select value={xAxis} onChange={(e: SelectChangeEvent<string>) => handleSelectX(e.target.value)}>
+					<Select
+						value={xAxis}
+						onChange={(e: SelectChangeEvent<string>) =>
+							handleSelectX(e.target.value)
+						}
+					>
 						{values.map((value, index) => (
-							<MenuItem key={index} value={value}>{value}</MenuItem>
+							<MenuItem key={index} value={value}>
+								{value}
+							</MenuItem>
 						))}
 					</Select>
 				</Box>
@@ -744,22 +1052,34 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				open={contextMenu !== null}
 				onClose={handleContextMenuClose}
 				anchorReference="anchorPosition"
-				anchorPosition={contextMenu ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
+				anchorPosition={
+					contextMenu
+						? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+						: undefined
+				}
 			>
 				<MenuItem onClick={handleContextMenuReshape}>
-					<ListItemIcon><ReshapeIcon fontSize="small" /></ListItemIcon>
+					<ListItemIcon>
+						<ReshapeIcon fontSize="small" />
+					</ListItemIcon>
 					<ListItemText>Redimensionar</ListItemText>
 				</MenuItem>
 				<MenuItem onClick={handleContextMenuColor}>
-					<ListItemIcon><PaletteIcon fontSize="small" /></ListItemIcon>
+					<ListItemIcon>
+						<PaletteIcon fontSize="small" />
+					</ListItemIcon>
 					<ListItemText>Trocar cor</ListItemText>
 				</MenuItem>
 				<MenuItem onClick={handleContextMenuRename}>
-					<ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+					<ListItemIcon>
+						<EditIcon fontSize="small" />
+					</ListItemIcon>
 					<ListItemText>Renomear</ListItemText>
 				</MenuItem>
 				<MenuItem onClick={handleContextMenuDelete}>
-					<ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+					<ListItemIcon>
+						<DeleteIcon fontSize="small" />
+					</ListItemIcon>
 					<ListItemText>Excluir</ListItemText>
 				</MenuItem>
 			</Menu>
