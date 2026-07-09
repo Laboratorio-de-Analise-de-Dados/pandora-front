@@ -28,6 +28,7 @@ import { usePlotState } from "../../features/plot/hooks/usePlotState"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
+import { usePlotConfigCache } from "../../features/plot/hooks/usePlotConfigCache"
 import type { GateShape } from "../../features/plot/hooks/useGateShapes"
 
 import { COFACTOR, biex, toRaw } from "../../features/plot/utils/biex"
@@ -40,7 +41,7 @@ import {
 import { supportsWebGL } from "../../features/plot/utils/webgl"
 
 import PlotToolbar from "../../features/plot/components/PlotToolbar"
-import PlotSettings from "../../features/plot/components/PlotSettings"
+import PlotSettingsDropdown from "../../features/plot/components/PlotSettingsDropdown"
 import GateEditDialog from "../../features/plot/components/GateEditDialog"
 
 // scattergl (GPU) onde há WebGL; senão cai pro scatter SVG, sem erro pro usuário.
@@ -51,6 +52,7 @@ interface ScatterPlotProps {
 	sourceType: "file" | "gate"
 	sourceId: number
 	fileDataId: number
+	experimentId: number
 	parentId?: number
 	loadFile: () => void
 	siblingGateNames?: string[]
@@ -63,12 +65,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	sourceType,
 	sourceId,
 	fileDataId,
+	experimentId,
 	parentId,
 	loadFile,
 	siblingGateNames = [],
 	childGates = [],
 }) => {
 	const plotState = usePlotState()
+	const configCache = usePlotConfigCache(experimentId)
+	
 	const {
 		xAxis,
 		yAxis,
@@ -93,6 +98,35 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setYMin,
 		setYMax,
 	} = plotState
+
+	// Carregar config do cache ao montar (apenas uma vez por experimento)
+	useEffect(() => {
+		if (!configCache.isLoading && configCache.isCached) {
+			const cached = configCache.loadConfig({})
+			setXScale(cached.xScale)
+			setYScale(cached.yScale)
+			setXMin(cached.xMin)
+			setXMax(cached.xMax)
+			setYMin(cached.yMin)
+			setYMax(cached.yMax)
+			setCutoff(cached.cutoff)
+			setPlotMode(cached.plotMode)
+		}
+	}, [configCache.isLoading, configCache.isCached])
+
+	// Salvar config no cache quando muda (sem resetar ao trocar arquivo)
+	useEffect(() => {
+		configCache.updateConfig({
+			xScale,
+			yScale,
+			xMin,
+			xMax,
+			yMin,
+			yMax,
+			cutoff,
+			plotMode,
+		})
+	}, [xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode])
 
 	// Gate edit dialog state
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
@@ -1002,6 +1036,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									</Button>
 								</Box>
 							)}
+							{/* Dropdown Settings - Floating over graph */}
+							<PlotSettingsDropdown
+								plotMode={plotMode}
+								xScale={xScale}
+								yScale={yScale}
+								cutoff={cutoff}
+								xMin={xMin}
+								xMax={xMax}
+								yMin={yMin}
+								yMax={yMax}
+								onXScaleChange={setXScale}
+								onYScaleChange={setYScale}
+								onCutoffChange={setCutoff}
+								onXMinChange={setXMin}
+								onXMaxChange={setXMax}
+								onYMinChange={setYMin}
+								onYMaxChange={setYMax}
+							/>
 						</Box>
 					</Box>
 					<Select
@@ -1018,24 +1070,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					</Select>
 				</Box>
 			</Box>
-
-			<PlotSettings
-				plotMode={plotMode}
-				xScale={xScale}
-				yScale={yScale}
-				cutoff={cutoff}
-				xMin={xMin}
-				xMax={xMax}
-				yMin={yMin}
-				yMax={yMax}
-				onXScaleChange={setXScale}
-				onYScaleChange={setYScale}
-				onCutoffChange={setCutoff}
-				onXMinChange={setXMin}
-				onXMaxChange={setXMax}
-				onYMinChange={setYMin}
-				onYMaxChange={setYMax}
-			/>
 
 			<GateEditDialog
 				open={editDialogOpen}
