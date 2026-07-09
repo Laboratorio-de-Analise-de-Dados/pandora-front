@@ -37,6 +37,7 @@ jobs:
         run: |
           IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
           docker build \
+            --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
             -t "$IMAGE_NAME:${{ steps.meta.outputs.image_tag }}" \
             -t "$IMAGE_NAME:latest" .
 
