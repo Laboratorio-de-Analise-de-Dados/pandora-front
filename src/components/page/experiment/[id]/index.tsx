@@ -32,7 +32,11 @@ function ExperimentPageContent() {
 
 	const navigate = useNavigate()
 	const [showStats, setShowStats] = useState(true)
-	const [applyTarget, setApplyTarget] = useState<{ id: number; name: string; fileDataId: number } | null>(null)
+	const [applyTarget, setApplyTarget] = useState<{
+		id: number
+		name: string
+		fileDataId: number
+	} | null>(null)
 	const [applyLoading, setApplyLoading] = useState(false)
 
 	const handleDelete = async (id: number) => {
@@ -40,11 +44,16 @@ function ExperimentPageContent() {
 		if (!confirmed) return
 		try {
 			await CytometryApi.delete(`/experiment/${id}`)
-			toast.success("Experimento excluído com sucesso!", { position: "bottom-right" })
+			toast.success("Experimento excluído com sucesso!", {
+				position: "bottom-right",
+			})
 			navigate(`/experiments`)
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o experimento: ${errorMessage}`, { position: "bottom-right" })
+			const errorMessage =
+				error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao excluir o experimento: ${errorMessage}`, {
+				position: "bottom-right",
+			})
 		}
 	}
 
@@ -57,8 +66,11 @@ function ExperimentPageContent() {
 			}
 			invalidateExperiment()
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o gate: ${errorMessage}`, { position: "bottom-right" })
+			const errorMessage =
+				error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao excluir o gate: ${errorMessage}`, {
+				position: "bottom-right",
+			})
 		}
 	}
 
@@ -73,7 +85,10 @@ function ExperimentPageContent() {
 		setApplyTarget({ id: gateId, name: gateName, fileDataId })
 	}
 
-	const handleConfirmApply = async (targetFileDataIds: number[], recursive: boolean) => {
+	const handleConfirmApply = async (
+		targetFileDataIds: number[],
+		recursive: boolean,
+	) => {
 		if (!applyTarget) return
 		setApplyLoading(true)
 		try {
@@ -83,12 +98,17 @@ function ExperimentPageContent() {
 				recursive,
 				on_conflict: "replace",
 			})
-			toast.success("Gates aplicados com sucesso!", { position: "bottom-right" })
+			toast.success("Gates aplicados com sucesso!", {
+				position: "bottom-right",
+			})
 			setApplyTarget(null)
 			invalidateExperiment()
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao aplicar gates: ${errorMessage}`, { position: "bottom-right" })
+			const errorMessage =
+				error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao aplicar gates: ${errorMessage}`, {
+				position: "bottom-right",
+			})
 		} finally {
 			setApplyLoading(false)
 		}
@@ -100,8 +120,11 @@ function ExperimentPageContent() {
 			toast.success("Gate renomeado com sucesso!", { position: "bottom-right" })
 			invalidateExperiment()
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao renomear o gate: ${errorMessage}`, { position: "bottom-right" })
+			const errorMessage =
+				error instanceof Error ? error.message : String(error)
+			toast.error(`Erro ao renomear o gate: ${errorMessage}`, {
+				position: "bottom-right",
+			})
 		}
 	}
 
@@ -125,7 +148,10 @@ function ExperimentPageContent() {
 					{experiment?.title}
 					{experiment && (
 						<Tooltip title="Excluir experimento">
-							<IconButton onClick={() => handleDelete(experiment.id)} color="error">
+							<IconButton
+								onClick={() => handleDelete(experiment.id)}
+								color="error"
+							>
 								<DeleteIcon fontSize="small" />
 							</IconButton>
 						</Tooltip>
@@ -142,17 +168,26 @@ function ExperimentPageContent() {
 			<Box
 				sx={{
 					display: "flex",
-					justifyContent: "center",
+					flexDirection: "column",
+					justifyContent: "flex-start", // mantém tudo no topo
+					alignItems: "center",
 					flex: 2,
 					minWidth: 0,
-					alignItems: "center",
-					flexDirection: "column",
+					height: "100vh", // garante que ocupe toda a altura da tela
+					overflowY: "auto", // permite rolagem se necessário
 					gap: "1rem",
 				}}
 			>
 				{isLoading && <CircularProgress />}
 				{!isLoading && !source && (
-					<Box>
+					<Box
+						sx={{
+							display: "flex",
+							justifyContent: "center",
+							alignItems: "center",
+							height: "100%", // ocupa toda a altura disponível
+						}}
+					>
 						<Typography>Select a file to load</Typography>
 					</Box>
 				)}
@@ -160,7 +195,11 @@ function ExperimentPageContent() {
 					<>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
 							<Typography>{source.name}</Typography>
-							<Tooltip title={showStats ? "Esconder estatísticas" : "Mostrar estatísticas"}>
+							<Tooltip
+								title={
+									showStats ? "Esconder estatísticas" : "Mostrar estatísticas"
+								}
+							>
 								<IconButton
 									size="small"
 									color={showStats ? "primary" : "default"}
