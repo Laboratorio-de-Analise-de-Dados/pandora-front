@@ -52,7 +52,9 @@ jobs:
         run: |
           IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
           VERSION=${{ steps.v.outputs.version }}
-          docker build -t "$IMAGE_NAME:$VERSION" .
+          docker build \
+          --build-arg VITE_API_URL=https://api.project-pandora.com.br \
+          -t "$IMAGE_NAME:$VERSION" .
           docker push "$IMAGE_NAME:$VERSION"
 
       - name: Copia o compose pro servidor

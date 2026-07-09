@@ -8,6 +8,9 @@ RUN yarn install --frozen-lockfile
 
 # Copia o restante do código e gera o build
 COPY . .
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN yarn build
 
 # Etapa final: Nginx servindo os arquivos
