@@ -4,6 +4,8 @@ services:
     container_name: pandora_frontend
     expose:
       - "80"
+    environment:
+      - VITE_API_URL=https://api.project-pandora.com.br
     networks:
       - pandora_net
 

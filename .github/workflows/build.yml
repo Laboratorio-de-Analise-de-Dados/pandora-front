@@ -7,8 +7,13 @@ name: 🏗️ CI Build Pandora Frontend
 # O deploy só acontece quando VOCÊ cria uma versão (git tag vX.Y.Z) — ver deploy.yml.
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Novo build de versão"
+        required: true
 
 jobs:
   build:
