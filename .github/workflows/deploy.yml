@@ -13,10 +13,9 @@ name: 🚀 Deploy Pandora Frontend (Produção)
 #
 # STAGING (futuro): trigger separado com tags `v*-rc*` -> environment: staging.
 on:
-  workflow_run:
-    workflows: ["🏗️ CI Build Pandora Frontend"]
-    types:
-      - completed
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
@@ -25,7 +24,6 @@ on:
 
 jobs:
   deploy:
-    if: github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'main')
     runs-on: ubuntu-latest
     environment: production # habilite "Required reviewers" aqui pra exigir aprovação manual
     steps:
@@ -52,9 +50,7 @@ jobs:
         run: |
           IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
           VERSION=${{ steps.v.outputs.version }}
-          docker build \
-          --build-arg VITE_API_URL=https://api.project-pandora.com.br \
-          -t "$IMAGE_NAME:$VERSION" .
+          docker build -t "$IMAGE_NAME:$VERSION" .
           docker push "$IMAGE_NAME:$VERSION"
 
       - name: Copia o compose pro servidor

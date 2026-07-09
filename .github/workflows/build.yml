@@ -9,11 +9,6 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Novo build de versão"
-        required: true
 
 jobs:
   build:
