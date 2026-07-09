@@ -1,40 +1,94 @@
-name: 🚀 Deploy Pandora Frontend
+name: 🚀 Deploy Pandora Frontend (Produção)
 
+# O DEPLOY É LIBERADO PELA VERSÃO QUE VOCÊ DEFINE.
+#
+# Fluxo:
+#   - Você cria uma versão (git tag `vX.Y.Z`) num commit da main.
+#   - Isso dispara este workflow, que builda a imagem daquele commit com a
+#     tag da versão, publica no Docker Hub e sobe em produção.
+#   - Sem tag de versão = sem deploy. A main sozinha nunca vai pra prod.
+#
+# Rollback / redeploy: rode manualmente (workflow_dispatch) informando uma
+# versão já existente (ex: v1.1.0).
+#
+# STAGING (futuro): trigger separado com tags `v*-rc*` -> environment: staging.
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão a (re)deployar em produção (tag existente, ex: v1.1.0)"
+        required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
-
+    environment: production # habilite "Required reviewers" aqui pra exigir aprovação manual
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Resolve a versão
+        id: v
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "🏷️  Versão alvo: $VERSION"
+
+      - name: Checkout do commit da versão
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.v.outputs.version }}
+
+      - name: Login no Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+
+      - name: Build + push da imagem versionada
+        run: |
+          IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
+          VERSION=${{ steps.v.outputs.version }}
+          docker build -t "$IMAGE_NAME:$VERSION" .
+          docker push "$IMAGE_NAME:$VERSION"
+
+      - name: Copia o compose pro servidor
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "/opt/pandora/frontend"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          IMAGE_TAG: ${{ steps.v.outputs.version }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DOCKER_USER,DOCKER_TOKEN,IMAGE_TAG
           script: |
             set -e
-            echo "🔑 Fazendo login no Docker Hub..."
-            echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
+            cd /opt/pandora/frontend
 
-            echo "📥 Puxando imagem mais recente..."
-            docker pull ${{ secrets.DOCKER_USER }}/pandora-front:${{ github.sha }}
+            echo "🌐 Garantindo a rede pandora_net..."
+            docker network inspect pandora_net >/dev/null 2>&1 || docker network create pandora_net
 
+            echo "🔑 Login no Docker Hub..."
+            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
 
-            echo "🧹 Removendo container antigo (se existir)..."
-            docker rm -f pandora_frontend || true
+            echo "📥 Subindo versão: $IMAGE_TAG"
+            export DOCKER_USER IMAGE_TAG
+            docker compose -f docker-compose.yml pull
+            docker compose -f docker-compose.yml up -d
 
-            echo "⚙️ Subindo novo container..."
-            docker run -d \
-              --name pandora_frontend \
-              --restart always \
-              --network pandora_net \
-              --expose 80 \
-              ${{ secrets.DOCKER_USER }}/pandora-front:${{ github.sha }}
+            echo "🧹 Limpando imagens antigas..."
+            docker image prune -f
 
-
-
-            echo "✅ Deploy concluído!"
+            echo "✅ Deploy da versão $IMAGE_TAG concluído!"
