@@ -393,7 +393,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				marker: { color: "#1976d2" },
 			}]
 			: [{
-				type: "scattergl" as const,
+				type: "scatter" as const,
 				mode: "markers" as const,
 				x: data?.x ?? [],
 				y: data?.y ?? [],
