@@ -73,7 +73,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 }) => {
 	const plotState = usePlotState()
 	const configCache = usePlotConfigCache(experimentId)
-	
+
 	const {
 		xAxis,
 		yAxis,
@@ -872,7 +872,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					onRecompute={() => recompute.mutate()}
 					isRecomputing={recompute.isPending}
 				/>
-
+				{/* Dropdown Settings - Floating over graph */}
+				<PlotSettingsDropdown
+					plotMode={plotMode}
+					xScale={xScale}
+					yScale={yScale}
+					cutoff={cutoff}
+					xMin={xMin}
+					xMax={xMax}
+					yMin={yMin}
+					yMax={yMax}
+					onXScaleChange={setXScale}
+					onYScaleChange={setYScale}
+					onCutoffChange={setCutoff}
+					onXMinChange={setXMin}
+					onXMaxChange={setXMax}
+					onYMinChange={setYMin}
+					onYMaxChange={setYMax}
+				/>
 				{data && (
 					<Typography variant="caption" color="text.secondary">
 						{data.total_events.toLocaleString()} eventos
@@ -1036,24 +1053,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									</Button>
 								</Box>
 							)}
-							{/* Dropdown Settings - Floating over graph */}
-							<PlotSettingsDropdown
-								plotMode={plotMode}
-								xScale={xScale}
-								yScale={yScale}
-								cutoff={cutoff}
-								xMin={xMin}
-								xMax={xMax}
-								yMin={yMin}
-								yMax={yMax}
-								onXScaleChange={setXScale}
-								onYScaleChange={setYScale}
-								onCutoffChange={setCutoff}
-								onXMinChange={setXMin}
-								onXMaxChange={setXMax}
-								onYMinChange={setYMin}
-								onYMaxChange={setYMax}
-							/>
 						</Box>
 					</Box>
 					<Select
