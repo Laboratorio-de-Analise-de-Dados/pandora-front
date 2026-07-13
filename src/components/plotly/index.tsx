@@ -21,7 +21,7 @@ import Plot from "react-plotly.js"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import CytometryApi from "../../API"
-import { Gate, Scale } from "../../types"
+import { Gate, PlotConfig, Scale } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 
 import { usePlotState } from "../../features/plot/hooks/usePlotState"
@@ -52,11 +52,24 @@ interface ScatterPlotProps {
 	sourceId: number
 	fileDataId: number
 	experimentId: number
+	copiedFromRootId?: number | null
+	plotConfig?: PlotConfig
 	parentId?: number
 	loadFile: () => void
 	siblingGateNames?: string[]
 	childGates?: Gate[]
 	onEditGate?: (gate: Gate) => void
+}
+
+function buildCacheScopeKey(
+	experimentId: number,
+	sourceType: "file" | "gate",
+	sourceId: number,
+	copiedFromRootId?: number | null,
+): string {
+	// Se o gate for uma cópia, compartilha o cache com o original (e outras cópias).
+	const keyId = sourceType === "gate" && copiedFromRootId ? copiedFromRootId : sourceId
+	return `${experimentId}:${sourceType}:${keyId}`
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -65,13 +78,16 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	sourceId,
 	fileDataId,
 	experimentId,
+	copiedFromRootId,
+	plotConfig,
 	parentId,
 	loadFile,
 	siblingGateNames = [],
 	childGates = [],
 }) => {
 	const plotState = usePlotState()
-	const configCache = usePlotConfigCache(experimentId)
+	const cacheScopeKey = buildCacheScopeKey(experimentId, sourceType, sourceId, copiedFromRootId)
+	const configCache = usePlotConfigCache(cacheScopeKey)
 
 	const {
 		xAxis,
@@ -87,6 +103,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMax,
 		handleSelectX,
 		handleSelectY,
+		setXAxis,
+		setYAxis,
 		setPlotMode,
 		setTool,
 		setXScale,
@@ -98,24 +116,33 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setYMax,
 	} = plotState
 
-	// Carregar config do cache ao montar (apenas uma vez por experimento)
+	// Carregar config ao montar/trocar source. Ordem de prioridade:
+	// 1. plotConfig do backend (persistido no gate)
+	// 2. cache local
+	// 3. defaults
 	useEffect(() => {
-		if (!configCache.isLoading && configCache.isCached) {
-			const cached = configCache.loadConfig({})
-			setXScale(cached.xScale)
-			setYScale(cached.yScale)
-			setXMin(cached.xMin)
-			setXMax(cached.xMax)
-			setYMin(cached.yMin)
-			setYMax(cached.yMax)
-			setCutoff(cached.cutoff)
-			setPlotMode(cached.plotMode)
-		}
-	}, [configCache.isLoading, configCache.isCached])
+		if (!configCache.isReady) return
+		const cached = configCache.loadConfig()
+		const sourceConfig = plotConfig ? plotConfig : cached
 
-	// Salvar config no cache quando muda (sem resetar ao trocar arquivo)
+		setXAxis(sourceConfig.xAxis)
+		setYAxis(sourceConfig.yAxis)
+		setPlotMode(sourceConfig.plotMode)
+		setXScale(sourceConfig.xScale)
+		setYScale(sourceConfig.yScale)
+		setXMin(sourceConfig.xMin)
+		setXMax(sourceConfig.xMax)
+		setYMin(sourceConfig.yMin)
+		setYMax(sourceConfig.yMax)
+		setCutoff(sourceConfig.cutoff)
+	}, [cacheScopeKey, plotConfig, configCache.isReady, configCache.loadConfig])
+
+	// Salvar config no cache quando muda
 	useEffect(() => {
 		configCache.updateConfig({
+			xAxis,
+			yAxis,
+			plotMode,
 			xScale,
 			yScale,
 			xMin,
@@ -123,9 +150,28 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			yMin,
 			yMax,
 			cutoff,
-			plotMode,
 		})
-	}, [xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode])
+	}, [xAxis, yAxis, plotMode, xScale, yScale, xMin, xMax, yMin, yMax, cutoff])
+
+	// Salvar config no backend (debounce) quando o usuário editar
+	useEffect(() => {
+		if (!configCache.isReady || sourceType !== "gate") return
+		const timeout = setTimeout(() => {
+			savePlotConfig.mutate({
+				xAxis,
+				yAxis,
+				plotMode,
+				xScale,
+				yScale,
+				xMin,
+				xMax,
+				yMin,
+				yMax,
+				cutoff,
+			})
+		}, 1000)
+		return () => clearTimeout(timeout)
+	}, [xAxis, yAxis, plotMode, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, sourceType, sourceId, configCache.isReady])
 
 	// Gate edit dialog state
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
@@ -162,6 +208,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		},
 	})
 
+	const savePlotConfig = useMutation({
+		mutationFn: async (config: PlotConfig) => {
+			if (sourceType !== "gate") return
+			await CytometryApi.patch(`/analytics/gate/${sourceId}`, {
+				plot_config: config,
+			})
+		},
+	})
+
 	const { data, isLoading, isFetching, isError } = useDensityQuery({
 		sourceType,
 		sourceId,
@@ -191,6 +246,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		effCof,
 		tool,
 		plotMode,
+		xScale,
+		yScale,
+		xMin,
+		xMax,
+		yMin,
+		yMax,
+		cutoff,
 		siblingGateNames,
 		loadFile,
 		setTool,

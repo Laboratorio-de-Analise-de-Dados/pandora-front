@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../API"
-import type { GateCoordinates, NewGate, Scale } from "../../../types"
+import type { GateCoordinates, NewGate, PlotConfig, Scale } from "../../../types"
 import { toRaw } from "../utils/biex"
 import type { GateTool, PlotMode } from "./usePlotState"
 
@@ -15,6 +15,13 @@ interface UseGateDrawingParams {
 	effCof: number
 	tool: GateTool
 	plotMode: PlotMode
+	xScale: Scale
+	yScale: Scale
+	xMin: string
+	xMax: string
+	yMin: string
+	yMax: string
+	cutoff: number
 	siblingGateNames: string[]
 	loadFile: () => void
 	setTool: (t: GateTool) => void
@@ -37,10 +44,33 @@ export function useGateDrawing({
 	effCof,
 	tool,
 	plotMode,
+	xScale,
+	yScale,
+	xMin,
+	xMax,
+	yMin,
+	yMax,
+	cutoff,
 	siblingGateNames,
 	loadFile,
 	setTool,
 }: UseGateDrawingParams) {
+	const buildPlotConfig = useCallback(
+		(): PlotConfig => ({
+			xAxis,
+			yAxis,
+			plotMode,
+			xScale,
+			yScale,
+			xMin,
+			xMax,
+			yMin,
+			yMax,
+			cutoff,
+		}),
+		[xAxis, yAxis, plotMode, xScale, yScale, xMin, xMax, yMin, yMax, cutoff],
+	)
+
 	const createGateDirectly = useCallback(
 		async (coords: GateCoordinates) => {
 			try {
@@ -59,6 +89,7 @@ export function useGateDrawing({
 						dashboard_config: {
 							x_axis_label: xAxis,
 							y_axis_label: isInterval ? xAxis : yAxis,
+							plot_config: buildPlotConfig(),
 						},
 						file_data: fileDataId,
 					},
@@ -73,7 +104,7 @@ export function useGateDrawing({
 				toast.error(`Erro ao criar gate: ${msg}`, { position: "bottom-right" })
 			}
 		},
-		[fileDataId, parentId, xAxis, yAxis, siblingGateNames, loadFile],
+		[fileDataId, parentId, xAxis, yAxis, siblingGateNames, loadFile, buildPlotConfig],
 	)
 
 	/** Recebe seleção do Plotly (box/lasso) e converte de espaço exibido para cru. */
@@ -171,6 +202,7 @@ export function useGateDrawing({
 							dashboard_config: {
 								x_axis_label: xAxis,
 								y_axis_label: yAxis,
+								plot_config: buildPlotConfig(),
 							},
 							file_data: fileDataId,
 						},
@@ -186,7 +218,7 @@ export function useGateDrawing({
 				toast.error(`Erro ao criar quadrante: ${msg}`, { position: "bottom-right" })
 			}
 		},
-		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, fileDataId, parentId, siblingGateNames, loadFile],
+		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, fileDataId, parentId, siblingGateNames, loadFile, buildPlotConfig],
 	)
 
 	return { createGateDirectly, handleSelectedArea, handleQuadrantClick }
