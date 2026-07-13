@@ -38,11 +38,10 @@ import {
 	pointInPolygon,
 	edgesToCenters,
 } from "../../features/plot/utils/geometry"
-import { supportsWebGL } from "../../features/plot/utils/webgl"
 
-import PlotToolbar from "../../features/plot/components/PlotToolbar"
-import PlotSettingsDropdown from "../../features/plot/components/PlotSettingsDropdown"
-import GateEditDialog from "../../features/plot/components/GateEditDialog"
+import PlotToolbar from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
+import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
+import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
 
 // scattergl (GPU) onde há WebGL; senão cai pro scatter SVG, sem erro pro usuário.
 const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
@@ -864,14 +863,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					gap: "0.75rem",
 				}}
 			>
-				<PlotToolbar
-					tool={tool}
-					plotMode={plotMode}
-					onToolChange={setTool}
-					onPlotModeChange={setPlotMode}
-					onRecompute={() => recompute.mutate()}
-					isRecomputing={recompute.isPending}
-				/>
 				{/* Dropdown Settings - Floating over graph */}
 				<PlotSettingsDropdown
 					plotMode={plotMode}

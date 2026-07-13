@@ -18,8 +18,8 @@ import {
 	Typography,
 	Fade,
 } from "@mui/material"
-import type { Scale } from "../../../types"
-import type { PlotMode } from "../hooks/usePlotState"
+import type { Scale } from "../../../../../types"
+import type { PlotMode } from "../../../hooks/usePlotState"
 import {
 	BIEX_SLIDER_MIN,
 	BIEX_SLIDER_MAX,
@@ -28,7 +28,7 @@ import {
 	LINEAR_SLIDER_MARKS,
 	rawToSlider,
 	sliderToRaw,
-} from "../utils/sliders"
+} from "../../../utils/sliders"
 
 interface PlotSettingsDropdownProps {
 	plotMode: PlotMode
@@ -234,7 +234,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 								type="number"
 								size="small"
 								value={xMin}
-								onChange={(e) => onXMinChange(e.target.value)}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => onXMinChange(e.target.value)}
 								sx={{
 									flex: 1,
 									"& .MuiInputBase-input": {
@@ -249,7 +249,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 								type="number"
 								size="small"
 								value={xMax}
-								onChange={(e) => onXMaxChange(e.target.value)}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => onXMaxChange(e.target.value)}
 								sx={{
 									flex: 1,
 									"& .MuiInputBase-input": {
@@ -320,7 +320,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 										type="number"
 										size="small"
 										value={yMin}
-										onChange={(e) => onYMinChange(e.target.value)}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => onYMinChange(e.target.value)}
 										sx={{
 											flex: 1,
 											"& .MuiInputBase-input": {
@@ -335,7 +335,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 										type="number"
 										size="small"
 										value={yMax}
-										onChange={(e) => onYMaxChange(e.target.value)}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => onYMaxChange(e.target.value)}
 										sx={{
 											flex: 1,
 											"& .MuiInputBase-input": {
@@ -368,7 +368,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 									type="number"
 									size="small"
 									value={cutoff}
-									onChange={(e) =>
+									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 										onCutoffChange(Math.max(0, Number(e.target.value) || 0))
 									}
 									inputProps={{ min: 0, step: 1 }}
