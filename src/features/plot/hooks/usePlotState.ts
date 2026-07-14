@@ -35,27 +35,40 @@ export interface PlotStateActions {
 	handleSelectY: (value: string) => void
 }
 
-export function usePlotState(): PlotState & PlotStateActions {
-	const [xAxis, setXAxis] = useState("FSC-A")
-	const [yAxis, setYAxis] = useState("SSC-A")
-	const [plotMode, setPlotMode] = useState<PlotMode>("scatter")
+export function usePlotState(
+	initial?: Partial<PlotState>,
+): PlotState & PlotStateActions {
+	const [xAxis, setXAxis] = useState(initial?.xAxis ?? "FSC-A")
+	const [yAxis, setYAxis] = useState(initial?.yAxis ?? "SSC-A")
+	const [plotMode, setPlotMode] = useState<PlotMode>(initial?.plotMode ?? "scatter")
 	const [tool, setTool] = useState<GateTool>("rect")
-	const [xScale, setXScale] = useState<Scale>(defaultScale("FSC-A"))
-	const [yScale, setYScale] = useState<Scale>(defaultScale("SSC-A"))
-	const [cutoff, setCutoff] = useState(0)
-	const [xMin, setXMin] = useState("")
-	const [xMax, setXMax] = useState("")
-	const [yMin, setYMin] = useState("")
-	const [yMax, setYMax] = useState("")
+	const [xScale, setXScale] = useState<Scale>(
+		initial?.xScale ?? defaultScale(initial?.xAxis ?? "FSC-A"),
+	)
+	const [yScale, setYScale] = useState<Scale>(
+		initial?.yScale ?? defaultScale(initial?.yAxis ?? "SSC-A"),
+	)
+	const [cutoff, setCutoff] = useState(initial?.cutoff ?? 0)
+	const [xMin, setXMin] = useState(initial?.xMin ?? "")
+	const [xMax, setXMax] = useState(initial?.xMax ?? "")
+	const [yMin, setYMin] = useState(initial?.yMin ?? "")
+	const [yMax, setYMax] = useState(initial?.yMax ?? "")
 
+	// Trocar de canal (eixo) reinicia escala e limpa os limites: cada canal tem
+	// range próprio, então carregar o min/max do canal anterior daria uma janela
+	// errada. Sem limites, o gráfico volta ao range default do novo canal.
 	const handleSelectX = (value: string) => {
 		setXAxis(value)
 		setXScale(defaultScale(value))
+		setXMin("")
+		setXMax("")
 	}
 
 	const handleSelectY = (value: string) => {
 		setYAxis(value)
 		setYScale(defaultScale(value))
+		setYMin("")
+		setYMax("")
 	}
 
 	return {

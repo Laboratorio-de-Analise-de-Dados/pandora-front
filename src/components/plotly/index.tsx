@@ -3,32 +3,41 @@ import {
 	MdPalette as PaletteIcon,
 	MdEdit as EditIcon,
 	MdDelete as DeleteIcon,
+	MdCropFree as RectIcon,
+	MdPentagon as PolygonIcon,
+	MdAddBox as QuadrantIcon,
 } from "react-icons/md"
 import {
 	Box,
 	Select,
 	Button,
 	CircularProgress,
+	LinearProgress,
 	MenuItem,
 	Menu,
 	ListItemIcon,
 	ListItemText,
 	Typography,
 	SelectChangeEvent,
+	ToggleButton,
+	ToggleButtonGroup,
+	Tooltip,
 } from "@mui/material"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import CytometryApi from "../../API"
-import { Gate, PlotConfig, Scale } from "../../types"
+import { Gate, Scale } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 
 import { usePlotState } from "../../features/plot/hooks/usePlotState"
+import type { GateTool } from "../../features/plot/hooks/usePlotState"
+import { useDebouncedValue } from "../../features/plot/hooks/useDebouncedValue"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
-import { usePlotConfigCache } from "../../features/plot/hooks/usePlotConfigCache"
+import { usePlotPersistence } from "../../features/plot/hooks/usePlotPersistence"
 import type { GateShape } from "../../features/plot/hooks/useGateShapes"
 
 import { COFACTOR, biex, toRaw } from "../../features/plot/utils/biex"
@@ -39,37 +48,35 @@ import {
 	edgesToCenters,
 } from "../../features/plot/utils/geometry"
 
-import PlotToolbar from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
 import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
 import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
+import type { PlotViewConfig } from "../../types"
 
-// scattergl (GPU) onde há WebGL; senão cai pro scatter SVG, sem erro pro usuário.
+// Dot plot sempre em SVG (scatter). scattergl/WebGL foi removido por falhar em
+// produção em alguns navegadores; a amostra é limitada (5000 pts), então o SVG
+// dá conta sem o erro "WebGL is not supported".
 const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
+
+// Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
+// backend (evita uma request por evento de slider).
+const RANGE_REFETCH_DEBOUNCE_MS = 700
 
 interface ScatterPlotProps {
 	values: string[]
 	sourceType: "file" | "gate"
 	sourceId: number
 	fileDataId: number
-	experimentId: number
-	copiedFromRootId?: number | null
-	plotConfig?: PlotConfig
 	parentId?: number
 	loadFile: () => void
 	siblingGateNames?: string[]
 	childGates?: Gate[]
 	onEditGate?: (gate: Gate) => void
-}
-
-function buildCacheScopeKey(
-	experimentId: number,
-	sourceType: "file" | "gate",
-	sourceId: number,
-	copiedFromRootId?: number | null,
-): string {
-	// Se o gate for uma cópia, compartilha o cache com o original (e outras cópias).
-	const keyId = sourceType === "gate" && copiedFromRootId ? copiedFromRootId : sourceId
-	return `${experimentId}:${sourceType}:${keyId}`
+	/** Config salva do gate selecionado (plot_config), quando existir. */
+	initialConfig?: Partial<PlotViewConfig>
+	/** Config corrente herdada (carry-forward), usada quando não há config salva. */
+	carryForwardConfig: PlotViewConfig
+	/** Propaga a config corrente pro carry-forward em memória. */
+	onConfigChange: (config: PlotViewConfig) => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -77,17 +84,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	sourceType,
 	sourceId,
 	fileDataId,
-	experimentId,
-	copiedFromRootId,
-	plotConfig,
 	parentId,
 	loadFile,
 	siblingGateNames = [],
 	childGates = [],
+	initialConfig,
+	carryForwardConfig,
+	onConfigChange,
 }) => {
-	const plotState = usePlotState()
-	const cacheScopeKey = buildCacheScopeKey(experimentId, sourceType, sourceId, copiedFromRootId)
-	const configCache = usePlotConfigCache(cacheScopeKey)
+	// Semeia o estado com a config salva do gate (se houver), senão com o
+	// carry-forward. Como o componente remonta ao trocar de fonte (key), a
+	// semente vale como "config inicial daquela população".
+	const plotState = usePlotState({ ...carryForwardConfig, ...initialConfig })
 
 	const {
 		xAxis,
@@ -116,62 +124,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setYMax,
 	} = plotState
 
-	// Carregar config ao montar/trocar source. Ordem de prioridade:
-	// 1. plotConfig do backend (persistido no gate)
-	// 2. cache local
-	// 3. defaults
-	useEffect(() => {
-		if (!configCache.isReady) return
-		const cached = configCache.loadConfig()
-		const sourceConfig = plotConfig ? plotConfig : cached
-
-		setXAxis(sourceConfig.xAxis)
-		setYAxis(sourceConfig.yAxis)
-		setPlotMode(sourceConfig.plotMode)
-		setXScale(sourceConfig.xScale)
-		setYScale(sourceConfig.yScale)
-		setXMin(sourceConfig.xMin)
-		setXMax(sourceConfig.xMax)
-		setYMin(sourceConfig.yMin)
-		setYMax(sourceConfig.yMax)
-		setCutoff(sourceConfig.cutoff)
-	}, [cacheScopeKey, plotConfig, configCache.isReady, configCache.loadConfig])
-
-	// Salvar config no cache quando muda
-	useEffect(() => {
-		configCache.updateConfig({
-			xAxis,
-			yAxis,
-			plotMode,
-			xScale,
-			yScale,
-			xMin,
-			xMax,
-			yMin,
-			yMax,
-			cutoff,
-		})
-	}, [xAxis, yAxis, plotMode, xScale, yScale, xMin, xMax, yMin, yMax, cutoff])
-
-	// Salvar config no backend (debounce) quando o usuário editar
-	useEffect(() => {
-		if (!configCache.isReady || sourceType !== "gate") return
-		const timeout = setTimeout(() => {
-			savePlotConfig.mutate({
-				xAxis,
-				yAxis,
-				plotMode,
-				xScale,
-				yScale,
-				xMin,
-				xMax,
-				yMin,
-				yMax,
-				cutoff,
-			})
-		}, 1000)
-		return () => clearTimeout(timeout)
-	}, [xAxis, yAxis, plotMode, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, sourceType, sourceId, configCache.isReady])
+	usePlotPersistence({
+		sourceType,
+		sourceId,
+		config: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
+		onPersist: onConfigChange,
+	})
 
 	// Gate edit dialog state
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
@@ -208,15 +166,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		},
 	})
 
-	const savePlotConfig = useMutation({
-		mutationFn: async (config: PlotConfig) => {
-			if (sourceType !== "gate") return
-			await CytometryApi.patch(`/analytics/gate/${sourceId}`, {
-				plot_config: config,
-			})
-		},
-	})
-
+	// O range vira janela de visualização imediata (layout do Plotly, usando
+	// xMin/xMax "ao vivo") e, com debounce, também vira parâmetro da query: ao
+	// parar de mexer, o backend recalcula o gráfico já enquadrado no range (para
+	// todos os modos), inclusive empilhando na borda os pontos fora do limite.
+	const dXMin = useDebouncedValue(xMin, RANGE_REFETCH_DEBOUNCE_MS)
+	const dXMax = useDebouncedValue(xMax, RANGE_REFETCH_DEBOUNCE_MS)
+	const dYMin = useDebouncedValue(yMin, RANGE_REFETCH_DEBOUNCE_MS)
+	const dYMax = useDebouncedValue(yMax, RANGE_REFETCH_DEBOUNCE_MS)
 	const { data, isLoading, isFetching, isError } = useDensityQuery({
 		sourceType,
 		sourceId,
@@ -226,10 +183,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		xScale,
 		yScale,
 		cutoff,
-		xMin,
-		xMax,
-		yMin,
-		yMax,
+		xMin: dXMin,
+		xMax: dXMax,
+		yMin: dYMin,
+		yMax: dYMax,
 	})
 
 	const effXScale: Scale = data?.x_scale ?? xScale
@@ -256,6 +213,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		siblingGateNames,
 		loadFile,
 		setTool,
+		plotConfig: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
 	})
 
 	const gateShapes = useGateShapes({
@@ -925,24 +883,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					gap: "0.75rem",
 				}}
 			>
-				{/* Dropdown Settings - Floating over graph */}
-				<PlotSettingsDropdown
-					plotMode={plotMode}
-					xScale={xScale}
-					yScale={yScale}
-					cutoff={cutoff}
-					xMin={xMin}
-					xMax={xMax}
-					yMin={yMin}
-					yMax={yMax}
-					onXScaleChange={setXScale}
-					onYScaleChange={setYScale}
-					onCutoffChange={setCutoff}
-					onXMinChange={setXMin}
-					onXMaxChange={setXMax}
-					onYMinChange={setYMin}
-					onYMaxChange={setYMax}
-				/>
 				{data && (
 					<Typography variant="caption" color="text.secondary">
 						{data.total_events.toLocaleString()} eventos
@@ -989,6 +929,73 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								justifyContent: "center",
 							}}
 						>
+							{/* Seletor de tipo de gate, ancorado ao canto superior direito */}
+							{tool !== "edit" && reshapingGateId === null && (
+								<ToggleButtonGroup
+									value={tool}
+									exclusive
+									size="small"
+									onChange={(_, v: GateTool | null) => v && setTool(v)}
+									sx={{
+										position: "absolute",
+										top: 8,
+										right: 8,
+										zIndex: 25,
+										backgroundColor: "rgba(255, 255, 255, 0.85)",
+									}}
+								>
+									<ToggleButton value="rect">
+										<Tooltip
+											title={
+												plotMode === "histogram"
+													? "Gate de intervalo (1D)"
+													: "Gate retangular"
+											}
+										>
+											<Box sx={{ display: "flex" }}>
+												<RectIcon />
+											</Box>
+										</Tooltip>
+									</ToggleButton>
+									{plotMode !== "histogram" && (
+										<ToggleButton value="poly">
+											<Tooltip title="Gate poligonal (laço)">
+												<Box sx={{ display: "flex" }}>
+													<PolygonIcon />
+												</Box>
+											</Tooltip>
+										</ToggleButton>
+									)}
+									{plotMode !== "histogram" && (
+										<ToggleButton value="quad">
+											<Tooltip title="Gate de quadrante (cruz)">
+												<Box sx={{ display: "flex" }}>
+													<QuadrantIcon />
+												</Box>
+											</Tooltip>
+										</ToggleButton>
+									)}
+								</ToggleButtonGroup>
+							)}
+			{/* Dropdown de configurações, ancorado ao próprio gráfico */}
+							<PlotSettingsDropdown
+								plotMode={plotMode}
+								xScale={xScale}
+								yScale={yScale}
+								cutoff={cutoff}
+								xMin={xMin}
+								xMax={xMax}
+								yMin={yMin}
+								yMax={yMax}
+								onXScaleChange={setXScale}
+								onYScaleChange={setYScale}
+								onCutoffChange={setCutoff}
+								onXMinChange={setXMin}
+								onXMaxChange={setXMax}
+								onYMinChange={setYMin}
+								onYMaxChange={setYMax}
+								onPlotModeChange={setPlotMode}
+							/>
 							{isError && !data ? (
 								<Typography color="error">Erro ao carregar dados.</Typography>
 							) : hasData ? (
@@ -1076,7 +1083,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							) : isLoading ? null : (
 								<Typography>Sem dados para os eixos selecionados.</Typography>
 							)}
-							{(isLoading || isFetching) && (
+							{isLoading && !hasData && (
 								<Box
 									sx={{
 										position: "absolute",
@@ -1084,12 +1091,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										display: "flex",
 										alignItems: "center",
 										justifyContent: "center",
-										bgcolor: "rgba(255,255,255,0.6)",
 										zIndex: 20,
 									}}
 								>
 									<CircularProgress />
 								</Box>
+							)}
+							{(isLoading || isFetching) && (
+								<LinearProgress
+									sx={{
+										position: "absolute",
+										top: 0,
+										left: 0,
+										right: 0,
+										height: 3,
+										zIndex: 26,
+										borderTopLeftRadius: 4,
+										borderTopRightRadius: 4,
+									}}
+								/>
 							)}
 							{(tool === "edit" || reshapingGateId !== null) &&
 								renderPolyEditOverlay()}

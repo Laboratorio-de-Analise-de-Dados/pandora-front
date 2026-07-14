@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import CytometryApi from "../../../API"
 import type { DensityResponse, Scale } from "../../../types"
 import { COFACTOR } from "../utils/biex"

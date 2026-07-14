@@ -1,9 +1,16 @@
-import { Box, CircularProgress, Typography } from "@mui/material"
+import {
+	Box,
+	CircularProgress,
+	Typography,
+	IconButton,
+	Tooltip,
+} from "@mui/material"
+import { Theme } from "@mui/material/styles"
 import { useState } from "react"
 import Layout from "../../../Layout"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { findGateInTree, getRootCopiedFromId } from "../../../../features/gate/utils"
+import { findGateInTree } from "../../../../features/gate/utils"
 import {
 	ExperimentWorkspaceProvider,
 	useExperimentWorkspace,
@@ -12,13 +19,16 @@ import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
-import { MdDelete as DeleteIcon, MdBarChart as StatsIcon } from "react-icons/md"
-import { IconButton, Tooltip } from "@mui/material"
+import {
+	MdDelete as DeleteIcon,
+	MdBarChart as StatsIcon,
+	MdChevronLeft as PrevIcon,
+	MdChevronRight as NextIcon,
+} from "react-icons/md"
 import { useNavigate } from "react-router-dom"
 
 function ExperimentPageContent() {
 	const {
-		experimentId,
 		experiment,
 		experimentFiles,
 		isLoading,
@@ -29,10 +39,13 @@ function ExperimentPageContent() {
 		childGates,
 		siblingGateNames,
 		values,
+		selectedGate,
+		viewConfig,
+		setViewConfig,
+		goToAdjacentFile,
+		canGoPrevFile,
+		canGoNextFile,
 	} = useExperimentWorkspace()
-
-	const currentGate = source?.type === "gate" ? findGateInTree(experimentFiles.flatMap((f) => f.gates), source.id) : undefined
-	const copiedFromRootId = source?.type === "gate" ? getRootCopiedFromId(experimentFiles, source.id) : null
 
 	const navigate = useNavigate()
 	const [showStats, setShowStats] = useState(true)
@@ -135,14 +148,21 @@ function ExperimentPageContent() {
 	return (
 		<Layout>
 			<Box
-				sx={(theme) => ({
+				sx={(theme: Theme) => ({
 					padding: "1rem",
 					bgcolor: theme.palette.background.default,
 					width: "20%",
+					height: "100vh",
+					display: "flex",
+					flexDirection: "column",
+					minHeight: 0,
 				})}
 			>
 				<Typography
-					sx={(theme) => ({ color: theme.palette.text.primary })}
+					sx={(theme: Theme) => ({
+						color: theme.palette.text.primary,
+						flexShrink: 0,
+					})}
 					variant="h5"
 					fontWeight="bold"
 					display="flex"
@@ -161,13 +181,15 @@ function ExperimentPageContent() {
 						</Tooltip>
 					)}
 				</Typography>
-				<ParentTree
-					files={experimentFiles}
-					onSelect={setSource}
-					onDeleteGate={handleDeleteGate}
-					onRenameGate={handleRenameGate}
-					onApplyGate={handleApplyGate}
-				/>
+				<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
+					<ParentTree
+						files={experimentFiles}
+						onSelect={setSource}
+						onDeleteGate={handleDeleteGate}
+						onRenameGate={handleRenameGate}
+						onApplyGate={handleApplyGate}
+					/>
+				</Box>
 			</Box>
 			<Box
 				sx={{
@@ -198,7 +220,29 @@ function ExperimentPageContent() {
 				{source && (
 					<>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+							<Tooltip title="Arquivo anterior">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!canGoPrevFile}
+										onClick={() => goToAdjacentFile(-1)}
+									>
+										<PrevIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
 							<Typography>{source.name}</Typography>
+							<Tooltip title="Próximo arquivo">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!canGoNextFile}
+										onClick={() => goToAdjacentFile(1)}
+									>
+										<NextIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
 							<Tooltip
 								title={
 									showStats ? "Esconder estatísticas" : "Mostrar estatísticas"
@@ -219,20 +263,20 @@ function ExperimentPageContent() {
 							sourceType={source.type}
 							sourceId={source.id}
 							fileDataId={source.fileDataId}
-							experimentId={Number(experimentId)}
-							copiedFromRootId={copiedFromRootId}
-							plotConfig={currentGate?.plot_config}
 							parentId={source.type === "gate" ? source.id : undefined}
 							loadFile={invalidateExperiment}
 							siblingGateNames={siblingGateNames}
 							childGates={childGates}
+							initialConfig={selectedGate?.plot_config}
+							carryForwardConfig={viewConfig}
+							onConfigChange={setViewConfig}
 						/>
 					</>
 				)}
 			</Box>
 			{showStats ? (
 				<Box
-					sx={(theme) => ({
+					sx={(theme: Theme) => ({
 						width: "22%",
 						minWidth: 260,
 						borderLeft: `1px solid ${theme.palette.divider}`,
@@ -251,7 +295,7 @@ function ExperimentPageContent() {
 				</Box>
 			) : (
 				<Box
-					sx={(theme) => ({
+					sx={(theme: Theme) => ({
 						width: 36,
 						minWidth: 36,
 						borderLeft: `1px solid ${theme.palette.divider}`,

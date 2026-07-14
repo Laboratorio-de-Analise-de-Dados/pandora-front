@@ -52,6 +52,47 @@ export const getGateStrategy = (files: ExperimentFiles[], gateId: number): strin
 	return ""
 }
 
+/** Nomes do caminho hierárquico de um gate (root→gate), ex: ["Lymphocytes", "CD3+"]. */
+export const getGatePathNames = (
+	gates: Gate[],
+	targetId: number,
+	path: string[] = [],
+): string[] | null => {
+	for (const g of gates) {
+		const current = [...path, g.name]
+		if (g.id === targetId) return current
+		if (g.children) {
+			const found = getGatePathNames(g.children, targetId, current)
+			if (found) return found
+		}
+	}
+	return null
+}
+
+/**
+ * Segue o caminho de nomes na árvore. Se `nearest`, retorna o gate mais fundo
+ * que existir ao longo do caminho (ancestral mais próximo) em vez de `undefined`
+ * quando o caminho completo não existe no arquivo alvo.
+ */
+export const findGateByPathNames = (
+	gates: Gate[],
+	names: string[],
+	nearest = false,
+): Gate | undefined => {
+	let level = gates
+	let match: Gate | undefined
+	let matched = 0
+	for (const name of names) {
+		const found = level.find((g) => g.name === name)
+		if (!found) break
+		match = found
+		matched += 1
+		level = found.children ?? []
+	}
+	if (!nearest && matched !== names.length) return undefined
+	return match
+}
+
 /** Extrai a descrição dos eixos usados para construir o gate. */
 export const gateAxesLabel = (gc: GateCoordinates): string | null => {
 	const gateType = gc.type ?? "rectangle"
