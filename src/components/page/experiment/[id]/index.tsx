@@ -1,4 +1,11 @@
-import { Box, CircularProgress, Typography } from "@mui/material"
+import {
+	Box,
+	CircularProgress,
+	Typography,
+	IconButton,
+	Tooltip,
+} from "@mui/material"
+import { Theme } from "@mui/material/styles"
 import { useState } from "react"
 import Layout from "../../../Layout"
 import { toast } from "react-toastify"
@@ -18,7 +25,6 @@ import {
 	MdChevronLeft as PrevIcon,
 	MdChevronRight as NextIcon,
 } from "react-icons/md"
-import { IconButton, Tooltip } from "@mui/material"
 import { useNavigate } from "react-router-dom"
 
 function ExperimentPageContent() {
@@ -142,7 +148,7 @@ function ExperimentPageContent() {
 	return (
 		<Layout>
 			<Box
-				sx={(theme) => ({
+				sx={(theme: Theme) => ({
 					padding: "1rem",
 					bgcolor: theme.palette.background.default,
 					width: "20%",
@@ -153,7 +159,10 @@ function ExperimentPageContent() {
 				})}
 			>
 				<Typography
-					sx={(theme) => ({ color: theme.palette.text.primary, flexShrink: 0 })}
+					sx={(theme: Theme) => ({
+						color: theme.palette.text.primary,
+						flexShrink: 0,
+					})}
 					variant="h5"
 					fontWeight="bold"
 					display="flex"
@@ -267,7 +276,7 @@ function ExperimentPageContent() {
 			</Box>
 			{showStats ? (
 				<Box
-					sx={(theme) => ({
+					sx={(theme: Theme) => ({
 						width: "22%",
 						minWidth: 260,
 						borderLeft: `1px solid ${theme.palette.divider}`,
@@ -286,7 +295,7 @@ function ExperimentPageContent() {
 				</Box>
 			) : (
 				<Box
-					sx={(theme) => ({
+					sx={(theme: Theme) => ({
 						width: 36,
 						minWidth: 36,
 						borderLeft: `1px solid ${theme.palette.divider}`,
