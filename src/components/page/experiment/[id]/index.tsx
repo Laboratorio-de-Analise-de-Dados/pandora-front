@@ -12,7 +12,12 @@ import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
-import { MdDelete as DeleteIcon, MdBarChart as StatsIcon } from "react-icons/md"
+import {
+	MdDelete as DeleteIcon,
+	MdBarChart as StatsIcon,
+	MdChevronLeft as PrevIcon,
+	MdChevronRight as NextIcon,
+} from "react-icons/md"
 import { IconButton, Tooltip } from "@mui/material"
 import { useNavigate } from "react-router-dom"
 
@@ -28,6 +33,12 @@ function ExperimentPageContent() {
 		childGates,
 		siblingGateNames,
 		values,
+		selectedGate,
+		viewConfig,
+		setViewConfig,
+		goToAdjacentFile,
+		canGoPrevFile,
+		canGoNextFile,
 	} = useExperimentWorkspace()
 
 	const navigate = useNavigate()
@@ -135,10 +146,14 @@ function ExperimentPageContent() {
 					padding: "1rem",
 					bgcolor: theme.palette.background.default,
 					width: "20%",
+					height: "100vh",
+					display: "flex",
+					flexDirection: "column",
+					minHeight: 0,
 				})}
 			>
 				<Typography
-					sx={(theme) => ({ color: theme.palette.text.primary })}
+					sx={(theme) => ({ color: theme.palette.text.primary, flexShrink: 0 })}
 					variant="h5"
 					fontWeight="bold"
 					display="flex"
@@ -157,13 +172,15 @@ function ExperimentPageContent() {
 						</Tooltip>
 					)}
 				</Typography>
-				<ParentTree
-					files={experimentFiles}
-					onSelect={setSource}
-					onDeleteGate={handleDeleteGate}
-					onRenameGate={handleRenameGate}
-					onApplyGate={handleApplyGate}
-				/>
+				<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
+					<ParentTree
+						files={experimentFiles}
+						onSelect={setSource}
+						onDeleteGate={handleDeleteGate}
+						onRenameGate={handleRenameGate}
+						onApplyGate={handleApplyGate}
+					/>
+				</Box>
 			</Box>
 			<Box
 				sx={{
@@ -194,7 +211,29 @@ function ExperimentPageContent() {
 				{source && (
 					<>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+							<Tooltip title="Arquivo anterior">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!canGoPrevFile}
+										onClick={() => goToAdjacentFile(-1)}
+									>
+										<PrevIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
 							<Typography>{source.name}</Typography>
+							<Tooltip title="Próximo arquivo">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!canGoNextFile}
+										onClick={() => goToAdjacentFile(1)}
+									>
+										<NextIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
 							<Tooltip
 								title={
 									showStats ? "Esconder estatísticas" : "Mostrar estatísticas"
@@ -219,6 +258,9 @@ function ExperimentPageContent() {
 							loadFile={invalidateExperiment}
 							siblingGateNames={siblingGateNames}
 							childGates={childGates}
+							initialConfig={selectedGate?.plot_config}
+							carryForwardConfig={viewConfig}
+							onConfigChange={setViewConfig}
 						/>
 					</>
 				)}

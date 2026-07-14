@@ -4,6 +4,8 @@ export {
 	findFileForGate,
 	buildGateStrategy,
 	getGateStrategy,
+	getGatePathNames,
+	findGateByPathNames,
 	gateAxesLabel,
 	getChildGatesForSource,
 } from "./gateTreeHelpers"

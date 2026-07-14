@@ -28,7 +28,7 @@ import { usePlotState } from "../../features/plot/hooks/usePlotState"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
-import { usePlotConfigCache } from "../../features/plot/hooks/usePlotConfigCache"
+import { usePlotPersistence } from "../../features/plot/hooks/usePlotPersistence"
 import type { GateShape } from "../../features/plot/hooks/useGateShapes"
 
 import { COFACTOR, biex, toRaw } from "../../features/plot/utils/biex"
@@ -39,11 +39,13 @@ import {
 	edgesToCenters,
 } from "../../features/plot/utils/geometry"
 
-import PlotToolbar from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
 import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
 import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
+import type { PlotViewConfig } from "../../types"
 
-// scattergl (GPU) onde há WebGL; senão cai pro scatter SVG, sem erro pro usuário.
+// Dot plot sempre em SVG (scatter). scattergl/WebGL foi removido por falhar em
+// produção em alguns navegadores; a amostra é limitada (5000 pts), então o SVG
+// dá conta sem o erro "WebGL is not supported".
 const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
 
 interface ScatterPlotProps {
@@ -51,12 +53,17 @@ interface ScatterPlotProps {
 	sourceType: "file" | "gate"
 	sourceId: number
 	fileDataId: number
-	experimentId: number
 	parentId?: number
 	loadFile: () => void
 	siblingGateNames?: string[]
 	childGates?: Gate[]
 	onEditGate?: (gate: Gate) => void
+	/** Config salva do gate selecionado (plot_config), quando existir. */
+	initialConfig?: Partial<PlotViewConfig>
+	/** Config corrente herdada (carry-forward), usada quando não há config salva. */
+	carryForwardConfig: PlotViewConfig
+	/** Propaga a config corrente pro carry-forward em memória. */
+	onConfigChange: (config: PlotViewConfig) => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -64,14 +71,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	sourceType,
 	sourceId,
 	fileDataId,
-	experimentId,
 	parentId,
 	loadFile,
 	siblingGateNames = [],
 	childGates = [],
+	initialConfig,
+	carryForwardConfig,
+	onConfigChange,
 }) => {
-	const plotState = usePlotState()
-	const configCache = usePlotConfigCache(experimentId)
+	// Semeia o estado com a config salva do gate (se houver), senão com o
+	// carry-forward. Como o componente remonta ao trocar de fonte (key), a
+	// semente vale como "config inicial daquela população".
+	const plotState = usePlotState({ ...carryForwardConfig, ...initialConfig })
 
 	const {
 		xAxis,
@@ -98,34 +109,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setYMax,
 	} = plotState
 
-	// Carregar config do cache ao montar (apenas uma vez por experimento)
-	useEffect(() => {
-		if (!configCache.isLoading && configCache.isCached) {
-			const cached = configCache.loadConfig({})
-			setXScale(cached.xScale)
-			setYScale(cached.yScale)
-			setXMin(cached.xMin)
-			setXMax(cached.xMax)
-			setYMin(cached.yMin)
-			setYMax(cached.yMax)
-			setCutoff(cached.cutoff)
-			setPlotMode(cached.plotMode)
-		}
-	}, [configCache.isLoading, configCache.isCached])
-
-	// Salvar config no cache quando muda (sem resetar ao trocar arquivo)
-	useEffect(() => {
-		configCache.updateConfig({
-			xScale,
-			yScale,
-			xMin,
-			xMax,
-			yMin,
-			yMax,
-			cutoff,
-			plotMode,
-		})
-	}, [xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode])
+	usePlotPersistence({
+		sourceType,
+		sourceId,
+		config: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
+		onPersist: onConfigChange,
+	})
 
 	// Gate edit dialog state
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
@@ -194,6 +183,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		siblingGateNames,
 		loadFile,
 		setTool,
+		plotConfig: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
 	})
 
 	const gateShapes = useGateShapes({
@@ -863,24 +853,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					gap: "0.75rem",
 				}}
 			>
-				{/* Dropdown Settings - Floating over graph */}
-				<PlotSettingsDropdown
-					plotMode={plotMode}
-					xScale={xScale}
-					yScale={yScale}
-					cutoff={cutoff}
-					xMin={xMin}
-					xMax={xMax}
-					yMin={yMin}
-					yMax={yMax}
-					onXScaleChange={setXScale}
-					onYScaleChange={setYScale}
-					onCutoffChange={setCutoff}
-					onXMinChange={setXMin}
-					onXMaxChange={setXMax}
-					onYMinChange={setYMin}
-					onYMaxChange={setYMax}
-				/>
 				{data && (
 					<Typography variant="caption" color="text.secondary">
 						{data.total_events.toLocaleString()} eventos
@@ -927,6 +899,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								justifyContent: "center",
 							}}
 						>
+							{/* Dropdown de configurações, ancorado ao próprio gráfico */}
+							<PlotSettingsDropdown
+								plotMode={plotMode}
+								xScale={xScale}
+								yScale={yScale}
+								cutoff={cutoff}
+								xMin={xMin}
+								xMax={xMax}
+								yMin={yMin}
+								yMax={yMax}
+								onXScaleChange={setXScale}
+								onYScaleChange={setYScale}
+								onCutoffChange={setCutoff}
+								onXMinChange={setXMin}
+								onXMaxChange={setXMax}
+								onYMinChange={setYMin}
+								onYMaxChange={setYMax}
+								onPlotModeChange={setPlotMode}
+							/>
 							{isError && !data ? (
 								<Typography color="error">Erro ao carregar dados.</Typography>
 							) : hasData ? (

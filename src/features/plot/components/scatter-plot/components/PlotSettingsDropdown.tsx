@@ -1,12 +1,7 @@
 import React, { useState } from "react"
-import {
-	MdExpandMore as ExpandMoreIcon,
-	MdClose as CloseIcon,
-	MdSettings as SettingsIcon,
-} from "react-icons/md"
+import { MdClose as CloseIcon, MdSettings as SettingsIcon } from "react-icons/md"
 import {
 	Box,
-	Button,
 	Divider,
 	IconButton,
 	Paper,
@@ -14,6 +9,8 @@ import {
 	TextField,
 	FormControlLabel,
 	Checkbox,
+	ToggleButton,
+	ToggleButtonGroup,
 	Tooltip,
 	Typography,
 	Fade,
@@ -46,6 +43,7 @@ interface PlotSettingsDropdownProps {
 	onXMaxChange: (v: string) => void
 	onYMinChange: (v: string) => void
 	onYMaxChange: (v: string) => void
+	onPlotModeChange: (m: PlotMode) => void
 }
 
 /**
@@ -69,12 +67,13 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 	onXMaxChange,
 	onYMinChange,
 	onYMaxChange,
+	onPlotModeChange,
 }) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [isAdjusting, setIsAdjusting] = useState(false)
 	return (
-		<Box sx={{ position: "relative", width: "100%" }}>
-			{/* Botão flutuante */}
+		<>
+			{/* Botão flutuante, ancorado ao canto superior esquerdo do gráfico */}
 			<Tooltip title={isOpen ? "Fechar configurações" : "Abrir configurações"}>
 				<IconButton
 					onClick={() => setIsOpen(!isOpen)}
@@ -82,8 +81,8 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 					sx={{
 						position: "absolute",
 						top: 8,
-						right: 8,
-						zIndex: 10,
+						left: 8,
+						zIndex: 25,
 						backgroundColor: "rgba(255, 255, 255, 0.6)",
 						backdropFilter: "blur(2px)",
 						border: "1px solid",
@@ -103,11 +102,11 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 				<Paper
 					sx={{
 						position: "absolute",
-						top: 50,
-						left: "calc(80%)", // abre para o lado direito
+						top: 44,
+						left: 8,
 						zIndex: 30,
-						width: 280,
-						maxHeight: "30vh",
+						width: 260,
+						maxHeight: "calc(100% - 56px)",
 						overflowY: "auto",
 						padding: 1.5,
 						borderRadius: 8,
@@ -136,6 +135,42 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 							<CloseIcon style={{ fontSize: "18px" }} />
 						</IconButton>
 					</Box>
+
+					{/* Tipo de gráfico */}
+					<Box sx={{ mb: 2 }}>
+						<Typography
+							variant="caption"
+							fontWeight="bold"
+							color="text.secondary"
+							sx={{ mb: 1, display: "block" }}
+						>
+							Tipo de gráfico
+						</Typography>
+						<ToggleButtonGroup
+							value={plotMode}
+							exclusive
+							size="small"
+							fullWidth
+							onChange={(_, mode) => {
+								if (mode) onPlotModeChange(mode as PlotMode)
+							}}
+						>
+							<ToggleButton value="scatter" sx={{ fontSize: "0.7rem", py: 0.3 }}>
+								Dot
+							</ToggleButton>
+							<ToggleButton value="heatmap" sx={{ fontSize: "0.7rem", py: 0.3 }}>
+								Heatmap
+							</ToggleButton>
+							<ToggleButton
+								value="histogram"
+								sx={{ fontSize: "0.7rem", py: 0.3 }}
+							>
+								Hist
+							</ToggleButton>
+						</ToggleButtonGroup>
+					</Box>
+
+					<Divider sx={{ my: 2 }} />
 
 					{/* Escala */}
 					<Box sx={{ mb: 2 }}>
@@ -388,7 +423,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 					)}
 				</Paper>
 			</Fade>
-		</Box>
+		</>
 	)
 }
 

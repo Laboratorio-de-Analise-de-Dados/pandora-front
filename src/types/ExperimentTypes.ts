@@ -78,6 +78,23 @@ export interface AnalysisResultData {
 	channel_statistics?: Record<string, ChannelStat>
 }
 
+/**
+ * Configuração de visualização persistida por estratégia de gate (eixos,
+ * escalas, limites, cutoff e modo). Segue o gate entre arquivos, estilo FlowJo.
+ */
+export interface PlotViewConfig {
+	xAxis: string
+	yAxis: string
+	xScale: Scale
+	yScale: Scale
+	xMin: string
+	xMax: string
+	yMin: string
+	yMax: string
+	cutoff: number
+	plotMode: "heatmap" | "scatter" | "histogram"
+}
+
 export interface Gate {
 	id: number
 	name: string
@@ -88,6 +105,7 @@ export interface Gate {
 	dashboard: number
 	copied_from_id?: number | null
 	color?: string | null
+	plot_config?: Partial<PlotViewConfig>
 	analysis_result?: {
 		analysis_result: AnalysisResultData
 	}
@@ -101,6 +119,7 @@ export interface NewGate {
 	file_data: number
 	children?: Gate[]
 	dashboard: Dashboard
+	plot_config?: Partial<PlotViewConfig>
 	analysis_result?: {
 		analysis_result: AnalysisResultData
 	}
