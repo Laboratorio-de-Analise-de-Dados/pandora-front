@@ -153,6 +153,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		},
 	})
 
+	// Range só afeta a query no heatmap (o backend re-binna dentro de [min,max]).
+	// No dot plot e no histograma, min/max é apenas a janela de visualização
+	// (range do Plotly), então mexer nos limites não refaz a chamada ao backend.
+	const rangeAffectsQuery = plotMode === "heatmap"
 	const { data, isLoading, isFetching, isError } = useDensityQuery({
 		sourceType,
 		sourceId,
@@ -162,10 +166,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		xScale,
 		yScale,
 		cutoff,
-		xMin,
-		xMax,
-		yMin,
-		yMax,
+		xMin: rangeAffectsQuery ? xMin : "",
+		xMax: rangeAffectsQuery ? xMax : "",
+		yMin: rangeAffectsQuery ? yMin : "",
+		yMax: rangeAffectsQuery ? yMax : "",
 	})
 
 	const effXScale: Scale = data?.x_scale ?? xScale
