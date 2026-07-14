@@ -9,8 +9,8 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material"
-import ColorPicker from "../../../components/color_picker"
-import type { Gate } from "../../../types"
+import ColorPicker from "../../../../../components/color_picker"
+import type { Gate } from "../../../../../types"
 
 interface GateEditDialogProps {
 	open: boolean
@@ -45,25 +45,38 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 						fullWidth
 						label="Nome do Gate"
 						value={name}
-						onChange={(e) => onNameChange(e.target.value)}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+							onNameChange(e.target.value)
+						}
 						placeholder="Digite o novo nome"
 						autoFocus
 					/>
 				</Box>
 				{summary && (
-					<Box sx={{ mt: 2, p: 1.5, bgcolor: "background.paper", borderRadius: 1 }}>
+					<Box
+						sx={{ mt: 2, p: 1.5, bgcolor: "background.paper", borderRadius: 1 }}
+					>
 						<Typography variant="caption" color="text.secondary">
 							Estatísticas:
 						</Typography>
-						<Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+						<Box
+							sx={{
+								mt: 1,
+								display: "flex",
+								flexDirection: "column",
+								gap: "0.5rem",
+							}}
+						>
 							<Typography variant="body2">
 								<strong>Eventos:</strong> {summary.count.toLocaleString()}
 							</Typography>
 							<Typography variant="body2">
-								<strong>% do total:</strong> {summary.percent_of_total_population.toFixed(1)}%
+								<strong>% do total:</strong>{" "}
+								{summary.percent_of_total_population.toFixed(1)}%
 							</Typography>
 							<Typography variant="body2">
-								<strong>% do pai:</strong> {summary.percent_of_parent_population.toFixed(1)}%
+								<strong>% do pai:</strong>{" "}
+								{summary.percent_of_parent_population.toFixed(1)}%
 							</Typography>
 						</Box>
 					</Box>

@@ -3,7 +3,7 @@ import { useState } from "react"
 import Layout from "../../../Layout"
 import { toast } from "react-toastify"
 import CytometryApi from "../../../../API"
-import { findGateInTree } from "../../../../features/gate/utils"
+import { findGateInTree, getRootCopiedFromId } from "../../../../features/gate/utils"
 import {
 	ExperimentWorkspaceProvider,
 	useExperimentWorkspace,
@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom"
 
 function ExperimentPageContent() {
 	const {
+		experimentId,
 		experiment,
 		experimentFiles,
 		isLoading,
@@ -29,6 +30,9 @@ function ExperimentPageContent() {
 		siblingGateNames,
 		values,
 	} = useExperimentWorkspace()
+
+	const currentGate = source?.type === "gate" ? findGateInTree(experimentFiles.flatMap((f) => f.gates), source.id) : undefined
+	const copiedFromRootId = source?.type === "gate" ? getRootCopiedFromId(experimentFiles, source.id) : null
 
 	const navigate = useNavigate()
 	const [showStats, setShowStats] = useState(true)
@@ -215,6 +219,9 @@ function ExperimentPageContent() {
 							sourceType={source.type}
 							sourceId={source.id}
 							fileDataId={source.fileDataId}
+							experimentId={Number(experimentId)}
+							copiedFromRootId={copiedFromRootId}
+							plotConfig={currentGate?.plot_config}
 							parentId={source.type === "gate" ? source.id : undefined}
 							loadFile={invalidateExperiment}
 							siblingGateNames={siblingGateNames}

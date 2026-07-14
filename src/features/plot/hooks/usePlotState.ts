@@ -1,8 +1,8 @@
 import { useState } from "react"
-import type { Scale } from "../../../types"
+import type { PlotMode, Scale } from "../../../types"
 import { defaultScale } from "../utils/biex"
 
-export type PlotMode = "heatmap" | "scatter" | "histogram"
+export type { PlotMode } from "../../../types"
 export type GateTool = "rect" | "poly" | "quad" | "edit"
 
 export interface PlotState {

@@ -21,6 +21,21 @@ export interface FileData {
 
 export type Scale = "linear" | "biex"
 
+export type PlotMode = "heatmap" | "scatter" | "histogram"
+
+export interface PlotConfig {
+	xAxis: string
+	yAxis: string
+	plotMode: PlotMode
+	xScale: Scale
+	yScale: Scale
+	xMin: string
+	xMax: string
+	yMin: string
+	yMax: string
+	cutoff: number
+}
+
 export interface RectGateCoordinates {
 	type?: "rectangle"
 	x_axis?: string
@@ -88,6 +103,7 @@ export interface Gate {
 	dashboard: number
 	copied_from_id?: number | null
 	color?: string | null
+	plot_config?: PlotConfig
 	analysis_result?: {
 		analysis_result: AnalysisResultData
 	}
@@ -133,6 +149,7 @@ export interface DensityResponse {
 export interface DashboardConfig {
 	x_axis_label: string
 	y_axis_label: string
+	plot_config?: PlotConfig
 }
 
 export interface Dashboard {

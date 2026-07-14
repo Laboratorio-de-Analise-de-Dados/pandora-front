@@ -6,4 +6,5 @@ export {
 	getGateStrategy,
 	gateAxesLabel,
 	getChildGatesForSource,
+	getRootCopiedFromId,
 } from "./gateTreeHelpers"

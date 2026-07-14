@@ -21,13 +21,14 @@ import Plot from "react-plotly.js"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import CytometryApi from "../../API"
-import { Gate, Scale } from "../../types"
+import { Gate, PlotConfig, Scale } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 
 import { usePlotState } from "../../features/plot/hooks/usePlotState"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
+import { usePlotConfigCache } from "../../features/plot/hooks/usePlotConfigCache"
 import type { GateShape } from "../../features/plot/hooks/useGateShapes"
 
 import { COFACTOR, biex, toRaw } from "../../features/plot/utils/biex"
@@ -37,11 +38,10 @@ import {
 	pointInPolygon,
 	edgesToCenters,
 } from "../../features/plot/utils/geometry"
-import { supportsWebGL } from "../../features/plot/utils/webgl"
 
-import PlotToolbar from "../../features/plot/components/PlotToolbar"
-import PlotSettings from "../../features/plot/components/PlotSettings"
-import GateEditDialog from "../../features/plot/components/GateEditDialog"
+import PlotToolbar from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
+import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
+import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
 
 // scattergl (GPU) onde há WebGL; senão cai pro scatter SVG, sem erro pro usuário.
 const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
@@ -51,6 +51,9 @@ interface ScatterPlotProps {
 	sourceType: "file" | "gate"
 	sourceId: number
 	fileDataId: number
+	experimentId: number
+	copiedFromRootId?: number | null
+	plotConfig?: PlotConfig
 	parentId?: number
 	loadFile: () => void
 	siblingGateNames?: string[]
@@ -58,17 +61,34 @@ interface ScatterPlotProps {
 	onEditGate?: (gate: Gate) => void
 }
 
+function buildCacheScopeKey(
+	experimentId: number,
+	sourceType: "file" | "gate",
+	sourceId: number,
+	copiedFromRootId?: number | null,
+): string {
+	// Se o gate for uma cópia, compartilha o cache com o original (e outras cópias).
+	const keyId = sourceType === "gate" && copiedFromRootId ? copiedFromRootId : sourceId
+	return `${experimentId}:${sourceType}:${keyId}`
+}
+
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	values,
 	sourceType,
 	sourceId,
 	fileDataId,
+	experimentId,
+	copiedFromRootId,
+	plotConfig,
 	parentId,
 	loadFile,
 	siblingGateNames = [],
 	childGates = [],
 }) => {
 	const plotState = usePlotState()
+	const cacheScopeKey = buildCacheScopeKey(experimentId, sourceType, sourceId, copiedFromRootId)
+	const configCache = usePlotConfigCache(cacheScopeKey)
+
 	const {
 		xAxis,
 		yAxis,
@@ -83,6 +103,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMax,
 		handleSelectX,
 		handleSelectY,
+		setXAxis,
+		setYAxis,
 		setPlotMode,
 		setTool,
 		setXScale,
@@ -93,6 +115,63 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setYMin,
 		setYMax,
 	} = plotState
+
+	// Carregar config ao montar/trocar source. Ordem de prioridade:
+	// 1. plotConfig do backend (persistido no gate)
+	// 2. cache local
+	// 3. defaults
+	useEffect(() => {
+		if (!configCache.isReady) return
+		const cached = configCache.loadConfig()
+		const sourceConfig = plotConfig ? plotConfig : cached
+
+		setXAxis(sourceConfig.xAxis)
+		setYAxis(sourceConfig.yAxis)
+		setPlotMode(sourceConfig.plotMode)
+		setXScale(sourceConfig.xScale)
+		setYScale(sourceConfig.yScale)
+		setXMin(sourceConfig.xMin)
+		setXMax(sourceConfig.xMax)
+		setYMin(sourceConfig.yMin)
+		setYMax(sourceConfig.yMax)
+		setCutoff(sourceConfig.cutoff)
+	}, [cacheScopeKey, plotConfig, configCache.isReady, configCache.loadConfig])
+
+	// Salvar config no cache quando muda
+	useEffect(() => {
+		configCache.updateConfig({
+			xAxis,
+			yAxis,
+			plotMode,
+			xScale,
+			yScale,
+			xMin,
+			xMax,
+			yMin,
+			yMax,
+			cutoff,
+		})
+	}, [xAxis, yAxis, plotMode, xScale, yScale, xMin, xMax, yMin, yMax, cutoff])
+
+	// Salvar config no backend (debounce) quando o usuário editar
+	useEffect(() => {
+		if (!configCache.isReady || sourceType !== "gate") return
+		const timeout = setTimeout(() => {
+			savePlotConfig.mutate({
+				xAxis,
+				yAxis,
+				plotMode,
+				xScale,
+				yScale,
+				xMin,
+				xMax,
+				yMin,
+				yMax,
+				cutoff,
+			})
+		}, 1000)
+		return () => clearTimeout(timeout)
+	}, [xAxis, yAxis, plotMode, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, sourceType, sourceId, configCache.isReady])
 
 	// Gate edit dialog state
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
@@ -129,6 +208,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		},
 	})
 
+	const savePlotConfig = useMutation({
+		mutationFn: async (config: PlotConfig) => {
+			if (sourceType !== "gate") return
+			await CytometryApi.patch(`/analytics/gate/${sourceId}`, {
+				plot_config: config,
+			})
+		},
+	})
+
 	const { data, isLoading, isFetching, isError } = useDensityQuery({
 		sourceType,
 		sourceId,
@@ -158,6 +246,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		effCof,
 		tool,
 		plotMode,
+		xScale,
+		yScale,
+		xMin,
+		xMax,
+		yMin,
+		yMax,
+		cutoff,
 		siblingGateNames,
 		loadFile,
 		setTool,
@@ -830,15 +925,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					gap: "0.75rem",
 				}}
 			>
-				<PlotToolbar
-					tool={tool}
+				{/* Dropdown Settings - Floating over graph */}
+				<PlotSettingsDropdown
 					plotMode={plotMode}
-					onToolChange={setTool}
-					onPlotModeChange={setPlotMode}
-					onRecompute={() => recompute.mutate()}
-					isRecomputing={recompute.isPending}
+					xScale={xScale}
+					yScale={yScale}
+					cutoff={cutoff}
+					xMin={xMin}
+					xMax={xMax}
+					yMin={yMin}
+					yMax={yMax}
+					onXScaleChange={setXScale}
+					onYScaleChange={setYScale}
+					onCutoffChange={setCutoff}
+					onXMinChange={setXMin}
+					onXMaxChange={setXMax}
+					onYMinChange={setYMin}
+					onYMaxChange={setYMax}
 				/>
-
 				{data && (
 					<Typography variant="caption" color="text.secondary">
 						{data.total_events.toLocaleString()} eventos
@@ -1018,24 +1122,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					</Select>
 				</Box>
 			</Box>
-
-			<PlotSettings
-				plotMode={plotMode}
-				xScale={xScale}
-				yScale={yScale}
-				cutoff={cutoff}
-				xMin={xMin}
-				xMax={xMax}
-				yMin={yMin}
-				yMax={yMax}
-				onXScaleChange={setXScale}
-				onYScaleChange={setYScale}
-				onCutoffChange={setCutoff}
-				onXMinChange={setXMin}
-				onXMaxChange={setXMax}
-				onYMinChange={setYMin}
-				onYMaxChange={setYMax}
-			/>
 
 			<GateEditDialog
 				open={editDialogOpen}

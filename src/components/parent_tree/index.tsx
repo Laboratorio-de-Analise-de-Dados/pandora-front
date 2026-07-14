@@ -38,6 +38,7 @@ export interface SelectedSource {
 	id: number
 	name: string
 	fileDataId: number
+	copiedFromId?: number | null
 }
 
 
@@ -316,6 +317,7 @@ export default function ParentTree({
 				id,
 				name: gate?.name ?? `Gate ${id}`,
 				fileDataId,
+				copiedFromId: gate?.copied_from_id,
 			})
 		}
 	}

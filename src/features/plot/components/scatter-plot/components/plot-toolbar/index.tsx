@@ -16,17 +16,8 @@ import {
 	ToggleButtonGroup,
 	Typography,
 } from "@mui/material"
-import type { PlotMode, GateTool } from "../hooks/usePlotState"
-
-interface PlotToolbarProps {
-	tool: GateTool
-	plotMode: PlotMode
-	onToolChange: (tool: GateTool) => void
-	onPlotModeChange: (mode: PlotMode) => void
-	onRecompute: () => void
-	isRecomputing: boolean
-}
-
+import { PlotToolbarProps } from "./type"
+import type { PlotMode, GateTool } from "../../../../hooks/usePlotState"
 const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	tool,
 	plotMode,
@@ -52,7 +43,11 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 			<ToggleButton
 				value="rect"
 				size="small"
-				title={plotMode === "histogram" ? "Gate de intervalo (1D)" : "Gate retangular"}
+				title={
+					plotMode === "histogram"
+						? "Gate de intervalo (1D)"
+						: "Gate retangular"
+				}
 			>
 				<CropFreeSharpIcon />
 			</ToggleButton>
@@ -62,7 +57,11 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				</ToggleButton>
 			)}
 			{plotMode !== "histogram" && (
-				<ToggleButton value="quad" size="small" title="Gate de quadrante (cruz)">
+				<ToggleButton
+					value="quad"
+					size="small"
+					title="Gate de quadrante (cruz)"
+				>
 					<QuadrantIcon />
 				</ToggleButton>
 			)}
@@ -78,14 +77,20 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 			<ToggleButton value="scatter" size="small" title="Dot plot (amostra)">
 				<DotPlotIcon />
 			</ToggleButton>
-			<ToggleButton value="histogram" size="small" title="Histograma (distribuição)">
+			<ToggleButton
+				value="histogram"
+				size="small"
+				title="Histograma (distribuição)"
+			>
 				<HistogramIcon />
 			</ToggleButton>
 		</ToggleButtonGroup>
 		<Button
 			size="small"
 			variant="outlined"
-			startIcon={isRecomputing ? <CircularProgress size={16} /> : <RefreshIcon />}
+			startIcon={
+				isRecomputing ? <CircularProgress size={16} /> : <RefreshIcon />
+			}
 			disabled={isRecomputing}
 			onClick={onRecompute}
 			title="Reprocessar a partir do .fcs original + gates"
