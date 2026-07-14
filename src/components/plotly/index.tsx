@@ -3,6 +3,9 @@ import {
 	MdPalette as PaletteIcon,
 	MdEdit as EditIcon,
 	MdDelete as DeleteIcon,
+	MdCropFree as RectIcon,
+	MdPentagon as PolygonIcon,
+	MdAddBox as QuadrantIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -15,6 +18,9 @@ import {
 	ListItemText,
 	Typography,
 	SelectChangeEvent,
+	ToggleButton,
+	ToggleButtonGroup,
+	Tooltip,
 } from "@mui/material"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import Plot from "react-plotly.js"
@@ -25,6 +31,7 @@ import { Gate, Scale } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 
 import { usePlotState } from "../../features/plot/hooks/usePlotState"
+import type { GateTool } from "../../features/plot/hooks/usePlotState"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
@@ -912,7 +919,56 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								justifyContent: "center",
 							}}
 						>
-							{/* Dropdown de configurações, ancorado ao próprio gráfico */}
+							{/* Seletor de tipo de gate, ancorado ao canto superior direito */}
+							{tool !== "edit" && reshapingGateId === null && (
+								<ToggleButtonGroup
+									value={tool}
+									exclusive
+									size="small"
+									onChange={(_, v: GateTool | null) => v && setTool(v)}
+									sx={{
+										position: "absolute",
+										top: 8,
+										right: 8,
+										zIndex: 25,
+										backgroundColor: "rgba(255, 255, 255, 0.6)",
+										backdropFilter: "blur(2px)",
+									}}
+								>
+									<ToggleButton value="rect">
+										<Tooltip
+											title={
+												plotMode === "histogram"
+													? "Gate de intervalo (1D)"
+													: "Gate retangular"
+											}
+										>
+											<Box sx={{ display: "flex" }}>
+												<RectIcon />
+											</Box>
+										</Tooltip>
+									</ToggleButton>
+									{plotMode !== "histogram" && (
+										<ToggleButton value="poly">
+											<Tooltip title="Gate poligonal (laço)">
+												<Box sx={{ display: "flex" }}>
+													<PolygonIcon />
+												</Box>
+											</Tooltip>
+										</ToggleButton>
+									)}
+									{plotMode !== "histogram" && (
+										<ToggleButton value="quad">
+											<Tooltip title="Gate de quadrante (cruz)">
+												<Box sx={{ display: "flex" }}>
+													<QuadrantIcon />
+												</Box>
+											</Tooltip>
+										</ToggleButton>
+									)}
+								</ToggleButtonGroup>
+							)}
+			{/* Dropdown de configurações, ancorado ao próprio gráfico */}
 							<PlotSettingsDropdown
 								plotMode={plotMode}
 								xScale={xScale}

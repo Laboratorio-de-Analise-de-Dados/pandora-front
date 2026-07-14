@@ -54,14 +54,21 @@ export function usePlotState(
 	const [yMin, setYMin] = useState(initial?.yMin ?? "")
 	const [yMax, setYMax] = useState(initial?.yMax ?? "")
 
+	// Trocar de canal (eixo) reinicia escala e limpa os limites: cada canal tem
+	// range próprio, então carregar o min/max do canal anterior daria uma janela
+	// errada. Sem limites, o gráfico volta ao range default do novo canal.
 	const handleSelectX = (value: string) => {
 		setXAxis(value)
 		setXScale(defaultScale(value))
+		setXMin("")
+		setXMax("")
 	}
 
 	const handleSelectY = (value: string) => {
 		setYAxis(value)
 		setYScale(defaultScale(value))
+		setYMin("")
+		setYMax("")
 	}
 
 	return {
