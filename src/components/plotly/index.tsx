@@ -12,6 +12,7 @@ import {
 	Select,
 	Button,
 	CircularProgress,
+	LinearProgress,
 	MenuItem,
 	Menu,
 	ListItemIcon,
@@ -32,6 +33,7 @@ import { getGateColor } from "../../constants/gateColors"
 
 import { usePlotState } from "../../features/plot/hooks/usePlotState"
 import type { GateTool } from "../../features/plot/hooks/usePlotState"
+import { useDebouncedValue } from "../../features/plot/hooks/useDebouncedValue"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
@@ -54,6 +56,10 @@ import type { PlotViewConfig } from "../../types"
 // produção em alguns navegadores; a amostra é limitada (5000 pts), então o SVG
 // dá conta sem o erro "WebGL is not supported".
 const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
+
+// Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
+// backend (evita uma request por evento de slider).
+const RANGE_REFETCH_DEBOUNCE_MS = 700
 
 interface ScatterPlotProps {
 	values: string[]
@@ -160,10 +166,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		},
 	})
 
-	// Range só afeta a query no heatmap (o backend re-binna dentro de [min,max]).
-	// No dot plot e no histograma, min/max é apenas a janela de visualização
-	// (range do Plotly), então mexer nos limites não refaz a chamada ao backend.
-	const rangeAffectsQuery = plotMode === "heatmap"
+	// O range vira janela de visualização imediata (layout do Plotly, usando
+	// xMin/xMax "ao vivo") e, com debounce, também vira parâmetro da query: ao
+	// parar de mexer, o backend recalcula o gráfico já enquadrado no range (para
+	// todos os modos), inclusive empilhando na borda os pontos fora do limite.
+	const dXMin = useDebouncedValue(xMin, RANGE_REFETCH_DEBOUNCE_MS)
+	const dXMax = useDebouncedValue(xMax, RANGE_REFETCH_DEBOUNCE_MS)
+	const dYMin = useDebouncedValue(yMin, RANGE_REFETCH_DEBOUNCE_MS)
+	const dYMax = useDebouncedValue(yMax, RANGE_REFETCH_DEBOUNCE_MS)
 	const { data, isLoading, isFetching, isError } = useDensityQuery({
 		sourceType,
 		sourceId,
@@ -173,10 +183,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		xScale,
 		yScale,
 		cutoff,
-		xMin: rangeAffectsQuery ? xMin : "",
-		xMax: rangeAffectsQuery ? xMax : "",
-		yMin: rangeAffectsQuery ? yMin : "",
-		yMax: rangeAffectsQuery ? yMax : "",
+		xMin: dXMin,
+		xMax: dXMax,
+		yMin: dYMin,
+		yMax: dYMax,
 	})
 
 	const effXScale: Scale = data?.x_scale ?? xScale
@@ -931,8 +941,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										top: 8,
 										right: 8,
 										zIndex: 25,
-										backgroundColor: "rgba(255, 255, 255, 0.6)",
-										backdropFilter: "blur(2px)",
+										backgroundColor: "rgba(255, 255, 255, 0.85)",
 									}}
 								>
 									<ToggleButton value="rect">
@@ -1074,7 +1083,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							) : isLoading ? null : (
 								<Typography>Sem dados para os eixos selecionados.</Typography>
 							)}
-							{(isLoading || isFetching) && (
+							{isLoading && !hasData && (
 								<Box
 									sx={{
 										position: "absolute",
@@ -1082,12 +1091,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										display: "flex",
 										alignItems: "center",
 										justifyContent: "center",
-										bgcolor: "rgba(255,255,255,0.6)",
 										zIndex: 20,
 									}}
 								>
 									<CircularProgress />
 								</Box>
+							)}
+							{(isLoading || isFetching) && (
+								<LinearProgress
+									sx={{
+										position: "absolute",
+										top: 0,
+										left: 0,
+										right: 0,
+										height: 3,
+										zIndex: 26,
+										borderTopLeftRadius: 4,
+										borderTopRightRadius: 4,
+									}}
+								/>
 							)}
 							{(tool === "edit" || reshapingGateId !== null) &&
 								renderPolyEditOverlay()}

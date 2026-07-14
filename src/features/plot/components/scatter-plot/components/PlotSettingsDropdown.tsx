@@ -83,8 +83,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 						top: 8,
 						left: 8,
 						zIndex: 25,
-						backgroundColor: "rgba(255, 255, 255, 0.6)",
-						backdropFilter: "blur(2px)",
+						backgroundColor: "rgba(255, 255, 255, 0.85)",
 						border: "1px solid",
 						borderColor: "divider",
 						"&:hover": {
@@ -110,7 +109,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 						overflowY: "auto",
 						padding: 1.5,
 						borderRadius: 8,
-						backdropFilter: "blur(6px)",
+						backgroundColor: "rgba(255, 255, 255, 0.95)",
 						boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
 						border: "1px solid",
 						borderColor: "divider",
