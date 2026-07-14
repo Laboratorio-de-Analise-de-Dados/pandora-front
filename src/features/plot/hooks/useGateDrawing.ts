@@ -15,6 +15,13 @@ interface UseGateDrawingParams {
 	effCof: number
 	tool: GateTool
 	plotMode: PlotMode
+	xScale: Scale
+	yScale: Scale
+	xMin: string
+	xMax: string
+	yMin: string
+	yMax: string
+	cutoff: number
 	siblingGateNames: string[]
 	loadFile: () => void
 	setTool: (t: GateTool) => void
@@ -39,6 +46,13 @@ export function useGateDrawing({
 	effCof,
 	tool,
 	plotMode,
+	xScale,
+	yScale,
+	xMin,
+	xMax,
+	yMin,
+	yMax,
+	cutoff,
 	siblingGateNames,
 	loadFile,
 	setTool,

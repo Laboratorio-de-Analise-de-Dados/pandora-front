@@ -119,3 +119,20 @@ export const getChildGatesForSource = (
 	}
 	return []
 }
+
+/** Retorna o id raiz da cadeia de copied_from de um gate, percorrendo a árvore. */
+export const getRootCopiedFromId = (
+	files: ExperimentFiles[],
+	gateId: number,
+): number | null => {
+	const visited = new Set<number>()
+	let currentId = gateId
+	while (true) {
+		if (visited.has(currentId)) break
+		visited.add(currentId)
+		const gate = findGateInTree(files.flatMap((f) => f.gates), currentId)
+		if (!gate || !gate.copied_from_id) break
+		currentId = gate.copied_from_id
+	}
+	return currentId === gateId ? null : currentId
+}

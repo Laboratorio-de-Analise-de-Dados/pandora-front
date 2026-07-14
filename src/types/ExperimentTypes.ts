@@ -21,6 +21,8 @@ export interface FileData {
 
 export type Scale = "linear" | "biex"
 
+export type PlotMode = "heatmap" | "scatter" | "histogram"
+
 export interface RectGateCoordinates {
 	type?: "rectangle"
 	x_axis?: string
