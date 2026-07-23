@@ -4,8 +4,10 @@ import {
 	Typography,
 	IconButton,
 	Tooltip,
+	Drawer,
+	useMediaQuery,
 } from "@mui/material"
-import { Theme } from "@mui/material/styles"
+import { Theme, useTheme } from "@mui/material/styles"
 import { useState } from "react"
 import Layout from "../../../Layout"
 import { toast } from "react-toastify"
@@ -49,7 +51,9 @@ function ExperimentPageContent() {
 	} = useExperimentWorkspace()
 
 	const navigate = useNavigate()
-	const [showStats, setShowStats] = useState(true)
+	const theme = useTheme()
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+	const [showStats, setShowStats] = useState(() => !isMobile)
 	const [applyTarget, setApplyTarget] = useState<{
 		id: number
 		name: string
@@ -154,7 +158,7 @@ function ExperimentPageContent() {
 					bgcolor: theme.palette.background.default,
 					width: "20%",
 					height: "100vh",
-					display: "flex",
+					display: { xs: "none", md: "flex" },
 					flexDirection: "column",
 					minHeight: 0,
 				})}
@@ -279,7 +283,33 @@ function ExperimentPageContent() {
 					</>
 				)}
 			</Box>
-			{showStats ? (
+			{/* Mobile: estatísticas sobem por cima do gráfico (bottom sheet) */}
+			{isMobile ? (
+				<Drawer
+					anchor="bottom"
+					open={showStats}
+					onClose={() => setShowStats(false)}
+					slotProps={{
+						paper: {
+							sx: (theme: Theme) => ({
+								height: "80vh",
+								borderTopLeftRadius: 16,
+								borderTopRightRadius: 16,
+								bgcolor: theme.palette.background.default,
+								overflowY: "auto",
+							}),
+						},
+					}}
+				>
+					<StatsPanel
+						source={source}
+						files={experimentFiles}
+						values={values}
+						fileStats={fileStats}
+						onClose={() => setShowStats(false)}
+					/>
+				</Drawer>
+			) : showStats ? (
 				<Box
 					sx={(theme: Theme) => ({
 						width: "22%",
