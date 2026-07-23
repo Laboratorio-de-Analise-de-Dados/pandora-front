@@ -17,6 +17,7 @@ import {
 } from "../../../../features/experiment/context/ExperimentWorkspaceContext"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
+import SourceDropdown from "../../../../features/experiment/components/SourceDropdown"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
 import {
@@ -231,7 +232,11 @@ function ExperimentPageContent() {
 									</IconButton>
 								</span>
 							</Tooltip>
-							<Typography>{source.name}</Typography>
+							<SourceDropdown
+								files={experimentFiles}
+								source={source}
+								onSelect={setSource}
+							/>
 							<Tooltip title="Próximo arquivo">
 								<span>
 									<IconButton

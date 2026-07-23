@@ -10,16 +10,7 @@ import {
 	MdChevronRight as ChevronIcon,
 } from "react-icons/md"
 import type { SelectedSource } from "../../../components/parent_tree"
-
-interface SelectableItem {
-	type: "file" | "gate"
-	id: number
-	name: string
-	fileDataId: number
-	path: string
-	depth: number
-	color?: string | null
-}
+import type { SelectableItem } from "../utils/selectable"
 
 interface SourceSelectorProps {
 	currentPath: string | null
@@ -101,4 +92,4 @@ const SourceSelector: React.FC<SourceSelectorProps> = ({
 }
 
 export default SourceSelector
-export type { SelectableItem }
+export type { SelectableItem } from "../utils/selectable"

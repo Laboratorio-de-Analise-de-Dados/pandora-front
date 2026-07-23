@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import {
 	Box,
 	Button,
@@ -7,8 +7,6 @@ import {
 	Collapse,
 	FormControlLabel,
 	IconButton,
-	Menu,
-	MenuItem,
 	Popover,
 	Table,
 	TableBody,
@@ -25,14 +23,16 @@ import {
 	MdCompareArrows as CompareIcon,
 	MdExpandMore as ExpandMoreIcon,
 	MdExpandLess as ExpandLessIcon,
-	MdAdd as AddIcon,
+	MdChecklist as SelectIcon,
 	MdChevronRight as ChevronIcon,
 	MdTune as TuneIcon,
 } from "react-icons/md"
 import { FaVial as VialIcon } from "react-icons/fa"
 import type { ExperimentFiles, Gate } from "../../../types"
-import { findGateInTree, findFileForGate } from "../../gate/utils"
+import { findGateInTree, findFileForGate, getGateStrategy } from "../../gate/utils"
 import { isFluorescence } from "../utils/channelHelpers"
+import { buildAnalysisRows } from "../utils/statsRows"
+import type { PopulationRow } from "../utils/statsRows"
 import { fmtPct } from "../../../utils/format"
 import type { SelectableItem } from "./SourceSelector"
 
@@ -47,7 +47,7 @@ interface ComparisonPanelProps {
 	files: ExperimentFiles[]
 	activeMetrics: MetricDef[]
 	channelLabel: (ch: string) => string
-	onExport: (format: "csv" | "xlsx") => void
+	onExport: (rows: string[][], defaultName: string, format: "csv" | "xlsx") => void
 }
 
 const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
@@ -60,6 +60,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 	const [expanded, setExpanded] = useState(false)
 	const [compareItems, setCompareItems] = useState<SelectableItem[]>([])
 	const [compareAnchor, setCompareAnchor] = useState<HTMLElement | null>(null)
+	const [compareSelectSearch, setCompareSelectSearch] = useState("")
 	const [compareChannels, setCompareChannels] = useState<Set<string> | null>(
 		null,
 	)
@@ -99,6 +100,9 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 		return compareAvailableChannels.filter((ch) => compareChannels.has(ch))
 	}, [compareAvailableChannels, compareChannels])
 
+	const isItemSelected = (item: SelectableItem) =>
+		compareItems.some((i) => i.type === item.type && i.id === item.id)
+
 	const addCompareItem = (item: SelectableItem) => {
 		setCompareItems((prev) => {
 			if (prev.some((i) => i.type === item.type && i.id === item.id))
@@ -112,6 +116,106 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 			prev.filter((i) => !(i.type === item.type && i.id === item.id)),
 		)
 	}
+
+	const toggleCompareItem = (item: SelectableItem) => {
+		if (isItemSelected(item)) removeCompareItem(item)
+		else addCompareItem(item)
+	}
+
+	// Nomes distintos de gates presentes na lista, para o atalho de selecionar
+	// "o mesmo gate em todos os arquivos".
+	const gateNames = useMemo(() => {
+		const names: string[] = []
+		const seen = new Set<string>()
+		for (const item of selectableItems) {
+			if (item.type === "gate" && !seen.has(item.name)) {
+				seen.add(item.name)
+				names.push(item.name)
+			}
+		}
+		return names
+	}, [selectableItems])
+
+	const itemsForGateName = useCallback(
+		(name: string) =>
+			selectableItems.filter(
+				(item) => item.type === "gate" && item.name === name,
+			),
+		[selectableItems],
+	)
+
+	const isGateNameFullySelected = (name: string) => {
+		const items = itemsForGateName(name)
+		return items.length > 0 && items.every(isItemSelected)
+	}
+
+	const toggleGateAcrossFiles = (name: string) => {
+		const items = itemsForGateName(name)
+		if (isGateNameFullySelected(name)) {
+			setCompareItems((prev) =>
+				prev.filter(
+					(i) =>
+						!items.some((it) => it.type === i.type && it.id === i.id),
+				),
+			)
+		} else {
+			setCompareItems((prev) => {
+				const next = [...prev]
+				for (const it of items) {
+					if (!next.some((i) => i.type === it.type && i.id === it.id))
+						next.push(it)
+				}
+				return next
+			})
+		}
+	}
+
+	const selectAllItems = () => setCompareItems([...selectableItems])
+	const clearAllItems = () => setCompareItems([])
+
+	const filteredSelectableItems = useMemo(() => {
+		const q = compareSelectSearch.trim().toLowerCase()
+		if (!q) return selectableItems
+		return selectableItems.filter(
+			(item) =>
+				item.name.toLowerCase().includes(q) ||
+				item.path.toLowerCase().includes(q),
+		)
+	}, [selectableItems, compareSelectSearch])
+
+	const handleExportClick = useCallback(
+		(format: "csv" | "xlsx") => {
+			const metricCols = activeMetrics.map((m) => ({
+				key: m.key,
+				shortLabel: m.shortLabel,
+			}))
+			const populations: PopulationRow[] = compareData.map((d) => ({
+				fileName:
+					d.item.type === "file"
+						? d.item.name
+						: (findFileForGate(files, d.item.id)?.file_name ?? ""),
+				strategy:
+					d.item.type === "gate" ? getGateStrategy(files, d.item.id) : "",
+				name: d.item.name,
+				analysis: d.analysis,
+			}))
+			const rows = buildAnalysisRows(
+				populations,
+				compareDisplayChannels,
+				metricCols,
+				channelLabel,
+			)
+			onExport(rows, "comparacao", format)
+		},
+		[
+			activeMetrics,
+			compareData,
+			compareDisplayChannels,
+			files,
+			channelLabel,
+			onExport,
+		],
+	)
 
 	return (
 		<Box
@@ -145,7 +249,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 				<Typography variant="caption" fontWeight="bold" sx={{ flex: 1 }}>
 					Comparação {compareItems.length > 0 ? `(${compareItems.length})` : ""}
 				</Typography>
-				{/**compareData.length > 0 && (
+				{compareData.length > 0 && (
 					<Box
 						sx={{ display: "flex", gap: 0.25 }}
 						onClick={(e) => e.stopPropagation()}
@@ -153,7 +257,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 						<Tooltip title="Exportar CSV">
 							<IconButton
 								size="small"
-								onClick={() => onExport("csv")}
+								onClick={() => handleExportClick("csv")}
 								sx={{ p: 0.25 }}
 							>
 								<ExportIcon style={{ fontSize: 14 }} />
@@ -162,14 +266,14 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 						<Tooltip title="Exportar Excel (.xlsx)">
 							<IconButton
 								size="small"
-								onClick={() => onExport("xlsx")}
+								onClick={() => handleExportClick("xlsx")}
 								sx={{ p: 0.25 }}
 							>
 								<ExportIcon style={{ fontSize: 14, color: "#1976d2" }} />
 							</IconButton>
 						</Tooltip>
 					</Box>
-				)**/}
+				)}
 			</Box>
 
 			<Collapse in={expanded}>
@@ -183,7 +287,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 						<Button
 							size="small"
 							variant="outlined"
-							startIcon={<AddIcon style={{ fontSize: 12 }} />}
+							startIcon={<SelectIcon style={{ fontSize: 12 }} />}
 							onClick={(e) => setCompareAnchor(e.currentTarget)}
 							sx={{
 								textTransform: "none",
@@ -194,53 +298,139 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 								height: 22,
 							}}
 						>
-							Adicionar
+							Selecionar
 						</Button>
-						<Menu
+						<Popover
 							anchorEl={compareAnchor}
 							open={Boolean(compareAnchor)}
-							onClose={() => setCompareAnchor(null)}
+							onClose={() => {
+								setCompareAnchor(null)
+								setCompareSelectSearch("")
+							}}
+							anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
 							slotProps={{
-								paper: { sx: { maxHeight: 320, maxWidth: 340, minWidth: 220 } },
+								paper: { sx: { width: 320, maxHeight: 420, p: 1.5 } },
 							}}
 						>
-							{selectableItems.map((item) => {
-								const alreadyAdded = compareItems.some(
-									(i) => i.type === item.type && i.id === item.id,
-								)
-								return (
-									<MenuItem
-										key={`cmp-${item.type}-${item.id}`}
-										disabled={alreadyAdded}
-										onClick={() => {
-											addCompareItem(item)
-											setCompareAnchor(null)
-										}}
-										sx={{ py: 0.5, pl: 1.5 + item.depth * 2, minHeight: 0 }}
+							<Typography
+								variant="caption"
+								fontWeight="bold"
+								sx={{ mb: 0.5, display: "block" }}
+							>
+								Selecionar populações
+							</Typography>
+							<TextField
+								size="small"
+								placeholder="Buscar arquivo ou gate..."
+								value={compareSelectSearch}
+								onChange={(e) => setCompareSelectSearch(e.target.value)}
+								sx={{
+									mb: 0.5,
+									"& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 },
+								}}
+								fullWidth
+								autoFocus
+							/>
+							<Box sx={{ display: "flex", gap: 0.5, mb: 0.5 }}>
+								<Chip
+									label="Todos"
+									size="small"
+									variant="outlined"
+									onClick={selectAllItems}
+									sx={{ fontSize: "0.6rem", height: 20 }}
+								/>
+								<Chip
+									label="Limpar"
+									size="small"
+									variant="outlined"
+									onClick={clearAllItems}
+									sx={{ fontSize: "0.6rem", height: 20 }}
+								/>
+							</Box>
+
+							{gateNames.length > 0 && (
+								<Box sx={{ mb: 0.5 }}>
+									<Typography
+										variant="caption"
+										color="text.secondary"
+										sx={{ fontSize: "0.6rem", display: "block", mb: 0.25 }}
 									>
-										<Typography
-											variant="caption"
-											sx={{ fontSize: "0.75rem" }}
-											noWrap
-										>
-											{item.depth > 0 && (
-												<ChevronIcon
-													style={{
-														fontSize: 12,
-														verticalAlign: "middle",
-														marginRight: 2,
-														opacity: 0.5,
+										Mesmo gate em todos os arquivos:
+									</Typography>
+									<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+										{gateNames.map((name) => {
+											const full = isGateNameFullySelected(name)
+											return (
+												<Chip
+													key={`gname-${name}`}
+													label={name}
+													size="small"
+													variant={full ? "filled" : "outlined"}
+													color={full ? "primary" : "default"}
+													onClick={() => toggleGateAcrossFiles(name)}
+													sx={{
+														fontSize: "0.6rem",
+														height: 20,
+														maxWidth: 140,
 													}}
 												/>
-											)}
-											{item.type === "file" ? "📄 " : "🔲 "}
-											{item.name}
-											{alreadyAdded ? " ✓" : ""}
-										</Typography>
-									</MenuItem>
-								)
-							})}
-						</Menu>
+											)
+										})}
+									</Box>
+								</Box>
+							)}
+
+							<Box sx={{ maxHeight: 220, overflow: "auto" }}>
+								{filteredSelectableItems.map((item) => (
+									<FormControlLabel
+										key={`cmp-${item.type}-${item.id}`}
+										control={
+											<Checkbox
+												size="small"
+												checked={isItemSelected(item)}
+												onChange={() => toggleCompareItem(item)}
+												sx={{ p: 0.25 }}
+											/>
+										}
+										label={
+											<Typography
+												variant="caption"
+												sx={{ fontSize: "0.72rem" }}
+												noWrap
+											>
+												{item.depth > 0 && (
+													<ChevronIcon
+														style={{
+															fontSize: 12,
+															verticalAlign: "middle",
+															marginRight: 2,
+															opacity: 0.5,
+														}}
+													/>
+												)}
+												{item.type === "file" ? "📄 " : "🔲 "}
+												{item.name}
+											</Typography>
+										}
+										sx={{
+											display: "flex",
+											m: 0,
+											minHeight: 26,
+											pl: item.depth * 1.5,
+										}}
+									/>
+								))}
+								{filteredSelectableItems.length === 0 && (
+									<Typography
+										variant="caption"
+										color="text.secondary"
+										sx={{ display: "block", textAlign: "center", py: 1 }}
+									>
+										Nenhum item encontrado
+									</Typography>
+								)}
+							</Box>
+						</Popover>
 					</Box>
 
 					{compareItems.length > 0 && (

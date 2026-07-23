@@ -27,6 +27,9 @@ import { findGateInTree, collectAllGates, findFileForGate, getGateStrategy } fro
 import { normalizeChannelName } from "../../features/stats/utils/channelHelpers"
 import { isFluorescence } from "../../features/stats/utils/channelHelpers"
 import { exportRows } from "../../features/stats/utils/exportHelpers"
+import { buildSelectableItems } from "../../features/stats/utils/selectable"
+import { buildAnalysisRows } from "../../features/stats/utils/statsRows"
+import type { PopulationRow } from "../../features/stats/utils/statsRows"
 import { fmtPct } from "../../utils/format"
 import SourceSelector from "../../features/stats/components/SourceSelector"
 import type { SelectableItem } from "../../features/stats/components/SourceSelector"
@@ -60,22 +63,6 @@ const DEFAULT_VISIBLE_METRICS = new Set<MetricColumn>(["mean_mfi", "median_mfi"]
 const LS_KEY_CHANNELS = "pandora_stats_selectedChannels"
 const LS_KEY_METRICS = "pandora_stats_visibleMetrics"
 const LS_KEY_LABELS = "pandora_channel_labels"
-
-const buildSelectableItems = (files: ExperimentFiles[]): SelectableItem[] => {
-	const items: SelectableItem[] = []
-	for (const f of files) {
-		items.push({ type: "file", id: f.id, name: f.file_name, fileDataId: f.id, path: f.file_name, depth: 0 })
-		const addGates = (gates: Gate[], parentPath: string, fileDataId: number, depth: number) => {
-			for (const g of gates) {
-				const p = `${parentPath} > ${g.name}`
-				items.push({ type: "gate", id: g.id, name: g.name, fileDataId, path: p, depth, color: g.color })
-				if (g.children) addGates(g.children, p, fileDataId, depth + 1)
-			}
-		}
-		addGates(f.gates, f.file_name, f.id, 1)
-	}
-	return items
-}
 
 // --- Component ---
 
@@ -242,35 +229,25 @@ export default function StatsPanel({
 
 	const buildStatsRows = useCallback(
 		(scope: "current" | "all") => {
-			const rows: string[][] = []
 			const metricCols = METRIC_COLUMNS.filter((m) => visibleMetrics.has(m.key))
-			const header = ["Arquivo", "Gate Strategy", "Gate", "Count", "%Parent", "%Total"]
-			for (const ch of displayChannels) for (const m of metricCols) header.push(`${channelLabel(ch)}_${m.shortLabel}`)
-			rows.push(header)
+			const populations: PopulationRow[] = []
 
-			const addGateRow = (gate: Gate, file?: ExperimentFiles) => {
-				const ar = gate.analysis_result?.analysis_result
-				const sm = ar?.summary_metrics
-				const cs = ar?.channel_statistics
-				const fileName = file?.file_name ?? findFileForGate(files, gate.id)?.file_name ?? ""
-				const strategy = getGateStrategy(files, gate.id)
-				const row: string[] = [fileName, strategy, gate.name, String(sm?.count ?? ""), sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "", sm ? (sm.percent_of_total_population * 100).toFixed(2) : ""]
-				for (const ch of displayChannels) { const stat = cs?.[ch]; for (const m of metricCols) row.push(stat ? String(stat[m.key]) : "") }
-				rows.push(row)
+			const gateToPopulation = (gate: Gate, file?: ExperimentFiles): PopulationRow => ({
+				fileName: file?.file_name ?? findFileForGate(files, gate.id)?.file_name ?? "",
+				strategy: getGateStrategy(files, gate.id),
+				name: gate.name,
+				analysis: gate.analysis_result?.analysis_result,
+			})
+
+			if (scope === "all") {
+				for (const f of files) for (const g of collectAllGates(f.gates)) populations.push(gateToPopulation(g, f))
+			} else if (currentGate) {
+				populations.push(gateToPopulation(currentGate))
+			} else if (source?.type === "file" && fileStats) {
+				populations.push({ fileName: source.name, strategy: "", name: source.name, analysis: fileStats })
 			}
 
-			if (scope === "current" && currentGate) {
-				addGateRow(currentGate)
-			} else if (scope === "all") {
-				for (const f of files) for (const g of collectAllGates(f.gates)) addGateRow(g, f)
-			} else if (scope === "current" && source?.type === "file" && fileStats) {
-				const sm = fileStats.summary_metrics
-				const cs = fileStats.channel_statistics
-				const row: string[] = [source.name, "", source.name, String(sm?.count ?? ""), sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "", sm ? (sm.percent_of_total_population * 100).toFixed(2) : ""]
-				for (const ch of displayChannels) { const stat = cs?.[ch]; for (const m of metricCols) row.push(stat ? String(stat[m.key]) : "") }
-				rows.push(row)
-			}
-			return rows
+			return buildAnalysisRows(populations, displayChannels, metricCols, channelLabel)
 		},
 		[currentGate, files, displayChannels, visibleMetrics, source, fileStats, channelLabel],
 	)
@@ -286,9 +263,9 @@ export default function StatsPanel({
 	)
 
 	const handleExportComparison = useCallback(
-		(format: "csv" | "xlsx") => {
-			setExportFileName("comparacao")
-			setExportDialog({ open: true, defaultName: "comparacao", format, handler: (fileName, fmt) => exportRows([], `${fileName}.${fmt}`, fmt) })
+		(rows: string[][], defaultName: string, format: "csv" | "xlsx") => {
+			setExportFileName(defaultName)
+			setExportDialog({ open: true, defaultName, format, handler: (fileName, fmt) => exportRows(rows, `${fileName}.${fmt}`, fmt) })
 		},
 		[],
 	)
