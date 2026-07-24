@@ -433,26 +433,6 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 						</Popover>
 					</Box>
 
-					{compareItems.length > 0 && (
-						<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 0.5 }}>
-							{compareItems.map((item) => (
-								<Chip
-									key={`chip-${item.type}-${item.id}`}
-									label={item.path}
-									size="small"
-									variant="outlined"
-									onDelete={() => removeCompareItem(item)}
-									sx={{
-										fontSize: "0.65rem",
-										height: 20,
-										maxWidth: 200,
-										"& .MuiChip-label": { px: 0.5 },
-									}}
-								/>
-							))}
-						</Box>
-					)}
-
 					{compareItems.length > 0 && compareAvailableChannels.length > 0 && (
 						<Box
 							sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}

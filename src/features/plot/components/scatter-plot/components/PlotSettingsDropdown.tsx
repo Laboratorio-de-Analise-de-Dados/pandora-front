@@ -101,11 +101,11 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 				<Paper
 					sx={{
 						position: "absolute",
-						top: 44,
-						left: 8,
+						top: 8,
+						right: "calc(100% + 8px)",
 						zIndex: 30,
 						width: 260,
-						maxHeight: "calc(100% - 56px)",
+						maxHeight: "calc(100% - 16px)",
 						overflowY: "auto",
 						padding: 1.5,
 						borderRadius: 8,
