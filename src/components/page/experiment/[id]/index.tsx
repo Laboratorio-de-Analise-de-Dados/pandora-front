@@ -4,7 +4,6 @@ import {
 	Typography,
 	IconButton,
 	Tooltip,
-	Drawer,
 	useMediaQuery,
 } from "@mui/material"
 import { Theme, useTheme } from "@mui/material/styles"
@@ -20,6 +19,7 @@ import {
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
 import SourceDropdown from "../../../../features/experiment/components/SourceDropdown"
+import CollapsiblePanel from "../../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
 import {
@@ -27,6 +27,7 @@ import {
 	MdBarChart as StatsIcon,
 	MdChevronLeft as PrevIcon,
 	MdChevronRight as NextIcon,
+	MdAccountTree as TreeIcon,
 } from "react-icons/md"
 import { useNavigate } from "react-router-dom"
 
@@ -54,6 +55,7 @@ function ExperimentPageContent() {
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 	const [showStats, setShowStats] = useState(() => !isMobile)
+	const [showTree, setShowTree] = useState(() => !isMobile)
 	const [applyTarget, setApplyTarget] = useState<{
 		id: number
 		name: string
@@ -150,52 +152,61 @@ function ExperimentPageContent() {
 		}
 	}
 
+	const treeContent = (
+		<>
+			<Typography
+				sx={(theme: Theme) => ({
+					color: theme.palette.text.primary,
+					flexShrink: 0,
+				})}
+				variant="h5"
+				fontWeight="bold"
+				display="flex"
+				alignItems="center"
+				gap="2rem"
+			>
+				{experiment?.title}
+				{experiment && (
+					<Tooltip title="Excluir experimento">
+						<IconButton
+							onClick={() => handleDelete(experiment.id)}
+							color="error"
+						>
+							<DeleteIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
+				)}
+			</Typography>
+			<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
+				<ParentTree
+					files={experimentFiles}
+					onSelect={(s) => {
+						setSource(s)
+						if (isMobile) setShowTree(false)
+					}}
+					onDeleteGate={handleDeleteGate}
+					onRenameGate={handleRenameGate}
+					onApplyGate={handleApplyGate}
+				/>
+			</Box>
+		</>
+	)
+
 	return (
 		<Layout>
-			<Box
-				sx={(theme: Theme) => ({
-					padding: "1rem",
-					bgcolor: theme.palette.background.default,
-					width: "20%",
-					height: "100vh",
-					display: { xs: "none", md: "flex" },
-					flexDirection: "column",
-					minHeight: 0,
-				})}
+			<CollapsiblePanel
+				side="left"
+				open={showTree}
+				isMobile={isMobile}
+				onOpen={() => setShowTree(true)}
+				onClose={() => setShowTree(false)}
+				label="Gates"
+				icon={<TreeIcon style={{ fontSize: 18 }} />}
+				desktopWidth="20%"
+				contentPadding="1rem"
 			>
-				<Typography
-					sx={(theme: Theme) => ({
-						color: theme.palette.text.primary,
-						flexShrink: 0,
-					})}
-					variant="h5"
-					fontWeight="bold"
-					display="flex"
-					alignItems="center"
-					gap="2rem"
-				>
-					{experiment?.title}
-					{experiment && (
-						<Tooltip title="Excluir experimento">
-							<IconButton
-								onClick={() => handleDelete(experiment.id)}
-								color="error"
-							>
-								<DeleteIcon fontSize="small" />
-							</IconButton>
-						</Tooltip>
-					)}
-				</Typography>
-				<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
-					<ParentTree
-						files={experimentFiles}
-						onSelect={setSource}
-						onDeleteGate={handleDeleteGate}
-						onRenameGate={handleRenameGate}
-						onApplyGate={handleApplyGate}
-					/>
-				</Box>
-			</Box>
+				{treeContent}
+			</CollapsiblePanel>
 			<Box
 				sx={{
 					display: "flex",
@@ -225,6 +236,15 @@ function ExperimentPageContent() {
 				{source && (
 					<>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+							<Tooltip title={showTree ? "Esconder árvore" : "Mostrar árvore"}>
+								<IconButton
+									size="small"
+									color={showTree ? "primary" : "default"}
+									onClick={() => setShowTree((p) => !p)}
+								>
+									<TreeIcon />
+								</IconButton>
+							</Tooltip>
 							<Tooltip title="Arquivo anterior">
 								<span>
 									<IconButton
@@ -284,74 +304,26 @@ function ExperimentPageContent() {
 				)}
 			</Box>
 			{/* Mobile: estatísticas sobem por cima do gráfico (bottom sheet) */}
-			{isMobile ? (
-				<Drawer
-					anchor="bottom"
-					open={showStats}
+			<CollapsiblePanel
+				side="right"
+				open={showStats}
+				isMobile={isMobile}
+				onOpen={() => setShowStats(true)}
+				onClose={() => setShowStats(false)}
+				label="Estatísticas"
+				icon={<StatsIcon style={{ fontSize: 18 }} />}
+				desktopWidth="22%"
+				desktopMinWidth={260}
+				mobileAnchor="bottom"
+			>
+				<StatsPanel
+					source={source}
+					files={experimentFiles}
+					values={values}
+					fileStats={fileStats}
 					onClose={() => setShowStats(false)}
-					slotProps={{
-						paper: {
-							sx: (theme: Theme) => ({
-								height: "80vh",
-								borderTopLeftRadius: 16,
-								borderTopRightRadius: 16,
-								bgcolor: theme.palette.background.default,
-								overflowY: "auto",
-							}),
-						},
-					}}
-				>
-					<StatsPanel
-						source={source}
-						files={experimentFiles}
-						values={values}
-						fileStats={fileStats}
-						onClose={() => setShowStats(false)}
-					/>
-				</Drawer>
-			) : showStats ? (
-				<Box
-					sx={(theme: Theme) => ({
-						width: "22%",
-						minWidth: 260,
-						borderLeft: `1px solid ${theme.palette.divider}`,
-						bgcolor: theme.palette.background.default,
-						overflowY: "auto",
-						height: "100%",
-					})}
-				>
-					<StatsPanel
-						source={source}
-						files={experimentFiles}
-						values={values}
-						fileStats={fileStats}
-						onClose={() => setShowStats(false)}
-					/>
-				</Box>
-			) : (
-				<Box
-					sx={(theme: Theme) => ({
-						width: 36,
-						minWidth: 36,
-						borderLeft: `1px solid ${theme.palette.divider}`,
-						bgcolor: theme.palette.background.default,
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "center",
-						pt: 1,
-						height: "100%",
-						cursor: "pointer",
-						"&:hover": { bgcolor: theme.palette.action.hover },
-					})}
-					onClick={() => setShowStats(true)}
-				>
-					<Tooltip title="Mostrar estatísticas" placement="left">
-						<IconButton size="small" color="default">
-							<StatsIcon style={{ fontSize: 18 }} />
-						</IconButton>
-					</Tooltip>
-				</Box>
-			)}
+				/>
+			</CollapsiblePanel>
 			{applyTarget && (
 				<ApplyGateDialog
 					open={!!applyTarget}
