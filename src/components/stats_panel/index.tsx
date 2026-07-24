@@ -10,7 +10,6 @@ import {
 import {
 	MdBarChart as StatsIcon,
 	MdFileDownload as ExportIcon,
-	MdClose as CloseIcon,
 	MdEdit as EditIcon,
 	MdExpandMore as ExpandMoreIcon,
 	MdExpandLess as ExpandLessIcon,
@@ -281,11 +280,6 @@ export default function StatsPanel({
 				<StatsIcon style={{ fontSize: 18, verticalAlign: "middle", marginRight: 4 }} />
 				Estatísticas
 			</Typography>
-			{onClose && (
-				<IconButton size="small" onClick={onClose}>
-					<CloseIcon style={{ fontSize: 16 }} />
-				</IconButton>
-			)}
 		</Box>
 	)
 

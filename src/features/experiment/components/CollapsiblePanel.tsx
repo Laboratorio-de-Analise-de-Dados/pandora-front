@@ -79,92 +79,101 @@ export default function CollapsiblePanel({
 		)
 	}
 
-	if (open) {
-		return (
-			<Box
-				sx={(theme: Theme) => ({
-					position: "absolute",
-					top: 0,
-					[side]: 0,
-					zIndex: 20,
-					width: desktopWidth,
-					minWidth: desktopMinWidth,
-					height: "100%",
-					[side === "left" ? "borderRight" : "borderLeft"]:
-						`1px solid ${theme.palette.divider}`,
-					bgcolor: theme.palette.background.default,
-					boxShadow: theme.shadows[8],
-					overflowY: "auto",
-					display: "flex",
-					flexDirection: "column",
-					minHeight: 0,
-					p: contentPadding,
-				})}
-			>
-				{children}
-			</Box>
-		)
-	}
+	const openOffset =
+		typeof desktopWidth === "number" ? `${desktopWidth}px` : desktopWidth
+	const tabOffset = open
+		? desktopMinWidth
+			? `max(${openOffset}, ${desktopMinWidth}px)`
+			: openOffset
+		: 0
 
 	return (
-		<Box
-			sx={{
-				position: "absolute",
-				top: "50%",
-				[side]: 0,
-				transform: "translateY(-50%)",
-				zIndex: 20,
-			}}
-		>
-			<Tooltip
-				title={`Mostrar ${label}`}
-				placement={side === "left" ? "right" : "left"}
-			>
+		<>
+			{open && (
 				<Box
-					role="button"
-					onClick={onOpen}
 					sx={(theme: Theme) => ({
+						position: "absolute",
+						top: 0,
+						[side]: 0,
+						zIndex: 20,
+						width: desktopWidth,
+						minWidth: desktopMinWidth,
+						height: "100%",
+						[side === "left" ? "borderRight" : "borderLeft"]:
+							`1px solid ${theme.palette.divider}`,
+						bgcolor: theme.palette.background.default,
+						boxShadow: theme.shadows[8],
+						overflowY: "auto",
 						display: "flex",
 						flexDirection: "column",
-						alignItems: "center",
-						gap: 0.5,
-						py: 1.5,
-						px: 0.5,
-						cursor: "pointer",
-						bgcolor: theme.palette.background.paper,
-						color: theme.palette.text.secondary,
-						border: `1px solid ${theme.palette.divider}`,
-						boxShadow: theme.shadows[2],
-						...(side === "left"
-							? {
-									borderLeft: "none",
-									borderTopRightRadius: 8,
-									borderBottomRightRadius: 8,
-								}
-							: {
-									borderRight: "none",
-									borderTopLeftRadius: 8,
-									borderBottomLeftRadius: 8,
-								}),
-						"&:hover": {
-							bgcolor: theme.palette.action.hover,
-							color: theme.palette.primary.main,
-						},
+						minHeight: 0,
+						p: contentPadding,
 					})}
 				>
-					{icon}
-					<Typography
-						sx={{
-							writingMode: "vertical-rl",
-							fontSize: "0.65rem",
-							fontWeight: 600,
-							letterSpacing: "0.05em",
-						}}
-					>
-						{label}
-					</Typography>
+					{children}
 				</Box>
-			</Tooltip>
-		</Box>
+			)}
+			{/* Aba/marca-página: sempre visível; grudada na borda interna do
+			    painel quando aberto, servindo de botão pra fechar. */}
+			<Box
+				sx={{
+					position: "absolute",
+					top: "50%",
+					[side]: tabOffset,
+					transform: "translateY(-50%)",
+					zIndex: 21,
+				}}
+			>
+				<Tooltip
+					title={open ? `Esconder ${label}` : `Mostrar ${label}`}
+					placement={side === "left" ? "right" : "left"}
+				>
+					<Box
+						role="button"
+						onClick={open ? onClose : onOpen}
+						sx={(theme: Theme) => ({
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							gap: 0.5,
+							py: 1.5,
+							px: 0.5,
+							cursor: "pointer",
+							bgcolor: theme.palette.background.paper,
+							color: theme.palette.text.secondary,
+							border: `1px solid ${theme.palette.divider}`,
+							boxShadow: theme.shadows[2],
+							...(side === "left"
+								? {
+										borderLeft: "none",
+										borderTopRightRadius: 8,
+										borderBottomRightRadius: 8,
+									}
+								: {
+										borderRight: "none",
+										borderTopLeftRadius: 8,
+										borderBottomLeftRadius: 8,
+									}),
+							"&:hover": {
+								bgcolor: theme.palette.action.hover,
+								color: theme.palette.primary.main,
+							},
+						})}
+					>
+						{icon}
+						<Typography
+							sx={{
+								writingMode: "vertical-rl",
+								fontSize: "0.65rem",
+								fontWeight: 600,
+								letterSpacing: "0.05em",
+							}}
+						>
+							{label}
+						</Typography>
+					</Box>
+				</Tooltip>
+			</Box>
+		</>
 	)
 }
