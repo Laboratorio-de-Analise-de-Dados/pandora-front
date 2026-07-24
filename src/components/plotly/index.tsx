@@ -873,6 +873,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				flexDirection: "column",
 				alignItems: "center",
 				gap: "0.75rem",
+				width: "100%",
 			}}
 		>
 			<Box
@@ -881,6 +882,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					flexDirection: "column",
 					alignItems: "center",
 					gap: "0.75rem",
+					width: "100%",
 				}}
 			>
 				{data && (
@@ -899,9 +901,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
+						width: "100%",
 					}}
 				>
-					<Box sx={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							gap: "1rem",
+							width: "100%",
+						}}
+					>
 						{plotMode !== "histogram" && (
 							<Select
 								onChange={(e: SelectChangeEvent<string>) =>
@@ -921,8 +932,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
 							sx={{
-								width: 500,
-								height: 500,
+								width: "min(70vh, 560px)",
+								maxWidth: "100%",
+								aspectRatio: "1 / 1",
+								flexShrink: 1,
+								minWidth: 0,
 								position: "relative",
 								display: "flex",
 								alignItems: "center",
@@ -1006,6 +1020,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											: "draw-mode"
 									}
 									data={plotData}
+									useResizeHandler
+									style={{ width: "100%", height: "100%" }}
 									config={
 										tool === "edit" || reshapingGateId !== null
 											? {
@@ -1062,8 +1078,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												: {}),
 											fixedrange: true,
 										},
-										width: 500,
-										height: 500,
+										autosize: true,
+										margin: { l: 60, r: 20, t: 20, b: 60 },
 										plot_bgcolor: "#FFFFFF",
 										paper_bgcolor: "#FFFFFF",
 										bargap: 0,
