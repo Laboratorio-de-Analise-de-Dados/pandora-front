@@ -4,8 +4,9 @@ import {
 	Typography,
 	IconButton,
 	Tooltip,
+	useMediaQuery,
 } from "@mui/material"
-import { Theme } from "@mui/material/styles"
+import { Theme, useTheme } from "@mui/material/styles"
 import { useState } from "react"
 import Layout from "../../../Layout"
 import { toast } from "react-toastify"
@@ -17,6 +18,8 @@ import {
 } from "../../../../features/experiment/context/ExperimentWorkspaceContext"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
+import SourceDropdown from "../../../../features/experiment/components/SourceDropdown"
+import CollapsiblePanel from "../../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
 import {
@@ -24,6 +27,7 @@ import {
 	MdBarChart as StatsIcon,
 	MdChevronLeft as PrevIcon,
 	MdChevronRight as NextIcon,
+	MdAccountTree as TreeIcon,
 } from "react-icons/md"
 import { useNavigate } from "react-router-dom"
 
@@ -48,7 +52,10 @@ function ExperimentPageContent() {
 	} = useExperimentWorkspace()
 
 	const navigate = useNavigate()
-	const [showStats, setShowStats] = useState(true)
+	const theme = useTheme()
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+	const [showStats, setShowStats] = useState(() => !isMobile)
+	const [showTree, setShowTree] = useState(() => !isMobile)
 	const [applyTarget, setApplyTarget] = useState<{
 		id: number
 		name: string
@@ -145,145 +152,159 @@ function ExperimentPageContent() {
 		}
 	}
 
+	const treeContent = (
+		<>
+			<Typography
+				sx={(theme: Theme) => ({
+					color: theme.palette.text.primary,
+					flexShrink: 0,
+				})}
+				variant="h5"
+				fontWeight="bold"
+				display="flex"
+				alignItems="center"
+				gap="2rem"
+			>
+				{experiment?.title}
+				{experiment && (
+					<Tooltip title="Excluir experimento">
+						<IconButton
+							onClick={() => handleDelete(experiment.id)}
+							color="error"
+						>
+							<DeleteIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
+				)}
+			</Typography>
+			<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
+				<ParentTree
+					files={experimentFiles}
+					onSelect={(s) => {
+						setSource(s)
+						if (isMobile) setShowTree(false)
+					}}
+					onDeleteGate={handleDeleteGate}
+					onRenameGate={handleRenameGate}
+					onApplyGate={handleApplyGate}
+				/>
+			</Box>
+		</>
+	)
+
 	return (
 		<Layout>
 			<Box
-				sx={(theme: Theme) => ({
-					padding: "1rem",
-					bgcolor: theme.palette.background.default,
-					width: "20%",
-					height: "100vh",
-					display: "flex",
-					flexDirection: "column",
-					minHeight: 0,
-				})}
-			>
-				<Typography
-					sx={(theme: Theme) => ({
-						color: theme.palette.text.primary,
-						flexShrink: 0,
-					})}
-					variant="h5"
-					fontWeight="bold"
-					display="flex"
-					alignItems="center"
-					gap="2rem"
-				>
-					{experiment?.title}
-					{experiment && (
-						<Tooltip title="Excluir experimento">
-							<IconButton
-								onClick={() => handleDelete(experiment.id)}
-								color="error"
-							>
-								<DeleteIcon fontSize="small" />
-							</IconButton>
-						</Tooltip>
-					)}
-				</Typography>
-				<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
-					<ParentTree
-						files={experimentFiles}
-						onSelect={setSource}
-						onDeleteGate={handleDeleteGate}
-						onRenameGate={handleRenameGate}
-						onApplyGate={handleApplyGate}
-					/>
-				</Box>
-			</Box>
-			<Box
 				sx={{
-					display: "flex",
-					flexDirection: "column",
-					justifyContent: "flex-start", // mantém tudo no topo
-					alignItems: "center",
-					flex: 2,
+					position: "relative",
+					flex: 1,
 					minWidth: 0,
-					height: "100vh", // garante que ocupe toda a altura da tela
-					overflowY: "auto", // permite rolagem se necessário
-					gap: "1rem",
+					height: "100vh",
+					overflow: "hidden",
 				}}
 			>
-				{isLoading && <CircularProgress />}
-				{!isLoading && !source && (
-					<Box
-						sx={{
-							display: "flex",
-							justifyContent: "center",
-							alignItems: "center",
-							height: "100%", // ocupa toda a altura disponível
-						}}
-					>
-						<Typography>Select a file to load</Typography>
-					</Box>
-				)}
-				{source && (
-					<>
-						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-							<Tooltip title="Arquivo anterior">
-								<span>
-									<IconButton
-										size="small"
-										disabled={!canGoPrevFile}
-										onClick={() => goToAdjacentFile(-1)}
-									>
-										<PrevIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-							<Typography>{source.name}</Typography>
-							<Tooltip title="Próximo arquivo">
-								<span>
-									<IconButton
-										size="small"
-										disabled={!canGoNextFile}
-										onClick={() => goToAdjacentFile(1)}
-									>
-										<NextIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-							<Tooltip
-								title={
-									showStats ? "Esconder estatísticas" : "Mostrar estatísticas"
-								}
-							>
-								<IconButton
-									size="small"
-									color={showStats ? "primary" : "default"}
-									onClick={() => setShowStats((p) => !p)}
-								>
-									<StatsIcon />
-								</IconButton>
-							</Tooltip>
-						</Box>
-						<ScatterPlot
-							key={`${source.type}-${source.id}`}
-							values={values}
-							sourceType={source.type}
-							sourceId={source.id}
-							fileDataId={source.fileDataId}
-							parentId={source.type === "gate" ? source.id : undefined}
-							loadFile={invalidateExperiment}
-							siblingGateNames={siblingGateNames}
-							childGates={childGates}
-							initialConfig={selectedGate?.plot_config}
-							carryForwardConfig={viewConfig}
-							onConfigChange={setViewConfig}
-						/>
-					</>
-				)}
-			</Box>
-			{showStats ? (
+				{/* Gráfico sempre centralizado; os panels são overlay por cima */}
 				<Box
-					sx={(theme: Theme) => ({
-						width: "22%",
-						minWidth: 260,
-						borderLeft: `1px solid ${theme.palette.divider}`,
-						bgcolor: theme.palette.background.default,
-						overflowY: "auto",
+					sx={{
+						display: "flex",
+						flexDirection: "column",
+						justifyContent: "flex-start",
+						alignItems: "center",
+						width: "100%",
 						height: "100%",
-					})}
+						overflowY: "auto",
+						gap: "1rem",
+					}}
+				>
+					{isLoading && <CircularProgress />}
+					{!isLoading && !source && (
+						<Box
+							sx={{
+								display: "flex",
+								justifyContent: "center",
+								alignItems: "center",
+								height: "100%",
+							}}
+						>
+							<Typography>Select a file to load</Typography>
+						</Box>
+					)}
+					{source && (
+						<>
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+								<Tooltip title="Arquivo anterior">
+									<span>
+										<IconButton
+											size="small"
+											disabled={!canGoPrevFile}
+											onClick={() => goToAdjacentFile(-1)}
+										>
+											<PrevIcon />
+										</IconButton>
+									</span>
+								</Tooltip>
+								<SourceDropdown
+									files={experimentFiles}
+									source={source}
+									onSelect={setSource}
+								/>
+								<Tooltip title="Próximo arquivo">
+									<span>
+										<IconButton
+											size="small"
+											disabled={!canGoNextFile}
+											onClick={() => goToAdjacentFile(1)}
+										>
+											<NextIcon />
+										</IconButton>
+									</span>
+								</Tooltip>
+							</Box>
+							<ScatterPlot
+								key={`${source.type}-${source.id}`}
+								values={values}
+								sourceType={source.type}
+								sourceId={source.id}
+								fileDataId={source.fileDataId}
+								parentId={source.type === "gate" ? source.id : undefined}
+								loadFile={invalidateExperiment}
+								siblingGateNames={siblingGateNames}
+								childGates={childGates}
+								initialConfig={selectedGate?.plot_config}
+								carryForwardConfig={viewConfig}
+								onConfigChange={setViewConfig}
+							/>
+						</>
+					)}
+				</Box>
+
+				{/* Overlay esquerdo: árvore (Gates) */}
+				<CollapsiblePanel
+					side="left"
+					open={showTree}
+					isMobile={isMobile}
+					onOpen={() => setShowTree(true)}
+					onClose={() => setShowTree(false)}
+					label="Gates"
+					icon={<TreeIcon style={{ fontSize: 18 }} />}
+					desktopWidth="20%"
+					contentPadding="1rem"
+				>
+					{treeContent}
+				</CollapsiblePanel>
+
+				{/* Overlay direito: estatísticas (mobile: bottom sheet) */}
+				<CollapsiblePanel
+					side="right"
+					open={showStats}
+					isMobile={isMobile}
+					onOpen={() => setShowStats(true)}
+					onClose={() => setShowStats(false)}
+					label="Estatísticas"
+					icon={<StatsIcon style={{ fontSize: 18 }} />}
+					desktopWidth="22%"
+					desktopMinWidth={260}
+					mobileAnchor="bottom"
 				>
 					<StatsPanel
 						source={source}
@@ -292,31 +313,8 @@ function ExperimentPageContent() {
 						fileStats={fileStats}
 						onClose={() => setShowStats(false)}
 					/>
-				</Box>
-			) : (
-				<Box
-					sx={(theme: Theme) => ({
-						width: 36,
-						minWidth: 36,
-						borderLeft: `1px solid ${theme.palette.divider}`,
-						bgcolor: theme.palette.background.default,
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "center",
-						pt: 1,
-						height: "100%",
-						cursor: "pointer",
-						"&:hover": { bgcolor: theme.palette.action.hover },
-					})}
-					onClick={() => setShowStats(true)}
-				>
-					<Tooltip title="Mostrar estatísticas" placement="left">
-						<IconButton size="small" color="default">
-							<StatsIcon style={{ fontSize: 18 }} />
-						</IconButton>
-					</Tooltip>
-				</Box>
-			)}
+				</CollapsiblePanel>
+			</Box>
 			{applyTarget && (
 				<ApplyGateDialog
 					open={!!applyTarget}

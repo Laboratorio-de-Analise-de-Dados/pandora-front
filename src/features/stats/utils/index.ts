@@ -1,2 +1,6 @@
 export { isFluorescence, normalizeChannelName } from "./channelHelpers"
 export { downloadFile, exportRows } from "./exportHelpers"
+export { buildSelectableItems } from "./selectable"
+export type { SelectableItem } from "./selectable"
+export { buildAnalysisRows } from "./statsRows"
+export type { ExportMetricDef, MetricKey, PopulationRow } from "./statsRows"
