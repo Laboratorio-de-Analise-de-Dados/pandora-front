@@ -30,7 +30,13 @@ jobs:
 
       - name: Calcula a tag da imagem
         id: meta
-        run: echo "image_tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          else
+            tag="sha-${GITHUB_SHA::7}"
+          fi
+          echo "image_tag=$tag" >> "$GITHUB_OUTPUT"
 
       - name: Login no Docker Hub
         run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
