@@ -194,136 +194,127 @@ function ExperimentPageContent() {
 
 	return (
 		<Layout>
-			<CollapsiblePanel
-				side="left"
-				open={showTree}
-				isMobile={isMobile}
-				onOpen={() => setShowTree(true)}
-				onClose={() => setShowTree(false)}
-				label="Gates"
-				icon={<TreeIcon style={{ fontSize: 18 }} />}
-				desktopWidth="20%"
-				contentPadding="1rem"
-			>
-				{treeContent}
-			</CollapsiblePanel>
 			<Box
 				sx={{
-					display: "flex",
-					flexDirection: "column",
-					justifyContent: "flex-start", // mantém tudo no topo
-					alignItems: "center",
-					flex: 2,
+					position: "relative",
+					flex: 1,
 					minWidth: 0,
-					height: "100vh", // garante que ocupe toda a altura da tela
-					overflowY: "auto", // permite rolagem se necessário
-					gap: "1rem",
+					height: "100vh",
+					overflow: "hidden",
 				}}
 			>
-				{isLoading && <CircularProgress />}
-				{!isLoading && !source && (
-					<Box
-						sx={{
-							display: "flex",
-							justifyContent: "center",
-							alignItems: "center",
-							height: "100%", // ocupa toda a altura disponível
-						}}
-					>
-						<Typography>Select a file to load</Typography>
-					</Box>
-				)}
-				{source && (
-					<>
-						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-							<Tooltip title={showTree ? "Esconder árvore" : "Mostrar árvore"}>
-								<IconButton
-									size="small"
-									color={showTree ? "primary" : "default"}
-									onClick={() => setShowTree((p) => !p)}
-								>
-									<TreeIcon />
-								</IconButton>
-							</Tooltip>
-							<Tooltip title="Arquivo anterior">
-								<span>
-									<IconButton
-										size="small"
-										disabled={!canGoPrevFile}
-										onClick={() => goToAdjacentFile(-1)}
-									>
-										<PrevIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-							<SourceDropdown
-								files={experimentFiles}
-								source={source}
-								onSelect={setSource}
-							/>
-							<Tooltip title="Próximo arquivo">
-								<span>
-									<IconButton
-										size="small"
-										disabled={!canGoNextFile}
-										onClick={() => goToAdjacentFile(1)}
-									>
-										<NextIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-							<Tooltip
-								title={
-									showStats ? "Esconder estatísticas" : "Mostrar estatísticas"
-								}
-							>
-								<IconButton
-									size="small"
-									color={showStats ? "primary" : "default"}
-									onClick={() => setShowStats((p) => !p)}
-								>
-									<StatsIcon />
-								</IconButton>
-							</Tooltip>
+				{/* Gráfico sempre centralizado; os panels são overlay por cima */}
+				<Box
+					sx={{
+						display: "flex",
+						flexDirection: "column",
+						justifyContent: "flex-start",
+						alignItems: "center",
+						width: "100%",
+						height: "100%",
+						overflowY: "auto",
+						gap: "1rem",
+					}}
+				>
+					{isLoading && <CircularProgress />}
+					{!isLoading && !source && (
+						<Box
+							sx={{
+								display: "flex",
+								justifyContent: "center",
+								alignItems: "center",
+								height: "100%",
+							}}
+						>
+							<Typography>Select a file to load</Typography>
 						</Box>
-						<ScatterPlot
-							key={`${source.type}-${source.id}`}
-							values={values}
-							sourceType={source.type}
-							sourceId={source.id}
-							fileDataId={source.fileDataId}
-							parentId={source.type === "gate" ? source.id : undefined}
-							loadFile={invalidateExperiment}
-							siblingGateNames={siblingGateNames}
-							childGates={childGates}
-							initialConfig={selectedGate?.plot_config}
-							carryForwardConfig={viewConfig}
-							onConfigChange={setViewConfig}
-						/>
-					</>
-				)}
-			</Box>
-			{/* Mobile: estatísticas sobem por cima do gráfico (bottom sheet) */}
-			<CollapsiblePanel
-				side="right"
-				open={showStats}
-				isMobile={isMobile}
-				onOpen={() => setShowStats(true)}
-				onClose={() => setShowStats(false)}
-				label="Estatísticas"
-				icon={<StatsIcon style={{ fontSize: 18 }} />}
-				desktopWidth="22%"
-				desktopMinWidth={260}
-				mobileAnchor="bottom"
-			>
-				<StatsPanel
-					source={source}
-					files={experimentFiles}
-					values={values}
-					fileStats={fileStats}
+					)}
+					{source && (
+						<>
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+								<Tooltip title="Arquivo anterior">
+									<span>
+										<IconButton
+											size="small"
+											disabled={!canGoPrevFile}
+											onClick={() => goToAdjacentFile(-1)}
+										>
+											<PrevIcon />
+										</IconButton>
+									</span>
+								</Tooltip>
+								<SourceDropdown
+									files={experimentFiles}
+									source={source}
+									onSelect={setSource}
+								/>
+								<Tooltip title="Próximo arquivo">
+									<span>
+										<IconButton
+											size="small"
+											disabled={!canGoNextFile}
+											onClick={() => goToAdjacentFile(1)}
+										>
+											<NextIcon />
+										</IconButton>
+									</span>
+								</Tooltip>
+							</Box>
+							<ScatterPlot
+								key={`${source.type}-${source.id}`}
+								values={values}
+								sourceType={source.type}
+								sourceId={source.id}
+								fileDataId={source.fileDataId}
+								parentId={source.type === "gate" ? source.id : undefined}
+								loadFile={invalidateExperiment}
+								siblingGateNames={siblingGateNames}
+								childGates={childGates}
+								initialConfig={selectedGate?.plot_config}
+								carryForwardConfig={viewConfig}
+								onConfigChange={setViewConfig}
+							/>
+						</>
+					)}
+				</Box>
+
+				{/* Overlay esquerdo: árvore (Gates) */}
+				<CollapsiblePanel
+					side="left"
+					open={showTree}
+					isMobile={isMobile}
+					onOpen={() => setShowTree(true)}
+					onClose={() => setShowTree(false)}
+					label="Gates"
+					icon={<TreeIcon style={{ fontSize: 18 }} />}
+					desktopWidth="20%"
+					contentPadding="1rem"
+				>
+					{treeContent}
+				</CollapsiblePanel>
+
+				{/* Overlay direito: estatísticas (mobile: bottom sheet) */}
+				<CollapsiblePanel
+					side="right"
+					open={showStats}
+					isMobile={isMobile}
+					onOpen={() => setShowStats(true)}
 					onClose={() => setShowStats(false)}
-				/>
-			</CollapsiblePanel>
+					label="Estatísticas"
+					icon={<StatsIcon style={{ fontSize: 18 }} />}
+					desktopWidth="22%"
+					desktopMinWidth={260}
+					mobileAnchor="bottom"
+				>
+					<StatsPanel
+						source={source}
+						files={experimentFiles}
+						values={values}
+						fileStats={fileStats}
+						onClose={() => setShowStats(false)}
+					/>
+				</CollapsiblePanel>
+			</Box>
 			{applyTarget && (
 				<ApplyGateDialog
 					open={!!applyTarget}

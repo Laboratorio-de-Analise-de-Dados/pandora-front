@@ -83,12 +83,17 @@ export default function CollapsiblePanel({
 		return (
 			<Box
 				sx={(theme: Theme) => ({
+					position: "absolute",
+					top: 0,
+					[side]: 0,
+					zIndex: 20,
 					width: desktopWidth,
 					minWidth: desktopMinWidth,
-					height: "100vh",
+					height: "100%",
 					[side === "left" ? "borderRight" : "borderLeft"]:
 						`1px solid ${theme.palette.divider}`,
 					bgcolor: theme.palette.background.default,
+					boxShadow: theme.shadows[8],
 					overflowY: "auto",
 					display: "flex",
 					flexDirection: "column",
@@ -104,13 +109,11 @@ export default function CollapsiblePanel({
 	return (
 		<Box
 			sx={{
-				width: 32,
-				minWidth: 32,
-				height: "100vh",
-				display: "flex",
-				flexDirection: "column",
-				justifyContent: "center",
-				alignItems: side === "left" ? "flex-start" : "flex-end",
+				position: "absolute",
+				top: "50%",
+				[side]: 0,
+				transform: "translateY(-50%)",
+				zIndex: 20,
 			}}
 		>
 			<Tooltip
