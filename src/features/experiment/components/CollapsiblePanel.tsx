@@ -46,36 +46,68 @@ export default function CollapsiblePanel({
 	if (isMobile) {
 		const anchor = mobileAnchor ?? side
 		return (
-			<Drawer
-				anchor={anchor}
-				open={open}
-				onClose={onClose}
-				slotProps={{
-					paper: {
-						sx: (theme: Theme) =>
-							anchor === "bottom"
-								? {
-										height: "80vh",
-										borderTopLeftRadius: 16,
-										borderTopRightRadius: 16,
-										bgcolor: theme.palette.background.default,
-										overflowY: "auto",
-									}
-								: {
-										width: "80%",
-										maxWidth: 340,
-										p: contentPadding,
-										bgcolor: theme.palette.background.default,
-										display: "flex",
-										flexDirection: "column",
-										minHeight: 0,
-										overflowY: "auto",
-									},
-					},
-				}}
-			>
-				{children}
-			</Drawer>
+			<>
+				{/* Marca-página no cantinho superior abre o drawer */}
+				<Box
+					sx={{ position: "absolute", top: 8, [side]: 8, zIndex: 21 }}
+				>
+					<Tooltip title={`Mostrar ${label}`} placement="bottom">
+						<Box
+							role="button"
+							onClick={onOpen}
+							sx={(theme: Theme) => ({
+								display: "flex",
+								alignItems: "center",
+								gap: 0.5,
+								px: 1,
+								py: 0.5,
+								cursor: "pointer",
+								borderRadius: 1,
+								bgcolor: theme.palette.background.paper,
+								color: theme.palette.text.secondary,
+								border: `1px solid ${theme.palette.divider}`,
+								boxShadow: theme.shadows[2],
+								"&:hover": {
+									bgcolor: theme.palette.action.hover,
+									color: theme.palette.primary.main,
+								},
+							})}
+						>
+							{icon}
+						</Box>
+					</Tooltip>
+				</Box>
+				<Drawer
+					anchor={anchor}
+					open={open}
+					onClose={onClose}
+					slotProps={{
+						paper: {
+							sx: (theme: Theme) =>
+								anchor === "bottom"
+									? {
+											height: "80vh",
+											borderTopLeftRadius: 16,
+											borderTopRightRadius: 16,
+											bgcolor: theme.palette.background.default,
+											overflowY: "auto",
+										}
+									: {
+											width: "80%",
+											maxWidth: 340,
+											p: contentPadding,
+											bgcolor: theme.palette.background.default,
+											display: "flex",
+											flexDirection: "column",
+											minHeight: 0,
+											overflowY: "auto",
+										},
+						},
+					}}
+				>
+					{children}
+				</Drawer>
+			</>
 		)
 	}
 
