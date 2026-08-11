@@ -216,7 +216,23 @@ function ExperimentPageContent() {
 						gap: "1rem",
 					}}
 				>
-					{isLoading && <CircularProgress />}
+					{isLoading && (
+						<Box
+							sx={{
+								display: "flex",
+								flexDirection: "column",
+								justifyContent: "center",
+								alignItems: "center",
+								gap: 2,
+								height: "100%",
+							}}
+						>
+							<CircularProgress />
+							<Typography color="text.secondary">
+								Carregando arquivos...
+							</Typography>
+						</Box>
+					)}
 					{!isLoading && !source && (
 						<Box
 							sx={{
@@ -226,7 +242,11 @@ function ExperimentPageContent() {
 								height: "100%",
 							}}
 						>
-							<Typography>Select a file to load</Typography>
+							<Typography>
+								{experimentFiles.length === 0
+									? "Nenhum arquivo neste experimento"
+									: "Selecione um arquivo para carregar"}
+							</Typography>
 						</Box>
 					)}
 					{source && (

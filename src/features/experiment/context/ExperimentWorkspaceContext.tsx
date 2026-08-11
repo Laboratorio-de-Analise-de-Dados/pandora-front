@@ -74,8 +74,13 @@ export function useExperimentWorkspace(): ExperimentWorkspaceValue {
 export function ExperimentWorkspaceProvider({ children }: { children: React.ReactNode }) {
 	const { id: experimentId = "" } = useParams<{ id: string }>()
 
-	const { data: experiment, isLoading } = useExperimentQuery(experimentId)
-	const { data: experimentFiles = [] } = useExperimentFilesQuery(experimentId)
+	const { data: experiment, isLoading: isLoadingExperiment } =
+		useExperimentQuery(experimentId)
+	const { data: experimentFiles = [], isLoading: isLoadingFiles } =
+		useExperimentFilesQuery(experimentId)
+	// A tela só sai do loading quando experimento E arquivos terminaram de
+	// carregar, pra não piscar o estado vazio antes da árvore existir.
+	const isLoading = isLoadingExperiment || isLoadingFiles
 	const invalidateExperiment = useInvalidateExperiment(experimentId)
 
 	const [source, setSource] = useState<SelectedSource | undefined>(undefined)
