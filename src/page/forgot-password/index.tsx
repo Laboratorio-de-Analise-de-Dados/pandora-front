@@ -1,24 +1,21 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Box, Button, TextField, Typography, Paper } from "@mui/material"
+import { toast } from "react-toastify"
 import CytometryApi from "../../API"
 
 export default function ForgotPasswordPage() {
 	const [email, setEmail] = useState("")
-	const [message, setMessage] = useState("")
-	const [error, setError] = useState("")
 	const [loading, setLoading] = useState(false)
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
-		setError("")
-		setMessage("")
 		setLoading(true)
 		try {
 			await CytometryApi.post("/accounts/password-reset/", { email })
-			setMessage("Se o email existir, você receberá um link de recuperação.")
+			toast.success("Se o email estiver cadastrado, você receberá um link de recuperação.", { position: "bottom-right" })
 		} catch {
-			setError("Erro ao solicitar recuperação. Tente novamente.")
+			toast.error("Erro ao solicitar recuperação. Tente novamente.", { position: "bottom-right" })
 		} finally {
 			setLoading(false)
 		}
@@ -45,8 +42,7 @@ export default function ForgotPasswordPage() {
 						onChange={(e) => setEmail(e.target.value)}
 						required
 					/>
-					{error && <Typography color="error">{error}</Typography>}
-					{message && <Typography color="success.main">{message}</Typography>}
+
 					<Button type="submit" variant="contained" disabled={loading}>
 						{loading ? "Enviando..." : "Enviar link"}
 					</Button>

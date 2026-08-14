@@ -66,11 +66,13 @@ export default function NewExperimentCard() {
 	}, [experimentType, selectedFileName, title])
 
 	const style = {
-		width: "25vw",
-		minWidth: 320,
+		width: { xs: "90vw", sm: "50vw", md: "35vw", lg: "25vw" },
+		maxWidth: 560,
+		maxHeight: "90vh",
+		overflowY: "auto",
 		bgcolor: "background.paper",
 		boxShadow: 12,
-		padding: "2rem",
+		padding: { xs: "1rem", sm: "2rem" },
 		borderRadius: "1rem",
 		display: "flex",
 		flexDirection: "column",
