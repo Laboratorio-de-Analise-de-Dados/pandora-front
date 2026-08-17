@@ -10,6 +10,7 @@ import React, {
 import CytometryApi from "../../API"
 import { AxiosResponse } from "axios"
 import type { Experiment } from "../../types"
+import { useAuth } from "../AuthContext"
 
 type ChunkStatus = "pending" | "uploaded" | "failed"
 
@@ -24,7 +25,8 @@ interface ExperimentContextProps {
 	createExperiment: (
 		title: string,
 		type: string,
-		file: File
+		file: File,
+		organizationId?: number | null
 	) => Promise<AxiosResponse>
 	progress: ChunkProgress[]
 }
@@ -50,6 +52,7 @@ interface ExperimentProviderProps {
 export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	children,
 }) => {
+	const { user } = useAuth()
 	const [experiments, setExperiments] = useState<Experiment[]>([])
 	const [progress, setProgress] = useState<ChunkProgress[]>([])
 	const listExperiments = useCallback(async function nts() {
@@ -58,18 +61,19 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	}, [])
 
 	const createExperiment = useCallback(
-		async (title: string, type: string, file: File) => {
+		async (title: string, type: string, file: File, organizationId?: number | null) => {
 			const chunkSize = 0.5 * 1024 * 1024
 			const totalChunks = Math.ceil(file.size / chunkSize)
+			const orgId = organizationId ?? user?.memberships?.[0]?.organization?.id
 
 			const initResponse = await CytometryApi.post("/experiment/init/", {
 				title,
 				type,
 				totalChunks,
+				organizationId: orgId,
 			})
 			const fileId = initResponse.data.fileId
 
-			// salva no localStorage para persistir entre reloads
 			localStorage.setItem(
 				"currentUpload",
 				JSON.stringify({ fileId, title, type })
@@ -105,7 +109,6 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 
 			await Promise.allSettled(guide.map((c) => sendChunk(c.index)))
 
-			// 3. Finaliza experimento se todos os chunks subiram
 			if (guide.every((c) => c.status === "uploaded")) {
 				const completeResponse = await CytometryApi.post(
 					"/experiment/complete/",
@@ -114,13 +117,13 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 					}
 				)
 				await listExperiments()
-				localStorage.removeItem("currentUpload") // limpa sessão
+				localStorage.removeItem("currentUpload")
 				return completeResponse
 			} else {
 				throw new Error("Nem todos os chunks foram enviados com sucesso")
 			}
 		},
-		[listExperiments]
+		[listExperiments, user]
 	)
 
 	useEffect(() => {

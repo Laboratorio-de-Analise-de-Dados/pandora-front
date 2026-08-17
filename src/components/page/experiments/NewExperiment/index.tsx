@@ -8,24 +8,29 @@ import {
 	Input,
 	InputLabel,
 	LinearProgress,
+	MenuItem,
 	Modal,
+	Select,
 	Tooltip,
 	Typography,
 } from "@mui/material"
 import { ChangeEvent, useEffect, useState } from "react"
 import { useExperimentsContext } from "../../../../providers/ExperimentContext"
+import { useAuth } from "../../../../providers/AuthContext"
 
 export default function NewExperimentCard() {
 	const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
 	const [open, setOpen] = useState<boolean>(false)
 	const [title, setTitle] = useState<string>("")
 	const [experimentType, setExperimentType] = useState<string>("")
+	const [organizationId, setOrganizationId] = useState<string>("")
 	const [disabled, setDisabled] = useState<boolean>(true)
 	const [file, setFile] = useState<File | null>(null)
 	const [uploading, setUploading] = useState<boolean>(false)
 
 	const { createExperiment } = useExperimentsContext()
 	const { progress } = useExperimentsContext() as any // progress vem do provider
+	const { user } = useAuth()
 
 	const handleOpen = () => setOpen(true)
 	const handleClose = () => {
@@ -33,6 +38,7 @@ export default function NewExperimentCard() {
 		setSelectedFileName(null)
 		setTitle("")
 		setExperimentType("")
+		setOrganizationId("")
 		setFile(null)
 		setUploading(false)
 	}
@@ -41,7 +47,8 @@ export default function NewExperimentCard() {
 		if (!file || !title || !experimentType) return
 		try {
 			setUploading(true)
-			await createExperiment(title, experimentType, file)
+			const orgId = organizationId === "" ? null : parseInt(organizationId, 10)
+			await createExperiment(title, experimentType, file, orgId)
 		} catch (error) {
 			console.error("Erro ao criar experimento:", error)
 		} finally {
@@ -59,10 +66,13 @@ export default function NewExperimentCard() {
 	}, [experimentType, selectedFileName, title])
 
 	const style = {
-		width: "25vw",
+		width: { xs: "90vw", sm: "50vw", md: "35vw", lg: "25vw" },
+		maxWidth: 560,
+		maxHeight: "90vh",
+		overflowY: "auto",
 		bgcolor: "background.paper",
 		boxShadow: 12,
-		padding: "2rem",
+		padding: { xs: "1rem", sm: "2rem" },
 		borderRadius: "1rem",
 		display: "flex",
 		flexDirection: "column",
@@ -84,6 +94,8 @@ export default function NewExperimentCard() {
 	const totalChunks = progress.length
 	const percent =
 		totalChunks > 0 ? Math.round((uploadedChunks / totalChunks) * 100) : 0
+
+	const memberships = user?.memberships || []
 
 	return (
 		<>
@@ -119,6 +131,10 @@ export default function NewExperimentCard() {
 				}}
 			>
 				<Box sx={style}>
+					<Typography variant="h6" mb={1}>
+						Novo experimento
+					</Typography>
+
 					<FormControl margin="normal">
 						<InputLabel htmlFor="title-input">Experiment Title</InputLabel>
 						<Input
@@ -130,6 +146,7 @@ export default function NewExperimentCard() {
 							Field for experiment name
 						</FormHelperText>
 					</FormControl>
+
 					<FormControl margin="normal">
 						<InputLabel htmlFor="type-input">Experiment Type</InputLabel>
 						<Input
@@ -141,6 +158,29 @@ export default function NewExperimentCard() {
 							Field for type. Ex: 'Stem Cells'
 						</FormHelperText>
 					</FormControl>
+
+					<FormControl margin="normal" fullWidth>
+						<InputLabel id="org-label">Contexto / Lab</InputLabel>
+						<Select
+							labelId="org-label"
+							value={organizationId}
+							label="Contexto / Lab"
+							onChange={(e) => setOrganizationId(e.target.value)}
+						>
+							<MenuItem value="">
+								<em>Pessoal (sem lab)</em>
+							</MenuItem>
+							{memberships.map((m: any) => (
+								<MenuItem key={m.organization.id} value={m.organization.id}>
+									{m.organization.name}
+								</MenuItem>
+							))}
+						</Select>
+						<FormHelperText>
+							Escolha se o experimento é pessoal ou de um lab
+						</FormHelperText>
+					</FormControl>
+
 					<FormControl margin="normal">
 						<Button
 							component="label"

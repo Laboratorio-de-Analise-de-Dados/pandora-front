@@ -4,6 +4,8 @@ export interface Experiment {
 	type: string
 	values: string[]
 	active: boolean
+	organization: { id: number; name: string } | null
+	created_by: number
 }
 
 export interface ExperimentFiles {
