@@ -9,13 +9,11 @@ import {
 import { Theme, useTheme } from "@mui/material/styles"
 import { useState } from "react"
 import Layout from "../../../Layout"
-import { toast } from "react-toastify"
-import CytometryApi from "../../../../API"
-import { findGateInTree } from "../../../../features/gate/utils"
 import {
 	ExperimentWorkspaceProvider,
 	useExperimentWorkspace,
 } from "../../../../features/experiment/context/ExperimentWorkspaceContext"
+import { useExperimentPageActions } from "../../../../features/experiment/hooks/useExperimentPageActions"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
 import SourceDropdown from "../../../../features/experiment/components/SourceDropdown"
@@ -29,7 +27,6 @@ import {
 	MdChevronRight as NextIcon,
 	MdAccountTree as TreeIcon,
 } from "react-icons/md"
-import { useNavigate } from "react-router-dom"
 
 function ExperimentPageContent() {
 	const {
@@ -39,7 +36,6 @@ function ExperimentPageContent() {
 		source,
 		setSource,
 		fileStats,
-		invalidateExperiment,
 		childGates,
 		siblingGateNames,
 		values,
@@ -51,106 +47,20 @@ function ExperimentPageContent() {
 		canGoNextFile,
 	} = useExperimentWorkspace()
 
-	const navigate = useNavigate()
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 	const [showStats, setShowStats] = useState(() => !isMobile)
 	const [showTree, setShowTree] = useState(() => !isMobile)
-	const [applyTarget, setApplyTarget] = useState<{
-		id: number
-		name: string
-		fileDataId: number
-	} | null>(null)
-	const [applyLoading, setApplyLoading] = useState(false)
-
-	const handleDelete = async (id: number) => {
-		const confirmed = window.confirm("Tem certeza que deseja excluir?")
-		if (!confirmed) return
-		try {
-			await CytometryApi.delete(`/experiment/${id}`)
-			toast.success("Experimento excluído com sucesso!", {
-				position: "bottom-right",
-			})
-			navigate(`/experiments`)
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o experimento: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		}
-	}
-
-	const handleDeleteGate = async (gateId: number) => {
-		try {
-			await CytometryApi.delete(`/analytics/gate/${gateId}`)
-			toast.success("Gate excluído com sucesso!", { position: "bottom-right" })
-			if (source?.type === "gate" && source.id === gateId) {
-				setSource(undefined)
-			}
-			invalidateExperiment()
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o gate: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		}
-	}
-
-	const handleApplyGate = (gateId: number, gateName: string) => {
-		let fileDataId = 0
-		for (const file of experimentFiles) {
-			if (findGateInTree(file.gates, gateId)) {
-				fileDataId = file.id
-				break
-			}
-		}
-		setApplyTarget({ id: gateId, name: gateName, fileDataId })
-	}
-
-	const handleConfirmApply = async (
-		targetFileDataIds: number[],
-		recursive: boolean,
-	) => {
-		if (!applyTarget) return
-		setApplyLoading(true)
-		try {
-			await CytometryApi.post("/analytics/gate/apply", {
-				source_gate_ids: [applyTarget.id],
-				target_file_data_ids: targetFileDataIds,
-				recursive,
-				on_conflict: "replace",
-			})
-			toast.success("Gates aplicados com sucesso!", {
-				position: "bottom-right",
-			})
-			setApplyTarget(null)
-			invalidateExperiment()
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao aplicar gates: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		} finally {
-			setApplyLoading(false)
-		}
-	}
-
-	const handleRenameGate = async (gateId: number, newName: string) => {
-		try {
-			await CytometryApi.patch(`/analytics/gate/${gateId}`, { name: newName })
-			toast.success("Gate renomeado com sucesso!", { position: "bottom-right" })
-			invalidateExperiment()
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao renomear o gate: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		}
-	}
+	const {
+		handleDelete,
+		handleDeleteGate,
+		handleRenameGate,
+		handleApplyGate,
+		handleConfirmApply,
+		applyTarget,
+		applyLoading,
+		setApplyTarget,
+	} = useExperimentPageActions()
 
 	const treeContent = (
 		<>
@@ -169,7 +79,7 @@ function ExperimentPageContent() {
 				{experiment && (
 					<Tooltip title="Excluir experimento">
 						<IconButton
-							onClick={() => handleDelete(experiment.id)}
+							onClick={handleDelete}
 							color="error"
 						>
 							<DeleteIcon fontSize="small" />
@@ -267,7 +177,6 @@ function ExperimentPageContent() {
 								sourceId={source.id}
 								fileDataId={source.fileDataId}
 								parentId={source.type === "gate" ? source.id : undefined}
-								loadFile={invalidateExperiment}
 								siblingGateNames={siblingGateNames}
 								childGates={childGates}
 								initialConfig={selectedGate?.plot_config}

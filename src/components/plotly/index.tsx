@@ -4,12 +4,12 @@ import {
 	CircularProgress,
 	LinearProgress,
 	Typography,
+	useMediaQuery,
 } from "@mui/material"
+import { useTheme } from "@mui/material/styles"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import Plot from "react-plotly.js"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
-import CytometryApi from "../../API"
 import { Gate, Scale } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 
@@ -46,7 +46,6 @@ interface ScatterPlotProps {
 	sourceId: number
 	fileDataId: number
 	parentId?: number
-	loadFile: () => void
 	siblingGateNames?: string[]
 	childGates?: Gate[]
 	onEditGate?: (gate: Gate) => void
@@ -64,7 +63,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	sourceId,
 	fileDataId,
 	parentId,
-	loadFile,
 	siblingGateNames = [],
 	childGates = [],
 	initialConfig,
@@ -103,6 +101,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setYMax,
 	} = plotState
 
+	const theme = useTheme()
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+
 	usePlotPersistence({
 		sourceType,
 		sourceId,
@@ -134,19 +135,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	editingVerticesRef.current = editingVertices
 	const plotContainerRef = useRef<HTMLDivElement>(null)
 
-	const queryClient = useQueryClient()
-	const { patchCoordinates, deleteGate, saveGateNameColor } =
-		useGateMutations(loadFile)
-
-	const recompute = useMutation({
-		mutationFn: async () => {
-			await CytometryApi.post(`/experiment/file/${fileDataId}/recompute`)
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["density"] })
-		},
-	})
-
 	// O range vira janela de visualização imediata (layout do Plotly, usando
 	// xMin/xMax "ao vivo") e, com debounce, também vira parâmetro da query: ao
 	// parar de mexer, o backend recalcula o gráfico já enquadrado no range (para
@@ -155,7 +143,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const dXMax = useDebouncedValue(xMax, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMin = useDebouncedValue(yMin, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMax = useDebouncedValue(yMax, RANGE_REFETCH_DEBOUNCE_MS)
-	const { data, isLoading, isFetching, isError } = useDensityQuery({
+	const { data, isLoading, isFetching, isError, refetch } = useDensityQuery({
 		sourceType,
 		sourceId,
 		xAxis,
@@ -169,6 +157,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMin: dYMin,
 		yMax: dYMax,
 	})
+
+	const loadFile = useCallback(() => {
+		refetch()
+	}, [refetch])
+
+	const { patchCoordinates, deleteGate, saveGateNameColor } =
+		useGateMutations(loadFile)
 
 	const effXScale: Scale = data?.x_scale ?? xScale
 	const effYScale: Scale = data?.y_scale ?? yScale
@@ -609,25 +604,34 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					<Box
 						sx={{
 							display: "flex",
+							flexDirection: { xs: "column", md: "row" },
 							alignItems: "center",
 							justifyContent: "center",
-							gap: "1rem",
+							gap: { xs: "0.5rem", md: "1rem" },
 							width: "100%",
 						}}
 					>
 						{plotMode !== "histogram" && (
-							<AxisSelect
-								value={yAxis}
-								options={values}
-								onChange={handleSelectY}
-								rotated
-							/>
+							<Box
+								sx={{
+									width: { xs: "min(95vw, 480px)", md: "auto" },
+									maxWidth: "100%",
+								}}
+							>
+								<AxisSelect
+									value={yAxis}
+									options={values}
+									onChange={handleSelectY}
+									rotated={!isMobile}
+									fullWidth={isMobile}
+								/>
+							</Box>
 						)}
 						<Box
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
 							sx={{
-								width: "min(70vh, 560px)",
+								width: { xs: "min(95vw, 480px)", md: "min(70vh, 560px)" },
 								maxWidth: "100%",
 								aspectRatio: "1 / 1",
 								flexShrink: 1,
@@ -812,11 +816,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							)}
 						</Box>
 					</Box>
-					<AxisSelect
-						value={xAxis}
-						options={values}
-						onChange={handleSelectX}
-					/>
+					<Box
+						sx={{
+							width: { xs: "min(95vw, 480px)", md: "min(70vh, 560px)" },
+							maxWidth: "100%",
+						}}
+					>
+						<AxisSelect
+							value={xAxis}
+							options={values}
+							onChange={handleSelectX}
+							fullWidth
+						/>
+					</Box>
 				</Box>
 			</Box>
 

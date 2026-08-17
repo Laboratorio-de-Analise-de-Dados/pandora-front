@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import CytometryApi from "../../../API"
+import { updateGate } from "../../../services/gateService"
 import type { PlotViewConfig } from "../../../types"
 
 const SAVE_DEBOUNCE_MS = 600
@@ -39,9 +39,7 @@ export function usePlotPersistence({
 		const handle = setTimeout(() => {
 			onPersistRef.current(config)
 			if (sourceType === "gate") {
-				CytometryApi.patch(`/analytics/gate/${sourceId}`, {
-					plot_config: config,
-				}).catch(() => undefined)
+				updateGate(sourceId, { plot_config: config }).catch(() => undefined)
 			}
 		}, SAVE_DEBOUNCE_MS)
 		return () => clearTimeout(handle)

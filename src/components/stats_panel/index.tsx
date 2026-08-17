@@ -15,7 +15,7 @@ import {
 	MdExpandLess as ExpandLessIcon,
 	MdTune as TuneIcon,
 } from "react-icons/md"
-import CytometryApi from "../../API"
+import { fetchFileStats } from "../../services/experimentService"
 import type { SelectedSource } from "../parent_tree"
 import type {
 	AnalysisResultData,
@@ -97,8 +97,8 @@ export default function StatsPanel({
 
 	useEffect(() => {
 		if (source?.type === "file") {
-			CytometryApi.get(`/experiment/file/${source.id}/stats`)
-				.then((res) => setInternalFileStats(res.data))
+			fetchFileStats(source.id)
+				.then((data) => setInternalFileStats(data))
 				.catch(() => setInternalFileStats(null))
 		} else {
 			setInternalFileStats(null)

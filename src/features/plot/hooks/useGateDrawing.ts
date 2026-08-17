@@ -1,6 +1,6 @@
 import { useCallback } from "react"
 import { toast } from "react-toastify"
-import CytometryApi from "../../../API"
+import { createGate } from "../../../services/gateService"
 import type { GateCoordinates, NewGate, PlotViewConfig, Scale } from "../../../types"
 import { toRaw } from "../utils/biex"
 import type { GateTool, PlotMode } from "./usePlotState"
@@ -81,7 +81,7 @@ export function useGateDrawing({
 					},
 					plot_config: plotConfig,
 				}
-				await CytometryApi.post("analytics/gate", newGate)
+				await createGate(newGate)
 				loadFile()
 			} catch (error: unknown) {
 				const err = error as { response?: { data?: unknown }; message?: string }
@@ -194,7 +194,7 @@ export function useGateDrawing({
 						},
 						plot_config: plotConfig,
 					}
-					await CytometryApi.post("analytics/gate", newGate)
+					await createGate(newGate)
 				}
 				loadFile()
 			} catch (error: unknown) {

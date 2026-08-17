@@ -5,8 +5,9 @@ interface AxisSelectProps {
 	value: string
 	options: string[]
 	onChange: (value: string) => void
-	/** Eixo Y aparece girado 90° à esquerda do gráfico. */
+	/** Eixo Y aparece girado 90° à esquerda do gráfico no desktop. */
 	rotated?: boolean
+	fullWidth?: boolean
 }
 
 const AxisSelect: React.FC<AxisSelectProps> = ({
@@ -14,10 +15,13 @@ const AxisSelect: React.FC<AxisSelectProps> = ({
 	options,
 	onChange,
 	rotated = false,
+	fullWidth = false,
 }) => (
 	<Select
 		value={value}
 		onChange={(e: SelectChangeEvent<string>) => onChange(e.target.value)}
+		size="small"
+		fullWidth={fullWidth}
 		sx={rotated ? { transform: "rotate(-90deg)" } : undefined}
 	>
 		{options.map((option, index) => (
