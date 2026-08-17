@@ -14,7 +14,9 @@ import {
 	Tooltip,
 	Typography,
 	Fade,
+	useMediaQuery,
 } from "@mui/material"
+import { useTheme } from "@mui/material/styles"
 import type { Scale } from "../../../../../types"
 import type { PlotMode } from "../../../hooks/usePlotState"
 import {
@@ -71,6 +73,8 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 }) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [isAdjusting, setIsAdjusting] = useState(false)
+	const theme = useTheme()
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 	return (
 		<>
 			{/* Botão flutuante, ancorado ao canto superior esquerdo do gráfico */}
@@ -101,10 +105,10 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 				<Paper
 					sx={{
 						position: "absolute",
-						top: 8,
-						right: "calc(100% + 8px)",
+						top: isMobile ? 48 : 8,
 						zIndex: 30,
-						width: 260,
+						width: isMobile ? "calc(100% - 16px)" : 260,
+						maxWidth: 360,
 						maxHeight: "calc(100% - 16px)",
 						overflowY: "auto",
 						padding: 1.5,
@@ -113,6 +117,9 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 						boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
 						border: "1px solid",
 						borderColor: "divider",
+						...(isMobile
+							? { left: 8 }
+							: { right: "calc(100% + 8px)" }),
 					}}
 					style={{
 						opacity: isAdjusting ? 0.3 : 1,
