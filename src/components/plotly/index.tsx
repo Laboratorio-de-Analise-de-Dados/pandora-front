@@ -21,12 +21,13 @@ import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
 import { usePlotPersistence } from "../../features/plot/hooks/usePlotPersistence"
 import { useGateMutations } from "../../features/plot/hooks/useGateMutations"
 
-import { COFACTOR, biex, toRaw } from "../../features/plot/utils/biex"
+import { COFACTOR, toRaw } from "../../features/plot/utils/biex"
 import { buildTicks } from "../../features/plot/utils/ticks"
-import { pointInPolygon } from "../../features/plot/utils/geometry"
-import { isPointInGate } from "../../features/plot/utils/gateHitTest"
 import { buildPlotData, hasPlotData } from "../../features/plot/utils/plotTraces"
 import { buildAxisRange } from "../../features/plot/utils/plotAxes"
+
+import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
+import { useGateHitTest } from "./hooks/useGateHitTest"
 
 import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
 import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
@@ -134,6 +135,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const editingVerticesRef = useRef<[number, number][]>([])
 	editingVerticesRef.current = editingVertices
 	const plotContainerRef = useRef<HTMLDivElement>(null)
+	const { dataToPixel, pixelToData } = usePlotCoordinates(plotContainerRef)
 
 	// O range vira janela de visualização imediata (layout do Plotly, usando
 	// xMin/xMax "ao vivo") e, com debounce, também vira parâmetro da query: ao
@@ -200,6 +202,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		effYScale,
 		plotMode,
 	})
+	const { findGateAtPoint, findGateAtDataPoint } = useGateHitTest({
+		plotContainerRef,
+		gateShapes,
+		childGates,
+		effXScale,
+		effYScale,
+	})
 
 	// --- Gate click/context menu handlers ---
 	const handleGateClick = (gate: Gate) => {
@@ -208,46 +217,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		const idx = childGates.findIndex((g) => g.id === gate.id)
 		setEditGateColor(getGateColor(gate.color, idx < 0 ? 0 : idx))
 		setEditDialogOpen(true)
-	}
-
-	const findGateAtPoint = (
-		clientX: number,
-		clientY: number,
-	): { gate: Gate; gateIndex: number } | null => {
-		const container = plotContainerRef.current
-		if (!container) return null
-		const plotEl = container.querySelector(".js-plotly-plot") as HTMLElement & {
-			_fullLayout?: Record<string, Record<string, (v: number) => number>>
-		}
-		if (!plotEl?._fullLayout) return null
-		const xaxis = plotEl._fullLayout.xaxis
-		const yaxis = plotEl._fullLayout.yaxis
-		if (!xaxis || !yaxis) return null
-		const rect = plotEl.getBoundingClientRect()
-		const px = clientX - rect.left
-		const py = clientY - rect.top
-		const xaxisObj = xaxis as unknown as {
-			p2d: (v: number) => number
-			_offset: number
-		}
-		const yaxisObj = yaxis as unknown as {
-			p2d: (v: number) => number
-			_offset: number
-		}
-		const dataX = xaxisObj.p2d(px - xaxisObj._offset)
-		const dataY = yaxisObj.p2d(py - yaxisObj._offset)
-		if (dataX == null || dataY == null) return null
-
-		for (const shape of gateShapes) {
-			if (!shape._gateData) continue
-			const gc = shape._gateData.gate_coordinates
-			const swapped = shape._swapped ?? false
-			if (isPointInGate(dataX, dataY, gc, swapped, effXScale, effYScale)) {
-				const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
-				return { gate: shape._gateData, gateIndex: idx < 0 ? 0 : idx }
-			}
-		}
-		return null
 	}
 
 	const handleContextMenu = (event: React.MouseEvent) => {
@@ -452,25 +421,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			const clickPt = event.points[0]
 			const clickDataX = clickPt.x as number
 			const clickDataY = clickPt.y as number
-			for (const entry of gateShapes) {
-				if (!entry._gateData) continue
-				const gc = entry._gateData.gate_coordinates
-				if (gc.type !== "polygon" || !("vertices" in gc)) continue
-				const swapped = entry._swapped ?? false
-				const verts = (gc.vertices as [number, number][]).map((v) => {
-					const rawX = swapped ? v[1] : v[0]
-					const rawY = swapped ? v[0] : v[1]
-					const xSc = swapped ? effYScale : effXScale
-					const ySc = swapped ? effXScale : effYScale
-					const dx = xSc === "biex" ? biex(rawX, COFACTOR) : rawX
-					const dy = ySc === "biex" ? biex(rawY, COFACTOR) : rawY
-					return [dx, dy] as [number, number]
-				})
-				if (pointInPolygon(clickDataX, clickDataY, verts)) {
-					setEditingPolyGate({ gate: entry._gateData, swapped })
-					setEditingVertices(gc.vertices as [number, number][])
-					return
-				}
+			const hit = findGateAtDataPoint(
+				clickDataX,
+				clickDataY,
+				(gate) => gate.gate_coordinates.type === "polygon",
+			)
+			if (hit && hit.gate.gate_coordinates.type === "polygon") {
+				setEditingPolyGate({ gate: hit.gate, swapped: hit.swapped })
+				setEditingVertices(hit.gate.gate_coordinates.vertices)
+				return
 			}
 			if (editingPolyGate) {
 				setEditingPolyGate(null)
@@ -497,55 +456,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		document.addEventListener("keydown", handleKeyDown)
 		return () => document.removeEventListener("keydown", handleKeyDown)
 	}, [reshapingGateId])
-
-	// Convert data coords to pixel coords
-	const dataToPixel = useCallback(
-		(dataX: number, dataY: number): { px: number; py: number } | null => {
-			const container = plotContainerRef.current
-			if (!container) return null
-			const plotDiv = container.querySelector(
-				".js-plotly-plot",
-			) as HTMLElement & {
-				_fullLayout?: Record<string, Record<string, unknown>>
-			}
-			if (!plotDiv?._fullLayout) return null
-			const layout = plotDiv._fullLayout
-			const xax = layout.xaxis as Record<string, unknown>
-			const yax = layout.yaxis as Record<string, unknown>
-			if (!xax || !yax) return null
-			const px =
-				(xax.l2p as (v: number) => number)(dataX) + (xax._offset as number)
-			const py =
-				(yax.l2p as (v: number) => number)(dataY) + (yax._offset as number)
-			return { px, py }
-		},
-		[],
-	)
-
-	const pixelToData = useCallback(
-		(px: number, py: number): { dataX: number; dataY: number } | null => {
-			const container = plotContainerRef.current
-			if (!container) return null
-			const plotDiv = container.querySelector(
-				".js-plotly-plot",
-			) as HTMLElement & {
-				_fullLayout?: Record<string, Record<string, unknown>>
-			}
-			if (!plotDiv?._fullLayout) return null
-			const layout = plotDiv._fullLayout
-			const xax = layout.xaxis as Record<string, unknown>
-			const yax = layout.yaxis as Record<string, unknown>
-			if (!xax || !yax) return null
-			const dataX = (xax.p2l as (v: number) => number)(
-				px - (xax._offset as number),
-			)
-			const dataY = (yax.p2l as (v: number) => number)(
-				py - (yax._offset as number),
-			)
-			return { dataX, dataY }
-		},
-		[],
-	)
 
 	// Save edited polygon vertices
 	const savePolygonVertices = useCallback(
