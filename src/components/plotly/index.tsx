@@ -619,12 +619,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							maxWidth: "100%",
 						}}
 					>
-						<AxisSelect
-							value={xAxis}
-							options={values}
-							onChange={handleSelectX}
-							fullWidth
-						/>
+						<AxisSelect value={xAxis} options={values} onChange={handleSelectX} />
 					</Box>
 				</Box>
 			</Box>

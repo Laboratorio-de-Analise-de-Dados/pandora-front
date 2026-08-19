@@ -20,7 +20,6 @@ const AxisSelect: React.FC<AxisSelectProps> = ({
 	<Select
 		value={value}
 		onChange={(e: SelectChangeEvent<string>) => onChange(e.target.value)}
-		size="small"
 		fullWidth={fullWidth}
 		sx={rotated ? { transform: "rotate(-90deg)" } : undefined}
 	>
