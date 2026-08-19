@@ -615,6 +615,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					</Box>
 					<Box
 						sx={{
+							display: "flex",
+							justifyContent: "center",
 							width: { xs: "min(95vw, 480px)", md: "min(70vh, 560px)" },
 							maxWidth: "100%",
 						}}
