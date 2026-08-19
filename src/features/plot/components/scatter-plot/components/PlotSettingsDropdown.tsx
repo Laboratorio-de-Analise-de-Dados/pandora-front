@@ -71,6 +71,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 }) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [isAdjusting, setIsAdjusting] = useState(false)
+
 	return (
 		<>
 			{/* Botão flutuante, ancorado ao canto superior esquerdo do gráfico */}
@@ -101,11 +102,12 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 				<Paper
 					sx={{
 						position: "absolute",
-						top: 8,
-						right: "calc(100% + 8px)",
+						top: 48,
+						left: 8,
 						zIndex: 30,
-						width: 260,
-						maxHeight: "calc(100% - 16px)",
+						width: { xs: "calc(100% - 16px)", md: 260 },
+						maxWidth: { md: 320 },
+						maxHeight: "calc(100% - 56px)",
 						overflowY: "auto",
 						padding: 1.5,
 						borderRadius: 8,
@@ -114,9 +116,7 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 						border: "1px solid",
 						borderColor: "divider",
 					}}
-					style={{
-						opacity: isAdjusting ? 0.3 : 1,
-					}}
+					style={{ opacity: isAdjusting ? 0.3 : 1 }}
 				>
 					{/* Header */}
 					<Box
@@ -268,7 +268,11 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 								type="number"
 								size="small"
 								value={xMin}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) => onXMinChange(e.target.value)}
+								onFocus={() => setIsAdjusting(true)}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+									onXMinChange(e.target.value)
+								}
+								onBlur={() => setIsAdjusting(false)}
 								sx={{
 									flex: 1,
 									"& .MuiInputBase-input": {
@@ -283,7 +287,11 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 								type="number"
 								size="small"
 								value={xMax}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) => onXMaxChange(e.target.value)}
+								onFocus={() => setIsAdjusting(true)}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+									onXMaxChange(e.target.value)
+								}
+								onBlur={() => setIsAdjusting(false)}
 								sx={{
 									flex: 1,
 									"& .MuiInputBase-input": {
@@ -354,7 +362,11 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 										type="number"
 										size="small"
 										value={yMin}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) => onYMinChange(e.target.value)}
+										onFocus={() => setIsAdjusting(true)}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+											onYMinChange(e.target.value)
+										}
+										onBlur={() => setIsAdjusting(false)}
 										sx={{
 											flex: 1,
 											"& .MuiInputBase-input": {
@@ -369,7 +381,11 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 										type="number"
 										size="small"
 										value={yMax}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) => onYMaxChange(e.target.value)}
+										onFocus={() => setIsAdjusting(true)}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+											onYMaxChange(e.target.value)
+										}
+										onBlur={() => setIsAdjusting(false)}
 										sx={{
 											flex: 1,
 											"& .MuiInputBase-input": {
@@ -402,9 +418,11 @@ export const PlotSettingsDropdown: React.FC<PlotSettingsDropdownProps> = ({
 									type="number"
 									size="small"
 									value={cutoff}
+									onFocus={() => setIsAdjusting(true)}
 									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 										onCutoffChange(Math.max(0, Number(e.target.value) || 0))
 									}
+									onBlur={() => setIsAdjusting(false)}
 									inputProps={{ min: 0, step: 1 }}
 									fullWidth
 									helperText="Bins com contagem ≤ cutoff ficam transparentes"

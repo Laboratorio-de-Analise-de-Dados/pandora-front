@@ -1,6 +1,6 @@
-import { useCallback } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
-import CytometryApi from "../../../API"
+import { createGate } from "../../../services/gateService"
 import type { GateCoordinates, NewGate, PlotViewConfig, Scale } from "../../../types"
 import { toRaw } from "../utils/biex"
 import type { GateTool, PlotMode } from "./usePlotState"
@@ -29,11 +29,24 @@ interface UseGateDrawingParams {
 	plotConfig: PlotViewConfig
 }
 
-/** Gera o próximo nome de gate: "Gate 1", "Gate 2", ... */
-const getNextGateName = (existingNames: string[]): string => {
+/** Gera o próximo nome de gate no estilo FlowJo: "P1", "P2", ... */
+const getNextGateName = (existingNames: ReadonlySet<string>): string => {
 	let n = 1
-	while (existingNames.includes(`Gate ${n}`)) n++
-	return `Gate ${n}`
+	while (existingNames.has(`P${n}`)) n++
+	return `P${n}`
+}
+
+const getQuadrantLabels = (n: number): string[] => [
+	`Q${n} (X+Y+)`,
+	`Q${n} (X-Y+)`,
+	`Q${n} (X-Y-)`,
+	`Q${n} (X+Y-)`,
+]
+
+const getNextQuadrantGroup = (existingNames: ReadonlySet<string>): number => {
+	let n = 1
+	while (getQuadrantLabels(n).some((label) => existingNames.has(label))) n++
+	return n
 }
 
 export function useGateDrawing({
@@ -58,10 +71,39 @@ export function useGateDrawing({
 	setTool,
 	plotConfig,
 }: UseGateDrawingParams) {
+	// Nomes criados localmente, ainda não refletidos na lista vinda do servidor.
+	// Evita duplicados quando o usuário cria vários gates antes do refetch.
+	const [createdGateNames, setCreatedGateNames] = useState<Set<string>>(new Set())
+
+	const siblingNamesSet = useMemo(
+		() => new Set(siblingGateNames),
+		[siblingGateNames],
+	)
+
+	// Limpa nomes locais que já chegaram via servidor e reseta ao trocar de fonte.
+	useEffect(() => {
+		setCreatedGateNames((prev) => {
+			const next = new Set(prev)
+			next.forEach((name) => {
+				if (siblingNamesSet.has(name)) next.delete(name)
+			})
+			return next
+		})
+	}, [siblingNamesSet])
+
+	useEffect(() => {
+		setCreatedGateNames(new Set())
+	}, [fileDataId, parentId])
+
+	const existingNames = useMemo(
+		() => new Set([...siblingNamesSet, ...createdGateNames]),
+		[siblingNamesSet, createdGateNames],
+	)
+
 	const createGateDirectly = useCallback(
 		async (coords: GateCoordinates) => {
 			try {
-				const gateName = getNextGateName(siblingGateNames)
+				const gateName = getNextGateName(existingNames)
 				const isInterval = coords.type === "interval"
 				const dashName = isInterval
 					? `${xAxis} (histogram)`
@@ -81,7 +123,12 @@ export function useGateDrawing({
 					},
 					plot_config: plotConfig,
 				}
-				await CytometryApi.post("analytics/gate", newGate)
+				await createGate(newGate)
+				setCreatedGateNames((prev) => {
+					const next = new Set(prev)
+					next.add(gateName)
+					return next
+				})
 				loadFile()
 			} catch (error: unknown) {
 				const err = error as { response?: { data?: unknown }; message?: string }
@@ -91,7 +138,7 @@ export function useGateDrawing({
 				toast.error(`Erro ao criar gate: ${msg}`, { position: "bottom-right" })
 			}
 		},
-		[fileDataId, parentId, xAxis, yAxis, siblingGateNames, loadFile, plotConfig],
+		[fileDataId, parentId, xAxis, yAxis, existingNames, loadFile, plotConfig],
 	)
 
 	/** Recebe seleção do Plotly (box/lasso) e converte de espaço exibido para cru. */
@@ -161,8 +208,7 @@ export function useGateDrawing({
 			const cx = toRaw(pt.x as number, effXScale, effCof)
 			const cy = toRaw(pt.y as number, effYScale, effCof)
 
-			let n = 1
-			while (siblingGateNames.includes(`Q${n} (X+Y+)`)) n++
+			const n = getNextQuadrantGroup(existingNames)
 
 			const quadrants: Array<{ quadrant: "Q1" | "Q2" | "Q3" | "Q4"; label: string }> = [
 				{ quadrant: "Q1", label: `Q${n} (X+Y+)` },
@@ -171,6 +217,7 @@ export function useGateDrawing({
 				{ quadrant: "Q4", label: `Q${n} (X+Y-)` },
 			]
 			try {
+				const createdLabels: string[] = []
 				for (const q of quadrants) {
 					const newGate: NewGate = {
 						file_data: fileDataId,
@@ -194,8 +241,14 @@ export function useGateDrawing({
 						},
 						plot_config: plotConfig,
 					}
-					await CytometryApi.post("analytics/gate", newGate)
+					await createGate(newGate)
+					createdLabels.push(q.label)
 				}
+				setCreatedGateNames((prev) => {
+					const next = new Set(prev)
+					createdLabels.forEach((name) => next.add(name))
+					return next
+				})
 				loadFile()
 			} catch (error: unknown) {
 				const err = error as { response?: { data?: unknown }; message?: string }
@@ -205,7 +258,7 @@ export function useGateDrawing({
 				toast.error(`Erro ao criar quadrante: ${msg}`, { position: "bottom-right" })
 			}
 		},
-		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, fileDataId, parentId, siblingGateNames, loadFile, plotConfig],
+		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, fileDataId, parentId, existingNames, loadFile, plotConfig],
 	)
 
 	return { createGateDirectly, handleSelectedArea, handleQuadrantClick }

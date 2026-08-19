@@ -1,15 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
-import CytometryApi from "../../../API"
-import type { Experiment, ExperimentFiles } from "../../../types"
+import {
+	fetchExperiment,
+	fetchExperimentFiles,
+	fetchFileStats,
+} from "../../../services/experimentService"
+import type { Experiment, ExperimentFiles, AnalysisResultData } from "../../../types"
 
 export function useExperimentQuery(id: string) {
 	return useQuery<Experiment>({
 		queryKey: ["experiment", id],
-		queryFn: async () => {
-			const res = await CytometryApi.get(`/experiment/${id}`)
-			return res.data
-		},
+		queryFn: async () => fetchExperiment(id),
 		enabled: !!id,
 	})
 }
@@ -17,21 +18,15 @@ export function useExperimentQuery(id: string) {
 export function useExperimentFilesQuery(id: string) {
 	return useQuery<ExperimentFiles[]>({
 		queryKey: ["experiment-files", id],
-		queryFn: async () => {
-			const res = await CytometryApi.get(`/experiment/list/data/${id}`)
-			return res.data
-		},
+		queryFn: async () => fetchExperimentFiles(id),
 		enabled: !!id,
 	})
 }
 
 export function useFileStatsQuery(sourceType: string | undefined, sourceId: number | undefined) {
-	return useQuery({
+	return useQuery<AnalysisResultData>({
 		queryKey: ["file-stats", sourceId],
-		queryFn: async () => {
-			const res = await CytometryApi.get(`/experiment/file/${sourceId}/stats`)
-			return res.data
-		},
+		queryFn: async () => fetchFileStats(sourceId as number),
 		enabled: sourceType === "file" && !!sourceId,
 	})
 }

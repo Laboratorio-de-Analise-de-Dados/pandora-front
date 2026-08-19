@@ -9,13 +9,12 @@ import {
 import { Theme, useTheme } from "@mui/material/styles"
 import { useState } from "react"
 import Layout from "../../../Layout"
-import { toast } from "react-toastify"
-import CytometryApi from "../../../../API"
-import { findGateInTree } from "../../../../features/gate/utils"
 import {
 	ExperimentWorkspaceProvider,
 	useExperimentWorkspace,
 } from "../../../../features/experiment/context/ExperimentWorkspaceContext"
+import { useExperimentPageActions } from "../../../../features/experiment/hooks/useExperimentPageActions"
+import { PlotStateProvider } from "../../../../features/plot/context/PlotStateContext"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
 import SourceDropdown from "../../../../features/experiment/components/SourceDropdown"
@@ -29,7 +28,6 @@ import {
 	MdChevronRight as NextIcon,
 	MdAccountTree as TreeIcon,
 } from "react-icons/md"
-import { useNavigate } from "react-router-dom"
 
 function ExperimentPageContent() {
 	const {
@@ -39,7 +37,6 @@ function ExperimentPageContent() {
 		source,
 		setSource,
 		fileStats,
-		invalidateExperiment,
 		childGates,
 		siblingGateNames,
 		values,
@@ -51,106 +48,21 @@ function ExperimentPageContent() {
 		canGoNextFile,
 	} = useExperimentWorkspace()
 
-	const navigate = useNavigate()
+	const {
+		handleDelete,
+		handleDeleteGate,
+		handleRenameGate,
+		handleApplyGate,
+		handleConfirmApply,
+		applyTarget,
+		applyLoading,
+		setApplyTarget,
+	} = useExperimentPageActions()
+
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 	const [showStats, setShowStats] = useState(() => !isMobile)
 	const [showTree, setShowTree] = useState(() => !isMobile)
-	const [applyTarget, setApplyTarget] = useState<{
-		id: number
-		name: string
-		fileDataId: number
-	} | null>(null)
-	const [applyLoading, setApplyLoading] = useState(false)
-
-	const handleDelete = async (id: number) => {
-		const confirmed = window.confirm("Tem certeza que deseja excluir?")
-		if (!confirmed) return
-		try {
-			await CytometryApi.delete(`/experiment/${id}`)
-			toast.success("Experimento excluído com sucesso!", {
-				position: "bottom-right",
-			})
-			navigate(`/experiments`)
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o experimento: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		}
-	}
-
-	const handleDeleteGate = async (gateId: number) => {
-		try {
-			await CytometryApi.delete(`/analytics/gate/${gateId}`)
-			toast.success("Gate excluído com sucesso!", { position: "bottom-right" })
-			if (source?.type === "gate" && source.id === gateId) {
-				setSource(undefined)
-			}
-			invalidateExperiment()
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o gate: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		}
-	}
-
-	const handleApplyGate = (gateId: number, gateName: string) => {
-		let fileDataId = 0
-		for (const file of experimentFiles) {
-			if (findGateInTree(file.gates, gateId)) {
-				fileDataId = file.id
-				break
-			}
-		}
-		setApplyTarget({ id: gateId, name: gateName, fileDataId })
-	}
-
-	const handleConfirmApply = async (
-		targetFileDataIds: number[],
-		recursive: boolean,
-	) => {
-		if (!applyTarget) return
-		setApplyLoading(true)
-		try {
-			await CytometryApi.post("/analytics/gate/apply", {
-				source_gate_ids: [applyTarget.id],
-				target_file_data_ids: targetFileDataIds,
-				recursive,
-				on_conflict: "replace",
-			})
-			toast.success("Gates aplicados com sucesso!", {
-				position: "bottom-right",
-			})
-			setApplyTarget(null)
-			invalidateExperiment()
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao aplicar gates: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		} finally {
-			setApplyLoading(false)
-		}
-	}
-
-	const handleRenameGate = async (gateId: number, newName: string) => {
-		try {
-			await CytometryApi.patch(`/analytics/gate/${gateId}`, { name: newName })
-			toast.success("Gate renomeado com sucesso!", { position: "bottom-right" })
-			invalidateExperiment()
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao renomear o gate: ${errorMessage}`, {
-				position: "bottom-right",
-			})
-		}
-	}
 
 	const treeContent = (
 		<>
@@ -168,10 +80,7 @@ function ExperimentPageContent() {
 				{experiment?.title}
 				{experiment && (
 					<Tooltip title="Excluir experimento">
-						<IconButton
-							onClick={() => handleDelete(experiment.id)}
-							color="error"
-						>
+						<IconButton onClick={handleDelete} color="error">
 							<DeleteIcon fontSize="small" />
 						</IconButton>
 					</Tooltip>
@@ -203,40 +112,40 @@ function ExperimentPageContent() {
 					overflow: "hidden",
 				}}
 			>
-				{/* Gráfico sempre centralizado; os panels são overlay por cima */}
+				{/* Área central: seletor sempre visível + gráfico centralizado */}
 				<Box
 					sx={{
 						display: "flex",
 						flexDirection: "column",
-						justifyContent: "flex-start",
+						justifyContent: "center",
 						alignItems: "center",
 						width: "100%",
 						height: "100%",
 						overflowY: "auto",
 						gap: "1rem",
+						pt: { xs: 2, md: 3 },
+						pb: { xs: 2, md: 3 },
 					}}
 				>
-					{isLoading && <CircularProgress />}
-					{!isLoading && !source && (
+					{isLoading ? (
 						<Box
 							sx={{
 								display: "flex",
-								justifyContent: "center",
 								alignItems: "center",
+								justifyContent: "center",
 								height: "100%",
 							}}
 						>
-							<Typography>Select a file to load</Typography>
+							<CircularProgress />
 						</Box>
-					)}
-					{source && (
+					) : (
 						<>
 							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
 								<Tooltip title="Arquivo anterior">
 									<span>
 										<IconButton
 											size="small"
-											disabled={!canGoPrevFile}
+											disabled={!source || !canGoPrevFile}
 											onClick={() => goToAdjacentFile(-1)}
 										>
 											<PrevIcon />
@@ -252,7 +161,7 @@ function ExperimentPageContent() {
 									<span>
 										<IconButton
 											size="small"
-											disabled={!canGoNextFile}
+											disabled={!source || !canGoNextFile}
 											onClick={() => goToAdjacentFile(1)}
 										>
 											<NextIcon />
@@ -260,25 +169,48 @@ function ExperimentPageContent() {
 									</span>
 								</Tooltip>
 							</Box>
-							<ScatterPlot
-								key={`${source.type}-${source.id}`}
-								values={values}
-								sourceType={source.type}
-								sourceId={source.id}
-								fileDataId={source.fileDataId}
-								parentId={source.type === "gate" ? source.id : undefined}
-								loadFile={invalidateExperiment}
-								siblingGateNames={siblingGateNames}
-								childGates={childGates}
-								initialConfig={selectedGate?.plot_config}
-								carryForwardConfig={viewConfig}
-								onConfigChange={setViewConfig}
-							/>
+
+							{source ? (
+								<PlotStateProvider
+									key={`${source.type}-${source.id}`}
+									sourceType={source.type}
+									sourceId={source.id}
+									initialConfig={{
+										...viewConfig,
+										...selectedGate?.plot_config,
+									}}
+									onPersist={setViewConfig}
+								>
+									<ScatterPlot
+										values={values}
+										sourceType={source.type}
+										sourceId={source.id}
+										fileDataId={source.fileDataId}
+										parentId={
+											source.type === "gate" ? source.id : undefined
+										}
+										siblingGateNames={siblingGateNames}
+										childGates={childGates}
+									/>
+								</PlotStateProvider>
+							) : (
+								<Box
+									sx={{
+										display: "flex",
+										justifyContent: "center",
+										alignItems: "center",
+										flex: 1,
+										width: "100%",
+									}}
+								>
+									<Typography>Select a file to load</Typography>
+								</Box>
+							)}
 						</>
 					)}
 				</Box>
 
-				{/* Overlay esquerdo: árvore (Gates) */}
+				{/* Overlay esquerdo: árvore de gates */}
 				<CollapsiblePanel
 					side="left"
 					open={showTree}
@@ -293,7 +225,7 @@ function ExperimentPageContent() {
 					{treeContent}
 				</CollapsiblePanel>
 
-				{/* Overlay direito: estatísticas (mobile: bottom sheet) */}
+				{/* Overlay direito: estatísticas */}
 				<CollapsiblePanel
 					side="right"
 					open={showStats}
@@ -305,6 +237,7 @@ function ExperimentPageContent() {
 					desktopWidth="22%"
 					desktopMinWidth={260}
 					mobileAnchor="bottom"
+					contentPadding="1rem"
 				>
 					<StatsPanel
 						source={source}
@@ -315,6 +248,7 @@ function ExperimentPageContent() {
 					/>
 				</CollapsiblePanel>
 			</Box>
+
 			{applyTarget && (
 				<ApplyGateDialog
 					open={!!applyTarget}

@@ -35,6 +35,7 @@ import { buildAnalysisRows } from "../utils/statsRows"
 import type { PopulationRow } from "../utils/statsRows"
 import { fmtPct } from "../../../utils/format"
 import type { SelectableItem } from "./SourceSelector"
+import { useComparisonStats } from "../hooks/useComparisonStats"
 
 interface MetricDef {
 	key: "mean_mfi" | "median_mfi" | "std_dev" | "cv"
@@ -68,23 +69,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 		useState<HTMLElement | null>(null)
 	const [compareChannelMenuSearch, setCompareChannelMenuSearch] = useState("")
 
-	const compareData = useMemo(() => {
-		if (compareItems.length === 0) return []
-		return compareItems.map((item) => {
-			if (item.type === "gate") {
-				for (const f of files) {
-					const g = findGateInTree(f.gates, item.id)
-					if (g)
-						return {
-							item,
-							gate: g,
-							analysis: g.analysis_result?.analysis_result,
-						}
-				}
-			}
-			return { item, gate: undefined, analysis: undefined }
-		})
-	}, [compareItems, files])
+	const { compareData } = useComparisonStats(compareItems, files)
 
 	const compareAvailableChannels = useMemo(() => {
 		const channels = new Set<string>()
