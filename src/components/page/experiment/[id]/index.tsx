@@ -95,6 +95,47 @@ function ExperimentPageContent() {
 		</Box>
 	)
 
+	const configTabContent = source ? (
+		<PlotConfigPanel onAdjustingChange={setIsConfigAdjusting} />
+	) : (
+		<Box sx={{ p: 2 }}>
+			<Typography variant="body2" color="text.secondary">
+				Selecione um arquivo ou gate para ajustar as configurações do
+				gráfico.
+			</Typography>
+		</Box>
+	)
+
+	const statsTabContent = (
+		<StatsPanel
+			source={source}
+			files={experimentFiles}
+			values={values}
+			fileStats={fileStats}
+		/>
+	)
+
+	const sidePanelTabs = [
+		{
+			id: "gates",
+			label: "Gates",
+			icon: <TreeIcon size={18} />,
+			content: treeContent,
+		},
+		{
+			id: "config",
+			label: "Config",
+			icon: <ConfigIcon size={18} />,
+			content: configTabContent,
+		},
+		{
+			id: "stats",
+			label: "Estatísticas",
+			icon: <StatsIcon size={18} />,
+			content: statsTabContent,
+		},
+	]
+
 	return (
 		<Layout>
 			<Box
@@ -133,13 +174,13 @@ function ExperimentPageContent() {
 						)}
 					</Box>
 
-					{source && (
+					{experimentFiles.length > 0 && (
 						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
 							<Tooltip title="Arquivo anterior">
 								<span>
 									<IconButton
 										size="small"
-										disabled={!canGoPrevFile}
+										disabled={!source || !canGoPrevFile}
 										onClick={() => goToAdjacentFile(-1)}
 									>
 										<PrevIcon />
@@ -155,7 +196,7 @@ function ExperimentPageContent() {
 								<span>
 									<IconButton
 										size="small"
-										disabled={!canGoNextFile}
+										disabled={!source || !canGoNextFile}
 										onClick={() => goToAdjacentFile(1)}
 									>
 										<NextIcon />
@@ -194,7 +235,7 @@ function ExperimentPageContent() {
 						</Box>
 					)}
 
-					{source && (
+					{!isLoading && source && (
 						<PlotStateProvider
 							key={`${source.type}-${source.id}`}
 							sourceType={source.type}
@@ -241,39 +282,21 @@ function ExperimentPageContent() {
 								transparent={
 									isMobile && activeTab === "config" && isConfigAdjusting
 								}
-								tabs={[
-									{
-										id: "gates",
-										label: "Gates",
-										icon: <TreeIcon size={18} />,
-										content: treeContent,
-									},
-									{
-										id: "config",
-										label: "Config",
-										icon: <ConfigIcon size={18} />,
-										content: (
-											<PlotConfigPanel
-												onAdjustingChange={setIsConfigAdjusting}
-											/>
-										),
-									},
-									{
-										id: "stats",
-										label: "Estatísticas",
-										icon: <StatsIcon size={18} />,
-										content: (
-											<StatsPanel
-												source={source}
-												files={experimentFiles}
-												values={values}
-												fileStats={fileStats}
-											/>
-										),
-									},
-								]}
+								tabs={sidePanelTabs}
 							/>
 						</PlotStateProvider>
+					)}
+
+					{!isLoading && !source && (
+						<ExperimentSidePanel
+							isMobile={isMobile}
+							open={sidePanelOpen}
+							activeTab={activeTab}
+							onOpen={() => setSidePanelOpen(true)}
+							onClose={() => setSidePanelOpen(false)}
+							onTabChange={setActiveTab}
+							tabs={sidePanelTabs}
+						/>
 					)}
 				</Box>
 			</Box>
