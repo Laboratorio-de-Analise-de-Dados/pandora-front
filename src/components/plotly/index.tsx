@@ -31,6 +31,7 @@ import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
 import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
 import GateToolToggle from "../../features/plot/components/scatter-plot/components/GateToolToggle"
+import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
 import GateContextMenu from "../../features/plot/components/scatter-plot/components/GateContextMenu"
 import AxisSelect from "../../features/plot/components/scatter-plot/components/AxisSelect"
 import PolygonEditOverlay from "../../features/plot/components/scatter-plot/components/PolygonEditOverlay"
@@ -75,6 +76,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		handleSelectX,
 		handleSelectY,
 		setTool,
+		setXScale,
+		setYScale,
+		setCutoff,
+		setXMin,
+		setXMax,
+		setYMin,
+		setYMax,
+		setPlotMode,
 	} = plotState
 
 	const theme = useTheme()
@@ -427,6 +436,28 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								justifyContent: "center",
 							}}
 						>
+							{/* Configurações do gráfico, ancorado ao canto superior esquerdo */}
+							{tool !== "edit" && reshapingGateId === null && (
+								<PlotSettingsDropdown
+									plotMode={plotMode}
+									xScale={xScale}
+									yScale={yScale}
+									cutoff={cutoff}
+									xMin={xMin}
+									xMax={xMax}
+									yMin={yMin}
+									yMax={yMax}
+									onXScaleChange={setXScale}
+									onYScaleChange={setYScale}
+									onCutoffChange={setCutoff}
+									onXMinChange={setXMin}
+									onXMaxChange={setXMax}
+									onYMinChange={setYMin}
+									onYMaxChange={setYMax}
+									onPlotModeChange={setPlotMode}
+								/>
+							)}
+
 							{/* Seletor de tipo de gate, ancorado ao canto superior direito */}
 							{tool !== "edit" && reshapingGateId === null && (
 								<GateToolToggle
