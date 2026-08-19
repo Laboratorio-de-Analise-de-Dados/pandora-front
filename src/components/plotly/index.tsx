@@ -47,7 +47,6 @@ interface ScatterPlotProps {
 	parentId?: number
 	siblingGateNames?: string[]
 	childGates?: Gate[]
-	onEditGate?: (gate: Gate) => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -75,17 +74,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMax,
 		handleSelectX,
 		handleSelectY,
-		setXAxis,
-		setYAxis,
-		setPlotMode,
 		setTool,
-		setXScale,
-		setYScale,
-		setCutoff,
-		setXMin,
-		setXMax,
-		setYMin,
-		setYMax,
 	} = plotState
 
 	const theme = useTheme()
