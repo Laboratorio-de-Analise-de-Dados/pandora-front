@@ -176,7 +176,7 @@ function ExperimentPageContent() {
 					overflow: "hidden",
 				}}
 			>
-				{/* Área central: gráfico sempre centralizado; painel é overlay */}
+				{/* Área central entre header e footer: seletor + gráfico */}
 				<Box
 					sx={{
 						display: "flex",
@@ -202,13 +202,46 @@ function ExperimentPageContent() {
 						</Box>
 					)}
 
+					{!isLoading && (
+						<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+							<Tooltip title="Arquivo anterior">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!source || !canGoPrevFile}
+										onClick={() => goToAdjacentFile(-1)}
+									>
+										<PrevIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
+							<SourceDropdown
+								files={experimentFiles}
+								source={source}
+								onSelect={setSource}
+							/>
+							<Tooltip title="Próximo arquivo">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!source || !canGoNextFile}
+										onClick={() => goToAdjacentFile(1)}
+									>
+										<NextIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
+						</Box>
+					)}
+
 					{!isLoading && !source && (
 						<Box
 							sx={{
 								display: "flex",
 								justifyContent: "center",
 								alignItems: "center",
-								height: "100%",
+								flex: 1,
+								width: "100%",
 							}}
 						>
 							<Typography>Select a file to load</Typography>
@@ -216,66 +249,35 @@ function ExperimentPageContent() {
 					)}
 
 					{!isLoading && source && (
-						<>
-							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-								<Tooltip title="Arquivo anterior">
-									<span>
-										<IconButton
-											size="small"
-											disabled={!canGoPrevFile}
-											onClick={() => goToAdjacentFile(-1)}
-										>
-											<PrevIcon />
-										</IconButton>
-									</span>
-								</Tooltip>
-								<SourceDropdown
-									files={experimentFiles}
-									source={source}
-									onSelect={setSource}
-								/>
-								<Tooltip title="Próximo arquivo">
-									<span>
-										<IconButton
-											size="small"
-											disabled={!canGoNextFile}
-											onClick={() => goToAdjacentFile(1)}
-										>
-											<NextIcon />
-										</IconButton>
-									</span>
-								</Tooltip>
-							</Box>
-							<PlotStateProvider
-								key={`${source.type}-${source.id}`}
+						<PlotStateProvider
+							key={`${source.type}-${source.id}`}
+							sourceType={source.type}
+							sourceId={source.id}
+							initialConfig={{
+								...viewConfig,
+								...selectedGate?.plot_config,
+							}}
+							onPersist={setViewConfig}
+						>
+							<ScatterPlot
+								values={values}
 								sourceType={source.type}
 								sourceId={source.id}
-								initialConfig={{
-									...viewConfig,
-									...selectedGate?.plot_config,
-								}}
-								onPersist={setViewConfig}
-							>
-								<ScatterPlot
-									values={values}
-									sourceType={source.type}
-									sourceId={source.id}
-									fileDataId={source.fileDataId}
-									parentId={
-										source.type === "gate" ? source.id : undefined
-									}
-									siblingGateNames={siblingGateNames}
-									childGates={childGates}
-								/>
-								{renderSidePanel(
-									<PlotConfigPanel onAdjustingChange={setIsConfigAdjusting} />,
-								)}
-							</PlotStateProvider>
-						</>
+								fileDataId={source.fileDataId}
+								parentId={
+									source.type === "gate" ? source.id : undefined
+								}
+								siblingGateNames={siblingGateNames}
+								childGates={childGates}
+							/>
+							{renderSidePanel(
+								<PlotConfigPanel onAdjustingChange={setIsConfigAdjusting} />,
+							)}
+						</PlotStateProvider>
 					)}
 				</Box>
 
-				{/* Painel lateral esquerdo: Gates/Config/Estatísticas */}
+				{/* Painel lateral esquerdo: Gates/Config/Estatísticas (overlay) */}
 				{!isLoading && !source && renderSidePanel(configPlaceholder)}
 			</Box>
 
