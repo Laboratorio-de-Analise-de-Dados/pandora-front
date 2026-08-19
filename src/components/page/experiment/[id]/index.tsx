@@ -117,13 +117,14 @@ function ExperimentPageContent() {
 					sx={{
 						display: "flex",
 						flexDirection: "column",
-						justifyContent: "flex-start",
+						justifyContent: { xs: "flex-start", md: "center" },
 						alignItems: "center",
 						width: "100%",
 						height: "100%",
 						overflowY: "auto",
 						gap: "1rem",
-						pt: { xs: 1, md: 2 },
+						pt: { xs: 3, md: 5 },
+						pb: { xs: 3, md: 5 },
 					}}
 				>
 					{isLoading ? (
