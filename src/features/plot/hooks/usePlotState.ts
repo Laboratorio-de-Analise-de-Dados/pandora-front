@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import type { PlotMode, Scale } from "../../../types"
 import { defaultScale } from "../utils/biex"
 
@@ -57,25 +57,61 @@ export function usePlotState(
 	// Trocar de canal (eixo) reinicia escala e limpa os limites: cada canal tem
 	// range próprio, então carregar o min/max do canal anterior daria uma janela
 	// errada. Sem limites, o gráfico volta ao range default do novo canal.
-	const handleSelectX = (value: string) => {
+	const handleSelectX = useCallback((value: string) => {
 		setXAxis(value)
 		setXScale(defaultScale(value))
 		setXMin("")
 		setXMax("")
-	}
+	}, [])
 
-	const handleSelectY = (value: string) => {
+	const handleSelectY = useCallback((value: string) => {
 		setYAxis(value)
 		setYScale(defaultScale(value))
 		setYMin("")
 		setYMax("")
-	}
+	}, [])
 
-	return {
-		xAxis, yAxis, plotMode, tool, xScale, yScale, cutoff,
-		xMin, xMax, yMin, yMax,
-		setXAxis, setYAxis, setPlotMode, setTool, setXScale, setYScale,
-		setCutoff, setXMin, setXMax, setYMin, setYMax,
-		handleSelectX, handleSelectY,
-	}
+	return useMemo(
+		() => ({
+			xAxis,
+			yAxis,
+			plotMode,
+			tool,
+			xScale,
+			yScale,
+			cutoff,
+			xMin,
+			xMax,
+			yMin,
+			yMax,
+			setXAxis,
+			setYAxis,
+			setPlotMode,
+			setTool,
+			setXScale,
+			setYScale,
+			setCutoff,
+			setXMin,
+			setXMax,
+			setYMin,
+			setYMax,
+			handleSelectX,
+			handleSelectY,
+		}),
+		[
+			xAxis,
+			yAxis,
+			plotMode,
+			tool,
+			xScale,
+			yScale,
+			cutoff,
+			xMin,
+			xMax,
+			yMin,
+			yMax,
+			handleSelectX,
+			handleSelectY,
+		],
+	)
 }

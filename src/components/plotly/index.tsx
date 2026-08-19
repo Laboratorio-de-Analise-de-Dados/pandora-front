@@ -13,12 +13,11 @@ import { toast } from "react-toastify"
 import { Gate, Scale } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 
-import { usePlotState } from "../../features/plot/hooks/usePlotState"
+import { usePlotContext } from "../../features/plot/context/PlotStateContext"
 import { useDebouncedValue } from "../../features/plot/hooks/useDebouncedValue"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
-import { usePlotPersistence } from "../../features/plot/hooks/usePlotPersistence"
 import { useGateMutations } from "../../features/plot/hooks/useGateMutations"
 
 import { COFACTOR } from "../../features/plot/utils/biex"
@@ -30,13 +29,11 @@ import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
 import { useGateHitTest } from "./hooks/useGateHitTest"
 import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
-import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
 import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
 import GateToolToggle from "../../features/plot/components/scatter-plot/components/GateToolToggle"
 import GateContextMenu from "../../features/plot/components/scatter-plot/components/GateContextMenu"
 import AxisSelect from "../../features/plot/components/scatter-plot/components/AxisSelect"
 import PolygonEditOverlay from "../../features/plot/components/scatter-plot/components/PolygonEditOverlay"
-import type { PlotViewConfig } from "../../types"
 
 // Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
 // backend (evita uma request por evento de slider).
@@ -51,12 +48,6 @@ interface ScatterPlotProps {
 	siblingGateNames?: string[]
 	childGates?: Gate[]
 	onEditGate?: (gate: Gate) => void
-	/** Config salva do gate selecionado (plot_config), quando existir. */
-	initialConfig?: Partial<PlotViewConfig>
-	/** Config corrente herdada (carry-forward), usada quando não há config salva. */
-	carryForwardConfig: PlotViewConfig
-	/** Propaga a config corrente pro carry-forward em memória. */
-	onConfigChange: (config: PlotViewConfig) => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -67,14 +58,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	parentId,
 	siblingGateNames = [],
 	childGates = [],
-	initialConfig,
-	carryForwardConfig,
-	onConfigChange,
 }) => {
-	// Semeia o estado com a config salva do gate (se houver), senão com o
-	// carry-forward. Como o componente remonta ao trocar de fonte (key), a
-	// semente vale como "config inicial daquela população".
-	const plotState = usePlotState({ ...carryForwardConfig, ...initialConfig })
+	const plotState = usePlotContext()
 
 	const {
 		xAxis,
@@ -105,13 +90,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
-
-	usePlotPersistence({
-		sourceType,
-		sourceId,
-		config: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
-		onPersist: onConfigChange,
-	})
 
 	// Gate edit dialog state
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
@@ -468,25 +446,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									plotMode={plotMode}
 								/>
 							)}
-			{/* Dropdown de configurações, ancorado ao próprio gráfico */}
-							<PlotSettingsDropdown
-								plotMode={plotMode}
-								xScale={xScale}
-								yScale={yScale}
-								cutoff={cutoff}
-								xMin={xMin}
-								xMax={xMax}
-								yMin={yMin}
-								yMax={yMax}
-								onXScaleChange={setXScale}
-								onYScaleChange={setYScale}
-								onCutoffChange={setCutoff}
-								onXMinChange={setXMin}
-								onXMaxChange={setXMax}
-								onYMinChange={setYMin}
-								onYMaxChange={setYMax}
-								onPlotModeChange={setPlotMode}
-							/>
 							{isError && !data ? (
 								<Typography color="error">Erro ao carregar dados.</Typography>
 							) : hasData ? (
