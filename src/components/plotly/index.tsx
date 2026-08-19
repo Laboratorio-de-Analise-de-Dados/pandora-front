@@ -14,6 +14,7 @@ import { Gate, Scale } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 
 import { usePlotContext } from "../../features/plot/context/PlotStateContext"
+import { useExperimentWorkspace } from "../../features/experiment/context/ExperimentWorkspaceContext"
 import { useDebouncedValue } from "../../features/plot/hooks/useDebouncedValue"
 import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
@@ -86,6 +87,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setPlotMode,
 	} = plotState
 
+	const { invalidateExperiment } = useExperimentWorkspace()
+
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
@@ -139,7 +142,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const loadFile = useCallback(() => {
 		refetch()
-	}, [refetch])
+		invalidateExperiment()
+	}, [refetch, invalidateExperiment])
 
 	const { patchCoordinates, deleteGate, saveGateNameColor } =
 		useGateMutations(loadFile)
