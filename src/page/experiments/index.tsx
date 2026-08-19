@@ -1,4 +1,12 @@
-import { Box, Typography, Button, FormControl, InputLabel, MenuItem, Select } from "@mui/material"
+import {
+	Box,
+	Typography,
+	Button,
+	FormControl,
+	InputLabel,
+	MenuItem,
+	Select,
+} from "@mui/material"
 import { useEffect, useMemo } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import Layout from "../../components/Layout"
@@ -26,11 +34,18 @@ export default function ExperimentsPage() {
 	const filteredExperiments = useMemo(() => {
 		if (orgId === null) return experiments
 		if (orgId === 0) return experiments.filter((e) => !e.organization)
-		return experiments.filter((e) => e.organization?.id === orgId)
+		return experiments.filter((e) => e.organization === orgId)
 	}, [experiments, orgId])
 
-	const org = user?.memberships?.find((m) => m.organization.id === orgId)?.organization
-	const title = orgId === 0 ? "Meus experimentos pessoais" : org ? `Experiments — ${org.name}` : "Experiments"
+	const org = user?.memberships?.find(
+		(m) => m.organization.id === orgId,
+	)?.organization
+	const title =
+		orgId === 0
+			? "Meus experimentos pessoais"
+			: org
+				? `Experiments — ${org.name}`
+				: "Experiments"
 
 	const handleOrgChange = (value: string) => {
 		const params = new URLSearchParams(searchParams)
@@ -39,12 +54,18 @@ export default function ExperimentsPage() {
 		} else {
 			params.set("orgId", value)
 		}
-		navigate({ pathname: "/experiments", search: params.toString() }, { replace: true })
+		navigate(
+			{ pathname: "/experiments", search: params.toString() },
+			{ replace: true },
+		)
 	}
 
 	const orgOptions = [
 		{ id: "0", name: "Pessoal (sem lab)" },
-		...(user?.memberships?.map((m) => ({ id: String(m.organization.id), name: m.organization.name })) || []),
+		...(user?.memberships?.map((m) => ({
+			id: String(m.organization.id),
+			name: m.organization.name,
+		})) || []),
 	]
 
 	return (
@@ -67,11 +88,23 @@ export default function ExperimentsPage() {
 						mb: { xs: 2, md: 3 },
 					}}
 				>
-					<Typography sx={{ fontSize: { xs: "1.5rem", md: "2rem" }, fontWeight: "bold" }}>
+					<Typography
+						sx={{ fontSize: { xs: "1.5rem", md: "2rem" }, fontWeight: "bold" }}
+					>
 						{title}
 					</Typography>
-					<Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, alignItems: { sm: "center" }, gap: 2 }}>
-						<FormControl sx={{ minWidth: { xs: "100%", sm: 220 }, flex: 1 }} size="small">
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: { xs: "column", sm: "row" },
+							alignItems: { sm: "center" },
+							gap: 2,
+						}}
+					>
+						<FormControl
+							sx={{ minWidth: { xs: "100%", sm: 220 }, flex: 1 }}
+							size="small"
+						>
 							<InputLabel id="org-select-label">Ver experimentos de</InputLabel>
 							<Select
 								labelId="org-select-label"
@@ -83,11 +116,18 @@ export default function ExperimentsPage() {
 									<em>Todos</em>
 								</MenuItem>
 								{orgOptions.map((o) => (
-									<MenuItem key={o.id} value={o.id}>{o.name}</MenuItem>
+									<MenuItem key={o.id} value={o.id}>
+										{o.name}
+									</MenuItem>
 								))}
 							</Select>
 						</FormControl>
-						<Button variant="outlined" size="small" onClick={() => navigate("/")} sx={{ whiteSpace: "nowrap" }}>
+						<Button
+							variant="outlined"
+							size="small"
+							onClick={() => navigate("/")}
+							sx={{ whiteSpace: "nowrap" }}
+						>
 							Voltar para home
 						</Button>
 					</Box>
