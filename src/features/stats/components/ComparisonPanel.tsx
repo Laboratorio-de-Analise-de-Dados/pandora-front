@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useState } from "react"
-import { useQueries } from "@tanstack/react-query"
 import {
 	Box,
 	Button,
@@ -29,14 +28,14 @@ import {
 	MdTune as TuneIcon,
 } from "react-icons/md"
 import { FaVial as VialIcon } from "react-icons/fa"
-import type { AnalysisResultData, ExperimentFiles, Gate } from "../../../types"
+import type { ExperimentFiles, Gate } from "../../../types"
 import { findGateInTree, findFileForGate, getGateStrategy } from "../../gate/utils"
-import { fetchFileStats } from "../../../services/experimentService"
 import { isFluorescence } from "../utils/channelHelpers"
 import { buildAnalysisRows } from "../utils/statsRows"
 import type { PopulationRow } from "../utils/statsRows"
 import { fmtPct } from "../../../utils/format"
 import type { SelectableItem } from "./SourceSelector"
+import { useComparisonStats } from "../hooks/useComparisonStats"
 
 interface MetricDef {
 	key: "mean_mfi" | "median_mfi" | "std_dev" | "cv"
@@ -70,44 +69,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 		useState<HTMLElement | null>(null)
 	const [compareChannelMenuSearch, setCompareChannelMenuSearch] = useState("")
 
-	const fileItemIds = useMemo(
-		() => compareItems.filter((i) => i.type === "file").map((i) => i.id),
-		[compareItems],
-	)
-
-	const fileStatsQueries = useQueries({
-		queries: fileItemIds.map((id) => ({
-			queryKey: ["fileStats", id],
-			queryFn: () => fetchFileStats(id),
-			enabled: Boolean(id),
-		})),
-	})
-
-	const fileAnalysisMap = useMemo(() => {
-		const map: Record<number, AnalysisResultData | undefined> = {}
-		for (let i = 0; i < fileItemIds.length; i++) {
-			map[fileItemIds[i]] = fileStatsQueries[i]?.data
-		}
-		return map
-	}, [fileItemIds, fileStatsQueries])
-
-	const compareData = useMemo(() => {
-		if (compareItems.length === 0) return []
-		return compareItems.map((item) => {
-			if (item.type === "gate") {
-				for (const f of files) {
-					const g = findGateInTree(f.gates, item.id)
-					if (g)
-						return {
-							item,
-							gate: g,
-							analysis: g.analysis_result?.analysis_result,
-						}
-				}
-			}
-			return { item, gate: undefined, analysis: fileAnalysisMap[item.id] }
-		})
-	}, [compareItems, files, fileAnalysisMap])
+	const { compareData } = useComparisonStats(compareItems, files)
 
 	const compareAvailableChannels = useMemo(() => {
 		const channels = new Set<string>()
