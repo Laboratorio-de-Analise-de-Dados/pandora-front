@@ -418,6 +418,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									onChange={handleSelectY}
 									rotated={!isMobile}
 									fullWidth={isMobile}
+									size={isMobile ? "small" : "medium"}
+									label={isMobile ? "Eixo Y" : undefined}
 								/>
 							</Box>
 						)}
@@ -621,7 +623,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							maxWidth: "100%",
 						}}
 					>
-						<AxisSelect value={xAxis} options={values} onChange={handleSelectX} />
+						<AxisSelect
+							value={xAxis}
+							options={values}
+							onChange={handleSelectX}
+							fullWidth={isMobile}
+							size={isMobile ? "small" : "medium"}
+							label={isMobile ? "Eixo X" : undefined}
+						/>
 					</Box>
 				</Box>
 			</Box>
