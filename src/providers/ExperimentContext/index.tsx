@@ -64,7 +64,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 		async (title: string, type: string, file: File, organizationId?: number | null) => {
 			const chunkSize = 0.5 * 1024 * 1024
 			const totalChunks = Math.ceil(file.size / chunkSize)
-			const orgId = organizationId ?? user?.memberships?.[0]?.organization?.id
+			const orgId = organizationId === undefined ? user?.memberships?.[0]?.organization?.id ?? null : organizationId
 
 			const initResponse = await CytometryApi.post("/experiment/init/", {
 				title,
