@@ -14,8 +14,15 @@ import {
 	InputLabel,
 	Tabs,
 	Tab,
+	Chip,
+	CircularProgress,
+	Divider,
 } from "@mui/material"
+import { toast } from "react-toastify"
 import CytometryApi from "../../API"
+import { useAuth } from "../../providers/AuthContext"
+import { useInvites } from "../../hooks/useInvites"
+import { useSentInvites } from "../../hooks/useSentInvites"
 import InviteModal from "../../components/InviteModal"
 
 interface Member {
@@ -32,12 +39,29 @@ interface Organization {
 }
 
 export default function OrganizationsPage() {
+	const { user, refreshUser } = useAuth()
 	const [organizations, setOrganizations] = useState<Organization[]>([])
 	const [tab, setTab] = useState(0)
 	const [newOrgName, setNewOrgName] = useState("")
 	const [newOrgType, setNewOrgType] = useState("lab")
 	const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
 	const [inviteOpen, setInviteOpen] = useState(false)
+
+	const {
+		invites: receivedInvites,
+		loading: receivedLoading,
+		accept,
+		decline,
+		refresh: refreshReceived,
+	} = useInvites(Boolean(user) && tab === 2)
+
+	const {
+		invites: sentInvites,
+		loading: sentLoading,
+		resend,
+		cancel,
+		refresh: refreshSent,
+	} = useSentInvites(Boolean(user) && tab === 2)
 
 	const loadOrganizations = async () => {
 		const res = await CytometryApi.get("/accounts/organizations/")
@@ -64,6 +88,58 @@ export default function OrganizationsPage() {
 		setInviteOpen(true)
 	}
 
+	const handleAccept = async (invite: any) => {
+		try {
+			await accept(invite)
+			toast.success("Convite aceito.", { position: "bottom-right" })
+			await refreshUser()
+			await loadOrganizations()
+			await refreshReceived()
+		} catch (err: any) {
+			toast.error(err.response?.data?.detail || "Erro ao aceitar convite.", { position: "bottom-right" })
+		}
+	}
+
+	const handleDecline = async (invite: any) => {
+		try {
+			await decline(invite)
+			toast.info("Convite recusado.", { position: "bottom-right" })
+			await refreshReceived()
+		} catch (err: any) {
+			toast.error(err.response?.data?.detail || "Erro ao recusar convite.", { position: "bottom-right" })
+		}
+	}
+
+	const handleResend = async (invite: any) => {
+		try {
+			const emailSent = await resend(invite)
+			if (emailSent) {
+				toast.success("Convite reenviado por email.", { position: "bottom-right" })
+			} else {
+				toast.warning("Convite reenviado, mas o email não foi entregue. Verifique o SMTP.", { position: "bottom-right" })
+			}
+		} catch (err: any) {
+			toast.error(err.response?.data?.detail || "Erro ao reenviar convite.", { position: "bottom-right" })
+		}
+	}
+
+	const handleCancel = async (invite: any) => {
+		try {
+			await cancel(invite)
+			toast.info("Convite cancelado.", { position: "bottom-right" })
+			await refreshSent()
+		} catch (err: any) {
+			toast.error(err.response?.data?.detail || "Erro ao cancelar convite.", { position: "bottom-right" })
+		}
+	}
+
+	const getRoleName = (m: any) =>
+		typeof m.role === "string" ? m.role : m.role?.name
+
+	const isOrgAdmin = (orgId: number) =>
+		Boolean(user?.is_super_admin) ||
+		user?.memberships?.some((m) => m.organization?.id === orgId && getRoleName(m) === "org_admin")
+
 	return (
 		<Box sx={{ p: 4, maxWidth: 900, mx: "auto" }}>
 			<Typography variant="h4" mb={3}>
@@ -73,6 +149,7 @@ export default function OrganizationsPage() {
 			<Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
 				<Tab label="Meus grupos" />
 				<Tab label="Criar grupo" />
+				<Tab label="Convites" />
 			</Tabs>
 
 			<Paper sx={{ p: 3, minHeight: 360 }}>
@@ -97,14 +174,16 @@ export default function OrganizationsPage() {
 											{org.org_type} — {org.members?.length || 0} membros
 										</Typography>
 									</Box>
-									<Button
-										variant="outlined"
-										size="small"
-										onClick={() => openInvite(org)}
-										sx={{ mt: { xs: 1, sm: 0 } }}
-									>
-										Convidar
-									</Button>
+									{isOrgAdmin(org.id) && (
+										<Button
+											variant="outlined"
+											size="small"
+											onClick={() => openInvite(org)}
+											sx={{ mt: { xs: 1, sm: 0 } }}
+										>
+											Convidar
+										</Button>
+									)}
 								</Box>
 								{org.members && org.members.length > 0 && (
 									<List dense sx={{ mt: 1 }}>
@@ -120,13 +199,13 @@ export default function OrganizationsPage() {
 									)}
 								</Paper>
 							))}
-						{organizations.length === 0 && (
-							<Typography color="text.secondary" mt={2}>
-								Nenhuma organização encontrada.
-							</Typography>
-						)}
-					</Box>
-				)}
+							{organizations.length === 0 && (
+								<Typography color="text.secondary" mt={2}>
+									Nenhuma organização encontrada.
+								</Typography>
+							)}
+						</Box>
+					)}
 
 				{tab === 1 && (
 					<Box component="form" onSubmit={handleCreateOrg} sx={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: 500 }}>
@@ -146,6 +225,111 @@ export default function OrganizationsPage() {
 						<Button type="submit" variant="contained" sx={{ mt: 1 }}>
 							Criar organização
 						</Button>
+					</Box>
+				)}
+
+				{tab === 2 && (
+					<Box>
+						<Typography variant="h6" gutterBottom>
+							Convites recebidos
+						</Typography>
+						{receivedLoading ? (
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
+								<CircularProgress size={20} />
+								<Typography variant="body2" color="text.secondary">Carregando...</Typography>
+							</Box>
+						) : receivedInvites.length === 0 ? (
+							<Typography color="text.secondary" mb={3}>
+								Nenhum convite pendente.
+							</Typography>
+						) : (
+							<List dense sx={{ mb: 4 }}>
+								{receivedInvites.map((invite) => {
+									const emailMatch = user?.email.toLowerCase() === invite.email.toLowerCase()
+									return (
+										<ListItem
+											key={invite.id}
+											divider
+											sx={{ flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: "flex-start", sm: "center" }, gap: 1 }}
+										>
+											<ListItemText
+												primary={`Convite para ${invite.organization.name}`}
+												secondary={`${invite.email} — ${invite.role.name}`}
+											/>
+											<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+												{!emailMatch && (
+													<Chip label="Outro email" size="small" color="warning" />
+												)}
+												<Button
+													variant="contained"
+													size="small"
+													disabled={!emailMatch}
+													onClick={() => handleAccept(invite)}
+												>
+													Aceitar
+												</Button>
+												<Button
+													variant="outlined"
+													size="small"
+													disabled={!emailMatch}
+													onClick={() => handleDecline(invite)}
+												>
+													Recusar
+												</Button>
+											</Box>
+										</ListItem>
+									)
+								})}
+							</List>
+						)}
+
+						<Divider sx={{ my: 2 }} />
+
+						<Typography variant="h6" gutterBottom>
+							Convites enviados
+						</Typography>
+						{sentLoading ? (
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+								<CircularProgress size={20} />
+								<Typography variant="body2" color="text.secondary">Carregando...</Typography>
+							</Box>
+						) : sentInvites.length === 0 ? (
+							<Typography color="text.secondary">
+								Nenhum convite pendente enviado.
+							</Typography>
+						) : (
+							<List dense>
+								{sentInvites.map((invite) => (
+									<ListItem
+										key={invite.id}
+										divider
+										sx={{ flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: "flex-start", sm: "center" }, gap: 1 }}
+									>
+										<ListItemText
+											primary={`${invite.organization.name}`}
+											secondary={`${invite.email} — ${invite.role.name}`}
+										/>
+										<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+											<Button
+												variant="outlined"
+												size="small"
+												onClick={() => handleResend(invite)}
+											>
+												Reenviar
+											</Button>
+											<Button
+												variant="outlined"
+												color="error"
+												size="small"
+												onClick={() => handleCancel(invite)}
+											>
+												Cancelar
+											</Button>
+										</Box>
+									</ListItem>
+								))}
+							</List>
+						)}
 					</Box>
 				)}
 			</Paper>
