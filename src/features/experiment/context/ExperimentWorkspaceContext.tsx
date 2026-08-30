@@ -43,6 +43,7 @@ interface ExperimentWorkspaceValue {
 	selectedGate: Gate | undefined
 	viewConfig: PlotViewConfig
 	setViewConfig: (config: PlotViewConfig) => void
+	plotInitialConfig: PlotViewConfig
 	goToAdjacentFile: (direction: 1 | -1) => void
 	canGoPrevFile: boolean
 	canGoNextFile: boolean
@@ -78,7 +79,17 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 	const { data: experimentFiles = [] } = useExperimentFilesQuery(experimentId)
 	const invalidateExperiment = useInvalidateExperiment(experimentId)
 
-	const [source, setSource] = useState<SelectedSource | undefined>(undefined)
+	const [source, setSourceState] = useState<SelectedSource | undefined>(
+		undefined,
+	)
+	// Navegar entre arquivos preserva a config corrente; escolher uma fonte
+	// explicitamente (árvore/dropdown) volta a respeitar o `plot_config` do gate.
+	const [keepCurrentViewConfig, setKeepCurrentViewConfig] = useState(false)
+
+	const setSource = useCallback((next: SelectedSource | undefined) => {
+		setKeepCurrentViewConfig(false)
+		setSourceState(next)
+	}, [])
 
 	const { data: fileStats } = useFileStatsQuery(source?.type, source?.id)
 
@@ -121,9 +132,10 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 			const targetIndex = currentFileIndex + direction
 			if (targetIndex < 0 || targetIndex >= experimentFiles.length) return
 			const targetFile = experimentFiles[targetIndex]
+			setKeepCurrentViewConfig(true)
 
 			const selectFileRoot = () =>
-				setSource({
+				setSourceState({
 					type: "file",
 					id: targetFile.id,
 					name: targetFile.file_name,
@@ -143,7 +155,7 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 			}
 			const targetGate = findGateByPathNames(targetFile.gates, pathNames, true)
 			if (targetGate) {
-				setSource({
+				setSourceState({
 					type: "gate",
 					id: targetGate.id,
 					name: targetGate.name,
@@ -154,6 +166,14 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 			}
 		},
 		[source, currentFileIndex, experimentFiles],
+	)
+
+	const plotInitialConfig = useMemo<PlotViewConfig>(
+		() =>
+			keepCurrentViewConfig
+				? viewConfig
+				: { ...viewConfig, ...selectedGate?.plot_config },
+		[keepCurrentViewConfig, viewConfig, selectedGate],
 	)
 
 	const value = useMemo<ExperimentWorkspaceValue>(
@@ -172,11 +192,12 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 			selectedGate,
 			viewConfig,
 			setViewConfig,
+			plotInitialConfig,
 			goToAdjacentFile,
 			canGoPrevFile,
 			canGoNextFile,
 		}),
-		[experimentId, experiment, experimentFiles, isLoading, source, fileStats, invalidateExperiment, childGates, siblingGateNames, values, selectedGate, viewConfig, goToAdjacentFile, canGoPrevFile, canGoNextFile],
+		[experimentId, experiment, experimentFiles, isLoading, source, setSource, fileStats, invalidateExperiment, childGates, siblingGateNames, values, selectedGate, viewConfig, plotInitialConfig, goToAdjacentFile, canGoPrevFile, canGoNextFile],
 	)
 
 	return (
