@@ -15,8 +15,14 @@ import {
 	Typography,
 } from "@mui/material"
 import { ChangeEvent, useEffect, useState } from "react"
+import { toast } from "react-toastify"
 import { useExperimentsContext } from "../../../../providers/ExperimentContext"
 import { useAuth } from "../../../../providers/AuthContext"
+import {
+	ACCEPTED_EXPERIMENT_FILE_ACCEPT,
+	ACCEPTED_EXPERIMENT_FILE_MESSAGE,
+	isAcceptedExperimentFile,
+} from "../../../../utils/experimentFile"
 
 export default function NewExperimentCard() {
 	const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
@@ -49,8 +55,13 @@ export default function NewExperimentCard() {
 			setUploading(true)
 			const orgId = organizationId === "" ? null : parseInt(organizationId, 10)
 			await createExperiment(title, experimentType, file, orgId)
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Erro ao criar experimento:", error)
+			toast.error(
+				error?.response?.data?.detail ||
+					error?.message ||
+					"Erro ao criar experimento.",
+			)
 		} finally {
 			setUploading(false)
 			handleClose()
@@ -80,11 +91,19 @@ export default function NewExperimentCard() {
 	}
 
 	const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
-		const file = event.target.files?.[0]
-		if (file) {
-			setSelectedFileName(file.name)
-			setFile(file)
+		const selected = event.target.files?.[0]
+		event.target.value = ""
+		if (!selected) return
+
+		if (!isAcceptedExperimentFile(selected.name)) {
+			toast.error(ACCEPTED_EXPERIMENT_FILE_MESSAGE)
+			setSelectedFileName(null)
+			setFile(null)
+			return
 		}
+
+		setSelectedFileName(selected.name)
+		setFile(selected)
 	}
 
 	// calcula progresso geral
@@ -190,8 +209,16 @@ export default function NewExperimentCard() {
 							startIcon={<CloudUploadIcon />}
 						>
 							Upload file
-							<input type="file" onChange={handleFileChange} hidden />
+							<input
+								type="file"
+								accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
+								onChange={handleFileChange}
+								hidden
+							/>
 						</Button>
+						<Typography variant="caption" marginTop={1}>
+							Formatos aceitos: .fcs ou .zip
+						</Typography>
 						{selectedFileName && (
 							<Typography variant="body2" marginTop={2}>
 								Selected file: {selectedFileName}

@@ -70,6 +70,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				title,
 				type,
 				totalChunks,
+				fileName: file.name,
 				organizationId: orgId,
 			})
 			const fileId = initResponse.data.fileId
@@ -114,6 +115,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 					"/experiment/complete/",
 					{
 						fileId,
+						fileName: file.name,
 					}
 				)
 				await listExperiments()
