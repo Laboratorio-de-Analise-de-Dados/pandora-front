@@ -1,7 +1,11 @@
 import { useCallback, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
-import { deleteExperiment } from "../../../services/experimentService"
+import {
+	deleteExperiment,
+	disableFileData,
+	enableFileData,
+} from "../../../services/experimentService"
 import {
 	applyGates,
 	deleteGate,
@@ -9,6 +13,19 @@ import {
 } from "../../../services/gateService"
 import { findFileForGate } from "../../gate/utils"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
+
+const extractErrorMessage = (error: unknown): string => {
+	const err = error as {
+		response?: { data?: unknown }
+		message?: string
+	}
+	const data = err?.response?.data
+	if (data && typeof data === "object" && "detail" in data) {
+		const detail = (data as { detail?: unknown }).detail
+		if (typeof detail === "string") return detail
+	}
+	return err?.message ?? String(error)
+}
 
 export interface ApplyTarget {
 	id: number
@@ -89,6 +106,53 @@ export function useExperimentPageActions() {
 		[invalidateExperiment],
 	)
 
+	const handleDisableFile = useCallback(
+		async (fileDataId: number) => {
+			try {
+				await disableFileData(fileDataId)
+				toast.success("Amostra desabilitada. Os gates foram preservados.", {
+					position: "bottom-right",
+				})
+				if (source?.fileDataId === fileDataId) {
+					const next = experimentFiles.find(
+						(file) => file.id !== fileDataId && file.active !== false,
+					)
+					setSource(
+						next
+							? {
+									type: "file",
+									id: next.id,
+									name: next.file_name,
+									fileDataId: next.id,
+								}
+							: undefined,
+					)
+				}
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(`Erro ao desabilitar a amostra: ${extractErrorMessage(error)}`, {
+					position: "bottom-right",
+				})
+			}
+		},
+		[experimentFiles, invalidateExperiment, setSource, source],
+	)
+
+	const handleEnableFile = useCallback(
+		async (fileDataId: number) => {
+			try {
+				await enableFileData(fileDataId)
+				toast.success("Amostra reativada", { position: "bottom-right" })
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(`Erro ao reativar a amostra: ${extractErrorMessage(error)}`, {
+					position: "bottom-right",
+				})
+			}
+		},
+		[invalidateExperiment],
+	)
+
 	const handleApplyGate = useCallback(
 		(gateId: number, gateName: string) => {
 			const file = findFileForGate(experimentFiles, gateId)
@@ -134,6 +198,8 @@ export function useExperimentPageActions() {
 		handleDelete,
 		handleDeleteGate,
 		handleRenameGate,
+		handleDisableFile,
+		handleEnableFile,
 		handleApplyGate,
 		handleConfirmApply,
 		applyTarget,

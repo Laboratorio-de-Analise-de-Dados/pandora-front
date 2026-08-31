@@ -1,6 +1,8 @@
 import {
 	Box,
 	CircularProgress,
+	FormControlLabel,
+	Switch,
 	Typography,
 	IconButton,
 	Tooltip,
@@ -46,12 +48,16 @@ function ExperimentPageContent() {
 		goToAdjacentFile,
 		canGoPrevFile,
 		canGoNextFile,
+		showInactiveFiles,
+		setShowInactiveFiles,
 	} = useExperimentWorkspace()
 
 	const {
 		handleDelete,
 		handleDeleteGate,
 		handleRenameGate,
+		handleDisableFile,
+		handleEnableFile,
 		handleApplyGate,
 		handleConfirmApply,
 		applyTarget,
@@ -86,6 +92,19 @@ function ExperimentPageContent() {
 					</Tooltip>
 				)}
 			</Typography>
+			<FormControlLabel
+				control={
+					<Switch
+						size="small"
+						checked={showInactiveFiles}
+						onChange={(e) => setShowInactiveFiles(e.target.checked)}
+					/>
+				}
+				label={
+					<Typography variant="caption">Mostrar desabilitadas</Typography>
+				}
+				sx={{ flexShrink: 0, mt: 0.5 }}
+			/>
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
 				<ParentTree
 					files={experimentFiles}
@@ -96,6 +115,8 @@ function ExperimentPageContent() {
 					onDeleteGate={handleDeleteGate}
 					onRenameGate={handleRenameGate}
 					onApplyGate={handleApplyGate}
+					onDisableFile={handleDisableFile}
+					onEnableFile={handleEnableFile}
 				/>
 			</Box>
 		</>
@@ -267,7 +288,7 @@ function ExperimentPageContent() {
 					open={!!applyTarget}
 					gateName={applyTarget.name}
 					gateId={applyTarget.id}
-					files={experimentFiles}
+					files={experimentFiles.filter((f) => f.active !== false)}
 					sourceFileDataId={applyTarget.fileDataId}
 					onClose={() => setApplyTarget(null)}
 					onApply={handleConfirmApply}
