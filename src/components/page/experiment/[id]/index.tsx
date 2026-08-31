@@ -40,8 +40,7 @@ function ExperimentPageContent() {
 		childGates,
 		siblingGateNames,
 		values,
-		selectedGate,
-		viewConfig,
+		plotInitialConfig,
 		setViewConfig,
 		goToAdjacentFile,
 		canGoPrevFile,
@@ -175,10 +174,7 @@ function ExperimentPageContent() {
 									key={`${source.type}-${source.id}`}
 									sourceType={source.type}
 									sourceId={source.id}
-									initialConfig={{
-										...viewConfig,
-										...selectedGate?.plot_config,
-									}}
+									initialConfig={plotInitialConfig}
 									onPersist={setViewConfig}
 								>
 									<ScatterPlot
