@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
 import { createGate } from "../../../services/gateService"
 import type { GateCoordinates, NewGate, PlotViewConfig, Scale } from "../../../types"
+import {
+	getNextGateName,
+	getNextQuadrantGroup,
+	getQuadrantLabels,
+	quadrantPrefixFits,
+} from "../../gate/utils/gateNaming"
 import { toRaw } from "../utils/biex"
 import { isDegenerateSelection } from "../utils/gateSelection"
 import { buildAxisRange } from "../utils/plotAxes"
@@ -10,6 +16,8 @@ import type { GateTool, PlotMode } from "./usePlotState"
 interface UseGateDrawingParams {
 	fileDataId: number
 	parentId?: number
+	/** Nome do gate pai, usado para derivar o nome hierárquico do novo gate. */
+	parentName?: string
 	xAxis: string
 	yAxis: string
 	effXScale: Scale
@@ -33,29 +41,10 @@ interface UseGateDrawingParams {
 	onGateDrawn?: () => void
 }
 
-/** Gera o próximo nome de gate no estilo FlowJo: "P1", "P2", ... */
-const getNextGateName = (existingNames: ReadonlySet<string>): string => {
-	let n = 1
-	while (existingNames.has(`P${n}`)) n++
-	return `P${n}`
-}
-
-const getQuadrantLabels = (n: number): string[] => [
-	`Q${n} (X+Y+)`,
-	`Q${n} (X-Y+)`,
-	`Q${n} (X-Y-)`,
-	`Q${n} (X+Y-)`,
-]
-
-const getNextQuadrantGroup = (existingNames: ReadonlySet<string>): number => {
-	let n = 1
-	while (getQuadrantLabels(n).some((label) => existingNames.has(label))) n++
-	return n
-}
-
 export function useGateDrawing({
 	fileDataId,
 	parentId,
+	parentName,
 	xAxis,
 	yAxis,
 	effXScale,
@@ -108,7 +97,7 @@ export function useGateDrawing({
 	const createGateDirectly = useCallback(
 		async (coords: GateCoordinates) => {
 			try {
-				const gateName = getNextGateName(existingNames)
+				const gateName = getNextGateName(existingNames, parentName)
 				const isInterval = coords.type === "interval"
 				const dashName = isInterval
 					? `${xAxis} (histogram)`
@@ -147,6 +136,7 @@ export function useGateDrawing({
 		[
 			fileDataId,
 			parentId,
+			parentName,
 			xAxis,
 			yAxis,
 			existingNames,
@@ -263,13 +253,15 @@ export function useGateDrawing({
 			const cx = toRaw(pt.x as number, effXScale, effCof)
 			const cy = toRaw(pt.y as number, effYScale, effCof)
 
-			const n = getNextQuadrantGroup(existingNames)
+			const n = getNextQuadrantGroup(existingNames, parentName)
+			const prefix = quadrantPrefixFits(n, parentName) ? parentName : undefined
+			const labels = getQuadrantLabels(n, prefix)
 
 			const quadrants: Array<{ quadrant: "Q1" | "Q2" | "Q3" | "Q4"; label: string }> = [
-				{ quadrant: "Q1", label: `Q${n} (X+Y+)` },
-				{ quadrant: "Q2", label: `Q${n} (X-Y+)` },
-				{ quadrant: "Q3", label: `Q${n} (X-Y-)` },
-				{ quadrant: "Q4", label: `Q${n} (X+Y-)` },
+				{ quadrant: "Q1", label: labels[0] },
+				{ quadrant: "Q2", label: labels[1] },
+				{ quadrant: "Q3", label: labels[2] },
+				{ quadrant: "Q4", label: labels[3] },
 			]
 			try {
 				const createdLabels: string[] = []
@@ -313,7 +305,7 @@ export function useGateDrawing({
 				toast.error(`Erro ao criar quadrante: ${msg}`, { position: "bottom-right" })
 			}
 		},
-		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, fileDataId, parentId, existingNames, loadFile, plotConfig],
+		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, fileDataId, parentId, parentName, existingNames, loadFile, plotConfig],
 	)
 
 	return { createGateDirectly, handleSelectedArea, handleQuadrantClick }
