@@ -2,7 +2,6 @@ import React from "react"
 import { Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material"
 import {
 	MdOpenWith as ReshapeIcon,
-	MdPalette as PaletteIcon,
 	MdEdit as EditIcon,
 	MdDelete as DeleteIcon,
 } from "react-icons/md"
@@ -11,8 +10,7 @@ interface GateContextMenuProps {
 	anchorPosition: { top: number; left: number } | null
 	onClose: () => void
 	onReshape: () => void
-	onColor: () => void
-	onRename: () => void
+	onEdit: () => void
 	onDelete: () => void
 }
 
@@ -20,8 +18,7 @@ const GateContextMenu: React.FC<GateContextMenuProps> = ({
 	anchorPosition,
 	onClose,
 	onReshape,
-	onColor,
-	onRename,
+	onEdit,
 	onDelete,
 }) => (
 	<Menu
@@ -36,17 +33,11 @@ const GateContextMenu: React.FC<GateContextMenuProps> = ({
 			</ListItemIcon>
 			<ListItemText>Redimensionar</ListItemText>
 		</MenuItem>
-		<MenuItem onClick={onColor}>
-			<ListItemIcon>
-				<PaletteIcon fontSize="small" />
-			</ListItemIcon>
-			<ListItemText>Trocar cor</ListItemText>
-		</MenuItem>
-		<MenuItem onClick={onRename}>
+		<MenuItem onClick={onEdit}>
 			<ListItemIcon>
 				<EditIcon fontSize="small" />
 			</ListItemIcon>
-			<ListItemText>Renomear</ListItemText>
+			<ListItemText>Editar gate</ListItemText>
 		</MenuItem>
 		<MenuItem onClick={onDelete}>
 			<ListItemIcon>

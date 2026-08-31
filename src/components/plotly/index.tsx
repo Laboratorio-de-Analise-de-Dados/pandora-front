@@ -9,8 +9,8 @@ import {
 import { useTheme } from "@mui/material/styles"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import Plot from "react-plotly.js"
-import { toast } from "react-toastify"
 import { Gate, Scale } from "../../types"
+import type { GateScope } from "../../services/gateService"
 import { getGateColor } from "../../constants/gateColors"
 
 import { usePlotContext } from "../../features/plot/context/PlotStateContext"
@@ -97,6 +97,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const [editDialogOpen, setEditDialogOpen] = useState(false)
 	const [editGateName, setEditGateName] = useState("")
 	const [editGateColor, setEditGateColor] = useState("#0078FF")
+	const [editGateScope, setEditGateScope] = useState<GateScope>("file")
+	const [editGateError, setEditGateError] = useState<string | null>(null)
+	const [savingGate, setSavingGate] = useState(false)
 	// Context menu state
 	const [contextMenu, setContextMenu] = useState<{
 		mouseX: number
@@ -207,6 +210,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setEditGateName(gate.name)
 		const idx = childGates.findIndex((g) => g.id === gate.id)
 		setEditGateColor(getGateColor(gate.color, idx < 0 ? 0 : idx))
+		setEditGateScope("file")
+		setEditGateError(null)
 		setEditDialogOpen(true)
 	}
 
@@ -225,24 +230,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const handleContextMenuClose = () => setContextMenu(null)
 
-	const handleContextMenuColor = () => {
+	const handleContextMenuEdit = () => {
 		if (!contextMenu) return
 		setSelectedGate(contextMenu.gate)
 		setEditGateName(contextMenu.gate.name)
 		setEditGateColor(
 			getGateColor(contextMenu.gate.color, contextMenu.gateIndex),
 		)
-		setEditDialogOpen(true)
-		setContextMenu(null)
-	}
-
-	const handleContextMenuRename = () => {
-		if (!contextMenu) return
-		setSelectedGate(contextMenu.gate)
-		setEditGateName(contextMenu.gate.name)
-		setEditGateColor(
-			getGateColor(contextMenu.gate.color, contextMenu.gateIndex),
-		)
+		setEditGateScope("file")
+		setEditGateError(null)
 		setEditDialogOpen(true)
 		setContextMenu(null)
 	}
@@ -278,22 +274,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setEditingVertices([])
 	}
 
-	const handleSaveGateName = async () => {
+	const handleSaveGate = async () => {
 		if (!selectedGate || !editGateName.trim()) {
-			toast.error("Nome do gate não pode estar vazio", {
-				position: "bottom-right",
-			})
+			setEditGateError("Nome do gate não pode estar vazio")
 			return
 		}
-		const ok = await saveGateNameColor(
+		setSavingGate(true)
+		const error = await saveGateNameColor(
 			selectedGate.id,
 			editGateName,
 			editGateColor,
+			editGateScope,
 		)
-		if (ok) {
-			setEditDialogOpen(false)
-			setSelectedGate(null)
+		setSavingGate(false)
+		if (error) {
+			setEditGateError(error)
+			return
 		}
+		setEditDialogOpen(false)
+		setSelectedGate(null)
 	}
 
 	// Build Plotly trace data
@@ -644,9 +643,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				gate={selectedGate}
 				name={editGateName}
 				color={editGateColor}
+				scope={editGateScope}
+				error={editGateError}
+				saving={savingGate}
 				onNameChange={setEditGateName}
 				onColorChange={setEditGateColor}
-				onSave={handleSaveGateName}
+				onScopeChange={setEditGateScope}
+				onSave={handleSaveGate}
 				onClose={() => setEditDialogOpen(false)}
 			/>
 
@@ -658,8 +661,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				}
 				onClose={handleContextMenuClose}
 				onReshape={handleContextMenuReshape}
-				onColor={handleContextMenuColor}
-				onRename={handleContextMenuRename}
+				onEdit={handleContextMenuEdit}
 				onDelete={handleContextMenuDelete}
 			/>
 		</Box>

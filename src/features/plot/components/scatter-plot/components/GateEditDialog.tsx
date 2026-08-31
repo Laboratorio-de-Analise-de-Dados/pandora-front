@@ -1,15 +1,21 @@
 import React from "react"
 import {
+	Alert,
 	Box,
 	Button,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
+	FormControlLabel,
+	FormLabel,
+	Radio,
+	RadioGroup,
 	TextField,
 	Typography,
 } from "@mui/material"
 import ColorPicker from "../../../../../components/color_picker"
+import type { GateScope } from "../../../../../services/gateService"
 import type { Gate } from "../../../../../types"
 
 interface GateEditDialogProps {
@@ -17,8 +23,12 @@ interface GateEditDialogProps {
 	gate: Gate | null
 	name: string
 	color: string
+	scope: GateScope
+	error: string | null
+	saving: boolean
 	onNameChange: (name: string) => void
 	onColorChange: (color: string) => void
+	onScopeChange: (scope: GateScope) => void
 	onSave: () => void
 	onClose: () => void
 }
@@ -28,18 +38,40 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 	gate,
 	name,
 	color,
+	scope,
+	error,
+	saving,
 	onNameChange,
 	onColorChange,
+	onScopeChange,
 	onSave,
 	onClose,
 }) => {
 	const summary = gate?.analysis_result?.analysis_result?.summary_metrics
 
 	return (
-		<Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+		<Dialog
+			open={open}
+			onClose={onClose}
+			maxWidth="sm"
+			fullWidth
+			PaperProps={{ sx: { maxHeight: "90vh", overflowY: "auto" } }}
+		>
 			<DialogTitle>Editar Gate</DialogTitle>
 			<DialogContent sx={{ pt: 2 }}>
-				<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+				{error && (
+					<Alert severity="error" sx={{ mb: 2 }}>
+						{error}
+					</Alert>
+				)}
+				<Box
+					sx={{
+						display: "flex",
+						alignItems: { xs: "stretch", sm: "center" },
+						flexDirection: { xs: "column", sm: "row" },
+						gap: 1,
+					}}
+				>
 					<ColorPicker value={color} onChange={onColorChange} />
 					<TextField
 						fullWidth
@@ -51,6 +83,28 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 						placeholder="Digite o novo nome"
 						autoFocus
 					/>
+				</Box>
+				<Box sx={{ mt: 2 }}>
+					<FormLabel sx={{ fontSize: "0.8rem" }}>
+						Aplicar nome e cor em
+					</FormLabel>
+					<RadioGroup
+						value={scope}
+						onChange={(_, value: string) =>
+							onScopeChange(value as GateScope)
+						}
+					>
+						<FormControlLabel
+							value="file"
+							control={<Radio size="small" />}
+							label="Apenas nesta amostra"
+						/>
+						<FormControlLabel
+							value="experiment"
+							control={<Radio size="small" />}
+							label="Em todas as amostras do experimento"
+						/>
+					</RadioGroup>
 				</Box>
 				{summary && (
 					<Box
@@ -83,8 +137,15 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 				)}
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={onClose}>Cancelar</Button>
-				<Button onClick={onSave} variant="contained" color="primary">
+				<Button onClick={onClose} disabled={saving}>
+					Cancelar
+				</Button>
+				<Button
+					onClick={onSave}
+					variant="contained"
+					color="primary"
+					disabled={saving}
+				>
 					Salvar
 				</Button>
 			</DialogActions>
