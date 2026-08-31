@@ -17,6 +17,7 @@ import {
 import ColorPicker from "../../../../../components/color_picker"
 import type { GateScope } from "../../../../../services/gateService"
 import type { Gate } from "../../../../../types"
+import { fmtPct } from "../../../../../utils/format"
 
 interface GateEditDialogProps {
 	open: boolean
@@ -125,12 +126,12 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 								<strong>Eventos:</strong> {summary.count.toLocaleString()}
 							</Typography>
 							<Typography variant="body2">
-								<strong>% do total:</strong>{" "}
-								{summary.percent_of_total_population.toFixed(1)}%
+								<strong>% do parent (%P):</strong>{" "}
+								{fmtPct(summary.percent_of_parent_population)}
 							</Typography>
 							<Typography variant="body2">
-								<strong>% do pai:</strong>{" "}
-								{summary.percent_of_parent_population.toFixed(1)}%
+								<strong>% do total (%T):</strong>{" "}
+								{fmtPct(summary.percent_of_total_population)}
 							</Typography>
 						</Box>
 					</Box>

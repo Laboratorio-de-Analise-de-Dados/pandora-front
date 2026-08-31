@@ -30,7 +30,14 @@ export const buildAnalysisRows = (
 	metricCols: ExportMetricDef[],
 	channelLabel: (ch: string) => string,
 ): string[][] => {
-	const header = ["Arquivo", "Gate Strategy", "População", "Count", "%Parent", "%Total"]
+	const header = [
+		"Arquivo",
+		"Gate Strategy",
+		"População",
+		"Count",
+		"%Parent (%P)",
+		"%Total (%T)",
+	]
 	for (const ch of displayChannels)
 		for (const m of metricCols) header.push(`${channelLabel(ch)}_${m.shortLabel}`)
 
