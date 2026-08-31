@@ -1,15 +1,25 @@
 import { useCallback } from "react"
 import { toast } from "react-toastify"
-import { deleteGate as deleteGateById, updateGate } from "../../../services/gateService"
+import {
+	deleteGate as deleteGateById,
+	updateGate,
+} from "../../../services/gateService"
+import type { GateScope } from "../../../services/gateService"
 import type { Gate, GateCoordinates } from "../../../types"
 
 const TOAST_POS = { position: "bottom-right" as const }
 
 const extractError = (error: unknown): string => {
-	const err = error as { response?: { data?: unknown }; message?: string }
-	return err?.response?.data
-		? JSON.stringify(err.response.data)
-		: (err?.message ?? "Erro desconhecido")
+	const err = error as {
+		response?: { data?: { detail?: string } | unknown }
+		message?: string
+	}
+	const data = err?.response?.data
+	if (data && typeof data === "object" && "detail" in data) {
+		const detail = (data as { detail?: unknown }).detail
+		if (typeof detail === "string") return detail
+	}
+	return data ? JSON.stringify(data) : (err?.message ?? "Erro desconhecido")
 }
 
 /**
@@ -42,16 +52,41 @@ export function useGateMutations(loadFile: () => void) {
 		[loadFile],
 	)
 
+	/**
+	 * Salva nome e cor. Com `scope="experiment"` o backend replica nas cópias do
+	 * gate nas outras amostras e devolve os ids propagados e os conflitos de nome.
+	 * Devolve a mensagem de erro (para o diálogo exibir) ou `null` em caso de
+	 * sucesso.
+	 */
 	const saveGateNameColor = useCallback(
-		async (gateId: number, name: string, color: string): Promise<boolean> => {
+		async (
+			gateId: number,
+			name: string,
+			color: string,
+			scope: GateScope = "file",
+		): Promise<string | null> => {
 			try {
-				await updateGate(gateId, { name, color })
-				toast.success("Gate atualizado com sucesso!", TOAST_POS)
+				const result = await updateGate(gateId, { name, color, scope })
+				if (scope === "experiment") {
+					toast.success(
+						`Gate atualizado em ${result.propagated_gate_ids.length + 1} amostra(s)`,
+						TOAST_POS,
+					)
+					if (result.conflicts.length > 0) {
+						toast.warn(
+							`Nome já usado em: ${result.conflicts
+								.map((conflict) => conflict.file_name)
+								.join(", ")}`,
+							TOAST_POS,
+						)
+					}
+				} else {
+					toast.success("Gate atualizado com sucesso!", TOAST_POS)
+				}
 				loadFile()
-				return true
+				return null
 			} catch (error: unknown) {
-				toast.error(`Erro ao atualizar gate: ${extractError(error)}`, TOAST_POS)
-				return false
+				return extractError(error)
 			}
 		},
 		[loadFile],

@@ -1,11 +1,26 @@
 import CytometryApi from "../API"
 import type { Gate, GateCoordinates, NewGate, PlotViewConfig } from "../types"
 
+export type GateScope = "file" | "experiment"
+
 export interface GateUpdatePayload {
 	name?: string
 	color?: string
 	gate_coordinates?: GateCoordinates
 	plot_config?: Partial<PlotViewConfig>
+	scope?: GateScope
+}
+
+export interface GateUpdateConflict {
+	gate_id: number
+	file_data_id: number
+	file_name: string
+	detail: string
+}
+
+export interface GateUpdateResult extends Gate {
+	propagated_gate_ids: number[]
+	conflicts: GateUpdateConflict[]
 }
 
 export interface ApplyGatesPayload {
@@ -23,8 +38,12 @@ export const createGate = async (gate: NewGate): Promise<Gate> => {
 export const updateGate = async (
 	gateId: number,
 	payload: GateUpdatePayload,
-): Promise<void> => {
-	await CytometryApi.patch(`/analytics/gate/${gateId}`, payload)
+): Promise<GateUpdateResult> => {
+	const res = await CytometryApi.patch<GateUpdateResult>(
+		`/analytics/gate/${gateId}`,
+		payload,
+	)
+	return res.data
 }
 
 export const deleteGate = async (gateId: number): Promise<void> => {
