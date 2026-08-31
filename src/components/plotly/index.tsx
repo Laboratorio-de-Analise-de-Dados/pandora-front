@@ -32,7 +32,10 @@ import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
 import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
 import GateToolToggle from "../../features/plot/components/scatter-plot/components/GateToolToggle"
-import PlotSettingsDropdown from "../../features/plot/components/scatter-plot/components/PlotSettingsDropdown"
+import {
+	PlotSettingsButton,
+	PlotSettingsPanel,
+} from "../../features/plot/components/scatter-plot/components/PlotSettingsPanel"
 import GateContextMenu from "../../features/plot/components/scatter-plot/components/GateContextMenu"
 import AxisSelect from "../../features/plot/components/scatter-plot/components/AxisSelect"
 import PolygonEditOverlay from "../../features/plot/components/scatter-plot/components/PolygonEditOverlay"
@@ -91,6 +94,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+	const [settingsOpen, setSettingsOpen] = useState(false)
 
 	// Gate edit dialog state
 	const [selectedGate, setSelectedGate] = useState<Gate | null>(null)
@@ -106,6 +110,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	} | null>(null)
 	// Reshape mode
 	const [reshapingGateId, setReshapingGateId] = useState<number | null>(null)
+	const settingsAvailable = tool !== "edit" && reshapingGateId === null
 	// Polygon vertex editing state
 	const [editingPolyGate, setEditingPolyGate] = useState<{
 		gate: Gate
@@ -443,24 +448,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							}}
 						>
 							{/* Configurações do gráfico, ancorado ao canto superior esquerdo */}
-							{tool !== "edit" && reshapingGateId === null && (
-								<PlotSettingsDropdown
-									plotMode={plotMode}
-									xScale={xScale}
-									yScale={yScale}
-									cutoff={cutoff}
-									xMin={xMin}
-									xMax={xMax}
-									yMin={yMin}
-									yMax={yMax}
-									onXScaleChange={setXScale}
-									onYScaleChange={setYScale}
-									onCutoffChange={setCutoff}
-									onXMinChange={setXMin}
-									onXMaxChange={setXMax}
-									onYMinChange={setYMin}
-									onYMaxChange={setYMax}
-									onPlotModeChange={setPlotMode}
+							{settingsAvailable && (
+								<PlotSettingsButton
+									open={settingsOpen}
+									onToggle={() => setSettingsOpen((prev) => !prev)}
 								/>
 							)}
 
@@ -618,6 +609,29 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								</Box>
 							)}
 						</Box>
+						{settingsAvailable && (
+							<PlotSettingsPanel
+								open={settingsOpen}
+								onClose={() => setSettingsOpen(false)}
+								variant={isMobile ? "drawer" : "inline"}
+								plotMode={plotMode}
+								xScale={xScale}
+								yScale={yScale}
+								cutoff={cutoff}
+								xMin={xMin}
+								xMax={xMax}
+								yMin={yMin}
+								yMax={yMax}
+								onXScaleChange={setXScale}
+								onYScaleChange={setYScale}
+								onCutoffChange={setCutoff}
+								onXMinChange={setXMin}
+								onXMaxChange={setXMax}
+								onYMinChange={setYMin}
+								onYMaxChange={setYMax}
+								onPlotModeChange={setPlotMode}
+							/>
+						)}
 					</Box>
 					<Box
 						sx={{

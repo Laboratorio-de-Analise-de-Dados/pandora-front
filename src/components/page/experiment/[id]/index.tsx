@@ -41,6 +41,7 @@ function ExperimentPageContent() {
 		siblingGateNames,
 		values,
 		plotInitialConfig,
+		sourceLabel,
 		setViewConfig,
 		goToAdjacentFile,
 		canGoPrevFile,
@@ -168,6 +169,22 @@ function ExperimentPageContent() {
 									</span>
 								</Tooltip>
 							</Box>
+
+							{sourceLabel && (
+								<Typography
+									variant="subtitle2"
+									fontWeight="bold"
+									textAlign="center"
+									sx={{
+										px: 1,
+										maxWidth: "100%",
+										wordBreak: "break-word",
+										fontSize: { xs: "0.8rem", md: "0.9rem" },
+									}}
+								>
+									{sourceLabel}
+								</Typography>
+							)}
 
 							{source ? (
 								<PlotStateProvider

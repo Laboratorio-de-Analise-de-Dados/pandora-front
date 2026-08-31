@@ -14,7 +14,7 @@ export const buildAxisRange = (
 ): number[] => {
 	const defaultRange =
 		scale === "biex"
-			? [biex(-100000, cof), biex(1000000, cof)]
+			? [biex(0, cof), biex(1000000, cof)]
 			: [0, LINEAR_SLIDER_MAX]
 	if (min === "" || max === "") return defaultRange
 	return scale === "biex"
