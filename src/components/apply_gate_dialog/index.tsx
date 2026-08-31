@@ -1,5 +1,4 @@
 import {
-	Box,
 	Button,
 	Checkbox,
 	Dialog,
@@ -7,15 +6,11 @@ import {
 	DialogContent,
 	DialogTitle,
 	FormControlLabel,
-	List,
-	ListItem,
-	ListItemButton,
-	ListItemIcon,
-	ListItemText,
 	Typography,
 } from "@mui/material"
-import React, { useState } from "react"
+import { useState } from "react"
 import { ExperimentFiles } from "../../types"
+import FileSelectList from "../file_select_list"
 
 interface ApplyGateDialogProps {
 	open: boolean
@@ -31,7 +26,6 @@ interface ApplyGateDialogProps {
 export default function ApplyGateDialog({
 	open,
 	gateName,
-	gateId,
 	files,
 	sourceFileDataId,
 	onClose,
@@ -71,7 +65,13 @@ export default function ApplyGateDialog({
 	}
 
 	return (
-		<Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+		<Dialog
+			open={open}
+			onClose={handleClose}
+			maxWidth="sm"
+			fullWidth
+			PaperProps={{ sx: { maxHeight: "90vh", overflowY: "auto" } }}
+		>
 			<DialogTitle>Aplicar gate em outros arquivos</DialogTitle>
 			<DialogContent>
 				<Typography variant="body2" sx={{ mb: 1 }}>
@@ -79,54 +79,27 @@ export default function ApplyGateDialog({
 					Os gates copiados são independentes — editar no destino não afeta a origem.
 				</Typography>
 
-				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={selectedIds.size === targetFiles.length && targetFiles.length > 0}
-								indeterminate={selectedIds.size > 0 && selectedIds.size < targetFiles.length}
-								onChange={handleSelectAll}
-								size="small"
-							/>
-						}
-						label={<Typography variant="body2">Selecionar todos</Typography>}
-					/>
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={recursive}
-								onChange={(e) => setRecursive(e.target.checked)}
-								size="small"
-							/>
-						}
-						label={<Typography variant="body2">Incluir sub-gates</Typography>}
-					/>
-				</Box>
-
-				<List dense sx={{ maxHeight: 250, overflow: "auto", border: 1, borderColor: "divider", borderRadius: 1 }}>
-					{targetFiles.map((file) => (
-						<ListItem key={file.id} disablePadding>
-							<ListItemButton onClick={() => handleToggle(file.id)} dense>
-								<ListItemIcon sx={{ minWidth: 36 }}>
-									<Checkbox
-										edge="start"
-										checked={selectedIds.has(file.id)}
-										size="small"
-									/>
-								</ListItemIcon>
-								<ListItemText primary={`📄 ${file.file_name}`} />
-							</ListItemButton>
-						</ListItem>
-					))}
-					{targetFiles.length === 0 && (
-						<ListItem>
-							<ListItemText
-								primary="Nenhum outro arquivo no experimento"
-								sx={{ color: "text.secondary", textAlign: "center" }}
-							/>
-						</ListItem>
-					)}
-				</List>
+				<FileSelectList
+					files={targetFiles}
+					selectedIds={selectedIds}
+					onToggle={handleToggle}
+					onSelectAll={handleSelectAll}
+					emptyLabel="Nenhum outro arquivo no experimento"
+					toolbarExtra={
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={recursive}
+									onChange={(e) => setRecursive(e.target.checked)}
+									size="small"
+								/>
+							}
+							label={
+								<Typography variant="body2">Incluir sub-gates</Typography>
+							}
+						/>
+					}
+				/>
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={handleClose}>Cancelar</Button>
