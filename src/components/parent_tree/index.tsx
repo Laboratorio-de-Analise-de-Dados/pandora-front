@@ -202,16 +202,12 @@ export default function ParentTree({
 }: {
 	files: ExperimentFiles[]
 	onSelect: (source: SelectedSource) => void
-	onDeleteGate?: (gateId: number) => void
+	onDeleteGate?: (gateId: number, gateName: string) => void
 	onRenameGate?: (gateId: number, newName: string) => void
 	onApplyGate?: (gateId: number, gateName: string) => void
 	onDisableFile?: (fileDataId: number) => void
 	onEnableFile?: (fileDataId: number) => void
 }) {
-	const [deleteTarget, setDeleteTarget] = useState<{
-		id: number
-		name: string
-	} | null>(null)
 	const [renameTarget, setRenameTarget] = useState<{
 		id: number
 		name: string
@@ -300,7 +296,7 @@ export default function ParentTree({
 	}
 
 	const handleMenuDelete = () => {
-		if (menuGate) setDeleteTarget({ id: menuGate.id, name: menuGate.name })
+		if (menuGate && onDeleteGate) onDeleteGate(menuGate.id, menuGate.name)
 		handleMenuClose()
 	}
 
@@ -319,12 +315,9 @@ export default function ParentTree({
 	}
 
 	const handleCtxDelete = () => {
-		if (contextGate) setDeleteTarget({ id: contextGate.id, name: contextGate.name })
+		if (contextGate && onDeleteGate)
+			onDeleteGate(contextGate.id, contextGate.name)
 		handleContextMenuClose()
-	}
-
-	const handleRequestDelete = (gateId: number, gateName: string) => {
-		setDeleteTarget({ id: gateId, name: gateName })
 	}
 
 	const handleRequestRename = (gateId: number, gateName: string) => {
@@ -345,16 +338,6 @@ export default function ParentTree({
 		setRenameValue("")
 	}
 
-	const handleConfirmDelete = () => {
-		if (deleteTarget && onDeleteGate) {
-			onDeleteGate(deleteTarget.id)
-		}
-		setDeleteTarget(null)
-	}
-
-	const handleCancelDelete = () => {
-		setDeleteTarget(null)
-	}
 
 	const handleItemClick = (event: React.MouseEvent, itemId: string) => {
 		// Paramos a propagação para evitar o evento do pai quando o filho é clicado
@@ -426,7 +409,7 @@ export default function ParentTree({
 				{files.map((file) =>
 					renderFile(
 						file,
-						onDeleteGate ? handleRequestDelete : undefined,
+						onDeleteGate,
 						onRenameGate ? handleRequestRename : undefined,
 						onApplyGate,
 						handleMenuOpen,
@@ -577,27 +560,6 @@ export default function ParentTree({
 					<Button onClick={() => setDisableTarget(null)}>Cancelar</Button>
 					<Button onClick={handleConfirmDisable} variant="contained">
 						Desabilitar
-					</Button>
-				</DialogActions>
-			</Dialog>
-
-			<Dialog open={!!deleteTarget} onClose={handleCancelDelete}>
-				<DialogTitle>Excluir Gate</DialogTitle>
-				<DialogContent>
-					<Typography>
-						Tem certeza que deseja excluir o gate{" "}
-						<strong>{deleteTarget?.name}</strong>? Esta ação não pode
-						ser desfeita.
-					</Typography>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleCancelDelete}>Cancelar</Button>
-					<Button
-						onClick={handleConfirmDelete}
-						color="error"
-						variant="contained"
-					>
-						Excluir
 					</Button>
 				</DialogActions>
 			</Dialog>

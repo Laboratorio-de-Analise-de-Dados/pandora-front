@@ -11,10 +11,18 @@ import type { UpdateExperimentPayload } from "../../../services/experimentServic
 import { useAuth } from "../../../providers/AuthContext"
 import {
 	applyGates,
-	deleteGate,
+	deleteGatesBatch,
 	updateGate,
 } from "../../../services/gateService"
-import { findFileForGate } from "../../gate/utils"
+import type {
+	DeleteGateOptions,
+	DeleteGateTarget,
+} from "../../../components/delete_gate_dialog"
+import {
+	findFileForGate,
+	findGateByPathNames,
+	getGatePathNames,
+} from "../../gate/utils"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
 
 const extractErrorMessage = (error: unknown): string => {
@@ -56,6 +64,10 @@ export function useExperimentPageActions() {
 	const [applyTarget, setApplyTarget] = useState<ApplyTarget | null>(null)
 	const [applyLoading, setApplyLoading] = useState(false)
 	const [savingExperiment, setSavingExperiment] = useState(false)
+	const [deleteGateTarget, setDeleteGateTarget] =
+		useState<DeleteGateTarget | null>(null)
+	const [deleteGateLoading, setDeleteGateLoading] = useState(false)
+	const [deleteGateError, setDeleteGateError] = useState<string | null>(null)
 
 	// Espelha a regra do backend: criador, super admin ou membro do lab do
 	// experimento podem editar/excluir.
@@ -110,26 +122,86 @@ export function useExperimentPageActions() {
 		}
 	}, [experiment, navigate])
 
-	const handleDeleteGate = useCallback(
-		async (gateId: number) => {
+	const handleRequestDeleteGate = useCallback(
+		(gateId: number, gateName: string) => {
+			const file = findFileForGate(experimentFiles, gateId)
+			setDeleteGateError(null)
+			setDeleteGateTarget({
+				id: gateId,
+				name: gateName,
+				fileDataId: file?.id ?? 0,
+			})
+		},
+		[experimentFiles],
+	)
+
+	/** Sobe a seleção para o parent do gate apagado (que nunca é atingido). */
+	const selectParentOfDeletedGate = useCallback(
+		(target: DeleteGateTarget) => {
+			const file = experimentFiles.find((f) => f.id === target.fileDataId)
+			if (!file) {
+				setSource(undefined)
+				return
+			}
+			const path = getGatePathNames(file.gates, target.id) ?? []
+			const parent = findGateByPathNames(file.gates, path.slice(0, -1))
+			setSource(
+				parent
+					? {
+							type: "gate",
+							id: parent.id,
+							name: parent.name,
+							fileDataId: file.id,
+						}
+					: {
+							type: "file",
+							id: file.id,
+							name: file.file_name,
+							fileDataId: file.id,
+						},
+			)
+		},
+		[experimentFiles, setSource],
+	)
+
+	const handleConfirmDeleteGate = useCallback(
+		async (options: DeleteGateOptions) => {
+			if (!deleteGateTarget) return
+			setDeleteGateLoading(true)
 			try {
-				await deleteGate(gateId)
-				toast.success("Gate excluído com sucesso!", {
-					position: "bottom-right",
+				const result = await deleteGatesBatch({
+					source_gate_ids: [deleteGateTarget.id],
+					scope: options.scope,
+					target_file_data_ids:
+						options.scope === "experiment"
+							? options.targetFileDataIds
+							: undefined,
+					recursive: options.recursive,
+					include_source: options.includeSource,
 				})
-				if (source?.type === "gate" && source.id === gateId) {
-					setSource(undefined)
-				}
+				toast.success(
+					`${result.deleted} gate(s) excluído(s) em ${result.details.length} amostra(s).`,
+					{ position: "bottom-right" },
+				)
+				const sourceWasDeleted =
+					(options.scope === "file" || options.includeSource) &&
+					source?.type === "gate" &&
+					source.id === deleteGateTarget.id
+				if (sourceWasDeleted) selectParentOfDeletedGate(deleteGateTarget)
+				setDeleteGateTarget(null)
 				invalidateExperiment()
 			} catch (error) {
-				const errorMessage =
-					error instanceof Error ? error.message : String(error)
-				toast.error(`Erro ao excluir o gate: ${errorMessage}`, {
-					position: "bottom-right",
-				})
+				setDeleteGateError(extractErrorMessage(error))
+			} finally {
+				setDeleteGateLoading(false)
 			}
 		},
-		[invalidateExperiment, setSource, source],
+		[
+			deleteGateTarget,
+			invalidateExperiment,
+			selectParentOfDeletedGate,
+			source,
+		],
 	)
 
 	const handleRenameGate = useCallback(
@@ -241,7 +313,12 @@ export function useExperimentPageActions() {
 
 	return {
 		handleDelete,
-		handleDeleteGate,
+		handleRequestDeleteGate,
+		handleConfirmDeleteGate,
+		deleteGateTarget,
+		deleteGateLoading,
+		deleteGateError,
+		setDeleteGateTarget,
 		handleRenameGate,
 		handleDisableFile,
 		handleEnableFile,

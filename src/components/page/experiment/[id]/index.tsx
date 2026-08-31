@@ -24,6 +24,7 @@ import CollapsiblePanel from "../../../../features/experiment/components/Collaps
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
 import EditExperimentDialog from "../../../../features/experiment/components/EditExperimentDialog"
+import DeleteGateDialog from "../../../delete_gate_dialog"
 import {
 	MdDelete as DeleteIcon,
 	MdEdit as EditIcon,
@@ -56,7 +57,12 @@ function ExperimentPageContent() {
 
 	const {
 		handleDelete,
-		handleDeleteGate,
+		handleRequestDeleteGate,
+		handleConfirmDeleteGate,
+		deleteGateTarget,
+		deleteGateLoading,
+		deleteGateError,
+		setDeleteGateTarget,
 		handleRenameGate,
 		handleDisableFile,
 		handleEnableFile,
@@ -145,7 +151,7 @@ function ExperimentPageContent() {
 						setSource(s)
 						if (isMobile) setShowTree(false)
 					}}
-					onDeleteGate={handleDeleteGate}
+					onDeleteGate={handleRequestDeleteGate}
 					onRenameGate={handleRenameGate}
 					onApplyGate={handleApplyGate}
 					onDisableFile={handleDisableFile}
@@ -324,6 +330,18 @@ function ExperimentPageContent() {
 					error={editError}
 					onClose={() => setEditOpen(false)}
 					onSave={handleSaveExperiment}
+				/>
+			)}
+
+			{deleteGateTarget && (
+				<DeleteGateDialog
+					open={!!deleteGateTarget}
+					target={deleteGateTarget}
+					files={experimentFiles}
+					error={deleteGateError}
+					loading={deleteGateLoading}
+					onClose={() => setDeleteGateTarget(null)}
+					onConfirm={handleConfirmDeleteGate}
 				/>
 			)}
 
