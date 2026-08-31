@@ -44,6 +44,7 @@ interface ExperimentWorkspaceValue {
 	viewConfig: PlotViewConfig
 	setViewConfig: (config: PlotViewConfig) => void
 	plotInitialConfig: PlotViewConfig
+	sourceLabel: string
 	goToAdjacentFile: (direction: 1 | -1) => void
 	canGoPrevFile: boolean
 	canGoNextFile: boolean
@@ -59,7 +60,7 @@ const DEFAULT_VIEW_CONFIG: PlotViewConfig = {
 	yMin: "",
 	yMax: "",
 	cutoff: 0,
-	plotMode: "scatter",
+	plotMode: "heatmap",
 }
 
 const ExperimentWorkspaceContext = createContext<ExperimentWorkspaceValue | undefined>(undefined)
@@ -168,6 +169,18 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 		[source, currentFileIndex, experimentFiles],
 	)
 
+	// "arquivo › gate › subgate" — mantém a amostra identificada acima do plot.
+	const sourceLabel = useMemo(() => {
+		if (!source) return ""
+		const file = experimentFiles.find(
+			(f: ExperimentFiles) => f.id === source.fileDataId,
+		)
+		const fileName = file?.file_name ?? source.name
+		if (source.type !== "gate") return fileName
+		const pathNames = file ? getGatePathNames(file.gates, source.id) : undefined
+		return [fileName, ...(pathNames ?? [source.name])].join(" › ")
+	}, [experimentFiles, source])
+
 	const plotInitialConfig = useMemo<PlotViewConfig>(
 		() =>
 			keepCurrentViewConfig
@@ -193,11 +206,12 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 			viewConfig,
 			setViewConfig,
 			plotInitialConfig,
+			sourceLabel,
 			goToAdjacentFile,
 			canGoPrevFile,
 			canGoNextFile,
 		}),
-		[experimentId, experiment, experimentFiles, isLoading, source, setSource, fileStats, invalidateExperiment, childGates, siblingGateNames, values, selectedGate, viewConfig, plotInitialConfig, goToAdjacentFile, canGoPrevFile, canGoNextFile],
+		[experimentId, experiment, experimentFiles, isLoading, source, setSource, fileStats, invalidateExperiment, childGates, siblingGateNames, values, selectedGate, viewConfig, plotInitialConfig, sourceLabel, goToAdjacentFile, canGoPrevFile, canGoNextFile],
 	)
 
 	return (
