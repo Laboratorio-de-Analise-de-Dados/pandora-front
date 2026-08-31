@@ -160,6 +160,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const effYScale: Scale = data?.y_scale ?? yScale
 	const effCof = data?.cofactor ?? COFACTOR
 
+	// Remonta o Plot depois de criar um gate por seleção: o Plotly mantém o
+	// outline da última box select, que ficava sobreposto ao gate recém-criado.
+	const [drawRevision, setDrawRevision] = useState(0)
+	const clearSelectionOutline = useCallback(
+		() => setDrawRevision((n) => n + 1),
+		[],
+	)
+
 	const { handleSelectedArea, handleQuadrantClick } = useGateDrawing({
 		fileDataId,
 		parentId,
@@ -181,6 +189,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		loadFile,
 		setTool,
 		plotConfig: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
+		onGateDrawn: clearSelectionOutline,
 	})
 
 	const gateShapes = useGateShapes({
@@ -469,7 +478,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									key={
 										tool === "edit" || reshapingGateId !== null
 											? "edit-mode"
-											: "draw-mode"
+											: `draw-mode-${drawRevision}`
 									}
 									data={plotData}
 									useResizeHandler

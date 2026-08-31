@@ -3,6 +3,8 @@ import { toast } from "react-toastify"
 import { createGate } from "../../../services/gateService"
 import type { GateCoordinates, NewGate, PlotViewConfig, Scale } from "../../../types"
 import { toRaw } from "../utils/biex"
+import { isDegenerateSelection } from "../utils/gateSelection"
+import { buildAxisRange } from "../utils/plotAxes"
 import type { GateTool, PlotMode } from "./usePlotState"
 
 interface UseGateDrawingParams {
@@ -27,6 +29,8 @@ interface UseGateDrawingParams {
 	setTool: (t: GateTool) => void
 	/** Config de visualização corrente, persistida no gate criado. */
 	plotConfig: PlotViewConfig
+	/** Chamado quando um gate é criado, para limpar o outline da seleção. */
+	onGateDrawn?: () => void
 }
 
 /** Gera o próximo nome de gate no estilo FlowJo: "P1", "P2", ... */
@@ -70,6 +74,7 @@ export function useGateDrawing({
 	loadFile,
 	setTool,
 	plotConfig,
+	onGateDrawn,
 }: UseGateDrawingParams) {
 	// Nomes criados localmente, ainda não refletidos na lista vinda do servidor.
 	// Evita duplicados quando o usuário cria vários gates antes do refetch.
@@ -129,6 +134,7 @@ export function useGateDrawing({
 					next.add(gateName)
 					return next
 				})
+				onGateDrawn?.()
 				loadFile()
 			} catch (error: unknown) {
 				const err = error as { response?: { data?: unknown }; message?: string }
@@ -138,8 +144,35 @@ export function useGateDrawing({
 				toast.error(`Erro ao criar gate: ${msg}`, { position: "bottom-right" })
 			}
 		},
-		[fileDataId, parentId, xAxis, yAxis, existingNames, loadFile, plotConfig],
+		[
+			fileDataId,
+			parentId,
+			xAxis,
+			yAxis,
+			existingNames,
+			loadFile,
+			onGateDrawn,
+			plotConfig,
+		],
 	)
+
+	// Range exibido dos eixos: usado para medir se a seleção teve tamanho
+	// suficiente, tanto em escala linear quanto em biex.
+	const xAxisRange = useMemo(
+		() => buildAxisRange(xMin, xMax, effXScale, effCof),
+		[xMin, xMax, effXScale, effCof],
+	)
+	const yAxisRange = useMemo(
+		() => buildAxisRange(yMin, yMax, effYScale, effCof),
+		[yMin, yMax, effYScale, effCof],
+	)
+
+	const rejectDegenerate = useCallback(() => {
+		toast.info(
+			"Arraste para desenhar o gate: a área selecionada é pequena demais.",
+			{ position: "bottom-right" },
+		)
+	}, [])
 
 	/** Recebe seleção do Plotly (box/lasso) e converte de espaço exibido para cru. */
 	const handleSelectedArea = useCallback(
@@ -171,6 +204,10 @@ export function useGateDrawing({
 
 			if (tool === "rect" && ev.range) {
 				const range = ev.range as { x: number[]; y: number[] }
+				if (isDegenerateSelection(range.x[0], range.x[1], xAxisRange)) {
+					rejectDegenerate()
+					return
+				}
 				const xs = [toRaw(range.x[0], effXScale, effCof), toRaw(range.x[1], effXScale, effCof)]
 
 				if (plotMode === "histogram") {
@@ -180,6 +217,11 @@ export function useGateDrawing({
 						startX: Math.min(...xs),
 						endX: Math.max(...xs),
 					})
+					return
+				}
+
+				if (isDegenerateSelection(range.y[0], range.y[1], yAxisRange)) {
+					rejectDegenerate()
 					return
 				}
 
@@ -196,7 +238,20 @@ export function useGateDrawing({
 				setTool("rect")
 			}
 		},
-		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, createGateDirectly, setTool],
+		[
+			tool,
+			plotMode,
+			effXScale,
+			effYScale,
+			effCof,
+			xAxis,
+			yAxis,
+			xAxisRange,
+			yAxisRange,
+			rejectDegenerate,
+			createGateDirectly,
+			setTool,
+		],
 	)
 
 	/** Cria 4 gates de quadrante no ponto clicado. */
