@@ -28,6 +28,20 @@ export const enableFileData = async (fileDataId: number): Promise<void> => {
 	await CytometryApi.post(`/experiment/file/${fileDataId}/enable`)
 }
 
+export interface UpdateExperimentPayload {
+	title?: string
+	type?: string
+	values?: string[]
+}
+
+export const updateExperiment = async (
+	id: number,
+	payload: UpdateExperimentPayload,
+): Promise<Experiment> => {
+	const res = await CytometryApi.patch(`/experiment/${id}/`, payload)
+	return res.data
+}
+
 export const deleteExperiment = async (id: number): Promise<void> => {
 	await CytometryApi.delete(`/experiment/${id}`)
 }

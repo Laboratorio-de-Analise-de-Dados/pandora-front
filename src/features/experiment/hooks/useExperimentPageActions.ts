@@ -5,7 +5,10 @@ import {
 	deleteExperiment,
 	disableFileData,
 	enableFileData,
+	updateExperiment,
 } from "../../../services/experimentService"
+import type { UpdateExperimentPayload } from "../../../services/experimentService"
+import { useAuth } from "../../../providers/AuthContext"
 import {
 	applyGates,
 	deleteGate,
@@ -20,9 +23,14 @@ const extractErrorMessage = (error: unknown): string => {
 		message?: string
 	}
 	const data = err?.response?.data
-	if (data && typeof data === "object" && "detail" in data) {
+	if (data && typeof data === "object") {
 		const detail = (data as { detail?: unknown }).detail
 		if (typeof detail === "string") return detail
+		// Erros de campo do serializer: { title: ["..."], type: ["..."] }
+		const fieldErrors = Object.values(data as Record<string, unknown>)
+			.flatMap((value) => (Array.isArray(value) ? value : [value]))
+			.filter((value): value is string => typeof value === "string")
+		if (fieldErrors.length > 0) return fieldErrors.join(" ")
 	}
 	return err?.message ?? String(error)
 }
@@ -43,8 +51,45 @@ export function useExperimentPageActions() {
 		invalidateExperiment,
 	} = useExperimentWorkspace()
 
+	const { user } = useAuth()
+
 	const [applyTarget, setApplyTarget] = useState<ApplyTarget | null>(null)
 	const [applyLoading, setApplyLoading] = useState(false)
+	const [savingExperiment, setSavingExperiment] = useState(false)
+
+	// Espelha a regra do backend: criador, super admin ou membro do lab do
+	// experimento podem editar/excluir.
+	const canEditExperiment = Boolean(
+		experiment &&
+			user &&
+			(user.is_super_admin ||
+				experiment.created_by === user.id ||
+				(experiment.organization !== null &&
+					user.memberships.some(
+						(membership) =>
+							membership.organization.id === experiment.organization,
+					))),
+	)
+
+	const handleUpdateExperiment = useCallback(
+		async (payload: UpdateExperimentPayload): Promise<string | null> => {
+			if (!experiment) return "Experimento não carregado"
+			setSavingExperiment(true)
+			try {
+				await updateExperiment(experiment.id, payload)
+				toast.success("Experimento atualizado!", {
+					position: "bottom-right",
+				})
+				invalidateExperiment()
+				return null
+			} catch (error) {
+				return extractErrorMessage(error)
+			} finally {
+				setSavingExperiment(false)
+			}
+		},
+		[experiment, invalidateExperiment],
+	)
 
 	const handleDelete = useCallback(async () => {
 		if (!experiment) return
@@ -200,6 +245,9 @@ export function useExperimentPageActions() {
 		handleRenameGate,
 		handleDisableFile,
 		handleEnableFile,
+		handleUpdateExperiment,
+		savingExperiment,
+		canEditExperiment,
 		handleApplyGate,
 		handleConfirmApply,
 		applyTarget,
