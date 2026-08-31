@@ -12,6 +12,8 @@ export interface ExperimentFiles {
 	id: number
 	file_name: string
 	gates: Gate[]
+	active: boolean
+	deactivated_at: string | null
 }
 
 export interface FileData {

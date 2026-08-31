@@ -8,9 +8,12 @@ import {
 	MdMoreVert as MoreVertIcon,
 	MdLink as LinkIcon,
 	MdDriveFileMove as TransferIcon,
+	MdVisibilityOff as DisableIcon,
+	MdRestoreFromTrash as EnableIcon,
 } from "react-icons/md"
 import {
 	Box,
+	Chip,
 	Dialog,
 	DialogActions,
 	DialogContent,
@@ -144,11 +147,40 @@ const renderFile = (
 	onRequestApply?: (gateId: number, gateName: string) => void,
 	onMenuOpen?: (event: React.MouseEvent, gate: Gate) => void,
 	onContextMenu?: (event: React.MouseEvent, gate: Gate) => void,
+	onFileMenuOpen?: (event: React.MouseEvent, file: ExperimentFiles) => void,
 ) => {
 	const fileId = `file-${file.id}`
+	const inactive = file.active === false
 	return (
 		<TreeItem key={fileId} itemId={fileId} label={
-		<Typography sx={{ fontSize: "0.8rem" }}>📄{file.file_name}</Typography>
+		<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+			<Typography
+				sx={{ fontSize: "0.8rem", opacity: inactive ? 0.5 : 1 }}
+				noWrap
+			>
+				📄{file.file_name}
+			</Typography>
+			{inactive && (
+				<Chip
+					label="Desabilitada"
+					size="small"
+					sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
+				/>
+			)}
+			{onFileMenuOpen && (
+				<IconButton
+					size="small"
+					onClick={(e) => {
+						e.stopPropagation()
+						onFileMenuOpen(e, file)
+					}}
+					sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
+					title="Opções da amostra"
+				>
+					<MoreVertIcon style={{ fontSize: 16 }} />
+				</IconButton>
+			)}
+		</Box>
 	}>
 			{file.gates.map((gate, idx) =>
 				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply, idx, onMenuOpen, onContextMenu),
@@ -165,12 +197,16 @@ export default function ParentTree({
 	onDeleteGate,
 	onRenameGate,
 	onApplyGate,
+	onDisableFile,
+	onEnableFile,
 }: {
 	files: ExperimentFiles[]
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number) => void
 	onRenameGate?: (gateId: number, newName: string) => void
 	onApplyGate?: (gateId: number, gateName: string) => void
+	onDisableFile?: (fileDataId: number) => void
+	onEnableFile?: (fileDataId: number) => void
 }) {
 	const [deleteTarget, setDeleteTarget] = useState<{
 		id: number
@@ -189,6 +225,42 @@ export default function ParentTree({
 	// Context menu state (right-click)
 	const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 	const [contextGate, setContextGate] = useState<Gate | null>(null)
+
+	// Menu e confirmação por amostra (desabilitar / reativar)
+	const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null)
+	const [menuFile, setMenuFile] = useState<ExperimentFiles | null>(null)
+	const [disableTarget, setDisableTarget] = useState<ExperimentFiles | null>(
+		null,
+	)
+
+	const handleFileMenuOpen = (
+		event: React.MouseEvent,
+		file: ExperimentFiles,
+	) => {
+		event.stopPropagation()
+		setFileMenuAnchor(event.currentTarget as HTMLElement)
+		setMenuFile(file)
+	}
+
+	const handleFileMenuClose = () => {
+		setFileMenuAnchor(null)
+		setMenuFile(null)
+	}
+
+	const handleFileMenuDisable = () => {
+		if (menuFile) setDisableTarget(menuFile)
+		handleFileMenuClose()
+	}
+
+	const handleFileMenuEnable = () => {
+		if (menuFile && onEnableFile) onEnableFile(menuFile.id)
+		handleFileMenuClose()
+	}
+
+	const handleConfirmDisable = () => {
+		if (disableTarget && onDisableFile) onDisableFile(disableTarget.id)
+		setDisableTarget(null)
+	}
 
 	const handleMenuOpen = (event: React.MouseEvent, gate: Gate) => {
 		event.stopPropagation()
@@ -296,6 +368,7 @@ export default function ParentTree({
 
 		if (isFile) {
 			const file = files.find((f) => f.id === id)
+			if (file?.active === false) return
 			onSelect({
 				type: "file",
 				id,
@@ -358,6 +431,9 @@ export default function ParentTree({
 						onApplyGate,
 						handleMenuOpen,
 						handleContextMenu,
+						onDisableFile || onEnableFile
+							? handleFileMenuOpen
+							: undefined,
 					),
 				)}
 			</SimpleTreeView>
@@ -448,6 +524,62 @@ export default function ParentTree({
 					</MuiMenuItem>
 				)}
 			</Menu>
+
+			{/* Menu de ações da amostra */}
+			<Menu
+				anchorEl={fileMenuAnchor}
+				open={Boolean(fileMenuAnchor)}
+				onClose={handleFileMenuClose}
+				anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+				transformOrigin={{ vertical: "top", horizontal: "right" }}
+				slotProps={{ paper: { sx: { minWidth: 200 } } }}
+			>
+				{menuFile?.active === false
+					? onEnableFile && (
+							<MuiMenuItem onClick={handleFileMenuEnable} dense>
+								<ListItemIcon sx={{ minWidth: 28 }}>
+									<EnableIcon style={{ fontSize: 18 }} />
+								</ListItemIcon>
+								<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+									Reativar amostra
+								</ListItemText>
+							</MuiMenuItem>
+						)
+					: onDisableFile && (
+							<MuiMenuItem onClick={handleFileMenuDisable} dense>
+								<ListItemIcon sx={{ minWidth: 28 }}>
+									<DisableIcon style={{ fontSize: 18 }} />
+								</ListItemIcon>
+								<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+									Desabilitar amostra
+								</ListItemText>
+							</MuiMenuItem>
+						)}
+			</Menu>
+
+			<Dialog
+				open={!!disableTarget}
+				onClose={() => setDisableTarget(null)}
+				fullWidth
+				maxWidth="xs"
+				PaperProps={{ sx: { maxHeight: "90vh", overflowY: "auto" } }}
+			>
+				<DialogTitle>Desabilitar amostra</DialogTitle>
+				<DialogContent>
+					<Typography>
+						A amostra <strong>{disableTarget?.file_name}</strong> sai da
+						listagem, mas nada é apagado: os gates e os dados ficam
+						preservados e você pode reativá-la depois pelo filtro
+						“Mostrar desabilitadas”.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setDisableTarget(null)}>Cancelar</Button>
+					<Button onClick={handleConfirmDisable} variant="contained">
+						Desabilitar
+					</Button>
+				</DialogActions>
+			</Dialog>
 
 			<Dialog open={!!deleteTarget} onClose={handleCancelDelete}>
 				<DialogTitle>Excluir Gate</DialogTitle>

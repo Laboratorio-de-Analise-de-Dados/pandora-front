@@ -48,6 +48,8 @@ interface ExperimentWorkspaceValue {
 	goToAdjacentFile: (direction: 1 | -1) => void
 	canGoPrevFile: boolean
 	canGoNextFile: boolean
+	showInactiveFiles: boolean
+	setShowInactiveFiles: (show: boolean) => void
 }
 
 const DEFAULT_VIEW_CONFIG: PlotViewConfig = {
@@ -77,7 +79,11 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 	const { id: experimentId = "" } = useParams<{ id: string }>()
 
 	const { data: experiment, isLoading } = useExperimentQuery(experimentId)
-	const { data: experimentFiles = [] } = useExperimentFilesQuery(experimentId)
+	const [showInactiveFiles, setShowInactiveFiles] = useState(false)
+	const { data: experimentFiles = [] } = useExperimentFilesQuery(
+		experimentId,
+		showInactiveFiles,
+	)
 	const invalidateExperiment = useInvalidateExperiment(experimentId)
 
 	const [source, setSourceState] = useState<SelectedSource | undefined>(
@@ -115,14 +121,21 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 		return undefined
 	}, [experimentFiles, source])
 
+	// Amostras desabilitadas podem aparecer na árvore (filtro), mas não entram na
+	// navegação entre arquivos — o backend recusa densidade de amostra inativa.
+	const navigableFiles = useMemo(
+		() => experimentFiles.filter((f: ExperimentFiles) => f.active !== false),
+		[experimentFiles],
+	)
+
 	const currentFileIndex = useMemo(() => {
 		if (!source) return -1
-		return experimentFiles.findIndex((f: ExperimentFiles) => f.id === source.fileDataId)
-	}, [experimentFiles, source])
+		return navigableFiles.findIndex((f: ExperimentFiles) => f.id === source.fileDataId)
+	}, [navigableFiles, source])
 
 	const canGoPrevFile = currentFileIndex > 0
 	const canGoNextFile =
-		currentFileIndex >= 0 && currentFileIndex < experimentFiles.length - 1
+		currentFileIndex >= 0 && currentFileIndex < navigableFiles.length - 1
 
 	// Navega pro arquivo anterior/seguinte mantendo a mesma estratégia de gate.
 	// Casa o gate pelo caminho de nomes; se o arquivo alvo não tiver o gate
@@ -131,8 +144,8 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 		(direction: 1 | -1) => {
 			if (!source || currentFileIndex < 0) return
 			const targetIndex = currentFileIndex + direction
-			if (targetIndex < 0 || targetIndex >= experimentFiles.length) return
-			const targetFile = experimentFiles[targetIndex]
+			if (targetIndex < 0 || targetIndex >= navigableFiles.length) return
+			const targetFile = navigableFiles[targetIndex]
 			setKeepCurrentViewConfig(true)
 
 			const selectFileRoot = () =>
@@ -148,7 +161,7 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 				return
 			}
 
-			const currentFile = experimentFiles[currentFileIndex]
+			const currentFile = navigableFiles[currentFileIndex]
 			const pathNames = getGatePathNames(currentFile.gates, source.id)
 			if (!pathNames) {
 				selectFileRoot()
@@ -166,7 +179,7 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 				selectFileRoot()
 			}
 		},
-		[source, currentFileIndex, experimentFiles],
+		[source, currentFileIndex, navigableFiles],
 	)
 
 	// "arquivo › gate › subgate" — mantém a amostra identificada acima do plot.
@@ -210,8 +223,10 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 			goToAdjacentFile,
 			canGoPrevFile,
 			canGoNextFile,
+			showInactiveFiles,
+			setShowInactiveFiles,
 		}),
-		[experimentId, experiment, experimentFiles, isLoading, source, setSource, fileStats, invalidateExperiment, childGates, siblingGateNames, values, selectedGate, viewConfig, plotInitialConfig, sourceLabel, goToAdjacentFile, canGoPrevFile, canGoNextFile],
+		[showInactiveFiles, experimentId, experiment, experimentFiles, isLoading, source, setSource, fileStats, invalidateExperiment, childGates, siblingGateNames, values, selectedGate, viewConfig, plotInitialConfig, sourceLabel, goToAdjacentFile, canGoPrevFile, canGoNextFile],
 	)
 
 	return (

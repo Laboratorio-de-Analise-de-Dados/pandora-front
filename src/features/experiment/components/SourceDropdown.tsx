@@ -27,7 +27,11 @@ const SourceDropdown: React.FC<SourceDropdownProps> = ({
 	const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
 	const [search, setSearch] = React.useState("")
 
-	const items = React.useMemo(() => buildSelectableItems(files), [files])
+	// Amostras desabilitadas não podem ser fonte do plot.
+	const items = React.useMemo(
+		() => buildSelectableItems(files.filter((f) => f.active !== false)),
+		[files],
+	)
 
 	const filtered = React.useMemo(() => {
 		const q = search.trim().toLowerCase()

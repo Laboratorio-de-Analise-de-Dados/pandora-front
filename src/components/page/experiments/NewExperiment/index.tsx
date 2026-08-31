@@ -5,7 +5,6 @@ import {
 	Button,
 	FormControl,
 	FormHelperText,
-	Input,
 	InputLabel,
 	LinearProgress,
 	MenuItem,
@@ -18,6 +17,7 @@ import { ChangeEvent, useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { useExperimentsContext } from "../../../../providers/ExperimentContext"
 import { useAuth } from "../../../../providers/AuthContext"
+import ExperimentFields from "../../../../features/experiment/components/ExperimentFields"
 import {
 	ACCEPTED_EXPERIMENT_FILE_ACCEPT,
 	ACCEPTED_EXPERIMENT_FILE_MESSAGE,
@@ -154,29 +154,13 @@ export default function NewExperimentCard() {
 						Novo experimento
 					</Typography>
 
-					<FormControl margin="normal">
-						<InputLabel htmlFor="title-input">Experiment Title</InputLabel>
-						<Input
-							id="title-input"
-							aria-describedby="title-helper"
-							onChange={(e) => setTitle(e.target.value)}
-						/>
-						<FormHelperText id="title-helper">
-							Field for experiment name
-						</FormHelperText>
-					</FormControl>
-
-					<FormControl margin="normal">
-						<InputLabel htmlFor="type-input">Experiment Type</InputLabel>
-						<Input
-							id="type-input"
-							aria-describedby="type-text"
-							onChange={(e) => setExperimentType(e.target.value)}
-						/>
-						<FormHelperText id="type-text">
-							Field for type. Ex: 'Stem Cells'
-						</FormHelperText>
-					</FormControl>
+					<ExperimentFields
+						title={title}
+						type={experimentType}
+						onTitleChange={setTitle}
+						onTypeChange={setExperimentType}
+						idPrefix="new-experiment"
+					/>
 
 					<FormControl margin="normal" fullWidth>
 						<InputLabel id="org-label">Contexto / Lab</InputLabel>

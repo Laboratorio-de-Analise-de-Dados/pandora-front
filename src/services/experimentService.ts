@@ -12,8 +12,33 @@ export const fetchExperiment = async (id: string): Promise<Experiment> => {
 
 export const fetchExperimentFiles = async (
 	id: string,
+	includeInactive = false,
 ): Promise<ExperimentFiles[]> => {
-	const res = await CytometryApi.get(`/experiment/list/data/${id}`)
+	const res = await CytometryApi.get(`/experiment/list/data/${id}`, {
+		params: includeInactive ? { include_inactive: "true" } : undefined,
+	})
+	return res.data
+}
+
+export const disableFileData = async (fileDataId: number): Promise<void> => {
+	await CytometryApi.post(`/experiment/file/${fileDataId}/disable`)
+}
+
+export const enableFileData = async (fileDataId: number): Promise<void> => {
+	await CytometryApi.post(`/experiment/file/${fileDataId}/enable`)
+}
+
+export interface UpdateExperimentPayload {
+	title?: string
+	type?: string
+	values?: string[]
+}
+
+export const updateExperiment = async (
+	id: number,
+	payload: UpdateExperimentPayload,
+): Promise<Experiment> => {
+	const res = await CytometryApi.patch(`/experiment/${id}/`, payload)
 	return res.data
 }
 

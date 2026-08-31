@@ -1,6 +1,8 @@
 import {
 	Box,
 	CircularProgress,
+	FormControlLabel,
+	Switch,
 	Typography,
 	IconButton,
 	Tooltip,
@@ -21,8 +23,10 @@ import SourceDropdown from "../../../../features/experiment/components/SourceDro
 import CollapsiblePanel from "../../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
+import EditExperimentDialog from "../../../../features/experiment/components/EditExperimentDialog"
 import {
 	MdDelete as DeleteIcon,
+	MdEdit as EditIcon,
 	MdBarChart as StatsIcon,
 	MdChevronLeft as PrevIcon,
 	MdChevronRight as NextIcon,
@@ -46,18 +50,41 @@ function ExperimentPageContent() {
 		goToAdjacentFile,
 		canGoPrevFile,
 		canGoNextFile,
+		showInactiveFiles,
+		setShowInactiveFiles,
 	} = useExperimentWorkspace()
 
 	const {
 		handleDelete,
 		handleDeleteGate,
 		handleRenameGate,
+		handleDisableFile,
+		handleEnableFile,
 		handleApplyGate,
 		handleConfirmApply,
+		handleUpdateExperiment,
+		savingExperiment,
+		canEditExperiment,
 		applyTarget,
 		applyLoading,
 		setApplyTarget,
 	} = useExperimentPageActions()
+
+	const [editOpen, setEditOpen] = useState(false)
+	const [editError, setEditError] = useState<string | null>(null)
+
+	const handleSaveExperiment = async (payload: {
+		title: string
+		type: string
+		values: string[]
+	}) => {
+		const error = await handleUpdateExperiment(payload)
+		if (error) {
+			setEditError(error)
+			return
+		}
+		setEditOpen(false)
+	}
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -78,14 +105,39 @@ function ExperimentPageContent() {
 				gap="2rem"
 			>
 				{experiment?.title}
-				{experiment && (
-					<Tooltip title="Excluir experimento">
-						<IconButton onClick={handleDelete} color="error">
-							<DeleteIcon fontSize="small" />
-						</IconButton>
-					</Tooltip>
+				{experiment && canEditExperiment && (
+					<Box sx={{ display: "flex", gap: 0.5 }}>
+						<Tooltip title="Editar experimento">
+							<IconButton
+								onClick={() => {
+									setEditError(null)
+									setEditOpen(true)
+								}}
+							>
+								<EditIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+						<Tooltip title="Excluir experimento">
+							<IconButton onClick={handleDelete} color="error">
+								<DeleteIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+					</Box>
 				)}
 			</Typography>
+			<FormControlLabel
+				control={
+					<Switch
+						size="small"
+						checked={showInactiveFiles}
+						onChange={(e) => setShowInactiveFiles(e.target.checked)}
+					/>
+				}
+				label={
+					<Typography variant="caption">Mostrar desabilitadas</Typography>
+				}
+				sx={{ flexShrink: 0, mt: 0.5 }}
+			/>
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
 				<ParentTree
 					files={experimentFiles}
@@ -96,6 +148,8 @@ function ExperimentPageContent() {
 					onDeleteGate={handleDeleteGate}
 					onRenameGate={handleRenameGate}
 					onApplyGate={handleApplyGate}
+					onDisableFile={handleDisableFile}
+					onEnableFile={handleEnableFile}
 				/>
 			</Box>
 		</>
@@ -262,12 +316,23 @@ function ExperimentPageContent() {
 				</CollapsiblePanel>
 			</Box>
 
+			{experiment && (
+				<EditExperimentDialog
+					open={editOpen}
+					experiment={experiment}
+					saving={savingExperiment}
+					error={editError}
+					onClose={() => setEditOpen(false)}
+					onSave={handleSaveExperiment}
+				/>
+			)}
+
 			{applyTarget && (
 				<ApplyGateDialog
 					open={!!applyTarget}
 					gateName={applyTarget.name}
 					gateId={applyTarget.id}
-					files={experimentFiles}
+					files={experimentFiles.filter((f) => f.active !== false)}
 					sourceFileDataId={applyTarget.fileDataId}
 					onClose={() => setApplyTarget(null)}
 					onApply={handleConfirmApply}
