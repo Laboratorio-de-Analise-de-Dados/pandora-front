@@ -50,6 +50,7 @@ interface ScatterPlotProps {
 	sourceId: number
 	fileDataId: number
 	parentId?: number
+	parentName?: string
 	siblingGateNames?: string[]
 	childGates?: Gate[]
 }
@@ -60,6 +61,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	sourceId,
 	fileDataId,
 	parentId,
+	parentName,
 	siblingGateNames = [],
 	childGates = [],
 }) => {
@@ -171,6 +173,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const { handleSelectedArea, handleQuadrantClick } = useGateDrawing({
 		fileDataId,
 		parentId,
+		parentName,
 		xAxis,
 		yAxis,
 		effXScale,

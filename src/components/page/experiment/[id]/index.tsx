@@ -44,6 +44,7 @@ function ExperimentPageContent() {
 		fileStats,
 		childGates,
 		siblingGateNames,
+		selectedGate,
 		values,
 		plotInitialConfig,
 		sourceLabel,
@@ -261,6 +262,9 @@ function ExperimentPageContent() {
 										fileDataId={source.fileDataId}
 										parentId={
 											source.type === "gate" ? source.id : undefined
+										}
+										parentName={
+											source.type === "gate" ? selectedGate?.name : undefined
 										}
 										siblingGateNames={siblingGateNames}
 										childGates={childGates}
