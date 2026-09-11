@@ -107,36 +107,39 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 		else addCompareItem(item)
 	}
 
-	// Nomes distintos de gates presentes na lista, para o atalho de selecionar
-	// "o mesmo gate em todos os arquivos".
-	const gateNames = useMemo(() => {
-		const names: string[] = []
-		const seen = new Set<string>()
+	// Atalho "o mesmo gate em todos os arquivos": os grupos vêm da linhagem de
+	// cópias (`groupKey`), então uma cópia editada só naquela amostra — já
+	// desanexada no backend — aparece como um grupo separado, mesmo com o mesmo
+	// nome. Quando dois grupos têm o mesmo nome, o rótulo mostra o caminho.
+	const gateGroups = useMemo(() => {
+		const groups = new Map<string, SelectableItem[]>()
 		for (const item of selectableItems) {
-			if (item.type === "gate" && !seen.has(item.name)) {
-				seen.add(item.name)
-				names.push(item.name)
-			}
+			if (item.type !== "gate") continue
+			const existing = groups.get(item.groupKey)
+			if (existing) existing.push(item)
+			else groups.set(item.groupKey, [item])
 		}
-		return names
+		const nameCount = new Map<string, number>()
+		for (const items of groups.values()) {
+			const name = items[0].name
+			nameCount.set(name, (nameCount.get(name) ?? 0) + 1)
+		}
+		return [...groups.entries()].map(([key, items]) => ({
+			key,
+			items,
+			label:
+				(nameCount.get(items[0].name) ?? 0) > 1
+					? items[0].gatePath
+					: items[0].name,
+			tooltip: items.map((i) => i.path).join("\n"),
+		}))
 	}, [selectableItems])
 
-	const itemsForGateName = useCallback(
-		(name: string) =>
-			selectableItems.filter(
-				(item) => item.type === "gate" && item.name === name,
-			),
-		[selectableItems],
-	)
+	const isGateGroupFullySelected = (items: SelectableItem[]) =>
+		items.length > 0 && items.every(isItemSelected)
 
-	const isGateNameFullySelected = (name: string) => {
-		const items = itemsForGateName(name)
-		return items.length > 0 && items.every(isItemSelected)
-	}
-
-	const toggleGateAcrossFiles = (name: string) => {
-		const items = itemsForGateName(name)
-		if (isGateNameFullySelected(name)) {
+	const toggleGateGroup = (items: SelectableItem[]) => {
+		if (isGateGroupFullySelected(items)) {
 			setCompareItems((prev) =>
 				prev.filter(
 					(i) =>
@@ -333,7 +336,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 								/>
 							</Box>
 
-							{gateNames.length > 0 && (
+							{gateGroups.length > 0 && (
 								<Box sx={{ mb: 0.5 }}>
 									<Typography
 										variant="caption"
@@ -343,22 +346,23 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 										Mesmo gate em todos os arquivos:
 									</Typography>
 									<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-										{gateNames.map((name) => {
-											const full = isGateNameFullySelected(name)
+										{gateGroups.map((group) => {
+											const full = isGateGroupFullySelected(group.items)
 											return (
-												<Chip
-													key={`gname-${name}`}
-													label={name}
-													size="small"
-													variant={full ? "filled" : "outlined"}
-													color={full ? "primary" : "default"}
-													onClick={() => toggleGateAcrossFiles(name)}
-													sx={{
-														fontSize: "0.6rem",
-														height: 20,
-														maxWidth: 140,
-													}}
-												/>
+												<Tooltip key={group.key} title={group.tooltip}>
+													<Chip
+														label={`${group.label} (${group.items.length})`}
+														size="small"
+														variant={full ? "filled" : "outlined"}
+														color={full ? "primary" : "default"}
+														onClick={() => toggleGateGroup(group.items)}
+														sx={{
+															fontSize: "0.6rem",
+															height: 20,
+															maxWidth: 180,
+														}}
+													/>
+												</Tooltip>
 											)
 										})}
 									</Box>
@@ -367,8 +371,8 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 
 							<Box sx={{ maxHeight: 220, overflow: "auto" }}>
 								{filteredSelectableItems.map((item) => (
+									<Tooltip key={`cmp-${item.type}-${item.id}`} title={item.path}>
 									<FormControlLabel
-										key={`cmp-${item.type}-${item.id}`}
 										control={
 											<Checkbox
 												size="small"
@@ -404,6 +408,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 											pl: item.depth * 1.5,
 										}}
 									/>
+									</Tooltip>
 								))}
 								{filteredSelectableItems.length === 0 && (
 									<Typography

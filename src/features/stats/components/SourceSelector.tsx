@@ -3,6 +3,7 @@ import {
 	Button,
 	Menu,
 	MenuItem,
+	Tooltip,
 	Typography,
 } from "@mui/material"
 import {
@@ -62,8 +63,12 @@ const SourceSelector: React.FC<SourceSelectorProps> = ({
 				{selectableItems.map((item) => {
 					const isSelected = source?.type === item.type && source?.id === item.id
 					return (
-						<MenuItem
+						<Tooltip
 							key={`${item.type}-${item.id}`}
+							title={item.path}
+							placement="right"
+						>
+						<MenuItem
 							selected={isSelected}
 							onClick={() => {
 								onSelect(item)
@@ -79,6 +84,7 @@ const SourceSelector: React.FC<SourceSelectorProps> = ({
 								{item.name}
 							</Typography>
 						</MenuItem>
+						</Tooltip>
 					)
 				})}
 				{selectableItems.length === 0 && (
