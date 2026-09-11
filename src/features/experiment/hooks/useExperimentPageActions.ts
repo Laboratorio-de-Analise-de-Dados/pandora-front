@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import {
@@ -14,6 +14,7 @@ import {
 	deleteGatesBatch,
 	updateGate,
 } from "../../../services/gateService"
+import type { ApplyGateConflict } from "../../../services/gateService"
 import type {
 	DeleteGateOptions,
 	DeleteGateTarget,
@@ -63,6 +64,11 @@ export function useExperimentPageActions() {
 
 	const [applyTarget, setApplyTarget] = useState<ApplyTarget | null>(null)
 	const [applyLoading, setApplyLoading] = useState(false)
+	const [applyConflicts, setApplyConflicts] = useState<ApplyGateConflict[]>([])
+	const pendingApply = useRef<{
+		targetFileDataIds: number[]
+		recursive: boolean
+	} | null>(null)
 	const [savingExperiment, setSavingExperiment] = useState(false)
 	const [deleteGateTarget, setDeleteGateTarget] =
 		useState<DeleteGateTarget | null>(null)
@@ -282,26 +288,31 @@ export function useExperimentPageActions() {
 		[experimentFiles],
 	)
 
-	const handleConfirmApply = useCallback(
-		async (targetFileDataIds: number[], recursive: boolean) => {
+	const runApply = useCallback(
+		async (
+			targetFileDataIds: number[],
+			recursive: boolean,
+			onConflict: "replace" | "rename",
+		) => {
 			if (!applyTarget) return
 			setApplyLoading(true)
 			try {
-				await applyGates({
+				const result = await applyGates({
 					source_gate_ids: [applyTarget.id],
 					target_file_data_ids: targetFileDataIds,
 					recursive,
-					on_conflict: "replace",
+					on_conflict: onConflict,
 				})
-				toast.success("Gates aplicados com sucesso!", {
-					position: "bottom-right",
-				})
+				toast.success(
+					`Gates aplicados: ${result.created} criado(s), ${result.replaced} sobrescrito(s)`,
+					{ position: "bottom-right" },
+				)
+				setApplyConflicts([])
+				pendingApply.current = null
 				setApplyTarget(null)
 				invalidateExperiment()
 			} catch (error) {
-				const errorMessage =
-					error instanceof Error ? error.message : String(error)
-				toast.error(`Erro ao aplicar gates: ${errorMessage}`, {
+				toast.error(`Erro ao aplicar gates: ${extractErrorMessage(error)}`, {
 					position: "bottom-right",
 				})
 			} finally {
@@ -309,6 +320,48 @@ export function useExperimentPageActions() {
 			}
 		},
 		[applyTarget, invalidateExperiment],
+	)
+
+	// Antes de aplicar, um dry run descobre os gates de mesmo nome que seriam
+	// sobrescritos nos destinos; a sobrescrita só acontece após confirmação.
+	const handleConfirmApply = useCallback(
+		async (targetFileDataIds: number[], recursive: boolean) => {
+			if (!applyTarget) return
+			setApplyLoading(true)
+			try {
+				const preview = await applyGates({
+					source_gate_ids: [applyTarget.id],
+					target_file_data_ids: targetFileDataIds,
+					recursive,
+					dry_run: true,
+				})
+				if (preview.conflicts.length > 0) {
+					pendingApply.current = { targetFileDataIds, recursive }
+					setApplyConflicts(preview.conflicts)
+					return
+				}
+			} catch (error) {
+				toast.error(`Erro ao aplicar gates: ${extractErrorMessage(error)}`, {
+					position: "bottom-right",
+				})
+				return
+			} finally {
+				setApplyLoading(false)
+			}
+			await runApply(targetFileDataIds, recursive, "rename")
+		},
+		[applyTarget, runApply],
+	)
+
+	const handleResolveApplyConflicts = useCallback(
+		(resolution: "replace" | "rename" | null) => {
+			const pending = pendingApply.current
+			setApplyConflicts([])
+			pendingApply.current = null
+			if (!pending || !resolution) return
+			void runApply(pending.targetFileDataIds, pending.recursive, resolution)
+		},
+		[runApply],
 	)
 
 	return {
@@ -330,5 +383,7 @@ export function useExperimentPageActions() {
 		applyTarget,
 		applyLoading,
 		setApplyTarget,
+		applyConflicts,
+		handleResolveApplyConflicts,
 	}
 }

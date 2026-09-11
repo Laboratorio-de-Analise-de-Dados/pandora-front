@@ -20,6 +20,8 @@ import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
 import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
 import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
 import { useGateMutations } from "../../features/plot/hooks/useGateMutations"
+import { useReshapeScope } from "../../features/plot/hooks/useReshapeScope"
+import { getCopyFamilyIds } from "../../features/gate/utils"
 
 import { COFACTOR } from "../../features/plot/utils/biex"
 import { buildTicks } from "../../features/plot/utils/ticks"
@@ -31,6 +33,7 @@ import { useGateHitTest } from "./hooks/useGateHitTest"
 import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
 import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
+import ReshapeScopeDialog from "../../features/plot/components/scatter-plot/components/ReshapeScopeDialog"
 import GateToolToggle from "../../features/plot/components/scatter-plot/components/GateToolToggle"
 import {
 	PlotSettingsButton,
@@ -92,7 +95,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setPlotMode,
 	} = plotState
 
-	const { invalidateExperiment } = useExperimentWorkspace()
+	const { invalidateExperiment, experimentFiles } = useExperimentWorkspace()
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -158,6 +161,17 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const { patchCoordinates, deleteGate, saveGateNameColor } =
 		useGateMutations(loadFile)
 
+	const familySizeOf = useCallback(
+		(gateId: number) => getCopyFamilyIds(experimentFiles, gateId).length,
+		[experimentFiles],
+	)
+	const {
+		pending: pendingReshape,
+		requestPatch,
+		confirm: confirmReshape,
+		cancel: cancelReshape,
+	} = useReshapeScope(patchCoordinates, familySizeOf, loadFile)
+
 	const effXScale: Scale = data?.x_scale ?? xScale
 	const effYScale: Scale = data?.y_scale ?? yScale
 	const effCof = data?.cofactor ?? COFACTOR
@@ -218,7 +232,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			reshapingGateId,
 			effXScale,
 			effYScale,
-			patchCoordinates,
+			patchCoordinates: requestPatch,
 		})
 
 	// --- Gate click/context menu handlers ---
@@ -677,6 +691,16 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				onScopeChange={setEditGateScope}
 				onSave={handleSaveGate}
 				onClose={() => setEditDialogOpen(false)}
+			/>
+
+			<ReshapeScopeDialog
+				open={pendingReshape !== null}
+				gateName={
+					childGates.find((g) => g.id === pendingReshape?.gateId)?.name ?? ""
+				}
+				familySize={pendingReshape?.familySize ?? 0}
+				onConfirm={confirmReshape}
+				onCancel={cancelReshape}
 			/>
 
 			<GateContextMenu
