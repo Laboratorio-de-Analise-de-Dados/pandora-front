@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 import CytometryApi from "../../API"
+import { Organization } from "../../types"
 
 export interface Membership {
 	id: number
-	organization: { id: number; name: string }
+	organization: Organization
 	role: string
 }
 
@@ -27,7 +28,11 @@ interface AuthContextProps {
 	isAuthenticated: boolean
 	login: (username: string, password: string) => Promise<void>
 	logout: () => void
-	storeToken: (access: string, refresh: string, userData: Partial<AuthUser>) => void
+	storeToken: (
+		access: string,
+		refresh: string,
+		userData: Partial<AuthUser>,
+	) => void
 	refreshUser: () => Promise<void>
 }
 
@@ -63,7 +68,10 @@ const setCachedUser = (user: AuthUser | null) => {
 		localStorage.removeItem(CACHE_KEY)
 		return
 	}
-	localStorage.setItem(CACHE_KEY, JSON.stringify({ user, cachedAt: Date.now() }))
+	localStorage.setItem(
+		CACHE_KEY,
+		JSON.stringify({ user, cachedAt: Date.now() }),
+	)
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -104,7 +112,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	}, [])
 
 	const login = async (username: string, password: string) => {
-		const res = await CytometryApi.post("/accounts/login/", { username, password })
+		const res = await CytometryApi.post("/accounts/login/", {
+			username,
+			password,
+		})
 		localStorage.setItem("access_token", res.data.access)
 		localStorage.setItem("refresh_token", res.data.refresh)
 		const userData = res.data as AuthUser
@@ -112,7 +123,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		setCachedUser(userData)
 	}
 
-	const storeToken = (access: string, refresh: string, userData: Partial<AuthUser>) => {
+	const storeToken = (
+		access: string,
+		refresh: string,
+		userData: Partial<AuthUser>,
+	) => {
 		localStorage.setItem("access_token", access)
 		localStorage.setItem("refresh_token", refresh)
 		const full = userData as AuthUser
@@ -128,7 +143,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	}
 
 	return (
-		<AuthContext.Provider value={{ user, loading, isAuthenticated: Boolean(user), login, logout, storeToken, refreshUser }}>
+		<AuthContext.Provider
+			value={{
+				user,
+				loading,
+				isAuthenticated: Boolean(user),
+				login,
+				logout,
+				storeToken,
+				refreshUser,
+			}}
+		>
 			{children}
 		</AuthContext.Provider>
 	)

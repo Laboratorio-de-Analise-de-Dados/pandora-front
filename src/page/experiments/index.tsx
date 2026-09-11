@@ -32,9 +32,10 @@ export default function ExperimentsPage() {
 	}, [listExperiments])
 
 	const filteredExperiments = useMemo(() => {
+		console.log(experiments, orgId)
 		if (orgId === null) return experiments
 		if (orgId === 0) return experiments.filter((e) => !e.organization)
-		return experiments.filter((e) => e.organization === orgId)
+		return experiments.filter((e) => e.organization && (e.organization.id === orgId))
 	}, [experiments, orgId])
 
 	const org = user?.memberships?.find(
