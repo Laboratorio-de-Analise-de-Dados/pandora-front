@@ -4,8 +4,14 @@ export interface Experiment {
 	type: string
 	values: string[]
 	active: boolean
-	organization: number | null
+	organization: Organization
 	created_by: number
+}
+
+export type Organization = {
+	id: number,
+	name: string,
+	org_type: "lab" | "cliente",
 }
 
 export interface ExperimentFiles {
