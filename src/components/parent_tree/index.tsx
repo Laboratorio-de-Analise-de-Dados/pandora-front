@@ -32,7 +32,11 @@ import {
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
 import { ExperimentFiles, Gate } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
-import { gateAxesLabel, findGateInTree } from "../../features/gate/utils"
+import {
+	gateAxesLabel,
+	findGateInTree,
+	gateAuthorLabel,
+} from "../../features/gate/utils"
 import { fmtPct } from "../../utils/format"
 import React, { useState } from "react"
 
@@ -59,6 +63,7 @@ const renderGate = (
 ) => {
 	const itemId = `gate-${gate.id}-${parentId}`
 	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
+	const authorLabel = gateAuthorLabel(gate)
 	return (
 		<TreeItem
 			key={itemId}
@@ -92,7 +97,13 @@ const renderGate = (
 									flexShrink: 0,
 								}}
 							/>
-							<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
+							{authorLabel ? (
+								<Tooltip title={authorLabel} arrow placement="top-start">
+									<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
+								</Tooltip>
+							) : (
+								<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
+							)}
 							{gate.copied_from_id && (
 								<Tooltip title={`Copiado de gate #${gate.copied_from_id}`} arrow>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>

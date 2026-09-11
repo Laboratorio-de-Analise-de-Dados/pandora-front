@@ -111,6 +111,9 @@ export interface Gate {
 	dashboard: number
 	copied_from_id?: number | null
 	color?: string | null
+	/** Nome de exibição do autor; ausente em gates criados antes do registro. */
+	created_by_name?: string | null
+	created_at?: string
 	plot_config?: Partial<PlotViewConfig>
 	analysis_result?: {
 		analysis_result: AnalysisResultData

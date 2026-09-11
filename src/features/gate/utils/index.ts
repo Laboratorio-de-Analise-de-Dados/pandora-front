@@ -11,6 +11,8 @@ export {
 	getRootCopiedFromId,
 } from "./gateTreeHelpers"
 
+export { gateAuthorLabel } from "./gateAuthor"
+
 export {
 	GATE_NAME_MAX_LENGTH,
 	getNextGateName,
