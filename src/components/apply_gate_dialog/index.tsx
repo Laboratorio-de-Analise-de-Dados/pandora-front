@@ -75,8 +75,9 @@ export default function ApplyGateDialog({
 			<DialogTitle>Aplicar gate em outros arquivos</DialogTitle>
 			<DialogContent>
 				<Typography variant="body2" sx={{ mb: 1 }}>
-					Copiar <strong>{gateName}</strong> para os arquivos selecionados.
-					Os gates copiados são independentes — editar no destino não afeta a origem.
+					Copiar <strong>{gateName}</strong> para os arquivos selecionados. As
+					cópias acompanham o original em nome, cor e exclusão até que o desenho
+					seja alterado só em uma amostra.
 				</Typography>
 
 				<FileSelectList

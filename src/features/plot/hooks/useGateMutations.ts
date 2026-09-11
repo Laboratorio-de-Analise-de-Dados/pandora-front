@@ -27,10 +27,28 @@ const extractError = (error: unknown): string => {
  * repetido pelo componente do gráfico.
  */
 export function useGateMutations(loadFile: () => void) {
+	/**
+	 * Salva a geometria. Com `scope="file"` o backend desanexa o gate da família
+	 * de cópias (ele passa a ser exclusivo da amostra); com `scope="experiment"`
+	 * a nova geometria vale para a família inteira.
+	 */
 	const patchCoordinates = useCallback(
-		async (gateId: number, coords: GateCoordinates) => {
+		async (
+			gateId: number,
+			coords: GateCoordinates,
+			scope: GateScope = "file",
+		) => {
 			try {
-				await updateGate(gateId, { gate_coordinates: coords })
+				const result = await updateGate(gateId, {
+					gate_coordinates: coords,
+					scope,
+				})
+				if (scope === "experiment") {
+					toast.success(
+						`Geometria aplicada em ${result.propagated_gate_ids.length + 1} amostra(s)`,
+						TOAST_POS,
+					)
+				}
 				loadFile()
 			} catch (error: unknown) {
 				toast.error(`Erro ao atualizar gate: ${extractError(error)}`, TOAST_POS)

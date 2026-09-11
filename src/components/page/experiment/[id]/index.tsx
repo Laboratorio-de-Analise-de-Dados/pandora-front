@@ -23,6 +23,7 @@ import SourceDropdown from "../../../../features/experiment/components/SourceDro
 import CollapsiblePanel from "../../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../stats_panel"
 import ApplyGateDialog from "../../../apply_gate_dialog"
+import ApplyConflictDialog from "../../../apply_gate_dialog/components/ApplyConflictDialog"
 import EditExperimentDialog from "../../../../features/experiment/components/EditExperimentDialog"
 import DeleteGateDialog from "../../../delete_gate_dialog"
 import {
@@ -75,6 +76,8 @@ function ExperimentPageContent() {
 		applyTarget,
 		applyLoading,
 		setApplyTarget,
+		applyConflicts,
+		handleResolveApplyConflicts,
 	} = useExperimentPageActions()
 
 	const [editOpen, setEditOpen] = useState(false)
@@ -361,6 +364,12 @@ function ExperimentPageContent() {
 					loading={applyLoading}
 				/>
 			)}
+
+			<ApplyConflictDialog
+				conflicts={applyConflicts}
+				loading={applyLoading}
+				onResolve={handleResolveApplyConflicts}
+			/>
 		</Layout>
 	)
 }

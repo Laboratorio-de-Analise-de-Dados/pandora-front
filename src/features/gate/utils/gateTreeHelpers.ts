@@ -120,6 +120,38 @@ export const getChildGatesForSource = (
 	return []
 }
 
+/**
+ * Id que identifica a família de cópias de um gate: a raiz da cadeia de
+ * `copied_from` ou o próprio gate, quando ele é o original.
+ */
+export const getCopyFamilyRootId = (
+	files: ExperimentFiles[],
+	gateId: number,
+): number => {
+	const all = files.flatMap((f) => collectAllGates(f.gates))
+	const visited = new Set<number>()
+	let currentId = gateId
+	while (!visited.has(currentId)) {
+		visited.add(currentId)
+		const gate = all.find((g) => g.id === currentId)
+		if (!gate?.copied_from_id) break
+		currentId = gate.copied_from_id
+	}
+	return currentId
+}
+
+/** Ids do gate, do original que ele copiou e de todas as cópias derivadas. */
+export const getCopyFamilyIds = (
+	files: ExperimentFiles[],
+	gateId: number,
+): number[] => {
+	const root = getCopyFamilyRootId(files, gateId)
+	return files
+		.flatMap((f) => collectAllGates(f.gates))
+		.filter((g) => getCopyFamilyRootId(files, g.id) === root)
+		.map((g) => g.id)
+}
+
 /** Retorna o id raiz da cadeia de copied_from de um gate, percorrendo a árvore. */
 export const getRootCopiedFromId = (
 	files: ExperimentFiles[],

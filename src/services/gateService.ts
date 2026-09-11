@@ -27,7 +27,22 @@ export interface ApplyGatesPayload {
 	source_gate_ids: number[]
 	target_file_data_ids: number[]
 	recursive: boolean
-	on_conflict?: "replace" | string
+	on_conflict?: "replace" | "rename" | "skip"
+	dry_run?: boolean
+}
+
+export interface ApplyGateConflict {
+	gate_id: number
+	file_data_id: number
+	file_name?: string
+	name: string
+}
+
+export interface ApplyGatesResult {
+	created: number
+	skipped: number
+	replaced: number
+	conflicts: ApplyGateConflict[]
 }
 
 export interface DeleteGatesBatchPayload {
@@ -73,6 +88,12 @@ export const deleteGatesBatch = async (
 	return res.data
 }
 
-export const applyGates = async (payload: ApplyGatesPayload): Promise<void> => {
-	await CytometryApi.post("/analytics/gate/apply", payload)
+export const applyGates = async (
+	payload: ApplyGatesPayload,
+): Promise<ApplyGatesResult> => {
+	const res = await CytometryApi.post<ApplyGatesResult>(
+		"/analytics/gate/apply",
+		payload,
+	)
+	return res.data
 }

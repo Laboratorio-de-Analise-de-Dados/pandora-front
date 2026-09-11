@@ -9,6 +9,8 @@ export {
 	gateAxesLabel,
 	getChildGatesForSource,
 	getRootCopiedFromId,
+	getCopyFamilyRootId,
+	getCopyFamilyIds,
 } from "./gateTreeHelpers"
 
 export {
