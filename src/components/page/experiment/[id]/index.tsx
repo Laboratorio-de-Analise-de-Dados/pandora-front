@@ -15,7 +15,10 @@ import {
 	ExperimentWorkspaceProvider,
 	useExperimentWorkspace,
 } from "../../../../features/experiment/context/ExperimentWorkspaceContext"
-import { useExperimentPageActions } from "../../../../features/experiment/hooks/useExperimentPageActions"
+import { useExperimentMetaActions } from "../../../../features/experiment/hooks/useExperimentMetaActions"
+import { useFileActions } from "../../../../features/experiment/hooks/useFileActions"
+import { useGateActions } from "../../../../features/experiment/hooks/useGateActions"
+import { useSubsampleActions } from "../../../../features/experiment/hooks/useSubsampleActions"
 import { PlotStateProvider } from "../../../../features/plot/context/PlotStateContext"
 import ScatterPlot from "../../../plotly"
 import ParentTree from "../../../parent_tree"
@@ -63,6 +66,16 @@ function ExperimentPageContent() {
 
 	const {
 		handleDelete,
+		handleAddFile,
+		addingFile,
+		handleDownload,
+		handleUpdateExperiment,
+		savingExperiment,
+		canEditExperiment,
+	} = useExperimentMetaActions()
+	const { handleDisableFile, handleEnableFile, handleMoveFileToSubsample } =
+		useFileActions()
+	const {
 		handleRequestDeleteGate,
 		handleConfirmDeleteGate,
 		deleteGateTarget,
@@ -70,26 +83,19 @@ function ExperimentPageContent() {
 		deleteGateError,
 		setDeleteGateTarget,
 		handleRenameGate,
-		handleDisableFile,
-		handleEnableFile,
-		handleCreateSubsample,
-		handleRenameSubsample,
-		handleArchiveSubsample,
-		handleMoveFileToSubsample,
 		handleApplyGate,
 		handleConfirmApply,
-		handleUpdateExperiment,
-		savingExperiment,
-		canEditExperiment,
-		handleAddFile,
-		addingFile,
-		handleDownload,
 		applyTarget,
 		applyLoading,
 		setApplyTarget,
 		applyConflicts,
 		handleResolveApplyConflicts,
-	} = useExperimentPageActions()
+	} = useGateActions()
+	const {
+		handleCreateSubsample,
+		handleRenameSubsample,
+		handleArchiveSubsample,
+	} = useSubsampleActions()
 
 	const [editOpen, setEditOpen] = useState(false)
 	const [editError, setEditError] = useState<string | null>(null)
