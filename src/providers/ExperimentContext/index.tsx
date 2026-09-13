@@ -26,20 +26,20 @@ interface ExperimentContextProps {
 		title: string,
 		type: string,
 		file: File,
-		organizationId?: number | null
+		organizationId?: number | null,
 	) => Promise<AxiosResponse>
 	progress: ChunkProgress[]
 }
 
 const ExperimentContext = createContext<ExperimentContextProps | undefined>(
-	undefined
+	undefined,
 )
 
 export const useExperimentsContext = (): ExperimentContextProps => {
 	const context = useContext(ExperimentContext)
 	if (!context) {
 		throw new Error(
-			"useExperimentsContext must be used within a SelectionProvider"
+			"useExperimentsContext must be used within a SelectionProvider",
 		)
 	}
 	return context
@@ -61,10 +61,18 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	}, [])
 
 	const createExperiment = useCallback(
-		async (title: string, type: string, file: File, organizationId?: number | null) => {
+		async (
+			title: string,
+			type: string,
+			file: File,
+			organizationId?: number | null,
+		) => {
 			const chunkSize = 0.5 * 1024 * 1024
 			const totalChunks = Math.ceil(file.size / chunkSize)
-			const orgId = organizationId === undefined ? user?.memberships?.[0]?.organization?.id ?? null : organizationId
+			const orgId =
+				organizationId === undefined
+					? (user?.memberships?.[0]?.organization?.id ?? null)
+					: organizationId
 
 			const initResponse = await CytometryApi.post("/experiment/init/", {
 				title,
@@ -77,7 +85,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 
 			localStorage.setItem(
 				"currentUpload",
-				JSON.stringify({ fileId, title, type })
+				JSON.stringify({ fileId, title, type }),
 			)
 
 			let guide: ChunkProgress[] = Array.from(
@@ -85,7 +93,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				(_, i) => ({
 					index: i,
 					status: "pending",
-				})
+				}),
 			)
 			setProgress(guide)
 
@@ -116,7 +124,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 					{
 						fileId,
 						fileName: file.name,
-					}
+					},
 				)
 				await listExperiments()
 				localStorage.removeItem("currentUpload")
@@ -125,7 +133,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				throw new Error("Nem todos os chunks foram enviados com sucesso")
 			}
 		},
-		[listExperiments, user]
+		[listExperiments, user],
 	)
 
 	useEffect(() => {

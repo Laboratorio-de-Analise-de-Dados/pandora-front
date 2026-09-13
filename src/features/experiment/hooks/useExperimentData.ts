@@ -5,7 +5,13 @@ import {
 	fetchExperimentFiles,
 	fetchFileStats,
 } from "../../../services/experimentService"
-import type { Experiment, ExperimentFiles, AnalysisResultData } from "../../../types"
+import { fetchSubsamples } from "../../../services/subsampleService"
+import type {
+	Experiment,
+	ExperimentFiles,
+	AnalysisResultData,
+	Subsample,
+} from "../../../types"
 
 export function useExperimentQuery(id: string) {
 	return useQuery<Experiment>({
@@ -23,7 +29,18 @@ export function useExperimentFilesQuery(id: string, includeInactive = false) {
 	})
 }
 
-export function useFileStatsQuery(sourceType: string | undefined, sourceId: number | undefined) {
+export function useSubsamplesQuery(id: string, includeInactive = false) {
+	return useQuery<Subsample[]>({
+		queryKey: ["experiment-subsamples", id, includeInactive],
+		queryFn: async () => fetchSubsamples(id, includeInactive),
+		enabled: !!id,
+	})
+}
+
+export function useFileStatsQuery(
+	sourceType: string | undefined,
+	sourceId: number | undefined,
+) {
 	return useQuery<AnalysisResultData>({
 		queryKey: ["file-stats", sourceId],
 		queryFn: async () => fetchFileStats(sourceId as number),
@@ -36,5 +53,6 @@ export function useInvalidateExperiment(id: string) {
 	return useCallback(() => {
 		queryClient.invalidateQueries({ queryKey: ["experiment", id] })
 		queryClient.invalidateQueries({ queryKey: ["experiment-files", id] })
+		queryClient.invalidateQueries({ queryKey: ["experiment-subsamples", id] })
 	}, [queryClient, id])
 }

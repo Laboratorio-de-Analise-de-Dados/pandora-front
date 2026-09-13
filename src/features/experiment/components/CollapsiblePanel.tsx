@@ -74,9 +74,7 @@ export default function CollapsiblePanel({
 			<>
 				{/* Marca-página no cantinho superior abre o drawer */}
 				{!hideTrigger && (
-					<Box
-						sx={{ position: "absolute", top: 8, [side]: 8, zIndex: 21 }}
-					>
+					<Box sx={{ position: "absolute", top: 8, [side]: 8, zIndex: 21 }}>
 						<Tooltip title={`Mostrar ${label}`} placement="bottom">
 							<Box
 								role="button"
@@ -119,7 +117,7 @@ export default function CollapsiblePanel({
 											bgcolor: theme.palette.background.default,
 											overflowY: "auto",
 											...resolveSx(theme, paperSx),
-									  }
+										}
 									: {
 											width: "80%",
 											maxWidth: 340,
@@ -130,7 +128,7 @@ export default function CollapsiblePanel({
 											minHeight: 0,
 											overflowY: "auto",
 											...resolveSx(theme, paperSx),
-									  },
+										},
 						},
 					}}
 				>
@@ -211,12 +209,12 @@ export default function CollapsiblePanel({
 											borderLeft: "none",
 											borderTopRightRadius: 8,
 											borderBottomRightRadius: 8,
-									  }
+										}
 									: {
 											borderRight: "none",
 											borderTopLeftRadius: 8,
 											borderBottomLeftRadius: 8,
-									  }),
+										}),
 								"&:hover": {
 									bgcolor: theme.palette.action.hover,
 									color: theme.palette.primary.main,

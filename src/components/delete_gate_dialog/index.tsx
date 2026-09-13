@@ -13,7 +13,7 @@ import {
 	Typography,
 } from "@mui/material"
 import React, { useEffect, useMemo, useState } from "react"
-import { ExperimentFiles, Gate } from "../../types"
+import { ExperimentFiles, Gate, Subsample } from "../../types"
 import {
 	collectAllGates,
 	findGateByPathNames,
@@ -39,6 +39,7 @@ interface DeleteGateDialogProps {
 	open: boolean
 	target: DeleteGateTarget
 	files: ExperimentFiles[]
+	subsamples?: Subsample[]
 	error: string | null
 	loading?: boolean
 	onClose: () => void
@@ -55,6 +56,7 @@ export default function DeleteGateDialog({
 	open,
 	target,
 	files,
+	subsamples = [],
 	error,
 	loading,
 	onClose,
@@ -66,6 +68,24 @@ export default function DeleteGateDialog({
 	const [includeSource, setIncludeSource] = useState(false)
 
 	const sourceFile = files.find((f) => f.id === target.fileDataId)
+	const sourceSubsampleId = sourceFile?.subsample ?? null
+	const sourceSubsample = useMemo(
+		() => subsamples.find((s) => s.id === sourceSubsampleId) ?? null,
+		[subsamples, sourceSubsampleId],
+	)
+	// Amostras ativas do mesmo subsample da amostra alvo (BE-07).
+	const subsampleFiles = useMemo(
+		() =>
+			sourceSubsampleId === null
+				? []
+				: files.filter(
+						(f) =>
+							f.subsample === sourceSubsampleId &&
+							f.active !== false &&
+							f.id !== target.fileDataId,
+					),
+		[files, sourceSubsampleId, target.fileDataId],
+	)
 	const pathNames = useMemo(
 		() => getGatePathNames(sourceFile?.gates ?? [], target.id) ?? [target.name],
 		[sourceFile, target.id, target.name],
@@ -73,8 +93,7 @@ export default function DeleteGateDialog({
 
 	// Amostras desabilitadas (BE-01) não entram como alvo.
 	const targetFiles = useMemo(
-		() =>
-			files.filter((f) => f.active !== false && f.id !== target.fileDataId),
+		() => files.filter((f) => f.active !== false && f.id !== target.fileDataId),
 		[files, target.fileDataId],
 	)
 
@@ -108,10 +127,11 @@ export default function DeleteGateDialog({
 
 	const affected = useMemo(() => {
 		if (scope === "file") return { gates: sourceCount, files: 1 }
+		const scopedFiles = scope === "subsample" ? subsampleFiles : targetFiles
 		let gates = includeSource ? sourceCount : 0
 		let filesTouched = includeSource ? 1 : 0
-		for (const file of targetFiles) {
-			if (!selectedIds.has(file.id)) continue
+		for (const file of scopedFiles) {
+			if (scope === "experiment" && !selectedIds.has(file.id)) continue
 			const count = countGates(
 				findGateByPathNames(file.gates, pathNames),
 				recursive,
@@ -127,6 +147,7 @@ export default function DeleteGateDialog({
 		sourceCount,
 		includeSource,
 		targetFiles,
+		subsampleFiles,
 		selectedIds,
 		pathNames,
 		recursive,
@@ -135,8 +156,7 @@ export default function DeleteGateDialog({
 	const handleConfirm = () => {
 		onConfirm({
 			scope,
-			targetFileDataIds:
-				scope === "experiment" ? Array.from(selectedIds) : [],
+			targetFileDataIds: scope === "experiment" ? Array.from(selectedIds) : [],
 			recursive,
 			includeSource,
 		})
@@ -177,6 +197,18 @@ export default function DeleteGateDialog({
 								</Typography>
 							}
 						/>
+						{sourceSubsampleId !== null && (
+							<FormControlLabel
+								value="subsample"
+								control={<Radio size="small" />}
+								label={
+									<Typography variant="body2">
+										Nas amostras deste subsample
+										{sourceSubsample ? ` (${sourceSubsample.name})` : ""}
+									</Typography>
+								}
+							/>
+						)}
 						<FormControlLabel
 							value="experiment"
 							control={<Radio size="small" />}
@@ -197,38 +229,45 @@ export default function DeleteGateDialog({
 							size="small"
 						/>
 					}
-					label={
-						<Typography variant="body2">
-							Incluir sub-gates
-						</Typography>
-					}
+					label={<Typography variant="body2">Incluir sub-gates</Typography>}
 					sx={{ display: "block" }}
 				/>
 
+				{(scope === "subsample" || scope === "experiment") && (
+					<FormControlLabel
+						control={
+							<Checkbox
+								checked={includeSource}
+								onChange={(e) => setIncludeSource(e.target.checked)}
+								size="small"
+							/>
+						}
+						label={
+							<Typography variant="body2">
+								Excluir também nesta amostra
+							</Typography>
+						}
+						sx={{ display: "block", mb: 1 }}
+					/>
+				)}
+
+				{scope === "subsample" && (
+					<Typography
+						variant="caption"
+						sx={{ display: "block", color: "text.secondary", mt: 0.5 }}
+					>
+						Atinge as {subsampleFiles.length + (includeSource ? 1 : 0)}{" "}
+						amostra(s) ativas do subsample.
+					</Typography>
+				)}
+
 				{scope === "experiment" && (
-					<>
-						<FormControlLabel
-							control={
-								<Checkbox
-									checked={includeSource}
-									onChange={(e) => setIncludeSource(e.target.checked)}
-									size="small"
-								/>
-							}
-							label={
-								<Typography variant="body2">
-									Excluir também nesta amostra
-								</Typography>
-							}
-							sx={{ display: "block", mb: 1 }}
-						/>
-						<FileSelectList
-							files={targetFiles}
-							selectedIds={selectedIds}
-							onToggle={handleToggle}
-							onSelectAll={handleSelectAll}
-						/>
-					</>
+					<FileSelectList
+						files={targetFiles}
+						selectedIds={selectedIds}
+						onToggle={handleToggle}
+						onSelectAll={handleSelectAll}
+					/>
 				)}
 
 				<Typography variant="body2" sx={{ mt: 1.5, fontWeight: "bold" }}>

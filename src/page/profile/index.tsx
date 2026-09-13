@@ -1,9 +1,21 @@
-import { Box, Button, Card, CardContent, Chip, Typography, Paper, Divider } from "@mui/material"
+import {
+	Box,
+	Button,
+	Card,
+	CardContent,
+	Chip,
+	Typography,
+	Paper,
+	Divider,
+} from "@mui/material"
 import { useAuth } from "../../providers/AuthContext"
 import { useAuthProviders } from "../../hooks/useAuthProviders"
 import Layout from "../../components/Layout"
 
-const providerOptions: Record<string, { label: string; color: "success" | "default" | "primary" }> = {
+const providerOptions: Record<
+	string,
+	{ label: string; color: "success" | "default" | "primary" }
+> = {
 	local: { label: "Conta local", color: "default" },
 	google: { label: "Google", color: "success" },
 	microsoft: { label: "Microsoft", color: "primary" },
@@ -50,7 +62,13 @@ export default function ProfilePage() {
 						{providers.google && (
 							<Card sx={{ mb: 2 }}>
 								<CardContent>
-									<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+									<Box
+										sx={{
+											display: "flex",
+											justifyContent: "space-between",
+											alignItems: "center",
+										}}
+									>
 										<Box>
 											<Typography variant="h6">Google</Typography>
 											<Typography variant="body2" color="text.secondary">
@@ -64,7 +82,9 @@ export default function ProfilePage() {
 										) : (
 											<Button
 												variant="outlined"
-												onClick={() => window.location.href = `${apiUrl}/accounts/auth/google/`}
+												onClick={() =>
+													(window.location.href = `${apiUrl}/accounts/auth/google/`)
+												}
 											>
 												Conectar
 											</Button>
@@ -77,7 +97,13 @@ export default function ProfilePage() {
 						{providers.microsoft && (
 							<Card sx={{ mb: 2 }}>
 								<CardContent>
-									<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+									<Box
+										sx={{
+											display: "flex",
+											justifyContent: "space-between",
+											alignItems: "center",
+										}}
+									>
 										<Box>
 											<Typography variant="h6">Microsoft</Typography>
 											<Typography variant="body2" color="text.secondary">
@@ -91,7 +117,9 @@ export default function ProfilePage() {
 										) : (
 											<Button
 												variant="outlined"
-												onClick={() => window.location.href = `${apiUrl}/accounts/auth/microsoft/`}
+												onClick={() =>
+													(window.location.href = `${apiUrl}/accounts/auth/microsoft/`)
+												}
 											>
 												Conectar
 											</Button>

@@ -19,11 +19,7 @@ interface EditExperimentDialogProps {
 	saving: boolean
 	error: string | null
 	onClose: () => void
-	onSave: (payload: {
-		title: string
-		type: string
-		values: string[]
-	}) => void
+	onSave: (payload: { title: string; type: string; values: string[] }) => void
 }
 
 const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({

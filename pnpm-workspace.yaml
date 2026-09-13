@@ -1,0 +1,8 @@
+allowBuilds:
+  esbuild: true
+  es5-ext: true
+peerDependencyRules:
+  allowedVersions:
+    "@mui/material": "7"
+    "@mui/system": "7"
+    "@types/react": "19"

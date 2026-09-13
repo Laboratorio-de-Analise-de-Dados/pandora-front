@@ -29,7 +29,11 @@ import {
 } from "react-icons/md"
 import { FaVial as VialIcon } from "react-icons/fa"
 import type { ExperimentFiles, Gate } from "../../../types"
-import { findGateInTree, findFileForGate, getGateStrategy } from "../../gate/utils"
+import {
+	findGateInTree,
+	findFileForGate,
+	getGateStrategy,
+} from "../../gate/utils"
 import { isFluorescence } from "../utils/channelHelpers"
 import { buildAnalysisRows } from "../utils/statsRows"
 import type { PopulationRow } from "../utils/statsRows"
@@ -48,7 +52,11 @@ interface ComparisonPanelProps {
 	files: ExperimentFiles[]
 	activeMetrics: MetricDef[]
 	channelLabel: (ch: string) => string
-	onExport: (rows: string[][], defaultName: string, format: "csv" | "xlsx") => void
+	onExport: (
+		rows: string[][],
+		defaultName: string,
+		format: "csv" | "xlsx",
+	) => void
 }
 
 const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
@@ -142,8 +150,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 		if (isGateGroupFullySelected(items)) {
 			setCompareItems((prev) =>
 				prev.filter(
-					(i) =>
-						!items.some((it) => it.type === i.type && it.id === i.id),
+					(i) => !items.some((it) => it.type === i.type && it.id === i.id),
 				),
 			)
 		} else {
@@ -371,43 +378,46 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 
 							<Box sx={{ maxHeight: 220, overflow: "auto" }}>
 								{filteredSelectableItems.map((item) => (
-									<Tooltip key={`cmp-${item.type}-${item.id}`} title={item.path}>
-									<FormControlLabel
-										control={
-											<Checkbox
-												size="small"
-												checked={isItemSelected(item)}
-												onChange={() => toggleCompareItem(item)}
-												sx={{ p: 0.25 }}
-											/>
-										}
-										label={
-											<Typography
-												variant="caption"
-												sx={{ fontSize: "0.72rem" }}
-												noWrap
-											>
-												{item.depth > 0 && (
-													<ChevronIcon
-														style={{
-															fontSize: 12,
-															verticalAlign: "middle",
-															marginRight: 2,
-															opacity: 0.5,
-														}}
-													/>
-												)}
-												{item.type === "file" ? "📄 " : "🔲 "}
-												{item.name}
-											</Typography>
-										}
-										sx={{
-											display: "flex",
-											m: 0,
-											minHeight: 26,
-											pl: item.depth * 1.5,
-										}}
-									/>
+									<Tooltip
+										key={`cmp-${item.type}-${item.id}`}
+										title={item.path}
+									>
+										<FormControlLabel
+											control={
+												<Checkbox
+													size="small"
+													checked={isItemSelected(item)}
+													onChange={() => toggleCompareItem(item)}
+													sx={{ p: 0.25 }}
+												/>
+											}
+											label={
+												<Typography
+													variant="caption"
+													sx={{ fontSize: "0.72rem" }}
+													noWrap
+												>
+													{item.depth > 0 && (
+														<ChevronIcon
+															style={{
+																fontSize: 12,
+																verticalAlign: "middle",
+																marginRight: 2,
+																opacity: 0.5,
+															}}
+														/>
+													)}
+													{item.type === "file" ? "📄 " : "🔲 "}
+													{item.name}
+												</Typography>
+											}
+											sx={{
+												display: "flex",
+												m: 0,
+												minHeight: 26,
+												pl: item.depth * 1.5,
+											}}
+										/>
 									</Tooltip>
 								))}
 								{filteredSelectableItems.length === 0 && (

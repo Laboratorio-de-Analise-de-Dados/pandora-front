@@ -48,7 +48,8 @@ export default function RegisterPage() {
 			setSuccess(true)
 			setTimeout(() => navigate("/experiments"), 2000)
 		} catch (err: any) {
-			const msg = err.response?.data?.detail || Object.values(err.response?.data || {})[0]
+			const msg =
+				err.response?.data?.detail || Object.values(err.response?.data || {})[0]
 			setError(msg || "Erro ao criar conta")
 		}
 	}
@@ -71,7 +72,11 @@ export default function RegisterPage() {
 						Você foi convidado para o grupo <strong>{inviteOrg}</strong>.
 					</Typography>
 				)}
-				<Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+				<Box
+					component="form"
+					onSubmit={handleSubmit}
+					sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+				>
 					<TextField
 						label="Usuário"
 						value={form.username}
@@ -97,11 +102,17 @@ export default function RegisterPage() {
 						label="Confirmar senha"
 						type="password"
 						value={form.confirmPassword}
-						onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+						onChange={(e) =>
+							setForm({ ...form, confirmPassword: e.target.value })
+						}
 						required
 					/>
 					{error && <Typography color="error">{error}</Typography>}
-					{success && <Typography color="success.main">Conta criada! Redirecionando...</Typography>}
+					{success && (
+						<Typography color="success.main">
+							Conta criada! Redirecionando...
+						</Typography>
+					)}
 					<Button type="submit" variant="contained">
 						Criar conta
 					</Button>

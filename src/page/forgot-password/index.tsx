@@ -13,9 +13,14 @@ export default function ForgotPasswordPage() {
 		setLoading(true)
 		try {
 			await CytometryApi.post("/accounts/password-reset/", { email })
-			toast.success("Se o email estiver cadastrado, você receberá um link de recuperação.", { position: "bottom-right" })
+			toast.success(
+				"Se o email estiver cadastrado, você receberá um link de recuperação.",
+				{ position: "bottom-right" },
+			)
 		} catch {
-			toast.error("Erro ao solicitar recuperação. Tente novamente.", { position: "bottom-right" })
+			toast.error("Erro ao solicitar recuperação. Tente novamente.", {
+				position: "bottom-right",
+			})
 		} finally {
 			setLoading(false)
 		}
@@ -34,7 +39,11 @@ export default function ForgotPasswordPage() {
 				<Typography variant="h5" mb={2}>
 					Recuperar senha
 				</Typography>
-				<Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+				<Box
+					component="form"
+					onSubmit={handleSubmit}
+					sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+				>
 					<TextField
 						label="Email"
 						type="email"

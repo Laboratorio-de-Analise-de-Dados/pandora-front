@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Item do doc:** — (levantado em 12/09) · **Tipo:** feature · **Base:** `main`
 **Branch sugerida:** `feat/subsamples-ui`
-**Status:** não iniciado. Depende do backend `pandora-backend/docs/prd/BE-07-subsamples.md` (PR #78).
+**Status:** em andamento — árvore agrupada, gestão (criar/renomear/arquivar/mover) e escopo `"subsample"` entregues em `refactor/node-26-upgrade`. Backend entregue em `pandora-backend/docs/prd/BE-07-subsamples.md` (PR #78, mergeado).
 
 ## Problema
 
@@ -20,8 +20,19 @@ mostrando uma lista plana de arquivos pelo basename. Sem a UI:
 
 ### 1. Árvore de amostras agrupada
 
+- A árvore hoje (`src/components/parent_tree/index.tsx`) mostra arquivos e
+  gates, sem o conceito de subsample — o nível "subsample" é novo entre
+  experimento e amostra.
 - A lista de amostras do experimento passa a ser agrupada por subsample, com o
   nome do subsample e a contagem (`files_count`).
+- A reestruturação é o momento de trocar `SimpleTreeView`/`TreeItem`
+  (`@mui/x-tree-view`) por um componente próprio: a árvore vira 3 níveis
+  (subsample → amostra → gate) com nós heterogêneos, e é o único uso restante
+  dos pacotes `@mui/x-*` (ver FE-13). Menus, diálogos e tooltip continuam MUI.
+- **Entregue (13/09/2026, `refactor/node-26-upgrade`):** `TreeNode` próprio
+  substituiu `@mui/x-tree-view`; `groupFilesBySubsample` (util puro testado)
+  agrupa por `file.subsample`; o nível subsample só aparece quando a API envia
+  o campo — sem ele, renderiza flat como antes.
 - Amostras sem subsample (arquivo na raiz do ZIP) ficam em um grupo
   **"Sem subsample"**, que não é um subsample de verdade — não pode ser
   renomeado nem inativado.
@@ -52,31 +63,45 @@ mostrando uma lista plana de arquivos pelo basename. Sem a UI:
   "nas amostras deste subsample", entre "apenas nesta amostra" e "em todas".
 - A opção só aparece quando a amostra atual tem subsample.
 - Continua valendo o `dry_run` antes de sobrescrever (ADR-0004).
-- **Bloqueado** até a parte 2 do BE-07 existir na API.
 
 ## Arquivos a tocar
 
-- `src/services/subsampleService.ts` (novo) — `fetchSubsamples`, `createSubsample`,
-  `renameSubsample`, `archiveSubsample`, `moveFileToSubsample` + tipagens.
-- `src/hooks/useSubsamples.ts` (novo) — estado, loading/erro, invalidação da
-  listagem de amostras após mover/arquivar.
-- Árvore/listagem de amostras do experimento e diálogos de escopo existentes.
+- `src/services/subsampleService.ts` (novo) — ✅ `fetchSubsamples`, `createSubsample`,
+  `renameSubsample`, `archiveSubsample`, `moveFileToSubsample`.
+- `useSubsamplesQuery` em `src/features/experiment/hooks/useExperimentData.ts` +
+  `subsamples` no `ExperimentWorkspaceContext` — ✅ (hook separado
+  `useSubsamples.ts` virou desnecessário com o contexto do workspace).
+- Handlers em `useExperimentPageActions` — ✅ create/rename devolvem erro para
+  o campo; archive/move toasteiam e invalidam.
+- `src/components/parent_tree/index.tsx` — ✅ reestruturado (3 níveis,
+  `TreeNode` próprio, `@mui/x-tree-view` removido).
+- Diálogos de escopo existentes.
 - Testes dos hooks.
 
 ## Critérios de aceite
 
-- [ ] Amostras aparecem agrupadas por subsample, com contagem, e a raiz do ZIP
+- [x] Amostras aparecem agrupadas por subsample, com contagem, e a raiz do ZIP
       cai em "Sem subsample".
-- [ ] Criar, renomear e arquivar subsample pela UI; nome duplicado mostra o erro
-      da API no campo.
-- [ ] Mover amostra entre subsamples e para "Sem subsample", com a listagem
-      atualizada sem recarregar a página.
-- [ ] Arquivar subsample não remove nenhuma amostra da listagem.
-- [ ] Filtro "mostrar inativos" exibe subsamples arquivados.
+- [x] Criar, renomear e arquivar subsample pela UI; nome duplicado mostra o erro
+      da API no campo (aguarda verificação manual).
+- [x] Mover amostra entre subsamples e para "Sem subsample", com a listagem
+      atualizada sem recarregar a página (idem).
+- [x] Seleção múltipla de amostras (checkbox) e movimentação em lote — a API
+      move uma por PATCH (BE-07), então o lote é `Promise.allSettled` com um
+      único refetch; falhas parciais reportam a contagem.
+- [x] Metadados do header FCS por amostra (ícone ℹ no nó do arquivo): data,
+      horário, equipamento, total de eventos e demais campos via
+      `GET /experiment/file/<id>/headers` (BE: `FileDataModel.headers`).
+- [x] Arquivar subsample não remove nenhuma amostra da listagem (DELETE do BE-07
+      inativa e desvincula).
+- [x] Filtro "mostrar inativos" exibe subsamples arquivados (`include_inactive`
+      segue o toggle de amostras).
 - [ ] Layout mobile-first (ADR-0002): grupos colapsáveis no `xs`, sem overflow
       horizontal.
-- [ ] Nenhuma chamada de API fora de `services/` (ADR-0001).
-- [ ] Escopo "deste subsample" nos diálogos — **após** a parte 2 do BE-07.
+- [x] Nenhuma chamada de API fora de `services/` (ADR-0001).
+- [x] Escopo "deste subsample" nos diálogos de nome/cor, exclusão em lote e
+      reshape — aparece só quando a amostra atual tem subsample; `dry_run`
+      continua valendo (ADR-0004).
 
 ## Fora de escopo
 

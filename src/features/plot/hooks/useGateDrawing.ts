@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
 import { createGate } from "../../../services/gateService"
-import type { GateCoordinates, NewGate, PlotViewConfig, Scale } from "../../../types"
+import type {
+	GateCoordinates,
+	NewGate,
+	PlotViewConfig,
+	Scale,
+} from "../../../types"
 import {
 	getNextGateName,
 	getNextQuadrantGroup,
@@ -67,7 +72,9 @@ export function useGateDrawing({
 }: UseGateDrawingParams) {
 	// Nomes criados localmente, ainda não refletidos na lista vinda do servidor.
 	// Evita duplicados quando o usuário cria vários gates antes do refetch.
-	const [createdGateNames, setCreatedGateNames] = useState<Set<string>>(new Set())
+	const [createdGateNames, setCreatedGateNames] = useState<Set<string>>(
+		new Set(),
+	)
 
 	const siblingNamesSet = useMemo(
 		() => new Set(siblingGateNames),
@@ -129,7 +136,7 @@ export function useGateDrawing({
 				const err = error as { response?: { data?: unknown }; message?: string }
 				const msg = err?.response?.data
 					? JSON.stringify(err.response.data)
-					: err?.message ?? "Erro desconhecido"
+					: (err?.message ?? "Erro desconhecido")
 				toast.error(`Erro ao criar gate: ${msg}`, { position: "bottom-right" })
 			}
 		},
@@ -177,10 +184,10 @@ export function useGateDrawing({
 				if (lx.length < 3) return
 				const vertices = lx.map(
 					(vx, i) =>
-						[
-							toRaw(vx, effXScale, effCof),
-							toRaw(ly[i], effYScale, effCof),
-						] as [number, number],
+						[toRaw(vx, effXScale, effCof), toRaw(ly[i], effYScale, effCof)] as [
+							number,
+							number,
+						],
 				)
 				await createGateDirectly({
 					type: "polygon",
@@ -198,7 +205,10 @@ export function useGateDrawing({
 					rejectDegenerate()
 					return
 				}
-				const xs = [toRaw(range.x[0], effXScale, effCof), toRaw(range.x[1], effXScale, effCof)]
+				const xs = [
+					toRaw(range.x[0], effXScale, effCof),
+					toRaw(range.x[1], effXScale, effCof),
+				]
 
 				if (plotMode === "histogram") {
 					await createGateDirectly({
@@ -215,7 +225,10 @@ export function useGateDrawing({
 					return
 				}
 
-				const ys = [toRaw(range.y[0], effYScale, effCof), toRaw(range.y[1], effYScale, effCof)]
+				const ys = [
+					toRaw(range.y[0], effYScale, effCof),
+					toRaw(range.y[1], effYScale, effCof),
+				]
 				await createGateDirectly({
 					type: "rectangle",
 					x_axis: xAxis,
@@ -257,7 +270,10 @@ export function useGateDrawing({
 			const prefix = quadrantPrefixFits(n, parentName) ? parentName : undefined
 			const labels = getQuadrantLabels(n, prefix)
 
-			const quadrants: Array<{ quadrant: "Q1" | "Q2" | "Q3" | "Q4"; label: string }> = [
+			const quadrants: Array<{
+				quadrant: "Q1" | "Q2" | "Q3" | "Q4"
+				label: string
+			}> = [
 				{ quadrant: "Q1", label: labels[0] },
 				{ quadrant: "Q2", label: labels[1] },
 				{ quadrant: "Q3", label: labels[2] },
@@ -301,11 +317,27 @@ export function useGateDrawing({
 				const err = error as { response?: { data?: unknown }; message?: string }
 				const msg = err?.response?.data
 					? JSON.stringify(err.response.data)
-					: err?.message ?? "Erro desconhecido"
-				toast.error(`Erro ao criar quadrante: ${msg}`, { position: "bottom-right" })
+					: (err?.message ?? "Erro desconhecido")
+				toast.error(`Erro ao criar quadrante: ${msg}`, {
+					position: "bottom-right",
+				})
 			}
 		},
-		[tool, plotMode, effXScale, effYScale, effCof, xAxis, yAxis, fileDataId, parentId, parentName, existingNames, loadFile, plotConfig],
+		[
+			tool,
+			plotMode,
+			effXScale,
+			effYScale,
+			effCof,
+			xAxis,
+			yAxis,
+			fileDataId,
+			parentId,
+			parentName,
+			existingNames,
+			loadFile,
+			plotConfig,
+		],
 	)
 
 	return { createGateDirectly, handleSelectedArea, handleQuadrantClick }

@@ -39,6 +39,7 @@ function ExperimentPageContent() {
 	const {
 		experiment,
 		experimentFiles,
+		subsamples,
 		isLoading,
 		source,
 		setSource,
@@ -68,6 +69,10 @@ function ExperimentPageContent() {
 		handleRenameGate,
 		handleDisableFile,
 		handleEnableFile,
+		handleCreateSubsample,
+		handleRenameSubsample,
+		handleArchiveSubsample,
+		handleMoveFileToSubsample,
 		handleApplyGate,
 		handleConfirmApply,
 		handleUpdateExperiment,
@@ -143,14 +148,13 @@ function ExperimentPageContent() {
 						onChange={(e) => setShowInactiveFiles(e.target.checked)}
 					/>
 				}
-				label={
-					<Typography variant="caption">Mostrar desabilitadas</Typography>
-				}
+				label={<Typography variant="caption">Mostrar desabilitadas</Typography>}
 				sx={{ flexShrink: 0, mt: 0.5 }}
 			/>
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
 				<ParentTree
 					files={experimentFiles}
+					subsamples={subsamples}
 					onSelect={(s) => {
 						setSource(s)
 						if (isMobile) setShowTree(false)
@@ -160,6 +164,16 @@ function ExperimentPageContent() {
 					onApplyGate={handleApplyGate}
 					onDisableFile={handleDisableFile}
 					onEnableFile={handleEnableFile}
+					onCreateSubsample={
+						canEditExperiment ? handleCreateSubsample : undefined
+					}
+					onRenameSubsample={
+						canEditExperiment ? handleRenameSubsample : undefined
+					}
+					onArchiveSubsample={
+						canEditExperiment ? handleArchiveSubsample : undefined
+					}
+					onMoveFile={canEditExperiment ? handleMoveFileToSubsample : undefined}
 				/>
 			</Box>
 		</>
@@ -263,9 +277,7 @@ function ExperimentPageContent() {
 										sourceType={source.type}
 										sourceId={source.id}
 										fileDataId={source.fileDataId}
-										parentId={
-											source.type === "gate" ? source.id : undefined
-										}
+										parentId={source.type === "gate" ? source.id : undefined}
 										parentName={
 											source.type === "gate" ? selectedGate?.name : undefined
 										}
@@ -345,6 +357,7 @@ function ExperimentPageContent() {
 					open={!!deleteGateTarget}
 					target={deleteGateTarget}
 					files={experimentFiles}
+					subsamples={subsamples}
 					error={deleteGateError}
 					loading={deleteGateLoading}
 					onClose={() => setDeleteGateTarget(null)}

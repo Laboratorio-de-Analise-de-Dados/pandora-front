@@ -20,7 +20,11 @@ export default function HomePage() {
 			.catch(() => setOrganizations([]))
 	}, [])
 
-	const personalLab = { id: 0, name: "Meus experimentos pessoais", org_type: "pessoal" }
+	const personalLab = {
+		id: 0,
+		name: "Meus experimentos pessoais",
+		org_type: "pessoal",
+	}
 	const labs = [personalLab, ...organizations]
 
 	return (
@@ -33,18 +37,27 @@ export default function HomePage() {
 				<Box
 					sx={{
 						display: "grid",
-						gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+						gridTemplateColumns: {
+							xs: "1fr",
+							sm: "repeat(2, 1fr)",
+							md: "repeat(3, 1fr)",
+						},
 						gap: 3,
 					}}
 				>
 					{labs.map((lab) => (
-						<Card key={lab.id} sx={{ display: "flex", flexDirection: "column" }}>
+						<Card
+							key={lab.id}
+							sx={{ display: "flex", flexDirection: "column" }}
+						>
 							<CardContent sx={{ flex: 1 }}>
 								<Typography variant="h6" gutterBottom>
 									{lab.name}
 								</Typography>
 								<Typography variant="body2" color="text.secondary" mb={2}>
-									{lab.org_type === "pessoal" ? "Experimentos sem grupo" : lab.org_type}
+									{lab.org_type === "pessoal"
+										? "Experimentos sem grupo"
+										: lab.org_type}
 								</Typography>
 							</CardContent>
 							<Box sx={{ p: 2, pt: 0 }}>

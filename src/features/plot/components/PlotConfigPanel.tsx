@@ -112,9 +112,7 @@ export default function PlotConfigPanel({
 					control={
 						<Checkbox
 							checked={xScale === "biex"}
-							onChange={(e) =>
-								setXScale(e.target.checked ? "biex" : "linear")
-							}
+							onChange={(e) => setXScale(e.target.checked ? "biex" : "linear")}
 							size="small"
 						/>
 					}
@@ -266,7 +264,9 @@ export default function PlotConfigPanel({
 							min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
 							max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
 							step={yScale === "biex" ? 0.01 : 500}
-							marks={yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+							marks={
+								yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS
+							}
 							valueLabelDisplay="auto"
 							valueLabelFormat={(v) => {
 								const raw = sliderToRaw(v, yScale)

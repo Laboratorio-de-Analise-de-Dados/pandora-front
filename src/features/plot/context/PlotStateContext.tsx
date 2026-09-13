@@ -1,6 +1,10 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react"
 import type { PlotViewConfig } from "../../../types"
-import { usePlotState, type PlotState, type PlotStateActions } from "../hooks/usePlotState"
+import {
+	usePlotState,
+	type PlotState,
+	type PlotStateActions,
+} from "../hooks/usePlotState"
 import { usePlotPersistence } from "../hooks/usePlotPersistence"
 
 interface PlotStateContextValue extends PlotState, PlotStateActions {
@@ -8,7 +12,9 @@ interface PlotStateContextValue extends PlotState, PlotStateActions {
 	config: PlotViewConfig
 }
 
-const PlotStateContext = createContext<PlotStateContextValue | undefined>(undefined)
+const PlotStateContext = createContext<PlotStateContextValue | undefined>(
+	undefined,
+)
 
 interface PlotStateProviderProps {
 	children: ReactNode
@@ -56,13 +62,12 @@ export function PlotStateProvider({
 
 	usePlotPersistence({ sourceType, sourceId, config, onPersist })
 
-	const value = useMemo(
-		() => ({ ...plotState, config }),
-		[plotState, config],
-	)
+	const value = useMemo(() => ({ ...plotState, config }), [plotState, config])
 
 	return (
-		<PlotStateContext.Provider value={value}>{children}</PlotStateContext.Provider>
+		<PlotStateContext.Provider value={value}>
+			{children}
+		</PlotStateContext.Provider>
 	)
 }
 

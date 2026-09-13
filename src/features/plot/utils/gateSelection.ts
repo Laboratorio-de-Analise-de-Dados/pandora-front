@@ -23,4 +23,5 @@ export const isDegenerateSelection = (
 	from: number,
 	to: number,
 	axisRange: number[],
-): boolean => selectionSpanFraction(from, to, axisRange) < MIN_SELECTION_FRACTION
+): boolean =>
+	selectionSpanFraction(from, to, axisRange) < MIN_SELECTION_FRACTION

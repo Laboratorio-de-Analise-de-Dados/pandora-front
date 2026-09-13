@@ -1,9 +1,5 @@
 import CytometryApi from "../API"
-import type {
-	AnalysisResultData,
-	Experiment,
-	ExperimentFiles,
-} from "../types"
+import type { AnalysisResultData, Experiment, ExperimentFiles } from "../types"
 
 export const fetchExperiment = async (id: string): Promise<Experiment> => {
 	const res = await CytometryApi.get(`/experiment/${id}`)
@@ -50,5 +46,19 @@ export const fetchFileStats = async (
 	fileDataId: number,
 ): Promise<AnalysisResultData> => {
 	const res = await CytometryApi.get(`/experiment/file/${fileDataId}/stats`)
+	return res.data
+}
+
+export interface FileHeadersResponse {
+	file_data_id: number
+	file_name: string
+	/** Keywords do header FCS normalizadas (`$date`, `$cyt`, `$btim`, `tot`...). */
+	headers: Record<string, unknown>
+}
+
+export const fetchFileHeaders = async (
+	fileDataId: number,
+): Promise<FileHeadersResponse> => {
+	const res = await CytometryApi.get(`/experiment/file/${fileDataId}/headers`)
 	return res.data
 }

@@ -1,6 +1,13 @@
 import { useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { Box, Button, Divider, TextField, Typography, Paper } from "@mui/material"
+import {
+	Box,
+	Button,
+	Divider,
+	TextField,
+	Typography,
+	Paper,
+} from "@mui/material"
 
 import { useAuth } from "../../providers/AuthContext"
 import { useAuthProviders } from "../../hooks/useAuthProviders"
@@ -25,7 +32,10 @@ export default function LoginPage() {
 			await login(username, password)
 			if (inviteToken) {
 				try {
-					await CytometryApi.post(`/accounts/invites/accept/${inviteToken}/`, {})
+					await CytometryApi.post(
+						`/accounts/invites/accept/${inviteToken}/`,
+						{},
+					)
 				} catch (err) {
 					// ignore accept errors; user is logged in
 				}
@@ -49,7 +59,11 @@ export default function LoginPage() {
 				<Typography variant="h5" mb={2}>
 					Login
 				</Typography>
-				<Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+				<Box
+					component="form"
+					onSubmit={handleSubmit}
+					sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+				>
 					<TextField
 						label="Usuário"
 						value={username}
@@ -67,10 +81,20 @@ export default function LoginPage() {
 					<Button type="submit" variant="contained">
 						Entrar
 					</Button>
-					<Button component={Link} to="/forgot-password" variant="text" fullWidth>
+					<Button
+						component={Link}
+						to="/forgot-password"
+						variant="text"
+						fullWidth
+					>
 						Esqueci a senha
 					</Button>
-					<Button component={Link} to={inviteToken ? `/register?invite=${inviteToken}` : "/register"} variant="text" fullWidth>
+					<Button
+						component={Link}
+						to={inviteToken ? `/register?invite=${inviteToken}` : "/register"}
+						variant="text"
+						fullWidth
+					>
 						Cadastre-se
 					</Button>
 					{(providers.google || providers.microsoft) && (
@@ -80,7 +104,9 @@ export default function LoginPage() {
 								<Button
 									variant="outlined"
 									fullWidth
-									onClick={() => window.location.href = `${apiUrl}/accounts/auth/google/`}
+									onClick={() =>
+										(window.location.href = `${apiUrl}/accounts/auth/google/`)
+									}
 								>
 									Entrar com Google
 								</Button>
@@ -89,7 +115,9 @@ export default function LoginPage() {
 								<Button
 									variant="outlined"
 									fullWidth
-									onClick={() => window.location.href = `${apiUrl}/accounts/auth/microsoft/`}
+									onClick={() =>
+										(window.location.href = `${apiUrl}/accounts/auth/microsoft/`)
+									}
 								>
 									Entrar com Microsoft
 								</Button>

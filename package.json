@@ -3,6 +3,11 @@
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
+	"engines": {
+		"node": ">=22",
+		"pnpm": "^12"
+	},
+	"packageManager": "pnpm@12.4.1",
 	"dependencies": {
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.1",
@@ -11,13 +16,7 @@
 		"@mui/styled-engine": "npm:@mui/styled-engine-sc@^7.2.0",
 		"@mui/styled-engine-sc": "^7.2.0",
 		"@mui/system": "^7.1.0",
-		"@mui/x-charts": "^6.19.3",
-		"@mui/x-data-grid": "^6.19.3",
-		"@mui/x-tree-view": "^8.5.0",
 		"@tanstack/react-query": "^5",
-		"@testing-library/jest-dom": "^5.14.1",
-		"@testing-library/react": "^13.0.0",
-		"@testing-library/user-event": "^13.2.1",
 		"axios": "^1.6.8",
 		"plotly.js": "^2.29.1",
 		"react": "^18.2.0",
@@ -27,7 +26,6 @@
 		"react-router-dom": "6.28.0",
 		"react-toastify": "^11.0.3",
 		"styled-components": "^6.1.8",
-		"typescript": "^4.4.2",
 		"web-vitals": "^2.1.0",
 		"xlsx": "^0.18.5"
 	},
@@ -39,8 +37,12 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"dev:docker:build": "docker compose -f docker-compose.dev.yml up --build",
-		"dev:docker": "docker compose -f docker-compose.dev.yml up"
+		"dev:docker:build": "docker compose up --build",
+		"dev:docker": "docker compose up",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx,json,css,md,html}": "prettier --write"
 	},
 	"browserslist": {
 		"production": [
@@ -55,15 +57,24 @@
 		]
 	},
 	"devDependencies": {
+		"@commitlint/cli": "^21.2.2",
+		"@commitlint/config-conventional": "^21.2.2",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^13.4.0",
+		"@testing-library/user-event": "^13.5.0",
 		"@types/jest": "^29.5.14",
-		"@types/node": "^22.15.29",
+		"@types/node": "^26",
 		"@types/react": "^19.1.6",
 		"@types/react-dom": "^19.1.5",
 		"@types/react-plotly.js": "^2.6.3",
 		"@types/react-toastify": "^4.1.0",
 		"@vitejs/plugin-react": "^4.3.4",
 		"globals": "^15.8.0",
+		"husky": "^9.1.7",
 		"jsdom": "^25.0.1",
+		"lint-staged": "^17.5.1",
+		"prettier": "^3.9.6",
+		"typescript": "^7.0.2",
 		"vite": "^5.4.11",
 		"vitest": "^2.1.8"
 	}

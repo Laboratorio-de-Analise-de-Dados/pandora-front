@@ -1,17 +1,17 @@
 # Etapa de build
-FROM node:22-alpine AS build
+FROM node:26-slim AS build
 WORKDIR /app
 
 # Instala dependências
-COPY package*.json ./
-RUN yarn install --frozen-lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copia o restante do código e gera o build
 COPY . .
 
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
-RUN yarn build
+RUN pnpm build
 
 # Etapa final: Nginx servindo os arquivos
 FROM nginx:alpine

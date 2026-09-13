@@ -111,7 +111,7 @@ export default function ExperimentSidePanel({
 		? {
 				bgcolor: "rgba(255, 255, 255, 0.25)",
 				boxShadow: "none",
-		  }
+			}
 		: undefined
 
 	return (

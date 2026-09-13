@@ -22,7 +22,11 @@ export default function AuthCallbackPage() {
 		}
 
 		if (storeToken) {
-			storeToken(access, refresh, { id: userId ? parseInt(userId, 10) : 0, username: username || "", email: email || "" })
+			storeToken(access, refresh, {
+				id: userId ? parseInt(userId, 10) : 0,
+				username: username || "",
+				email: email || "",
+			})
 		}
 
 		navigate("/", { replace: true })
@@ -30,14 +34,30 @@ export default function AuthCallbackPage() {
 
 	if (error) {
 		return (
-			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
+			<Box
+				sx={{
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					minHeight: "80vh",
+				}}
+			>
 				<Typography color="error">{error}</Typography>
 			</Box>
 		)
 	}
 
 	return (
-		<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: 2 }}>
+		<Box
+			sx={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				justifyContent: "center",
+				minHeight: "80vh",
+				gap: 2,
+			}}
+		>
 			<CircularProgress />
 			<Typography>Conectando...</Typography>
 		</Box>

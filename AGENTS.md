@@ -10,17 +10,17 @@ React 18 + TypeScript (strict) + Vite + MUI 7 + Plotly + TanStack Query 5.
 
 ## Comandos
 
-| Tarefa | Comando |
-|--------|---------|
-| Instalar dependências | `yarn install` |
-| Dev server | `yarn dev` → http://localhost:3000 |
-| Typecheck | `yarn typecheck` (`tsc --noEmit`) |
-| Testes | `yarn test` (Vitest + jsdom) |
-| Build | `yarn build` → saída em `build/` |
-| Dev com Docker | `yarn dev:docker` |
+| Tarefa                | Comando                            |
+| --------------------- | ---------------------------------- |
+| Instalar dependências | `pnpm install`                     |
+| Dev server            | `pnpm dev` → http://localhost:3000 |
+| Typecheck             | `pnpm typecheck` (`tsc --noEmit`)  |
+| Testes                | `pnpm test` (Vitest + jsdom)       |
+| Build                 | `pnpm build` → saída em `build/`   |
+| Dev com Docker        | `pnpm dev:docker`                  |
 
-- Gerenciador de pacotes: **Yarn 1.x Classic**. Não use `npm install` (o
-  `package-lock.json` é legado; a fonte de verdade é o `yarn.lock`).
+- Gerenciador de pacotes: **pnpm 12** (`packageManager` no package.json).
+  Fonte de verdade é o `pnpm-lock.yaml` — não use `npm` nem `yarn`.
 - Backend esperado em `http://localhost:8085`; configurar `VITE_API_URL` no `.env`
   (ver `.env.example`).
 
@@ -29,11 +29,14 @@ React 18 + TypeScript (strict) + Vite + MUI 7 + Plotly + TanStack Query 5.
 O CI (`/.github/workflows/ci.yml`) **não** roda typecheck nem testes — ele só
 builda e publica a imagem Docker. A verificação é responsabilidade local:
 
-1. `yarn typecheck` — sem erros
-2. `yarn test` — testes passando (existem poucos; adicione se criar lógica nova)
-3. `yarn build` — se a mudança afetar imports, config ou build
+1. `pnpm typecheck` — sem erros
+2. `pnpm test` — testes passando (existem poucos; adicione se criar lógica nova)
+3. `pnpm build` — se a mudança afetar imports, config ou build
 
-Não há script de lint configurado — o `.prettierrc` é a referência de estilo.
+Pre-commit (husky): `lint-staged` aplica `prettier --write` nos arquivos
+staged + `pnpm typecheck`; `commit-msg` valida conventional commits
+(commitlint). Não há eslint configurado — `.prettierrc` é a referência de
+estilo.
 
 ## Estilo de código
 
@@ -52,8 +55,26 @@ Definido pelo `.prettierrc` e observado no código existente:
 - Tipos compartilhados em `src/types/`; utilitários globais em `src/utils/`
 - Barrel exports: cada módulo expõe via `index.ts`
 - Data fetching **sempre** via TanStack Query — nunca `useState` + `useEffect` para API
+- **Mobile-first sempre** (ADR-0002): a app roda majoritariamente em desktop,
+  mas todo layout novo é desenhado de `xs` para cima — breakpoints do MUI
+  (`sx`, props responsivas), sem largura fixa que estoure em tela pequena
 - Funções puras em `utils/` (testáveis); estado/side-effects em custom hooks
 - Testes colocados ao lado do código: `foo.ts` → `foo.test.ts`
+
+## Regra de dependência (ADR-0001, ADR-0008)
+
+Dependência unidirecional: `components → hooks → services + núcleo`.
+
+- **Núcleo** (`src/types/`, `src/utils/`, `src/features/*/utils/`): TS puro.
+  **Proibido** importar `react`, `@mui/*`, `axios`, `plotly*` ou libs de UI —
+  exceção apenas para `import type` de tipos de dados.
+- **`src/services/`**: único lugar que fala HTTP (via `src/API`). Sem React.
+- **Hooks/contexts**: única camada que conhece React; adaptam o núcleo.
+- **Components/pages**: só renderização; nunca `axios` nem lógica de domínio
+  duplicada.
+
+Antes de codar em área de decisão arquitetural, consulte `docs/adr/` (índice em
+`docs/README.md`).
 
 ## Peculiaridades (leia antes de mexer)
 

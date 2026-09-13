@@ -8,8 +8,8 @@ Construido com [React](https://react.dev/) 18, [TypeScript](https://www.typescri
 
 ## Requisitos
 
-- **Node.js** 18+ (recomendado 22)
-- **Yarn** 1.x (Classic)
+- **Node.js** 22+ (recomendado 26 — imagem `node:26-slim` no Docker)
+- **pnpm** 12+
 - **Backend** [pandora-backend](https://github.com/Laboratorio-de-Analise-de-Dados/pandora-backend) rodando (para API)
 
 ## Setup Rapido
@@ -20,7 +20,7 @@ git clone https://github.com/Laboratorio-de-Analise-de-Dados/pandora-front.git
 cd pandora-front
 
 # 2. Instale as dependencias
-yarn install
+pnpm install
 
 # 3. Configure as variaveis de ambiente
 cp .env.example .env
@@ -29,43 +29,48 @@ cp .env.example .env
 
 ### Variaveis de Ambiente
 
-| Variavel | Descricao | Exemplo |
-|----------|-----------|---------|
+| Variavel       | Descricao                  | Exemplo                 |
+| -------------- | -------------------------- | ----------------------- |
 | `VITE_API_URL` | URL base da API do Pandora | `http://localhost:8085` |
 
 > Variaveis expostas ao cliente precisam do prefixo `VITE_`.
 
 ## Scripts
 
-| Comando | Descricao |
-|---------|-----------|
-| `yarn dev` | Servidor de desenvolvimento em [http://localhost:3000](http://localhost:3000) com hot reload |
-| `yarn build` | Build de producao na pasta `build/` |
-| `yarn preview` | Servidor local para visualizar o build de producao |
-| `yarn typecheck` | Verificacao de tipos (`tsc --noEmit`) |
-| `yarn test` | Roda testes com [Vitest](https://vitest.dev/) |
-| `yarn test:watch` | Testes em modo interativo |
-| `yarn dev:docker:build` | Dev com Docker (build + up) |
-| `yarn dev:docker` | Dev com Docker (up) |
+| Comando                 | Descricao                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm dev`              | Servidor de desenvolvimento em [http://localhost:3000](http://localhost:3000) com hot reload |
+| `pnpm build`            | Build de producao na pasta `build/`                                                          |
+| `pnpm preview`          | Servidor local para visualizar o build de producao                                           |
+| `pnpm typecheck`        | Verificacao de tipos (`tsc --noEmit`)                                                        |
+| `pnpm test`             | Roda testes com [Vitest](https://vitest.dev/)                                                |
+| `pnpm test:watch`       | Testes em modo interativo                                                                    |
+| `pnpm dev:docker:build` | Dev com Docker (build + up)                                                                  |
+| `pnpm dev:docker`       | Dev com Docker (up)                                                                          |
 
 ## Docker
 
 ### Desenvolvimento (hot reload)
 
 ```bash
-yarn dev:docker:build   # primeira vez
-yarn dev:docker         # vezes seguintes
+pnpm dev:docker:build   # primeira vez
+pnpm dev:docker         # vezes seguintes
 ```
 
-Usa `docker-compose.dev.yml` com volumes montados para hot reload.
+Usa `docker-compose.yml` com volumes montados para hot reload — mesma
+convenção do backend: arquivo sem sufixo = ambiente local, `.prod` = produção.
 
 ### Producao
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-O `Dockerfile` faz build multi-stage: Node para compilar, Nginx para servir. O container se conecta a rede `pandora_net` para comunicar com o backend.
+O compose de prod não builda — faz pull da imagem publicada pelo CI
+(`DOCKER_USER`/`IMAGE_TAG` como env). O `Dockerfile` faz build multi-stage:
+Node para compilar, Nginx para servir. O container se conecta a rede
+`pandora_net` para comunicar com o backend.
 
 ---
 
@@ -132,32 +137,32 @@ ExperimentWorkspaceProvider (Context)
 
 ### Conceitos-Chave
 
-| Conceito | Descricao |
-|----------|-----------|
-| **Gate** | Fronteira geometrica (retangulo, poligono, quadrante, intervalo) que isola uma populacao de celulas |
-| **Gate Hierarchy** | Gates podem ter filhos, formando uma arvore (ex: Lymphocytes > CD3+ > CD4+) |
+| Conceito                 | Descricao                                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| **Gate**                 | Fronteira geometrica (retangulo, poligono, quadrante, intervalo) que isola uma populacao de celulas                         |
+| **Gate Hierarchy**       | Gates podem ter filhos, formando uma arvore (ex: Lymphocytes > CD3+ > CD4+)                                                 |
 | **Biexponential (biex)** | Transformacao `arcsinh(v / cofactor)` para visualizar dados de alta faixa dinamica incluindo negativos. Cofator padrao: 150 |
-| **Density Plot** | Heatmap mostrando concentracao de eventos via escala de cor |
-| **FCS** | Formato padrao de dados para citometria de fluxo |
-| **MFI** | Mean/Median Fluorescence Intensity — metrica estatistica principal |
-| **%P / %T** | Porcentagem da populacao pai e porcentagem do total de eventos |
-| **Apply Gate** | Propagar coordenadas de gate para outros arquivos do experimento |
-| **Source** | Item selecionado na arvore — pode ser um arquivo (`file`) ou um gate (`gate`) |
+| **Density Plot**         | Heatmap mostrando concentracao de eventos via escala de cor                                                                 |
+| **FCS**                  | Formato padrao de dados para citometria de fluxo                                                                            |
+| **MFI**                  | Mean/Median Fluorescence Intensity — metrica estatistica principal                                                          |
+| **%P / %T**              | Porcentagem da populacao pai e porcentagem do total de eventos                                                              |
+| **Apply Gate**           | Propagar coordenadas de gate para outros arquivos do experimento                                                            |
+| **Source**               | Item selecionado na arvore — pode ser um arquivo (`file`) ou um gate (`gate`)                                               |
 
 ### Stack Tecnica
 
-| Camada | Tecnologia | Versao |
-|--------|-----------|--------|
-| UI Framework | React | ^18.2.0 |
-| Linguagem | TypeScript | ^4.4.2 |
-| Component Library | MUI | ^7.2.0 |
-| Graficos | Plotly.js + react-plotly.js | ^2.29.1 |
-| Data Fetching | TanStack Query | ^5 |
-| Roteamento | React Router | 6.28.0 |
-| HTTP Client | Axios | ^1.6.8 |
-| Bundler | Vite | ^5.4.11 |
-| Testes | Vitest + Testing Library | ^2.1.8 |
-| Styling | styled-components + Emotion | ^6.1.8 / ^11.14.0 |
+| Camada            | Tecnologia                  | Versao            |
+| ----------------- | --------------------------- | ----------------- |
+| UI Framework      | React                       | ^18.2.0           |
+| Linguagem         | TypeScript                  | ^4.4.2            |
+| Component Library | MUI                         | ^7.2.0            |
+| Graficos          | Plotly.js + react-plotly.js | ^2.29.1           |
+| Data Fetching     | TanStack Query              | ^5                |
+| Roteamento        | React Router                | 6.28.0            |
+| HTTP Client       | Axios                       | ^1.6.8            |
+| Bundler           | Vite                        | ^5.4.11           |
+| Testes            | Vitest + Testing Library    | ^2.1.8            |
+| Styling           | styled-components + Emotion | ^6.1.8 / ^11.14.0 |
 
 ---
 
@@ -172,6 +177,7 @@ ExperimentWorkspaceProvider (Context)
 ### Fluxo de Trabalho
 
 1. **Crie uma branch** a partir de `main`:
+
    ```bash
    git checkout main && git pull
    git checkout -b feature/nome-descritivo
@@ -180,13 +186,15 @@ ExperimentWorkspaceProvider (Context)
 2. **Desenvolva** seguindo os padroes abaixo
 
 3. **Verifique antes de commitar**:
+
    ```bash
-   yarn typecheck    # tipos ok?
-   yarn build        # build ok?
-   yarn test         # testes passando?
+   pnpm typecheck    # tipos ok?
+   pnpm build        # build ok?
+   pnpm test         # testes passando?
    ```
 
 4. **Commit com mensagens semanticas**:
+
    ```
    feat: adiciona filtro por fluorescencia no StatsPanel
    fix: corrige transformacao biex para valores negativos
@@ -237,9 +245,9 @@ ExperimentWorkspaceProvider (Context)
 
 ### Checklist do PR
 
-- [ ] `yarn typecheck` passa sem erros
-- [ ] `yarn build` compila com sucesso
-- [ ] `yarn test` passa (se testes existem para a area modificada)
+- [ ] `pnpm typecheck` passa sem erros
+- [ ] `pnpm build` compila com sucesso
+- [ ] `pnpm test` passa (se testes existem para a area modificada)
 - [ ] Sem `any` desnecessarios adicionados
 - [ ] Codigo duplicado foi extraido para `utils/` ou `hooks/`
 - [ ] Componentes grandes foram decompostos
@@ -257,12 +265,12 @@ Quando propor mudancas estruturais (nova feature, refactor grande, nova dependen
 
 #### Escala de Risco para PRs
 
-| Risco | Tipo de Mudanca | Exemplo |
-|-------|----------------|---------|
-| Zero | Extrair funcao pura para utils | `biex.ts`, `geometry.ts` |
-| Baixo | Extrair hook ou sub-componente | `usePlotState`, `StatsTable` |
-| Medio | Mudar data fetching ou estado compartilhado | React Query, Context |
-| Alto | Trocar dependencia core ou reorganizar pastas | React Router, folder moves |
+| Risco | Tipo de Mudanca                               | Exemplo                      |
+| ----- | --------------------------------------------- | ---------------------------- |
+| Zero  | Extrair funcao pura para utils                | `biex.ts`, `geometry.ts`     |
+| Baixo | Extrair hook ou sub-componente                | `usePlotState`, `StatsTable` |
+| Medio | Mudar data fetching ou estado compartilhado   | React Query, Context         |
+| Alto  | Trocar dependencia core ou reorganizar pastas | React Router, folder moves   |
 
 ---
 

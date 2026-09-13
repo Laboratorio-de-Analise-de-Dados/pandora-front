@@ -83,8 +83,7 @@ export const buildSelectableItems = (
 					depth,
 					color: g.color,
 				})
-				if (g.children)
-					addGates(g.children, p, gatePath, fileDataId, depth + 1)
+				if (g.children) addGates(g.children, p, gatePath, fileDataId, depth + 1)
 			}
 		}
 		addGates(f.gates, f.file_name, "", f.id, 1)

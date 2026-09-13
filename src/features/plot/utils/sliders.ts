@@ -17,7 +17,9 @@ export const BIEX_SLIDER_MARKS = NICE_RAW.map((raw) => ({
 	label: fmtTick(raw),
 }))
 
-export const LINEAR_SLIDER_MARKS = [0, 65000, 130000, 200000, 262144].map((v) => ({
-	value: v,
-	label: v === 0 ? "0" : `${Math.round(v / 1000)}k`,
-}))
+export const LINEAR_SLIDER_MARKS = [0, 65000, 130000, 200000, 262144].map(
+	(v) => ({
+		value: v,
+		label: v === 0 ? "0" : `${Math.round(v / 1000)}k`,
+	}),
+)

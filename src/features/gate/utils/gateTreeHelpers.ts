@@ -23,7 +23,10 @@ export const collectAllGates = (gates: Gate[]): Gate[] => {
 }
 
 /** Encontra o arquivo que contém um determinado gate. */
-export const findFileForGate = (files: ExperimentFiles[], gateId: number): ExperimentFiles | undefined => {
+export const findFileForGate = (
+	files: ExperimentFiles[],
+	gateId: number,
+): ExperimentFiles | undefined => {
 	for (const f of files) {
 		if (findGateInTree(f.gates, gateId)) return f
 	}
@@ -31,7 +34,11 @@ export const findFileForGate = (files: ExperimentFiles[], gateId: number): Exper
 }
 
 /** Constrói o caminho hierárquico de um gate (ex: "Lymphocytes > CD3+ > CD4+"). */
-export const buildGateStrategy = (gates: Gate[], targetId: number, path: string[] = []): string | null => {
+export const buildGateStrategy = (
+	gates: Gate[],
+	targetId: number,
+	path: string[] = [],
+): string | null => {
 	for (const g of gates) {
 		const current = [...path, g.name]
 		if (g.id === targetId) return current.join(" > ")
@@ -44,7 +51,10 @@ export const buildGateStrategy = (gates: Gate[], targetId: number, path: string[
 }
 
 /** Retorna o gate strategy completo buscando em todos os arquivos. */
-export const getGateStrategy = (files: ExperimentFiles[], gateId: number): string => {
+export const getGateStrategy = (
+	files: ExperimentFiles[],
+	gateId: number,
+): string => {
 	for (const f of files) {
 		const strategy = buildGateStrategy(f.gates, gateId)
 		if (strategy) return strategy
@@ -162,7 +172,10 @@ export const getRootCopiedFromId = (
 	while (true) {
 		if (visited.has(currentId)) break
 		visited.add(currentId)
-		const gate = findGateInTree(files.flatMap((f) => f.gates), currentId)
+		const gate = findGateInTree(
+			files.flatMap((f) => f.gates),
+			currentId,
+		)
 		if (!gate || !gate.copied_from_id) break
 		currentId = gate.copied_from_id
 	}

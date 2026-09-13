@@ -7,7 +7,7 @@ import {
 	useMediaQuery,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { Gate, Scale } from "../../types"
 import type { GateScope } from "../../services/gateService"
@@ -25,7 +25,10 @@ import { getCopyFamilyIds } from "../../features/gate/utils"
 
 import { COFACTOR } from "../../features/plot/utils/biex"
 import { buildTicks } from "../../features/plot/utils/ticks"
-import { buildPlotData, hasPlotData } from "../../features/plot/utils/plotTraces"
+import {
+	buildPlotData,
+	hasPlotData,
+} from "../../features/plot/utils/plotTraces"
 import { buildAxisRange } from "../../features/plot/utils/plotAxes"
 
 import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
@@ -95,7 +98,16 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setPlotMode,
 	} = plotState
 
-	const { invalidateExperiment, experimentFiles } = useExperimentWorkspace()
+	const { invalidateExperiment, experimentFiles, subsamples } =
+		useExperimentWorkspace()
+
+	// Nome do subsample da amostra atual — habilita o escopo "subsample" nos
+	// diálogos (só existe quando a amostra está agrupada, BE-07).
+	const currentSubsampleName = useMemo(() => {
+		const file = experimentFiles.find((f) => f.id === fileDataId)
+		if (file?.subsample == null) return undefined
+		return subsamples.find((s) => s.id === file.subsample)?.name
+	}, [experimentFiles, fileDataId, subsamples])
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -205,7 +217,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		siblingGateNames,
 		loadFile,
 		setTool,
-		plotConfig: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
+		plotConfig: {
+			xAxis,
+			yAxis,
+			xScale,
+			yScale,
+			xMin,
+			xMax,
+			yMin,
+			yMax,
+			cutoff,
+			plotMode,
+		},
 		onGateDrawn: clearSelectionOutline,
 	})
 
@@ -527,7 +550,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											? { selectdirection: "h" as const }
 											: {}),
 										xaxis: {
-											title: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
+											title: {
+												text: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
+											},
 											...(xTicks
 												? {
 														tickmode: "array" as const,
@@ -540,10 +565,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											fixedrange: true,
 										},
 										yaxis: {
-											title:
-												plotMode === "histogram"
-													? "Contagem"
-													: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
+											title: {
+												text:
+													plotMode === "histogram"
+														? "Contagem"
+														: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
+											},
 											...(plotMode !== "histogram" && yTicks
 												? {
 														tickmode: "array" as const,
@@ -684,6 +711,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				name={editGateName}
 				color={editGateColor}
 				scope={editGateScope}
+				subsampleName={currentSubsampleName}
 				error={editGateError}
 				saving={savingGate}
 				onNameChange={setEditGateName}
@@ -699,6 +727,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					childGates.find((g) => g.id === pendingReshape?.gateId)?.name ?? ""
 				}
 				familySize={pendingReshape?.familySize ?? 0}
+				subsampleName={currentSubsampleName}
 				onConfirm={confirmReshape}
 				onCancel={cancelReshape}
 			/>

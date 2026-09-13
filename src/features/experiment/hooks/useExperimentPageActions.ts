@@ -15,6 +15,12 @@ import {
 	updateGate,
 } from "../../../services/gateService"
 import type { ApplyGateConflict } from "../../../services/gateService"
+import {
+	archiveSubsample,
+	createSubsample,
+	moveFileToSubsample,
+	renameSubsample,
+} from "../../../services/subsampleService"
 import type {
 	DeleteGateOptions,
 	DeleteGateTarget,
@@ -54,6 +60,7 @@ export function useExperimentPageActions() {
 	const navigate = useNavigate()
 	const {
 		experiment,
+		experimentId,
 		experimentFiles,
 		source,
 		setSource,
@@ -79,14 +86,13 @@ export function useExperimentPageActions() {
 	// experimento podem editar/excluir.
 	const canEditExperiment = Boolean(
 		experiment &&
-			user &&
-			(user.is_super_admin ||
-				experiment.created_by === user.id ||
-				(experiment.organization !== null &&
-					user.memberships.some(
-						(membership) =>
-							membership.organization.id === experiment.organization,
-					))),
+		user &&
+		(user.is_super_admin ||
+			experiment.created_by === user.id ||
+			user.memberships.some(
+				(membership) =>
+					membership.organization.id === experiment.organization?.id,
+			)),
 	)
 
 	const handleUpdateExperiment = useCallback(
@@ -202,12 +208,7 @@ export function useExperimentPageActions() {
 				setDeleteGateLoading(false)
 			}
 		},
-		[
-			deleteGateTarget,
-			invalidateExperiment,
-			selectParentOfDeletedGate,
-			source,
-		],
+		[deleteGateTarget, invalidateExperiment, selectParentOfDeletedGate, source],
 	)
 
 	const handleRenameGate = useCallback(
@@ -230,15 +231,29 @@ export function useExperimentPageActions() {
 	)
 
 	const handleDisableFile = useCallback(
-		async (fileDataId: number) => {
+		async (fileDataIds: number[]) => {
 			try {
-				await disableFileData(fileDataId)
-				toast.success("Amostra desabilitada. Os gates foram preservados.", {
-					position: "bottom-right",
-				})
-				if (source?.fileDataId === fileDataId) {
+				// API é uma amostra por chamada — lote = allSettled + um refetch.
+				const results = await Promise.allSettled(
+					fileDataIds.map((id) => disableFileData(id)),
+				)
+				const failed = results.filter((r) => r.status === "rejected").length
+				const done = fileDataIds.length - failed
+				if (failed === 0) {
+					toast.success(
+						done === 1
+							? "Amostra desabilitada. Os gates foram preservados."
+							: `${done} amostras desabilitadas. Os gates foram preservados.`,
+						{ position: "bottom-right" },
+					)
+				} else {
+					toast.warn(`${done} desabilitada(s), ${failed} falharam.`, {
+						position: "bottom-right",
+					})
+				}
+				if (source && fileDataIds.includes(source.fileDataId)) {
 					const next = experimentFiles.find(
-						(file) => file.id !== fileDataId && file.active !== false,
+						(file) => !fileDataIds.includes(file.id) && file.active !== false,
 					)
 					setSource(
 						next
@@ -253,22 +268,121 @@ export function useExperimentPageActions() {
 				}
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(`Erro ao desabilitar a amostra: ${extractErrorMessage(error)}`, {
-					position: "bottom-right",
-				})
+				toast.error(
+					`Erro ao desabilitar a amostra: ${extractErrorMessage(error)}`,
+					{
+						position: "bottom-right",
+					},
+				)
 			}
 		},
 		[experimentFiles, invalidateExperiment, setSource, source],
 	)
 
 	const handleEnableFile = useCallback(
-		async (fileDataId: number) => {
+		async (fileDataIds: number[]) => {
 			try {
-				await enableFileData(fileDataId)
-				toast.success("Amostra reativada", { position: "bottom-right" })
+				const results = await Promise.allSettled(
+					fileDataIds.map((id) => enableFileData(id)),
+				)
+				const failed = results.filter((r) => r.status === "rejected").length
+				const done = fileDataIds.length - failed
+				if (failed === 0) {
+					toast.success(
+						done === 1 ? "Amostra reativada" : `${done} amostras reativadas`,
+						{ position: "bottom-right" },
+					)
+				} else {
+					toast.warn(`${done} reativada(s), ${failed} falharam.`, {
+						position: "bottom-right",
+					})
+				}
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(`Erro ao reativar a amostra: ${extractErrorMessage(error)}`, {
+				toast.error(
+					`Erro ao reativar a amostra: ${extractErrorMessage(error)}`,
+					{
+						position: "bottom-right",
+					},
+				)
+			}
+		},
+		[invalidateExperiment],
+	)
+
+	// Subsamples (BE-07): create/rename devolvem mensagem de erro para o campo
+	// (nome duplicado vira 400 na API); archive/move toasteiam e invalidam.
+	const handleCreateSubsample = useCallback(
+		async (name: string): Promise<string | null> => {
+			try {
+				await createSubsample(experimentId, name)
+				toast.success("Subsample criado", { position: "bottom-right" })
+				invalidateExperiment()
+				return null
+			} catch (error) {
+				return extractErrorMessage(error)
+			}
+		},
+		[experimentId, invalidateExperiment],
+	)
+
+	const handleRenameSubsample = useCallback(
+		async (subsampleId: number, name: string): Promise<string | null> => {
+			try {
+				await renameSubsample(experimentId, subsampleId, name)
+				toast.success("Subsample renomeado", { position: "bottom-right" })
+				invalidateExperiment()
+				return null
+			} catch (error) {
+				return extractErrorMessage(error)
+			}
+		},
+		[experimentId, invalidateExperiment],
+	)
+
+	const handleArchiveSubsample = useCallback(
+		async (subsampleId: number) => {
+			try {
+				await archiveSubsample(experimentId, subsampleId)
+				toast.success(
+					"Subsample arquivado. As amostras ficaram sem subsample.",
+					{ position: "bottom-right" },
+				)
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(
+					`Erro ao arquivar o subsample: ${extractErrorMessage(error)}`,
+					{ position: "bottom-right" },
+				)
+			}
+		},
+		[experimentId, invalidateExperiment],
+	)
+
+	const handleMoveFileToSubsample = useCallback(
+		async (fileDataIds: number[], subsampleId: number | null) => {
+			try {
+				// A API move uma amostra por PATCH (BE-07) — o lote é N chamadas.
+				const results = await Promise.allSettled(
+					fileDataIds.map((id) => moveFileToSubsample(id, subsampleId)),
+				)
+				const failed = results.filter((r) => r.status === "rejected").length
+				if (failed === 0) {
+					toast.success(
+						fileDataIds.length === 1
+							? "Amostra movida"
+							: `${fileDataIds.length} amostras movidas`,
+						{ position: "bottom-right" },
+					)
+				} else {
+					toast.warn(
+						`${fileDataIds.length - failed} movida(s), ${failed} falharam.`,
+						{ position: "bottom-right" },
+					)
+				}
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(`Erro ao mover a amostra: ${extractErrorMessage(error)}`, {
 					position: "bottom-right",
 				})
 			}
@@ -375,6 +489,10 @@ export function useExperimentPageActions() {
 		handleRenameGate,
 		handleDisableFile,
 		handleEnableFile,
+		handleCreateSubsample,
+		handleRenameSubsample,
+		handleArchiveSubsample,
+		handleMoveFileToSubsample,
 		handleUpdateExperiment,
 		savingExperiment,
 		canEditExperiment,

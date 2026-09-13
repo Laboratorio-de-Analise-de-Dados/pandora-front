@@ -13,6 +13,8 @@ interface ReshapeScopeDialogProps {
 	open: boolean
 	gateName: string
 	familySize: number
+	/** Nome do subsample da amostra atual; habilita o escopo intermediário. */
+	subsampleName?: string
 	onConfirm: (scope: GateScope) => void
 	onCancel: () => void
 }
@@ -21,6 +23,7 @@ const ReshapeScopeDialog: React.FC<ReshapeScopeDialogProps> = ({
 	open,
 	gateName,
 	familySize,
+	subsampleName,
 	onConfirm,
 	onCancel,
 }) => (
@@ -48,6 +51,11 @@ const ReshapeScopeDialog: React.FC<ReshapeScopeDialogProps> = ({
 			<Button onClick={() => onConfirm("file")} fullWidth>
 				Só nesta amostra
 			</Button>
+			{subsampleName && (
+				<Button onClick={() => onConfirm("subsample")} fullWidth>
+					Neste subsample ({subsampleName})
+				</Button>
+			)}
 			<Button
 				onClick={() => onConfirm("experiment")}
 				variant="contained"

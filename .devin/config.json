@@ -1,0 +1,44 @@
+{
+	"permissions": {
+		"allow": [
+			"Read(**)",
+			"Exec(yarn)",
+			"Exec(npx vitest)",
+			"Exec(tsc)",
+			"Exec(git status)",
+			"Exec(git diff)",
+			"Exec(git log)",
+			"Exec(git show)",
+			"Exec(git branch)",
+			"Exec(git checkout -b)",
+			"Exec(git switch -c)",
+			"Exec(git add)",
+			"Exec(git commit)",
+			"Exec(ls)",
+			"Exec(cat)",
+			"Exec(mkdir)"
+		],
+		"ask": [
+			"Exec(git push)",
+			"Exec(git checkout)",
+			"Exec(git switch)",
+			"Exec(git restore)",
+			"Exec(git reset)",
+			"Exec(yarn add)",
+			"Exec(yarn remove)",
+			"Exec(docker)",
+			"Write(**/.env*)",
+			"Write(package.json)",
+			"Write(yarn.lock)"
+		],
+		"deny": [
+			"Exec(sudo)",
+			"Exec(rm -rf)",
+			"Exec(git push --force)",
+			"Exec(git push -f)",
+			"Exec(git config)",
+			"Write(**/*.pem)",
+			"Write(**/id_rsa*)"
+		]
+	}
+}

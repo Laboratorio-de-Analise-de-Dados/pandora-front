@@ -60,7 +60,11 @@ const ChannelConfigPopover: React.FC<ChannelConfigPopoverProps> = ({
 			anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
 			slotProps={{ paper: { sx: { width: 280, maxHeight: 420, p: 1.5 } } }}
 		>
-			<Typography variant="caption" fontWeight="bold" sx={{ mb: 0.5, display: "block" }}>
+			<Typography
+				variant="caption"
+				fontWeight="bold"
+				sx={{ mb: 0.5, display: "block" }}
+			>
 				Parâmetros
 			</Typography>
 			<TextField
@@ -68,21 +72,45 @@ const ChannelConfigPopover: React.FC<ChannelConfigPopoverProps> = ({
 				placeholder="Buscar canal..."
 				value={search}
 				onChange={(e) => setSearch(e.target.value)}
-				sx={{ mb: 0.5, "& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 } }}
+				sx={{
+					mb: 0.5,
+					"& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 },
+				}}
 				fullWidth
 				autoFocus
 			/>
 			<Box sx={{ display: "flex", gap: 0.5, mb: 0.5 }}>
-				<Chip label="Todos" size="small" variant="outlined" onClick={onSelectAll} sx={{ fontSize: "0.6rem", height: 20 }} />
-				<Chip label="Fluoresc." size="small" variant="outlined" onClick={onSelectFluorescence} sx={{ fontSize: "0.6rem", height: 20 }} />
-				<Chip label="Limpar" size="small" variant="outlined" onClick={onClearAll} sx={{ fontSize: "0.6rem", height: 20 }} />
+				<Chip
+					label="Todos"
+					size="small"
+					variant="outlined"
+					onClick={onSelectAll}
+					sx={{ fontSize: "0.6rem", height: 20 }}
+				/>
+				<Chip
+					label="Fluoresc."
+					size="small"
+					variant="outlined"
+					onClick={onSelectFluorescence}
+					sx={{ fontSize: "0.6rem", height: 20 }}
+				/>
+				<Chip
+					label="Limpar"
+					size="small"
+					variant="outlined"
+					onClick={onClearAll}
+					sx={{ fontSize: "0.6rem", height: 20 }}
+				/>
 			</Box>
 			<Box sx={{ maxHeight: 220, overflow: "auto" }}>
 				{allChannels
 					.filter((ch) => {
 						if (!search.trim()) return true
 						const q = search.toLowerCase()
-						return ch.toLowerCase().includes(q) || channelLabel(ch).toLowerCase().includes(q)
+						return (
+							ch.toLowerCase().includes(q) ||
+							channelLabel(ch).toLowerCase().includes(q)
+						)
 					})
 					.map((ch) => (
 						<FormControlLabel
@@ -95,13 +123,28 @@ const ChannelConfigPopover: React.FC<ChannelConfigPopoverProps> = ({
 									sx={{ p: 0.25 }}
 								/>
 							}
-							label={<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>{channelLabel(ch)}</Typography>}
+							label={
+								<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
+									{channelLabel(ch)}
+								</Typography>
+							}
 							sx={{ display: "block", m: 0, height: 26 }}
 						/>
 					))}
 			</Box>
-			<Box sx={{ borderTop: "1px solid", borderColor: "divider", pt: 0.5, mt: 0.5 }}>
-				<Typography variant="caption" fontWeight="bold" sx={{ mb: 0.25, display: "block" }}>
+			<Box
+				sx={{
+					borderTop: "1px solid",
+					borderColor: "divider",
+					pt: 0.5,
+					mt: 0.5,
+				}}
+			>
+				<Typography
+					variant="caption"
+					fontWeight="bold"
+					sx={{ mb: 0.25, display: "block" }}
+				>
 					Colunas
 				</Typography>
 				{metricColumns.map((m) => (
@@ -115,7 +158,11 @@ const ChannelConfigPopover: React.FC<ChannelConfigPopoverProps> = ({
 								sx={{ p: 0.25 }}
 							/>
 						}
-						label={<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>{m.label}</Typography>}
+						label={
+							<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
+								{m.label}
+							</Typography>
+						}
 						sx={{ display: "block", m: 0, height: 26 }}
 					/>
 				))}

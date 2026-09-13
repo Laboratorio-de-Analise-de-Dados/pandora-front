@@ -32,7 +32,18 @@ const StatsTable: React.FC<StatsTableProps> = ({
 		<Table size="small" stickyHeader>
 			<TableHead>
 				<TableRow>
-					<TableCell sx={{ py: 0.5, px: 1, fontSize: "0.7rem", fontWeight: "bold", position: "sticky", left: 0, bgcolor: "background.paper", zIndex: 1 }}>
+					<TableCell
+						sx={{
+							py: 0.5,
+							px: 1,
+							fontSize: "0.7rem",
+							fontWeight: "bold",
+							position: "sticky",
+							left: 0,
+							bgcolor: "background.paper",
+							zIndex: 1,
+						}}
+					>
 						Canal
 					</TableCell>
 					{activeMetrics.map((m) => (

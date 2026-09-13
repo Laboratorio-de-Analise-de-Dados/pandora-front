@@ -64,7 +64,10 @@ const Header = () => {
 		{ id: 3, name: "Groups", path: "/organizations" },
 	]
 
-	const providerLabel = user?.auth_provider && user.auth_provider !== "local" ? `(${user.auth_provider})` : ""
+	const providerLabel =
+		user?.auth_provider && user.auth_provider !== "local"
+			? `(${user.auth_provider})`
+			: ""
 
 	return (
 		<AppBar position="static" color="secondary">
@@ -78,8 +81,21 @@ const Header = () => {
 					}}
 				>
 					<Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-						<Link to="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 1 }}>
-							<Box component="img" src="/pandora-icon.png" alt="Pandora" sx={{ height: 32, width: 32, borderRadius: "50%" }} />
+						<Link
+							to="/"
+							style={{
+								textDecoration: "none",
+								display: "flex",
+								alignItems: "center",
+								gap: 1,
+							}}
+						>
+							<Box
+								component="img"
+								src="/pandora-icon.png"
+								alt="Pandora"
+								sx={{ height: 32, width: 32, borderRadius: "50%" }}
+							/>
 							<Typography variant="h6" sx={{ color: "#FFFFFF" }}>
 								Pandora
 							</Typography>
@@ -90,7 +106,9 @@ const Header = () => {
 								{NAVLINKS.map((link) => (
 									<ListItem key={link.id} sx={{ width: "auto" }}>
 										<Link to={link.path} style={{ textDecoration: "none" }}>
-											<Typography sx={{ color: "#FFFFFF" }}>{link.name}</Typography>
+											<Typography sx={{ color: "#FFFFFF" }}>
+												{link.name}
+											</Typography>
 										</Link>
 									</ListItem>
 								))}
@@ -98,11 +116,20 @@ const Header = () => {
 						)}
 					</Box>
 
-					<Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 2 } }}>
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							gap: { xs: 0.5, sm: 2 },
+						}}
+					>
 						{user && (
 							<>
 								<Tooltip title="Notificações">
-									<IconButton color="inherit" onClick={(e) => setAnchorEl(e.currentTarget)}>
+									<IconButton
+										color="inherit"
+										onClick={(e) => setAnchorEl(e.currentTarget)}
+									>
 										<Badge badgeContent={invites.length} color="error" max={9}>
 											<NotificationsIcon />
 										</Badge>
@@ -112,7 +139,9 @@ const Header = () => {
 									anchorEl={anchorEl}
 									open={Boolean(anchorEl)}
 									onClose={() => setAnchorEl(null)}
-									PaperProps={{ sx: { width: { xs: "90vw", sm: 360 }, maxWidth: 360 } }}
+									PaperProps={{
+										sx: { width: { xs: "90vw", sm: 360 }, maxWidth: 360 },
+									}}
 								>
 									{invites.length === 0 ? (
 										<MenuItem disabled>Nenhum convite pendente</MenuItem>
@@ -120,31 +149,63 @@ const Header = () => {
 										invites.map((invite) => (
 											<Box key={invite.id}>
 												<MenuItem
-													disabled={invite.email.toLowerCase() !== user.email.toLowerCase()}
-													sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}
+													disabled={
+														invite.email.toLowerCase() !==
+														user.email.toLowerCase()
+													}
+													sx={{
+														display: "flex",
+														justifyContent: "space-between",
+														alignItems: "flex-start",
+														gap: 1,
+													}}
 												>
-													<Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
+													<Box
+														sx={{
+															display: "flex",
+															flexDirection: "column",
+															flex: 1,
+														}}
+													>
 														<Typography variant="body2">
-															Convite para <strong>{invite.organization.name}</strong>
+															Convite para{" "}
+															<strong>{invite.organization.name}</strong>
 														</Typography>
-														<Typography variant="caption" color="text.secondary">
+														<Typography
+															variant="caption"
+															color="text.secondary"
+														>
 															como {invite.role.name}
 														</Typography>
-														{invite.email.toLowerCase() !== user.email.toLowerCase() && (
-															<Typography variant="caption" color="error" display="block">
+														{invite.email.toLowerCase() !==
+															user.email.toLowerCase() && (
+															<Typography
+																variant="caption"
+																color="error"
+																display="block"
+															>
 																Você está logado com outro email
 															</Typography>
 														)}
 													</Box>
-													{invite.email.toLowerCase() === user.email.toLowerCase() && (
+													{invite.email.toLowerCase() ===
+														user.email.toLowerCase() && (
 														<Box sx={{ display: "flex", gap: 0.5 }}>
 															<Tooltip title="Aceitar">
-																<IconButton size="small" color="success" onClick={() => handleAccept(invite)}>
+																<IconButton
+																	size="small"
+																	color="success"
+																	onClick={() => handleAccept(invite)}
+																>
 																	<CheckIcon />
 																</IconButton>
 															</Tooltip>
 															<Tooltip title="Recusar">
-																<IconButton size="small" color="error" onClick={() => handleDecline(invite)}>
+																<IconButton
+																	size="small"
+																	color="error"
+																	onClick={() => handleDecline(invite)}
+																>
 																	<CloseIcon />
 																</IconButton>
 															</Tooltip>
@@ -163,13 +224,19 @@ const Header = () => {
 								component={Link}
 								to="/profile"
 								color="inherit"
-								sx={{ color: "#FFFFFF", textTransform: "none", display: { xs: "none", sm: "flex" } }}
+								sx={{
+									color: "#FFFFFF",
+									textTransform: "none",
+									display: { xs: "none", sm: "flex" },
+								}}
 								variant={isProfile ? "outlined" : "text"}
 							>
 								{user.username} {providerLabel}
 							</Button>
 						)}
-						<Tooltip title={`Mudar para modo ${mode === "light" ? "escuro" : "claro"}`}>
+						<Tooltip
+							title={`Mudar para modo ${mode === "light" ? "escuro" : "claro"}`}
+						>
 							<IconButton onClick={toggleMode} color="inherit">
 								{mode === "light" ? <MdBrightness4 /> : <MdBrightness7 />}
 							</IconButton>

@@ -1,8 +1,4 @@
-import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView"
-import { TreeItem } from "@mui/x-tree-view/TreeItem"
 import {
-	MdExpandMore as ExpandMore,
-	MdChevronRight as ChevronRight,
 	MdDelete as DeleteIcon,
 	MdEdit as EditIcon,
 	MdMoreVert as MoreVertIcon,
@@ -10,9 +6,13 @@ import {
 	MdDriveFileMove as TransferIcon,
 	MdVisibilityOff as DisableIcon,
 	MdRestoreFromTrash as EnableIcon,
+	MdFolder as FolderIcon,
+	MdCreateNewFolder as NewSubsampleIcon,
+	MdSelectAll as SelectAllIcon,
 } from "react-icons/md"
 import {
 	Box,
+	Checkbox,
 	Chip,
 	Dialog,
 	DialogActions,
@@ -30,15 +30,23 @@ import {
 	Divider,
 } from "@mui/material"
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
-import { ExperimentFiles, Gate } from "../../types"
+import { ExperimentFiles, Gate, Subsample } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
+import { gateAxesLabel, gateAuthorLabel } from "../../features/gate/utils"
 import {
-	gateAxesLabel,
-	findGateInTree,
-	gateAuthorLabel,
-} from "../../features/gate/utils"
+	groupFilesBySubsample,
+	hasSubsampleLevel,
+	SubsampleGroup,
+} from "../../features/experiment/utils/groupBySubsample"
 import { fmtPct } from "../../utils/format"
-import React, { useState } from "react"
+import React, { useMemo, useState } from "react"
+import TreeNode from "./TreeNode"
+import {
+	ArchiveSubsampleDialog,
+	FileMetadataDialog,
+	MoveFileDialog,
+	SubsampleFormDialog,
+} from "./dialogs"
 
 export interface SelectedSource {
 	type: "file" | "gate"
@@ -48,26 +56,50 @@ export interface SelectedSource {
 	copiedFromId?: number | null
 }
 
+interface TreeHandlers {
+	onSelect: (source: SelectedSource) => void
+	onDeleteGate?: (gateId: number, gateName: string) => void
+	onRenameGate?: (gateId: number, newName: string) => void
+	onApplyGate?: (gateId: number, gateName: string) => void
+	onDisableFile?: (fileDataIds: number[]) => void
+	onEnableFile?: (fileDataIds: number[]) => void
+	onMenuOpen: (event: React.MouseEvent, gate: Gate) => void
+	onContextMenu: (event: React.MouseEvent, gate: Gate) => void
+	onFileMenuOpen: (event: React.MouseEvent, file: ExperimentFiles) => void
+	onSubsampleMenuOpen?: (event: React.MouseEvent, subsample: Subsample) => void
+	/** Seleção múltipla de amostras (mover em lote); omitido sem onMoveFile. */
+	selectedFileIds?: Set<number>
+	onToggleFile?: (fileId: number) => void
+	onToggleGroup?: (fileIds: number[], checked: boolean) => void
+	onFileInfo?: (file: ExperimentFiles) => void
+}
 
-
-// Função recursiva para renderizar os gates e seus sub-gates
+// Renderiza um gate e seus sub-gates recursivamente
 const renderGate = (
 	gate: Gate,
-	parentId: string,
-	onRequestDelete?: (gateId: number, gateName: string) => void,
-	onRequestRename?: (gateId: number, gateName: string) => void,
-	onRequestApply?: (gateId: number, gateName: string) => void,
-	gateIndex = 0,
-	onMenuOpen?: (event: React.MouseEvent, gate: Gate) => void,
-	onContextMenu?: (event: React.MouseEvent, gate: Gate) => void,
+	fileDataId: number,
+	depth: number,
+	gateIndex: number,
+	handlers: TreeHandlers,
 ) => {
-	const itemId = `gate-${gate.id}-${parentId}`
 	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
 	const authorLabel = gateAuthorLabel(gate)
+	const authorName = gate.created_by_name?.trim() || null
+	const hasActions =
+		handlers.onApplyGate || handlers.onRenameGate || handlers.onDeleteGate
 	return (
-		<TreeItem
-			key={itemId}
-			itemId={itemId}
+		<TreeNode
+			key={`gate-${gate.id}`}
+			depth={depth}
+			onSelect={() =>
+				handlers.onSelect({
+					type: "gate",
+					id: gate.id,
+					name: gate.name,
+					fileDataId,
+					copiedFromId: gate.copied_from_id,
+				})
+			}
 			label={
 				<Box
 					sx={{
@@ -77,14 +109,19 @@ const renderGate = (
 						width: "100%",
 					}}
 					onContextMenu={(e) => {
-						if (onContextMenu) {
-							e.preventDefault()
-							e.stopPropagation()
-							onContextMenu(e, gate)
-						}
+						e.preventDefault()
+						e.stopPropagation()
+						handlers.onContextMenu(e, gate)
 					}}
 				>
-					<Box sx={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: "column",
+							minWidth: 0,
+							flex: 1,
+						}}
+					>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
 							<Box
 								component="span"
@@ -97,28 +134,63 @@ const renderGate = (
 									flexShrink: 0,
 								}}
 							/>
-							{authorLabel ? (
+							{authorName ? (
 								<Tooltip title={authorLabel} arrow placement="top-start">
 									<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
 								</Tooltip>
 							) : (
 								<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
 							)}
+							{authorName && (
+								<Chip
+									label={authorName.split(" ")[0]}
+									size="small"
+									variant="outlined"
+									sx={{
+										height: 16,
+										fontSize: "0.6rem",
+										flexShrink: 0,
+										"& .MuiChip-label": { px: 0.5 },
+									}}
+								/>
+							)}
 							{gate.copied_from_id && (
-								<Tooltip title={`Copiado de gate #${gate.copied_from_id}`} arrow>
+								<Tooltip
+									title={`Copiado de gate #${gate.copied_from_id}`}
+									arrow
+								>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
-										<LinkIcon style={{ fontSize: 14, color: "rgba(0,120,255,0.7)" }} />
+										<LinkIcon
+											style={{ fontSize: 14, color: "rgba(0,120,255,0.7)" }}
+										/>
 									</Box>
 								</Tooltip>
 							)}
 						</Box>
 						{gateAxesLabel(gate.gate_coordinates) && (
-							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem", pl: 2.5, lineHeight: 1.1, fontStyle: "italic" }}>
+							<Typography
+								variant="caption"
+								sx={{
+									color: "text.secondary",
+									fontSize: "0.65rem",
+									pl: 2.5,
+									lineHeight: 1.1,
+									fontStyle: "italic",
+								}}
+							>
 								{gateAxesLabel(gate.gate_coordinates)}
 							</Typography>
 						)}
 						{metrics && (
-							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem", pl: 2.5, lineHeight: 1.2 }}>
+							<Typography
+								variant="caption"
+								sx={{
+									color: "text.secondary",
+									fontSize: "0.65rem",
+									pl: 2.5,
+									lineHeight: 1.2,
+								}}
+							>
 								{metrics.count.toLocaleString()} events
 								{" | "}
 								%P {fmtPct(metrics.percent_of_parent_population)}
@@ -127,12 +199,12 @@ const renderGate = (
 							</Typography>
 						)}
 					</Box>
-					{(onRequestApply || onRequestRename || onRequestDelete) && (
+					{hasActions && (
 						<IconButton
 							size="small"
 							onClick={(e) => {
 								e.stopPropagation()
-								if (onMenuOpen) onMenuOpen(e, gate)
+								handlers.onMenuOpen(e, gate)
 							}}
 							sx={{ p: 0.25, flexShrink: 0 }}
 							title="Opções do gate"
@@ -144,80 +216,208 @@ const renderGate = (
 			}
 		>
 			{gate.children?.map((childGate, childIdx) =>
-				renderGate(childGate, itemId, onRequestDelete, onRequestRename, onRequestApply, childIdx, onMenuOpen, onContextMenu),
+				renderGate(childGate, fileDataId, depth + 1, childIdx, handlers),
 			)}
-		</TreeItem>
+		</TreeNode>
 	)
 }
 
-// Função para renderizar os arquivos e seus gates
+// Renderiza uma amostra e seus gates
 const renderFile = (
 	file: ExperimentFiles,
-	onRequestDelete?: (gateId: number, gateName: string) => void,
-	onRequestRename?: (gateId: number, gateName: string) => void,
-	onRequestApply?: (gateId: number, gateName: string) => void,
-	onMenuOpen?: (event: React.MouseEvent, gate: Gate) => void,
-	onContextMenu?: (event: React.MouseEvent, gate: Gate) => void,
-	onFileMenuOpen?: (event: React.MouseEvent, file: ExperimentFiles) => void,
+	depth: number,
+	handlers: TreeHandlers,
 ) => {
-	const fileId = `file-${file.id}`
 	const inactive = file.active === false
+	const canManage = handlers.onDisableFile || handlers.onEnableFile
+	// No modo de seleção, clicar na linha marca/desmarca — não troca a amostra.
+	const selecting = !!handlers.onToggleFile
 	return (
-		<TreeItem key={fileId} itemId={fileId} label={
-		<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
-			<Typography
-				sx={{ fontSize: "0.8rem", opacity: inactive ? 0.5 : 1 }}
-				noWrap
-			>
-				📄{file.file_name}
-			</Typography>
-			{inactive && (
-				<Chip
-					label="Desabilitada"
-					size="small"
-					sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
-				/>
-			)}
-			{onFileMenuOpen && (
-				<IconButton
-					size="small"
-					onClick={(e) => {
-						e.stopPropagation()
-						onFileMenuOpen(e, file)
-					}}
-					sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
-					title="Opções da amostra"
+		<TreeNode
+			key={`file-${file.id}`}
+			depth={depth}
+			inactive={inactive}
+			onSelect={
+				selecting
+					? () => handlers.onToggleFile?.(file.id)
+					: inactive
+						? undefined
+						: () =>
+								handlers.onSelect({
+									type: "file",
+									id: file.id,
+									name: file.file_name,
+									fileDataId: file.id,
+								})
+			}
+			label={
+				<Box
+					sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}
 				>
-					<MoreVertIcon style={{ fontSize: 16 }} />
-				</IconButton>
-			)}
-		</Box>
-	}>
+					{handlers.onToggleFile && (
+						<Checkbox
+							size="small"
+							checked={handlers.selectedFileIds?.has(file.id) ?? false}
+							onClick={(e) => e.stopPropagation()}
+							onChange={() => handlers.onToggleFile?.(file.id)}
+							sx={{ p: 0.25 }}
+						/>
+					)}
+					<Typography
+						sx={{ fontSize: "0.8rem", opacity: inactive ? 0.5 : 1 }}
+						noWrap
+					>
+						📄{file.file_name}
+					</Typography>
+					{inactive && (
+						<Chip
+							label="Desabilitada"
+							size="small"
+							sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
+						/>
+					)}
+					<Box sx={{ ml: "auto", display: "flex", flexShrink: 0 }}>
+						{handlers.onFileInfo && (
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handlers.onFileInfo?.(file)
+								}}
+								sx={{ p: 0.25 }}
+								title="Metadados do arquivo"
+							>
+								<InfoIcon style={{ fontSize: 15, opacity: 0.6 }} />
+							</IconButton>
+						)}
+						{canManage && (
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handlers.onFileMenuOpen(e, file)
+								}}
+								sx={{ p: 0.25 }}
+								title="Opções da amostra"
+							>
+								<MoreVertIcon style={{ fontSize: 16 }} />
+							</IconButton>
+						)}
+					</Box>
+				</Box>
+			}
+		>
 			{file.gates.map((gate, idx) =>
-				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply, idx, onMenuOpen, onContextMenu),
+				renderGate(gate, file.id, depth + 1, idx, handlers),
 			)}
-		</TreeItem>
+		</TreeNode>
 	)
 }
 
-
+// Nível subsample: agrupador, não selecionável
+const renderSubsampleGroup = (
+	group: SubsampleGroup,
+	handlers: TreeHandlers,
+) => {
+	const name =
+		group.subsample?.name ??
+		(group.subsampleId !== null
+			? `Subsample #${group.subsampleId}`
+			: "Sem subsample")
+	// Checkbox "selecionar grupo" — visível só no modo de seleção.
+	const selectedCount = group.files.filter((f) =>
+		handlers.selectedFileIds?.has(f.id),
+	).length
+	const allChecked =
+		group.files.length > 0 && selectedCount === group.files.length
+	return (
+		<TreeNode
+			key={
+				group.subsampleId !== null
+					? `subsample-${group.subsampleId}`
+					: "subsample-none"
+			}
+			depth={0}
+			label={
+				<Box
+					sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}
+				>
+					{handlers.onToggleGroup && (
+						<Checkbox
+							size="small"
+							checked={allChecked}
+							indeterminate={!allChecked && selectedCount > 0}
+							onClick={(e) => e.stopPropagation()}
+							onChange={(e) =>
+								handlers.onToggleGroup?.(
+									group.files.map((f) => f.id),
+									e.target.checked,
+								)
+							}
+							sx={{ p: 0.25 }}
+						/>
+					)}
+					<FolderIcon style={{ fontSize: 15, flexShrink: 0, opacity: 0.7 }} />
+					<Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }} noWrap>
+						{name}
+					</Typography>
+					<Typography
+						variant="caption"
+						sx={{ color: "text.secondary", fontSize: "0.65rem", flexShrink: 0 }}
+					>
+						{group.files.length}{" "}
+						{group.files.length === 1 ? "amostra" : "amostras"}
+					</Typography>
+					{group.subsample && handlers.onSubsampleMenuOpen && (
+						<IconButton
+							size="small"
+							onClick={(e) => {
+								e.stopPropagation()
+								handlers.onSubsampleMenuOpen?.(e, group.subsample!)
+							}}
+							sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
+							title="Opções do subsample"
+						>
+							<MoreVertIcon style={{ fontSize: 16 }} />
+						</IconButton>
+					)}
+				</Box>
+			}
+		>
+			{group.files.map((file) => renderFile(file, 1, handlers))}
+		</TreeNode>
+	)
+}
 
 export default function ParentTree({
 	files,
+	subsamples = [],
 	onSelect,
 	onDeleteGate,
 	onRenameGate,
 	onApplyGate,
 	onDisableFile,
 	onEnableFile,
+	onCreateSubsample,
+	onRenameSubsample,
+	onArchiveSubsample,
+	onMoveFile,
 }: {
 	files: ExperimentFiles[]
+	subsamples?: Subsample[]
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number, gateName: string) => void
 	onRenameGate?: (gateId: number, newName: string) => void
 	onApplyGate?: (gateId: number, gateName: string) => void
-	onDisableFile?: (fileDataId: number) => void
-	onEnableFile?: (fileDataId: number) => void
+	onDisableFile?: (fileDataIds: number[]) => void
+	onEnableFile?: (fileDataIds: number[]) => void
+	onCreateSubsample?: (name: string) => Promise<string | null>
+	onRenameSubsample?: (
+		subsampleId: number,
+		name: string,
+	) => Promise<string | null>
+	onArchiveSubsample?: (subsampleId: number) => void
+	onMoveFile?: (fileDataIds: number[], subsampleId: number | null) => void
 }) {
 	const [renameTarget, setRenameTarget] = useState<{
 		id: number
@@ -230,15 +430,39 @@ export default function ParentTree({
 	const [menuGate, setMenuGate] = useState<Gate | null>(null)
 
 	// Context menu state (right-click)
-	const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+	const [contextMenu, setContextMenu] = useState<{
+		x: number
+		y: number
+	} | null>(null)
 	const [contextGate, setContextGate] = useState<Gate | null>(null)
 
-	// Menu e confirmação por amostra (desabilitar / reativar)
+	// Menu e confirmação por amostra (desabilitar / reativar / mover)
 	const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null)
 	const [menuFile, setMenuFile] = useState<ExperimentFiles | null>(null)
-	const [disableTarget, setDisableTarget] = useState<ExperimentFiles | null>(
+	const [disableTargets, setDisableTargets] = useState<ExperimentFiles[]>([])
+	// Seleção em lote: select liga o modo; as ações (mover/desabilitar/reativar)
+	// aparecem como chips com a contagem de selecionadas.
+	const [selectionMode, setSelectionMode] = useState(false)
+	const [selectedFileIds, setSelectedFileIds] = useState<Set<number>>(new Set())
+	const [moveTargets, setMoveTargets] = useState<ExperimentFiles[]>([])
+	const [metadataTarget, setMetadataTarget] = useState<ExperimentFiles | null>(
 		null,
 	)
+
+	// Subsample: menu ⋮ do grupo + diálogo de criar/renomear + arquivar
+	const [subsampleMenuAnchor, setSubsampleMenuAnchor] =
+		useState<null | HTMLElement>(null)
+	const [menuSubsample, setMenuSubsample] = useState<Subsample | null>(null)
+	const [subsampleFormOpen, setSubsampleFormOpen] = useState(false)
+	const [subsampleFormTarget, setSubsampleFormTarget] =
+		useState<Subsample | null>(null)
+	const [archiveTarget, setArchiveTarget] = useState<Subsample | null>(null)
+
+	const groups = useMemo(
+		() => groupFilesBySubsample(files, subsamples),
+		[files, subsamples],
+	)
+	const grouped = hasSubsampleLevel(groups)
 
 	const handleFileMenuOpen = (
 		event: React.MouseEvent,
@@ -255,18 +479,98 @@ export default function ParentTree({
 	}
 
 	const handleFileMenuDisable = () => {
-		if (menuFile) setDisableTarget(menuFile)
+		if (menuFile) setDisableTargets([menuFile])
 		handleFileMenuClose()
 	}
 
 	const handleFileMenuEnable = () => {
-		if (menuFile && onEnableFile) onEnableFile(menuFile.id)
+		if (menuFile && onEnableFile) onEnableFile([menuFile.id])
 		handleFileMenuClose()
 	}
 
+	const handleFileMenuMove = () => {
+		if (menuFile) setMoveTargets([menuFile])
+		handleFileMenuClose()
+	}
+
+	const handleToggleFile = (fileId: number) => {
+		setSelectedFileIds((prev) => {
+			const next = new Set(prev)
+			if (next.has(fileId)) next.delete(fileId)
+			else next.add(fileId)
+			return next
+		})
+	}
+
+	const handleToggleGroup = (fileIds: number[], checked: boolean) => {
+		setSelectedFileIds((prev) => {
+			const next = new Set(prev)
+			fileIds.forEach((id) => (checked ? next.add(id) : next.delete(id)))
+			return next
+		})
+	}
+
+	const selectedFiles = files.filter((f) => selectedFileIds.has(f.id))
+	// Mover vale para qualquer amostra; desabilitar só as ativas, reativar só
+	// as inativas (visíveis só com "Mostrar desabilitadas" ligado).
+	const activeSelected = selectedFiles.filter((f) => f.active !== false)
+	const inactiveSelected = selectedFiles.filter((f) => f.active === false)
+
+	const handleMoveSelected = () => {
+		if (selectedFiles.length > 0) setMoveTargets(selectedFiles)
+	}
+
+	const handleDisableSelected = () => {
+		if (activeSelected.length > 0) setDisableTargets(activeSelected)
+	}
+
+	const handleEnableSelected = () => {
+		if (inactiveSelected.length > 0 && onEnableFile)
+			onEnableFile(inactiveSelected.map((f) => f.id))
+	}
+
+	const handleSubsampleMenuOpen = (
+		event: React.MouseEvent,
+		subsample: Subsample,
+	) => {
+		event.stopPropagation()
+		setSubsampleMenuAnchor(event.currentTarget as HTMLElement)
+		setMenuSubsample(subsample)
+	}
+
+	const handleSubsampleMenuClose = () => {
+		setSubsampleMenuAnchor(null)
+		setMenuSubsample(null)
+	}
+
+	const handleSubsampleMenuRename = () => {
+		if (menuSubsample) {
+			setSubsampleFormTarget(menuSubsample)
+			setSubsampleFormOpen(true)
+		}
+		handleSubsampleMenuClose()
+	}
+
+	const handleSubsampleMenuArchive = () => {
+		if (menuSubsample) setArchiveTarget(menuSubsample)
+		handleSubsampleMenuClose()
+	}
+
+	const handleSubsampleFormSubmit = async (name: string) => {
+		if (subsampleFormTarget && onRenameSubsample) {
+			return onRenameSubsample(subsampleFormTarget.id, name)
+		}
+		if (onCreateSubsample) return onCreateSubsample(name)
+		return "Ação indisponível"
+	}
+
+	const canBulk = !!(onMoveFile || onDisableFile || onEnableFile)
+
 	const handleConfirmDisable = () => {
-		if (disableTarget && onDisableFile) onDisableFile(disableTarget.id)
-		setDisableTarget(null)
+		if (disableTargets.length > 0 && onDisableFile)
+			onDisableFile(disableTargets.map((f) => f.id))
+		setDisableTargets([])
+		setSelectedFileIds(new Set())
 	}
 
 	const handleMenuOpen = (event: React.MouseEvent, gate: Gate) => {
@@ -313,7 +617,8 @@ export default function ParentTree({
 
 	// Context menu actions
 	const handleCtxApply = () => {
-		if (contextGate && onApplyGate) onApplyGate(contextGate.id, contextGate.name)
+		if (contextGate && onApplyGate)
+			onApplyGate(contextGate.id, contextGate.name)
 		handleContextMenuClose()
 	}
 
@@ -331,11 +636,6 @@ export default function ParentTree({
 		handleContextMenuClose()
 	}
 
-	const handleRequestRename = (gateId: number, gateName: string) => {
-		setRenameTarget({ id: gateId, name: gateName })
-		setRenameValue(gateName)
-	}
-
 	const handleConfirmRename = () => {
 		if (renameTarget && onRenameGate && renameValue.trim()) {
 			onRenameGate(renameTarget.id, renameValue.trim())
@@ -349,44 +649,24 @@ export default function ParentTree({
 		setRenameValue("")
 	}
 
-
-	const handleItemClick = (event: React.MouseEvent, itemId: string) => {
-		// Paramos a propagação para evitar o evento do pai quando o filho é clicado
-		event.stopPropagation()
-
-		const isFile = itemId.startsWith("file-")
-		const isGate = itemId.startsWith("gate-")
-		const id = parseInt(itemId.split("-")[1])
-
-		if (!isFile && !isGate) return
-
-		if (isFile) {
-			const file = files.find((f) => f.id === id)
-			if (file?.active === false) return
-			onSelect({
-				type: "file",
-				id,
-				name: file?.file_name ?? `Arquivo ${id}`,
-				fileDataId: id,
-			})
-		} else {
-			let gate: Gate | undefined
-			let fileDataId = id
-			for (const file of files) {
-				gate = findGateInTree(file.gates, id)
-				if (gate) {
-					fileDataId = file.id
-					break
-				}
-			}
-			onSelect({
-				type: "gate",
-				id,
-				name: gate?.name ?? `Gate ${id}`,
-				fileDataId,
-				copiedFromId: gate?.copied_from_id,
-			})
-		}
+	const handlers: TreeHandlers = {
+		onSelect,
+		onDeleteGate,
+		onRenameGate,
+		onApplyGate,
+		onDisableFile,
+		onEnableFile,
+		onMenuOpen: handleMenuOpen,
+		onContextMenu: handleContextMenu,
+		onFileMenuOpen: handleFileMenuOpen,
+		onSubsampleMenuOpen:
+			onRenameSubsample || onArchiveSubsample
+				? handleSubsampleMenuOpen
+				: undefined,
+		selectedFileIds,
+		onToggleFile: canBulk && selectionMode ? handleToggleFile : undefined,
+		onToggleGroup: canBulk && selectionMode ? handleToggleGroup : undefined,
+		onFileInfo: setMetadataTarget,
 	}
 
 	return (
@@ -397,40 +677,104 @@ export default function ParentTree({
 					arrow
 					placement="bottom-start"
 				>
-					<Box sx={{ display: "inline-flex", alignItems: "center", cursor: "help" }}>
+					<Box
+						sx={{
+							display: "inline-flex",
+							alignItems: "center",
+							cursor: "help",
+						}}
+					>
 						<InfoIcon style={{ fontSize: 14, opacity: 0.6 }} />
-						<Typography variant="caption" sx={{ ml: 0.5, color: "text.secondary", fontSize: "0.7rem" }}>
+						<Typography
+							variant="caption"
+							sx={{ ml: 0.5, color: "text.secondary", fontSize: "0.7rem" }}
+						>
 							%P = Parent · %T = Total
 						</Typography>
 					</Box>
 				</Tooltip>
+				{canBulk && (
+					<Tooltip
+						title={
+							selectionMode ? "Concluir seleção" : "Selecionar várias amostras"
+						}
+						arrow
+					>
+						<IconButton
+							size="small"
+							onClick={() => {
+								setSelectionMode((v) => !v)
+								setSelectedFileIds(new Set())
+							}}
+							sx={{ p: 0.25, ml: "auto" }}
+							color={selectionMode ? "primary" : "default"}
+						>
+							<SelectAllIcon style={{ fontSize: 18 }} />
+						</IconButton>
+					</Tooltip>
+				)}
+				{selectionMode && selectedFileIds.size > 0 && (
+					<>
+						{onMoveFile && (
+							<Chip
+								label={`Mover ${selectedFileIds.size}`}
+								size="small"
+								color="primary"
+								onClick={handleMoveSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+						{onDisableFile && (
+							<Chip
+								label={`Desabilitar ${activeSelected.length}`}
+								size="small"
+								color="warning"
+								variant="outlined"
+								disabled={activeSelected.length === 0}
+								onClick={handleDisableSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+						{onEnableFile && (
+							<Chip
+								label={`Reativar ${inactiveSelected.length}`}
+								size="small"
+								color="success"
+								variant="outlined"
+								disabled={inactiveSelected.length === 0}
+								onClick={handleEnableSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+					</>
+				)}
+				{onCreateSubsample && (
+					<Tooltip title="Novo subsample" arrow>
+						<IconButton
+							size="small"
+							onClick={() => {
+								setSubsampleFormTarget(null)
+								setSubsampleFormOpen(true)
+							}}
+							sx={{ p: 0.25, ml: canBulk ? 0 : "auto" }}
+						>
+							<NewSubsampleIcon style={{ fontSize: 18 }} />
+						</IconButton>
+					</Tooltip>
+				)}
 			</Box>
-			<SimpleTreeView
-				slots={{
-					expandIcon: ChevronRight,
-					collapseIcon: ExpandMore,
-				}}
-				onItemClick={handleItemClick}
+			<Box
+				role="tree"
 				sx={(theme) => ({
 					flexGrow: 1,
 					overflowY: "auto",
 					color: theme.palette.text.primary,
 				})}
 			>
-				{files.map((file) =>
-					renderFile(
-						file,
-						onDeleteGate,
-						onRenameGate ? handleRequestRename : undefined,
-						onApplyGate,
-						handleMenuOpen,
-						handleContextMenu,
-						onDisableFile || onEnableFile
-							? handleFileMenuOpen
-							: undefined,
-					),
-				)}
-			</SimpleTreeView>
+				{grouped
+					? groups.map((group) => renderSubsampleGroup(group, handlers))
+					: files.map((file) => renderFile(file, 0, handlers))}
+			</Box>
 
 			{/* Hamburger dropdown menu (⋮ button) */}
 			<Menu
@@ -463,7 +807,11 @@ export default function ParentTree({
 				)}
 				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
 				{onDeleteGate && (
-					<MuiMenuItem onClick={handleMenuDelete} dense sx={{ color: "error.main" }}>
+					<MuiMenuItem
+						onClick={handleMenuDelete}
+						dense
+						sx={{ color: "error.main" }}
+					>
 						<ListItemIcon sx={{ minWidth: 28, color: "error.main" }}>
 							<DeleteIcon style={{ fontSize: 18 }} />
 						</ListItemIcon>
@@ -508,12 +856,47 @@ export default function ParentTree({
 				)}
 				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
 				{onDeleteGate && (
-					<MuiMenuItem onClick={handleCtxDelete} dense sx={{ color: "error.main" }}>
+					<MuiMenuItem
+						onClick={handleCtxDelete}
+						dense
+						sx={{ color: "error.main" }}
+					>
 						<ListItemIcon sx={{ minWidth: 28, color: "error.main" }}>
 							<DeleteIcon style={{ fontSize: 18 }} />
 						</ListItemIcon>
 						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
 							Excluir
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+			</Menu>
+
+			{/* Menu de ações do subsample */}
+			<Menu
+				anchorEl={subsampleMenuAnchor}
+				open={Boolean(subsampleMenuAnchor)}
+				onClose={handleSubsampleMenuClose}
+				anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+				transformOrigin={{ vertical: "top", horizontal: "right" }}
+				slotProps={{ paper: { sx: { minWidth: 180 } } }}
+			>
+				{onRenameSubsample && (
+					<MuiMenuItem onClick={handleSubsampleMenuRename} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<EditIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Renomear
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+				{onArchiveSubsample && (
+					<MuiMenuItem onClick={handleSubsampleMenuArchive} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<DisableIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Arquivar
 						</ListItemText>
 					</MuiMenuItem>
 				)}
@@ -528,6 +911,16 @@ export default function ParentTree({
 				transformOrigin={{ vertical: "top", horizontal: "right" }}
 				slotProps={{ paper: { sx: { minWidth: 200 } } }}
 			>
+				{onMoveFile && menuFile?.active !== false && (
+					<MuiMenuItem onClick={handleFileMenuMove} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<TransferIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Mover para subsample…
+						</ListItemText>
+					</MuiMenuItem>
+				)}
 				{menuFile?.active === false
 					? onEnableFile && (
 							<MuiMenuItem onClick={handleFileMenuEnable} dense>
@@ -551,24 +944,69 @@ export default function ParentTree({
 						)}
 			</Menu>
 
+			<SubsampleFormDialog
+				open={subsampleFormOpen}
+				target={subsampleFormTarget}
+				onSubmit={handleSubsampleFormSubmit}
+				onClose={() => setSubsampleFormOpen(false)}
+			/>
+
+			<ArchiveSubsampleDialog
+				target={archiveTarget}
+				onConfirm={(id) => {
+					onArchiveSubsample?.(id)
+					setArchiveTarget(null)
+				}}
+				onClose={() => setArchiveTarget(null)}
+			/>
+
+			<MoveFileDialog
+				files={moveTargets}
+				subsamples={subsamples}
+				onConfirm={(fileDataIds, subsampleId) => {
+					onMoveFile?.(fileDataIds, subsampleId)
+					setMoveTargets([])
+					setSelectedFileIds(new Set())
+				}}
+				onClose={() => setMoveTargets([])}
+			/>
+
+			<FileMetadataDialog
+				file={metadataTarget}
+				onClose={() => setMetadataTarget(null)}
+			/>
+
 			<Dialog
-				open={!!disableTarget}
-				onClose={() => setDisableTarget(null)}
+				open={disableTargets.length > 0}
+				onClose={() => setDisableTargets([])}
 				fullWidth
 				maxWidth="xs"
 				PaperProps={{ sx: { maxHeight: "90vh", overflowY: "auto" } }}
 			>
-				<DialogTitle>Desabilitar amostra</DialogTitle>
+				<DialogTitle>
+					{disableTargets.length > 1
+						? `Desabilitar ${disableTargets.length} amostras`
+						: "Desabilitar amostra"}
+				</DialogTitle>
 				<DialogContent>
 					<Typography>
-						A amostra <strong>{disableTarget?.file_name}</strong> sai da
-						listagem, mas nada é apagado: os gates e os dados ficam
-						preservados e você pode reativá-la depois pelo filtro
-						“Mostrar desabilitadas”.
+						{disableTargets.length === 1 ? (
+							<>
+								A amostra <strong>{disableTargets[0]?.file_name}</strong> sai da
+								listagem,{" "}
+							</>
+						) : (
+							<>
+								As <strong>{disableTargets.length} amostras</strong>{" "}
+								selecionadas saem da listagem,{" "}
+							</>
+						)}
+						mas nada é apagado: os gates e os dados ficam preservados e você
+						pode reativar depois pelo filtro “Mostrar desabilitadas”.
 					</Typography>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setDisableTarget(null)}>Cancelar</Button>
+					<Button onClick={() => setDisableTargets([])}>Cancelar</Button>
 					<Button onClick={handleConfirmDisable} variant="contained">
 						Desabilitar
 					</Button>
