@@ -333,10 +333,26 @@ export function useExperimentPageActions() {
 	)
 
 	const handleMoveFileToSubsample = useCallback(
-		async (fileDataId: number, subsampleId: number | null) => {
+		async (fileDataIds: number[], subsampleId: number | null) => {
 			try {
-				await moveFileToSubsample(fileDataId, subsampleId)
-				toast.success("Amostra movida", { position: "bottom-right" })
+				// A API move uma amostra por PATCH (BE-07) — o lote é N chamadas.
+				const results = await Promise.allSettled(
+					fileDataIds.map((id) => moveFileToSubsample(id, subsampleId)),
+				)
+				const failed = results.filter((r) => r.status === "rejected").length
+				if (failed === 0) {
+					toast.success(
+						fileDataIds.length === 1
+							? "Amostra movida"
+							: `${fileDataIds.length} amostras movidas`,
+						{ position: "bottom-right" },
+					)
+				} else {
+					toast.warn(
+						`${fileDataIds.length - failed} movida(s), ${failed} falharam.`,
+						{ position: "bottom-right" },
+					)
+				}
 				invalidateExperiment()
 			} catch (error) {
 				toast.error(`Erro ao mover a amostra: ${extractErrorMessage(error)}`, {

@@ -1,4 +1,5 @@
 import {
+	Box,
 	Button,
 	Dialog,
 	DialogActions,
@@ -13,6 +14,7 @@ import {
 } from "@mui/material"
 import { useEffect, useState } from "react"
 import type { ExperimentFiles, Subsample } from "../../types"
+import { fetchFileHeaders } from "../../services/experimentService"
 
 /**
  * Cria ou renomeia um subsample. Com `target` é rename (mostra o `source_path`
@@ -140,32 +142,48 @@ export function ArchiveSubsampleDialog({
 	)
 }
 
-/** Move a amostra para outro subsample — ou para "Sem subsample" (null). */
+/**
+ * Move uma ou mais amostras para outro subsample — ou para "Sem subsample"
+ * (null). Com várias, o valor inicial é o subsample comum entre elas ("" se
+ * divergirem).
+ */
 export function MoveFileDialog({
-	file,
+	files,
 	subsamples,
 	onConfirm,
 	onClose,
 }: {
-	file: ExperimentFiles | null
+	files: ExperimentFiles[]
 	subsamples: Subsample[]
-	onConfirm: (fileDataId: number, subsampleId: number | null) => void
+	onConfirm: (fileDataIds: number[], subsampleId: number | null) => void
 	onClose: () => void
 }) {
 	const [selected, setSelected] = useState<string>("")
+	const single = files.length === 1 ? files[0] : null
 
 	useEffect(() => {
-		if (file) setSelected(file.subsample != null ? String(file.subsample) : "")
-	}, [file])
+		if (files.length === 0) return
+		const first = files[0].subsample ?? null
+		const same = files.every((f) => (f.subsample ?? null) === first)
+		setSelected(same && first !== null ? String(first) : "")
+	}, [files])
 
 	const active = subsamples.filter((s) => s.active)
 
 	return (
-		<Dialog open={!!file} onClose={onClose} fullWidth maxWidth="xs">
-			<DialogTitle>Mover amostra</DialogTitle>
+		<Dialog open={files.length > 0} onClose={onClose} fullWidth maxWidth="xs">
+			<DialogTitle>
+				{files.length > 1 ? `Mover ${files.length} amostras` : "Mover amostra"}
+			</DialogTitle>
 			<DialogContent>
 				<Typography variant="body2" sx={{ mb: 1.5 }}>
-					Mover <strong>{file?.file_name}</strong> para:
+					Mover{" "}
+					<strong>
+						{single
+							? single.file_name
+							: `${files.length} amostras selecionadas`}
+					</strong>{" "}
+					para:
 				</Typography>
 				<FormControl fullWidth size="small">
 					<InputLabel>Subsample</InputLabel>
@@ -190,13 +208,154 @@ export function MoveFileDialog({
 				<Button onClick={onClose}>Cancelar</Button>
 				<Button
 					onClick={() =>
-						file &&
-						onConfirm(file.id, selected === "" ? null : Number(selected))
+						onConfirm(
+							files.map((f) => f.id),
+							selected === "" ? null : Number(selected),
+						)
 					}
 					variant="contained"
 				>
 					Mover
 				</Button>
+			</DialogActions>
+		</Dialog>
+	)
+}
+
+// Keywords FCS mais úteis na prática — o resto fica na lista completa.
+const HEADER_LABELS: Record<string, string> = {
+	$date: "Data de aquisição",
+	$btim: "Início da aquisição",
+	$etim: "Fim da aquisição",
+	$cyt: "Equipamento",
+	$cytsn: "Nº de série do equipamento",
+	$cytnum: "Nº do equipamento",
+	$op: "Operador",
+	$inst: "Instituição",
+	$src: "Espécime/amostra",
+	$cells: "Células",
+	$exp: "Experimento (no FCS)",
+	$com: "Comentário",
+	fil: "Arquivo original",
+	tot: "Total de eventos",
+}
+
+const headerValue = (v: unknown): string =>
+	typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? "")
+
+/**
+ * Metadados do header FCS da amostra (`GET /experiment/file/<id>/headers`).
+ * Busca só ao abrir; amostras inativas também têm header legível.
+ */
+export function FileMetadataDialog({
+	file,
+	onClose,
+}: {
+	file: ExperimentFiles | null
+	onClose: () => void
+}) {
+	const [headers, setHeaders] = useState<Record<string, unknown> | null>(null)
+	const [error, setError] = useState<string | null>(null)
+	const [showAll, setShowAll] = useState(false)
+
+	useEffect(() => {
+		if (!file) {
+			setHeaders(null)
+			setError(null)
+			setShowAll(false)
+			return
+		}
+		let cancelled = false
+		fetchFileHeaders(file.id)
+			.then((res) => {
+				if (!cancelled) setHeaders(res.headers)
+			})
+			.catch(() => {
+				if (!cancelled) setError("Não foi possível carregar os metadados.")
+			})
+		return () => {
+			cancelled = true
+		}
+	}, [file])
+
+	const curated = Object.entries(HEADER_LABELS)
+		.filter(
+			([key]) => headers && headers[key] !== undefined && headers[key] !== "",
+		)
+		.map(([key, label]) => ({ label, value: headerValue(headers?.[key]) }))
+	const rest = headers
+		? Object.entries(headers).filter(([key]) => !(key in HEADER_LABELS))
+		: []
+
+	return (
+		<Dialog open={!!file} onClose={onClose} fullWidth maxWidth="xs">
+			<DialogTitle>Metadados — {file?.file_name}</DialogTitle>
+			<DialogContent>
+				{error && (
+					<Typography variant="body2" color="error">
+						{error}
+					</Typography>
+				)}
+				{!headers && !error && (
+					<Typography variant="body2" color="text.secondary">
+						Carregando…
+					</Typography>
+				)}
+				{headers && curated.length === 0 && (
+					<Typography variant="body2" color="text.secondary">
+						O header não traz campos conhecidos — veja a lista completa.
+					</Typography>
+				)}
+				{curated.map(({ label, value }) => (
+					<Box key={label} sx={{ display: "flex", gap: 1, py: 0.25 }}>
+						<Typography
+							variant="body2"
+							sx={{ color: "text.secondary", minWidth: 150 }}
+						>
+							{label}
+						</Typography>
+						<Typography variant="body2" sx={{ wordBreak: "break-word" }}>
+							{value}
+						</Typography>
+					</Box>
+				))}
+				{headers && rest.length > 0 && (
+					<>
+						<Button
+							size="small"
+							onClick={() => setShowAll((v) => !v)}
+							sx={{ mt: 1, textTransform: "none" }}
+						>
+							{showAll
+								? "Ocultar campos brutos"
+								: `Ver todos os campos (${rest.length})`}
+						</Button>
+						{showAll &&
+							rest.map(([key, value]) => (
+								<Box key={key} sx={{ display: "flex", gap: 1, py: 0.25 }}>
+									<Typography
+										variant="caption"
+										sx={{
+											color: "text.secondary",
+											minWidth: 150,
+											fontFamily: "monospace",
+										}}
+									>
+										{key}
+									</Typography>
+									<Typography
+										variant="caption"
+										sx={{ wordBreak: "break-word" }}
+									>
+										{headerValue(value)}
+									</Typography>
+								</Box>
+							))}
+					</>
+				)}
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onClose}>Fechar</Button>
 			</DialogActions>
 		</Dialog>
 	)

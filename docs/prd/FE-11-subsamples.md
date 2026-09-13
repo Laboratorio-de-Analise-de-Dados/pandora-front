@@ -86,6 +86,12 @@ mostrando uma lista plana de arquivos pelo basename. Sem a UI:
       da API no campo (aguarda verificação manual).
 - [x] Mover amostra entre subsamples e para "Sem subsample", com a listagem
       atualizada sem recarregar a página (idem).
+- [x] Seleção múltipla de amostras (checkbox) e movimentação em lote — a API
+      move uma por PATCH (BE-07), então o lote é `Promise.allSettled` com um
+      único refetch; falhas parciais reportam a contagem.
+- [x] Metadados do header FCS por amostra (ícone ℹ no nó do arquivo): data,
+      horário, equipamento, total de eventos e demais campos via
+      `GET /experiment/file/<id>/headers` (BE: `FileDataModel.headers`).
 - [x] Arquivar subsample não remove nenhuma amostra da listagem (DELETE do BE-07
       inativa e desvincula).
 - [x] Filtro "mostrar inativos" exibe subsamples arquivados (`include_inactive`
