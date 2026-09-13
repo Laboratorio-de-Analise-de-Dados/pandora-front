@@ -69,6 +69,10 @@ function ExperimentPageContent() {
 		handleRenameGate,
 		handleDisableFile,
 		handleEnableFile,
+		handleCreateSubsample,
+		handleRenameSubsample,
+		handleArchiveSubsample,
+		handleMoveFileToSubsample,
 		handleApplyGate,
 		handleConfirmApply,
 		handleUpdateExperiment,
@@ -160,6 +164,16 @@ function ExperimentPageContent() {
 					onApplyGate={handleApplyGate}
 					onDisableFile={handleDisableFile}
 					onEnableFile={handleEnableFile}
+					onCreateSubsample={
+						canEditExperiment ? handleCreateSubsample : undefined
+					}
+					onRenameSubsample={
+						canEditExperiment ? handleRenameSubsample : undefined
+					}
+					onArchiveSubsample={
+						canEditExperiment ? handleArchiveSubsample : undefined
+					}
+					onMoveFile={canEditExperiment ? handleMoveFileToSubsample : undefined}
 				/>
 			</Box>
 		</>
@@ -343,6 +357,7 @@ function ExperimentPageContent() {
 					open={!!deleteGateTarget}
 					target={deleteGateTarget}
 					files={experimentFiles}
+					subsamples={subsamples}
 					error={deleteGateError}
 					loading={deleteGateLoading}
 					onClose={() => setDeleteGateTarget(null)}

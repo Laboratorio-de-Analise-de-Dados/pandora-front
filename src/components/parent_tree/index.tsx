@@ -7,6 +7,7 @@ import {
 	MdVisibilityOff as DisableIcon,
 	MdRestoreFromTrash as EnableIcon,
 	MdFolder as FolderIcon,
+	MdCreateNewFolder as NewSubsampleIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -38,6 +39,11 @@ import {
 import { fmtPct } from "../../utils/format"
 import React, { useMemo, useState } from "react"
 import TreeNode from "./TreeNode"
+import {
+	ArchiveSubsampleDialog,
+	MoveFileDialog,
+	SubsampleFormDialog,
+} from "./dialogs"
 
 export interface SelectedSource {
 	type: "file" | "gate"
@@ -57,6 +63,7 @@ interface TreeHandlers {
 	onMenuOpen: (event: React.MouseEvent, gate: Gate) => void
 	onContextMenu: (event: React.MouseEvent, gate: Gate) => void
 	onFileMenuOpen: (event: React.MouseEvent, file: ExperimentFiles) => void
+	onSubsampleMenuOpen?: (event: React.MouseEvent, subsample: Subsample) => void
 }
 
 // Renderiza um gate e seus sub-gates recursivamente
@@ -289,6 +296,19 @@ const renderSubsampleGroup = (
 						{group.files.length}{" "}
 						{group.files.length === 1 ? "amostra" : "amostras"}
 					</Typography>
+					{group.subsample && handlers.onSubsampleMenuOpen && (
+						<IconButton
+							size="small"
+							onClick={(e) => {
+								e.stopPropagation()
+								handlers.onSubsampleMenuOpen?.(e, group.subsample!)
+							}}
+							sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
+							title="Opções do subsample"
+						>
+							<MoreVertIcon style={{ fontSize: 16 }} />
+						</IconButton>
+					)}
 				</Box>
 			}
 		>
@@ -306,6 +326,10 @@ export default function ParentTree({
 	onApplyGate,
 	onDisableFile,
 	onEnableFile,
+	onCreateSubsample,
+	onRenameSubsample,
+	onArchiveSubsample,
+	onMoveFile,
 }: {
 	files: ExperimentFiles[]
 	subsamples?: Subsample[]
@@ -315,6 +339,13 @@ export default function ParentTree({
 	onApplyGate?: (gateId: number, gateName: string) => void
 	onDisableFile?: (fileDataId: number) => void
 	onEnableFile?: (fileDataId: number) => void
+	onCreateSubsample?: (name: string) => Promise<string | null>
+	onRenameSubsample?: (
+		subsampleId: number,
+		name: string,
+	) => Promise<string | null>
+	onArchiveSubsample?: (subsampleId: number) => void
+	onMoveFile?: (fileDataId: number, subsampleId: number | null) => void
 }) {
 	const [renameTarget, setRenameTarget] = useState<{
 		id: number
@@ -333,12 +364,22 @@ export default function ParentTree({
 	} | null>(null)
 	const [contextGate, setContextGate] = useState<Gate | null>(null)
 
-	// Menu e confirmação por amostra (desabilitar / reativar)
+	// Menu e confirmação por amostra (desabilitar / reativar / mover)
 	const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null)
 	const [menuFile, setMenuFile] = useState<ExperimentFiles | null>(null)
 	const [disableTarget, setDisableTarget] = useState<ExperimentFiles | null>(
 		null,
 	)
+	const [moveTarget, setMoveTarget] = useState<ExperimentFiles | null>(null)
+
+	// Subsample: menu ⋮ do grupo + diálogo de criar/renomear + arquivar
+	const [subsampleMenuAnchor, setSubsampleMenuAnchor] =
+		useState<null | HTMLElement>(null)
+	const [menuSubsample, setMenuSubsample] = useState<Subsample | null>(null)
+	const [subsampleFormOpen, setSubsampleFormOpen] = useState(false)
+	const [subsampleFormTarget, setSubsampleFormTarget] =
+		useState<Subsample | null>(null)
+	const [archiveTarget, setArchiveTarget] = useState<Subsample | null>(null)
 
 	const groups = useMemo(
 		() => groupFilesBySubsample(files, subsamples),
@@ -368,6 +409,46 @@ export default function ParentTree({
 	const handleFileMenuEnable = () => {
 		if (menuFile && onEnableFile) onEnableFile(menuFile.id)
 		handleFileMenuClose()
+	}
+
+	const handleFileMenuMove = () => {
+		if (menuFile) setMoveTarget(menuFile)
+		handleFileMenuClose()
+	}
+
+	const handleSubsampleMenuOpen = (
+		event: React.MouseEvent,
+		subsample: Subsample,
+	) => {
+		event.stopPropagation()
+		setSubsampleMenuAnchor(event.currentTarget as HTMLElement)
+		setMenuSubsample(subsample)
+	}
+
+	const handleSubsampleMenuClose = () => {
+		setSubsampleMenuAnchor(null)
+		setMenuSubsample(null)
+	}
+
+	const handleSubsampleMenuRename = () => {
+		if (menuSubsample) {
+			setSubsampleFormTarget(menuSubsample)
+			setSubsampleFormOpen(true)
+		}
+		handleSubsampleMenuClose()
+	}
+
+	const handleSubsampleMenuArchive = () => {
+		if (menuSubsample) setArchiveTarget(menuSubsample)
+		handleSubsampleMenuClose()
+	}
+
+	const handleSubsampleFormSubmit = async (name: string) => {
+		if (subsampleFormTarget && onRenameSubsample) {
+			return onRenameSubsample(subsampleFormTarget.id, name)
+		}
+		if (onCreateSubsample) return onCreateSubsample(name)
+		return "Ação indisponível"
 	}
 
 	const handleConfirmDisable = () => {
@@ -461,6 +542,10 @@ export default function ParentTree({
 		onMenuOpen: handleMenuOpen,
 		onContextMenu: handleContextMenu,
 		onFileMenuOpen: handleFileMenuOpen,
+		onSubsampleMenuOpen:
+			onRenameSubsample || onArchiveSubsample
+				? handleSubsampleMenuOpen
+				: undefined,
 	}
 
 	return (
@@ -487,6 +572,20 @@ export default function ParentTree({
 						</Typography>
 					</Box>
 				</Tooltip>
+				{onCreateSubsample && (
+					<Tooltip title="Novo subsample" arrow>
+						<IconButton
+							size="small"
+							onClick={() => {
+								setSubsampleFormTarget(null)
+								setSubsampleFormOpen(true)
+							}}
+							sx={{ p: 0.25, ml: "auto" }}
+						>
+							<NewSubsampleIcon style={{ fontSize: 18 }} />
+						</IconButton>
+					</Tooltip>
+				)}
 			</Box>
 			<Box
 				role="tree"
@@ -596,6 +695,37 @@ export default function ParentTree({
 				)}
 			</Menu>
 
+			{/* Menu de ações do subsample */}
+			<Menu
+				anchorEl={subsampleMenuAnchor}
+				open={Boolean(subsampleMenuAnchor)}
+				onClose={handleSubsampleMenuClose}
+				anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+				transformOrigin={{ vertical: "top", horizontal: "right" }}
+				slotProps={{ paper: { sx: { minWidth: 180 } } }}
+			>
+				{onRenameSubsample && (
+					<MuiMenuItem onClick={handleSubsampleMenuRename} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<EditIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Renomear
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+				{onArchiveSubsample && (
+					<MuiMenuItem onClick={handleSubsampleMenuArchive} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<DisableIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Arquivar
+						</ListItemText>
+					</MuiMenuItem>
+				)}
+			</Menu>
+
 			{/* Menu de ações da amostra */}
 			<Menu
 				anchorEl={fileMenuAnchor}
@@ -605,6 +735,16 @@ export default function ParentTree({
 				transformOrigin={{ vertical: "top", horizontal: "right" }}
 				slotProps={{ paper: { sx: { minWidth: 200 } } }}
 			>
+				{onMoveFile && menuFile?.active !== false && (
+					<MuiMenuItem onClick={handleFileMenuMove} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<TransferIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Mover para subsample…
+						</ListItemText>
+					</MuiMenuItem>
+				)}
 				{menuFile?.active === false
 					? onEnableFile && (
 							<MuiMenuItem onClick={handleFileMenuEnable} dense>
@@ -627,6 +767,32 @@ export default function ParentTree({
 							</MuiMenuItem>
 						)}
 			</Menu>
+
+			<SubsampleFormDialog
+				open={subsampleFormOpen}
+				target={subsampleFormTarget}
+				onSubmit={handleSubsampleFormSubmit}
+				onClose={() => setSubsampleFormOpen(false)}
+			/>
+
+			<ArchiveSubsampleDialog
+				target={archiveTarget}
+				onConfirm={(id) => {
+					onArchiveSubsample?.(id)
+					setArchiveTarget(null)
+				}}
+				onClose={() => setArchiveTarget(null)}
+			/>
+
+			<MoveFileDialog
+				file={moveTarget}
+				subsamples={subsamples}
+				onConfirm={(fileDataId, subsampleId) => {
+					onMoveFile?.(fileDataId, subsampleId)
+					setMoveTarget(null)
+				}}
+				onClose={() => setMoveTarget(null)}
+			/>
 
 			<Dialog
 				open={!!disableTarget}

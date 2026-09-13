@@ -1,7 +1,8 @@
 import CytometryApi from "../API"
 import type { Gate, GateCoordinates, NewGate, PlotViewConfig } from "../types"
 
-export type GateScope = "file" | "experiment"
+/** `subsample` = amostras ativas do mesmo subsample da amostra alvo (BE-07). */
+export type GateScope = "file" | "subsample" | "experiment"
 
 export interface GateUpdatePayload {
 	name?: string

@@ -15,6 +15,12 @@ import {
 	updateGate,
 } from "../../../services/gateService"
 import type { ApplyGateConflict } from "../../../services/gateService"
+import {
+	archiveSubsample,
+	createSubsample,
+	moveFileToSubsample,
+	renameSubsample,
+} from "../../../services/subsampleService"
 import type {
 	DeleteGateOptions,
 	DeleteGateTarget,
@@ -54,6 +60,7 @@ export function useExperimentPageActions() {
 	const navigate = useNavigate()
 	const {
 		experiment,
+		experimentId,
 		experimentFiles,
 		source,
 		setSource,
@@ -276,6 +283,70 @@ export function useExperimentPageActions() {
 		[invalidateExperiment],
 	)
 
+	// Subsamples (BE-07): create/rename devolvem mensagem de erro para o campo
+	// (nome duplicado vira 400 na API); archive/move toasteiam e invalidam.
+	const handleCreateSubsample = useCallback(
+		async (name: string): Promise<string | null> => {
+			try {
+				await createSubsample(experimentId, name)
+				toast.success("Subsample criado", { position: "bottom-right" })
+				invalidateExperiment()
+				return null
+			} catch (error) {
+				return extractErrorMessage(error)
+			}
+		},
+		[experimentId, invalidateExperiment],
+	)
+
+	const handleRenameSubsample = useCallback(
+		async (subsampleId: number, name: string): Promise<string | null> => {
+			try {
+				await renameSubsample(experimentId, subsampleId, name)
+				toast.success("Subsample renomeado", { position: "bottom-right" })
+				invalidateExperiment()
+				return null
+			} catch (error) {
+				return extractErrorMessage(error)
+			}
+		},
+		[experimentId, invalidateExperiment],
+	)
+
+	const handleArchiveSubsample = useCallback(
+		async (subsampleId: number) => {
+			try {
+				await archiveSubsample(experimentId, subsampleId)
+				toast.success(
+					"Subsample arquivado. As amostras ficaram sem subsample.",
+					{ position: "bottom-right" },
+				)
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(
+					`Erro ao arquivar o subsample: ${extractErrorMessage(error)}`,
+					{ position: "bottom-right" },
+				)
+			}
+		},
+		[experimentId, invalidateExperiment],
+	)
+
+	const handleMoveFileToSubsample = useCallback(
+		async (fileDataId: number, subsampleId: number | null) => {
+			try {
+				await moveFileToSubsample(fileDataId, subsampleId)
+				toast.success("Amostra movida", { position: "bottom-right" })
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(`Erro ao mover a amostra: ${extractErrorMessage(error)}`, {
+					position: "bottom-right",
+				})
+			}
+		},
+		[invalidateExperiment],
+	)
+
 	const handleApplyGate = useCallback(
 		(gateId: number, gateName: string) => {
 			const file = findFileForGate(experimentFiles, gateId)
@@ -375,6 +446,10 @@ export function useExperimentPageActions() {
 		handleRenameGate,
 		handleDisableFile,
 		handleEnableFile,
+		handleCreateSubsample,
+		handleRenameSubsample,
+		handleArchiveSubsample,
+		handleMoveFileToSubsample,
 		handleUpdateExperiment,
 		savingExperiment,
 		canEditExperiment,

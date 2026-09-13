@@ -43,7 +43,7 @@ export function useGateMutations(loadFile: () => void) {
 					gate_coordinates: coords,
 					scope,
 				})
-				if (scope === "experiment") {
+				if (scope !== "file") {
 					toast.success(
 						`Geometria aplicada em ${result.propagated_gate_ids.length + 1} amostra(s)`,
 						TOAST_POS,
@@ -85,7 +85,7 @@ export function useGateMutations(loadFile: () => void) {
 		): Promise<string | null> => {
 			try {
 				const result = await updateGate(gateId, { name, color, scope })
-				if (scope === "experiment") {
+				if (scope !== "file") {
 					toast.success(
 						`Gate atualizado em ${result.propagated_gate_ids.length + 1} amostra(s)`,
 						TOAST_POS,

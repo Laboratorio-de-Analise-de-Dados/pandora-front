@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Item do doc:** — (levantado em 12/09) · **Tipo:** feature · **Base:** `main`
 **Branch sugerida:** `feat/subsamples-ui`
-**Status:** não iniciado. Depende do backend `pandora-backend/docs/prd/BE-07-subsamples.md` (PR #78).
+**Status:** em andamento — árvore agrupada, gestão (criar/renomear/arquivar/mover) e escopo `"subsample"` entregues em `refactor/node-26-upgrade`. Backend entregue em `pandora-backend/docs/prd/BE-07-subsamples.md` (PR #78, mergeado).
 
 ## Problema
 
@@ -63,14 +63,16 @@ mostrando uma lista plana de arquivos pelo basename. Sem a UI:
   "nas amostras deste subsample", entre "apenas nesta amostra" e "em todas".
 - A opção só aparece quando a amostra atual tem subsample.
 - Continua valendo o `dry_run` antes de sobrescrever (ADR-0004).
-- **Bloqueado** até a parte 2 do BE-07 existir na API.
 
 ## Arquivos a tocar
 
-- `src/services/subsampleService.ts` (novo) — `fetchSubsamples`, `createSubsample`,
-  `renameSubsample`, `archiveSubsample`, `moveFileToSubsample` + tipagens.
-- `src/hooks/useSubsamples.ts` (novo) — estado, loading/erro, invalidação da
-  listagem de amostras após mover/arquivar.
+- `src/services/subsampleService.ts` (novo) — ✅ `fetchSubsamples`, `createSubsample`,
+  `renameSubsample`, `archiveSubsample`, `moveFileToSubsample`.
+- `useSubsamplesQuery` em `src/features/experiment/hooks/useExperimentData.ts` +
+  `subsamples` no `ExperimentWorkspaceContext` — ✅ (hook separado
+  `useSubsamples.ts` virou desnecessário com o contexto do workspace).
+- Handlers em `useExperimentPageActions` — ✅ create/rename devolvem erro para
+  o campo; archive/move toasteiam e invalidam.
 - `src/components/parent_tree/index.tsx` — ✅ reestruturado (3 níveis,
   `TreeNode` próprio, `@mui/x-tree-view` removido).
 - Diálogos de escopo existentes.
@@ -79,17 +81,21 @@ mostrando uma lista plana de arquivos pelo basename. Sem a UI:
 ## Critérios de aceite
 
 - [x] Amostras aparecem agrupadas por subsample, com contagem, e a raiz do ZIP
-      cai em "Sem subsample" (aguarda o campo `subsample` na API do BE-07).
-- [ ] Criar, renomear e arquivar subsample pela UI; nome duplicado mostra o erro
-      da API no campo.
-- [ ] Mover amostra entre subsamples e para "Sem subsample", com a listagem
-      atualizada sem recarregar a página.
-- [ ] Arquivar subsample não remove nenhuma amostra da listagem.
-- [ ] Filtro "mostrar inativos" exibe subsamples arquivados.
+      cai em "Sem subsample".
+- [x] Criar, renomear e arquivar subsample pela UI; nome duplicado mostra o erro
+      da API no campo (aguarda verificação manual).
+- [x] Mover amostra entre subsamples e para "Sem subsample", com a listagem
+      atualizada sem recarregar a página (idem).
+- [x] Arquivar subsample não remove nenhuma amostra da listagem (DELETE do BE-07
+      inativa e desvincula).
+- [x] Filtro "mostrar inativos" exibe subsamples arquivados (`include_inactive`
+      segue o toggle de amostras).
 - [ ] Layout mobile-first (ADR-0002): grupos colapsáveis no `xs`, sem overflow
       horizontal.
-- [ ] Nenhuma chamada de API fora de `services/` (ADR-0001).
-- [ ] Escopo "deste subsample" nos diálogos — **após** a parte 2 do BE-07.
+- [x] Nenhuma chamada de API fora de `services/` (ADR-0001).
+- [x] Escopo "deste subsample" nos diálogos de nome/cor, exclusão em lote e
+      reshape — aparece só quando a amostra atual tem subsample; `dry_run`
+      continua valendo (ADR-0004).
 
 ## Fora de escopo
 

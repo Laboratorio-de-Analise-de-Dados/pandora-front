@@ -7,7 +7,7 @@ import {
 	useMediaQuery,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { Gate, Scale } from "../../types"
 import type { GateScope } from "../../services/gateService"
@@ -98,7 +98,16 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setPlotMode,
 	} = plotState
 
-	const { invalidateExperiment, experimentFiles } = useExperimentWorkspace()
+	const { invalidateExperiment, experimentFiles, subsamples } =
+		useExperimentWorkspace()
+
+	// Nome do subsample da amostra atual — habilita o escopo "subsample" nos
+	// diálogos (só existe quando a amostra está agrupada, BE-07).
+	const currentSubsampleName = useMemo(() => {
+		const file = experimentFiles.find((f) => f.id === fileDataId)
+		if (file?.subsample == null) return undefined
+		return subsamples.find((s) => s.id === file.subsample)?.name
+	}, [experimentFiles, fileDataId, subsamples])
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -702,6 +711,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				name={editGateName}
 				color={editGateColor}
 				scope={editGateScope}
+				subsampleName={currentSubsampleName}
 				error={editGateError}
 				saving={savingGate}
 				onNameChange={setEditGateName}
@@ -717,6 +727,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					childGates.find((g) => g.id === pendingReshape?.gateId)?.name ?? ""
 				}
 				familySize={pendingReshape?.familySize ?? 0}
+				subsampleName={currentSubsampleName}
 				onConfirm={confirmReshape}
 				onCancel={cancelReshape}
 			/>
