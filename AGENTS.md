@@ -33,7 +33,10 @@ builda e publica a imagem Docker. A verificação é responsabilidade local:
 2. `yarn test` — testes passando (existem poucos; adicione se criar lógica nova)
 3. `yarn build` — se a mudança afetar imports, config ou build
 
-Não há script de lint configurado — o `.prettierrc` é a referência de estilo.
+Pre-commit (husky): `lint-staged` aplica `prettier --write` nos arquivos
+staged + `yarn typecheck`; `commit-msg` valida conventional commits
+(commitlint). Não há eslint configurado — `.prettierrc` é a referência de
+estilo.
 
 ## Estilo de código
 
@@ -54,6 +57,21 @@ Definido pelo `.prettierrc` e observado no código existente:
 - Data fetching **sempre** via TanStack Query — nunca `useState` + `useEffect` para API
 - Funções puras em `utils/` (testáveis); estado/side-effects em custom hooks
 - Testes colocados ao lado do código: `foo.ts` → `foo.test.ts`
+
+## Regra de dependência (ADR-0001, ADR-0008)
+
+Dependência unidirecional: `components → hooks → services + núcleo`.
+
+- **Núcleo** (`src/types/`, `src/utils/`, `src/features/*/utils/`): TS puro.
+  **Proibido** importar `react`, `@mui/*`, `axios`, `plotly*` ou libs de UI —
+  exceção apenas para `import type` de tipos de dados.
+- **`src/services/`**: único lugar que fala HTTP (via `src/API`). Sem React.
+- **Hooks/contexts**: única camada que conhece React; adaptam o núcleo.
+- **Components/pages**: só renderização; nunca `axios` nem lógica de domínio
+  duplicada.
+
+Antes de codar em área de decisão arquitetural, consulte `docs/adr/` (índice em
+`docs/README.md`).
 
 ## Peculiaridades (leia antes de mexer)
 
