@@ -2,8 +2,8 @@
 
 **Repo:** pandora-front · **Tipo:** refactor · **Base:** `main`
 **Branch sugerida:** `refactor/experiment-actions`
-**Status:** não iniciado. Decisão: ADR-0012. Depende de FE-17
-(`extractErrorMessage` compartilhado).
+**Status:** implementado em `refactor/experiment-actions` — depende de
+merge. Decisão: ADR-0012.
 
 ## Problema
 

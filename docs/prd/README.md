@@ -18,10 +18,10 @@
 | [FE-14](FE-14-selecao-multipla-e-metadados-fcs.md)    | Seleção múltipla e metadados do header FCS            | Na branch `refactor/node-26-upgrade`          |
 | [FE-15](FE-15-copiar-mover-experimento.md)            | Copiar/mover experimento entre contextos              | Implementado (depende do merge do BE-11)      |
 | [FE-16](FE-16-aviso-upload-duplicado.md)              | Aviso de arquivo duplicado no upload                  | Implementado (depende do merge do BE-12)      |
-| [FE-17](FE-17-camada-http-completa-e-utilitarios.md)  | Camada HTTP completa + utilitários compartilhados     | Não iniciado                                  |
+| [FE-17](FE-17-camada-http-completa-e-utilitarios.md)  | Camada HTTP completa + utilitários compartilhados     | Implementado em `refactor/http-layer`         |
 | [FE-18](FE-18-decompor-parent-tree.md)                | Decompor o ParentTree em componentes por nó           | Implementado em `refactor/parent-tree`        |
-| [FE-19](FE-19-dividir-use-experiment-page-actions.md) | Dividir useExperimentPageActions por domínio          | Não iniciado (depois do FE-17)                |
-| [FE-20](FE-20-reorganizar-pages-e-features.md)        | Reorganizar page/ vs components/ e concluir features/ | Não iniciado (depois de FE-18/FE-19)          |
+| [FE-19](FE-19-dividir-use-experiment-page-actions.md) | Dividir useExperimentPageActions por domínio          | Implementado em `refactor/experiment-actions` |
+| [FE-20](FE-20-reorganizar-pages-e-features.md)        | Reorganizar page/ vs components/ e concluir features/ | Implementado em `refactor/dir-layout`         |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
