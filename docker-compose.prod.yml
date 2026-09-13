@@ -1,0 +1,14 @@
+services:
+  frontend:
+    image: "${DOCKER_USER}/pandora-front:${IMAGE_TAG}"
+    container_name: pandora_frontend
+    expose:
+      - "80"
+    environment:
+      - VITE_API_URL=https://api.project-pandora.com.br
+    networks:
+      - pandora_net
+
+networks:
+  pandora_net:
+    external: true

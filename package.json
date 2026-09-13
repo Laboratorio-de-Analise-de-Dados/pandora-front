@@ -37,8 +37,8 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"dev:docker:build": "docker compose -f docker-compose.dev.yml up --build",
-		"dev:docker": "docker compose -f docker-compose.dev.yml up",
+		"dev:docker:build": "docker compose up --build",
+		"dev:docker": "docker compose up",
 		"prepare": "husky"
 	},
 	"lint-staged": {

@@ -57,15 +57,20 @@ pnpm dev:docker:build   # primeira vez
 pnpm dev:docker         # vezes seguintes
 ```
 
-Usa `docker-compose.dev.yml` com volumes montados para hot reload.
+Usa `docker-compose.yml` com volumes montados para hot reload — mesma
+convenção do backend: arquivo sem sufixo = ambiente local, `.prod` = produção.
 
 ### Producao
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-O `Dockerfile` faz build multi-stage: Node para compilar, Nginx para servir. O container se conecta a rede `pandora_net` para comunicar com o backend.
+O compose de prod não builda — faz pull da imagem publicada pelo CI
+(`DOCKER_USER`/`IMAGE_TAG` como env). O `Dockerfile` faz build multi-stage:
+Node para compilar, Nginx para servir. O container se conecta a rede
+`pandora_net` para comunicar com o backend.
 
 ---
 
