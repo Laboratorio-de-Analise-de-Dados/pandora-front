@@ -1,5 +1,7 @@
 import {
+	Box,
 	Button,
+	Chip,
 	Dialog,
 	DialogActions,
 	DialogContent,
@@ -227,12 +229,16 @@ export function MoveFileDialog({
 	)
 }
 
-// Keywords FCS mais úteis na prática — o resto fica na lista completa.
+// Keywords que sobem pro cabeçalho do diálogo (info de primeira vista).
+const SUMMARY_LABELS: Record<string, string> = {
+	$date: "Data do experimento",
+	$cyt: "Citômetro",
+}
+
+// Keywords FCS úteis na tabela — o resto fica na lista completa.
 const HEADER_LABELS: Record<string, string> = {
-	$date: "Data de aquisição",
 	$btim: "Início da aquisição",
 	$etim: "Fim da aquisição",
-	$cyt: "Equipamento",
 	$cytsn: "Nº de série do equipamento",
 	$cytnum: "Nº do equipamento",
 	$op: "Operador",
@@ -325,22 +331,51 @@ export function FileMetadataDialog({
 		}
 	}, [file])
 
+	const summary = headers
+		? Object.entries(SUMMARY_LABELS)
+				.filter(([key]) => headers[key] !== undefined && headers[key] !== "")
+				.map(([key, label]) => ({
+					key,
+					label,
+					value: headerValue(headers[key]),
+				}))
+		: []
 	const curated: [string, unknown][] = headers
 		? Object.entries(HEADER_LABELS)
 				.filter(([key]) => headers[key] !== undefined && headers[key] !== "")
 				.map(([key, label]) => [label, headers[key]])
 		: []
 	const rest = headers
-		? Object.entries(headers).filter(([key]) => !(key in HEADER_LABELS))
+		? Object.entries(headers).filter(
+				([key]) => !(key in HEADER_LABELS) && !(key in SUMMARY_LABELS),
+			)
 		: []
 
 	return (
 		<Dialog open={!!file} onClose={onClose} fullWidth maxWidth="sm">
 			<DialogTitle sx={{ pb: 1 }}>
 				Metadados do arquivo
-				<Typography variant="body2" color="text.secondary" noWrap>
-					{file?.file_name}
-				</Typography>
+				<Box
+					sx={{
+						display: "flex",
+						flexWrap: "wrap",
+						alignItems: "center",
+						gap: 0.75,
+						mt: 0.5,
+					}}
+				>
+					<Typography variant="body2" color="text.secondary" noWrap>
+						{file?.file_name}
+					</Typography>
+					{summary.map(({ key, label, value }) => (
+						<Chip
+							key={key}
+							size="small"
+							variant="outlined"
+							label={`${label}: ${value}`}
+						/>
+					))}
+				</Box>
 			</DialogTitle>
 			<DialogContent>
 				{error && (
