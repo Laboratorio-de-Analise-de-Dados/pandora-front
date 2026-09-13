@@ -237,10 +237,10 @@ const renderFile = (
 			key={`file-${file.id}`}
 			depth={depth}
 			onSelect={
-				inactive
-					? undefined
-					: selecting
-						? () => handlers.onToggleFile?.(file.id)
+				selecting
+					? () => handlers.onToggleFile?.(file.id)
+					: inactive
+						? undefined
 						: () =>
 								handlers.onSelect({
 									type: "file",
@@ -510,18 +510,22 @@ export default function ParentTree({
 	}
 
 	const selectedFiles = files.filter((f) => selectedFileIds.has(f.id))
+	// Mover vale para qualquer amostra; desabilitar só as ativas, reativar só
+	// as inativas (visíveis só com "Mostrar desabilitadas" ligado).
+	const activeSelected = selectedFiles.filter((f) => f.active !== false)
+	const inactiveSelected = selectedFiles.filter((f) => f.active === false)
 
 	const handleMoveSelected = () => {
 		if (selectedFiles.length > 0) setMoveTargets(selectedFiles)
 	}
 
 	const handleDisableSelected = () => {
-		if (selectedFiles.length > 0) setDisableTargets(selectedFiles)
+		if (activeSelected.length > 0) setDisableTargets(activeSelected)
 	}
 
 	const handleEnableSelected = () => {
-		if (selectedFiles.length > 0 && onEnableFile)
-			onEnableFile(selectedFiles.map((f) => f.id))
+		if (inactiveSelected.length > 0 && onEnableFile)
+			onEnableFile(inactiveSelected.map((f) => f.id))
 	}
 
 	const handleSubsampleMenuOpen = (
@@ -721,20 +725,22 @@ export default function ParentTree({
 						)}
 						{onDisableFile && (
 							<Chip
-								label={`Desabilitar ${selectedFileIds.size}`}
+								label={`Desabilitar ${activeSelected.length}`}
 								size="small"
 								color="warning"
 								variant="outlined"
+								disabled={activeSelected.length === 0}
 								onClick={handleDisableSelected}
 								sx={{ height: 22, fontSize: "0.7rem" }}
 							/>
 						)}
 						{onEnableFile && (
 							<Chip
-								label={`Reativar ${selectedFileIds.size}`}
+								label={`Reativar ${inactiveSelected.length}`}
 								size="small"
 								color="success"
 								variant="outlined"
+								disabled={inactiveSelected.length === 0}
 								onClick={handleEnableSelected}
 								sx={{ height: 22, fontSize: "0.7rem" }}
 							/>
