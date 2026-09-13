@@ -230,25 +230,30 @@ export function MoveFileDialog({
 }
 
 // Keywords que sobem pro cabeçalho do diálogo (info de primeira vista).
+// Chaves como o backend persiste: readfcs.view() → minúsculas, sem "$".
 const SUMMARY_LABELS: Record<string, string> = {
-	$date: "Data do experimento",
-	$cyt: "Citômetro",
+	date: "Data do experimento",
+	cyt: "Citômetro",
 }
 
 // Keywords FCS úteis na tabela — o resto fica na lista completa.
 const HEADER_LABELS: Record<string, string> = {
-	$btim: "Início da aquisição",
-	$etim: "Fim da aquisição",
-	$cytsn: "Nº de série do equipamento",
-	$cytnum: "Nº do equipamento",
-	$op: "Operador",
-	$inst: "Instituição",
-	$src: "Espécime/amostra",
-	$cells: "Células",
-	$exp: "Experimento (no FCS)",
-	$com: "Comentário",
+	btim: "Início da aquisição",
+	etim: "Fim da aquisição",
+	cytnum: "Nº de série do equipamento",
+	op: "Operador",
+	inst: "Instituição",
+	src: "Espécime/amostra",
+	"experiment name": "Experimento",
+	"tube name": "Tubo",
+	"plate name": "Placa",
+	"plate id": "ID da placa",
+	"well id": "Poço (well)",
+	"export time": "Exportado em",
+	"export user name": "Exportado por",
 	fil: "Arquivo original",
 	tot: "Total de eventos",
+	par: "Parâmetros",
 }
 
 const headerValue = (v: unknown): string =>

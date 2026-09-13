@@ -39,8 +39,10 @@ Duas fricções na árvore do experimento:
   edição) abre `FileMetadataDialog`.
 - Fetch sob demanda ao abrir: `GET /experiment/file/<id>/headers` via
   `fetchFileHeaders` em `services/experimentService.ts`.
-- Campos conhecidos com label amigável (`$date`, `$btim`/`$etim`, `$cyt`,
-  `$op`, `tot`, ...); demais keywords atrás de "Ver todos os campos (N)" —
+- `date` e `cyt` sobem como chips no cabeçalho do diálogo; demais campos
+  conhecidos com label amigável (`btim`/`etim`, `op`, `tot`, `plate id`,
+  `well id`, ...); keywords restantes atrás de "Ver todos os campos (N)" —
+  o backend persiste as chaves minúsculas e sem `$`, como o `readfcs` emite —
   nada do header é descartado na UI.
 - Estados: carregando, erro ("Não foi possível carregar") e header sem campos
   conhecidos (aponta para a lista completa).
