@@ -12,15 +12,15 @@ React 18 + TypeScript (strict) + Vite + MUI 7 + Plotly + TanStack Query 5.
 
 | Tarefa                | Comando                            |
 | --------------------- | ---------------------------------- |
-| Instalar dependências | `yarn install`                     |
-| Dev server            | `yarn dev` → http://localhost:3000 |
-| Typecheck             | `yarn typecheck` (`tsc --noEmit`)  |
-| Testes                | `yarn test` (Vitest + jsdom)       |
-| Build                 | `yarn build` → saída em `build/`   |
-| Dev com Docker        | `yarn dev:docker`                  |
+| Instalar dependências | `pnpm install`                     |
+| Dev server            | `pnpm dev` → http://localhost:3000 |
+| Typecheck             | `pnpm typecheck` (`tsc --noEmit`)  |
+| Testes                | `pnpm test` (Vitest + jsdom)       |
+| Build                 | `pnpm build` → saída em `build/`   |
+| Dev com Docker        | `pnpm dev:docker`                  |
 
-- Gerenciador de pacotes: **Yarn 1.x Classic**. Não use `npm install` (o
-  `package-lock.json` é legado; a fonte de verdade é o `yarn.lock`).
+- Gerenciador de pacotes: **pnpm 12** (`packageManager` no package.json).
+  Fonte de verdade é o `pnpm-lock.yaml` — não use `npm` nem `yarn`.
 - Backend esperado em `http://localhost:8085`; configurar `VITE_API_URL` no `.env`
   (ver `.env.example`).
 
@@ -29,12 +29,12 @@ React 18 + TypeScript (strict) + Vite + MUI 7 + Plotly + TanStack Query 5.
 O CI (`/.github/workflows/ci.yml`) **não** roda typecheck nem testes — ele só
 builda e publica a imagem Docker. A verificação é responsabilidade local:
 
-1. `yarn typecheck` — sem erros
-2. `yarn test` — testes passando (existem poucos; adicione se criar lógica nova)
-3. `yarn build` — se a mudança afetar imports, config ou build
+1. `pnpm typecheck` — sem erros
+2. `pnpm test` — testes passando (existem poucos; adicione se criar lógica nova)
+3. `pnpm build` — se a mudança afetar imports, config ou build
 
 Pre-commit (husky): `lint-staged` aplica `prettier --write` nos arquivos
-staged + `yarn typecheck`; `commit-msg` valida conventional commits
+staged + `pnpm typecheck`; `commit-msg` valida conventional commits
 (commitlint). Não há eslint configurado — `.prettierrc` é a referência de
 estilo.
 

@@ -27,8 +27,9 @@ yarn-error.log*
 
 .env
 
-# lockfile concorrente — yarn.lock é a fonte de verdade
+# lockfiles concorrentes — pnpm-lock.yaml é a fonte de verdade
 package-lock.json
+yarn.lock
 
 # artefato incremental do tsc
 tsconfig.tsbuildinfo

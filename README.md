@@ -9,7 +9,7 @@ Construido com [React](https://react.dev/) 18, [TypeScript](https://www.typescri
 ## Requisitos
 
 - **Node.js** 22+ (recomendado 26 — imagem `node:26-slim` no Docker)
-- **Yarn** 1.x (Classic)
+- **pnpm** 12+
 - **Backend** [pandora-backend](https://github.com/Laboratorio-de-Analise-de-Dados/pandora-backend) rodando (para API)
 
 ## Setup Rapido
@@ -20,7 +20,7 @@ git clone https://github.com/Laboratorio-de-Analise-de-Dados/pandora-front.git
 cd pandora-front
 
 # 2. Instale as dependencias
-yarn install
+pnpm install
 
 # 3. Configure as variaveis de ambiente
 cp .env.example .env
@@ -39,22 +39,22 @@ cp .env.example .env
 
 | Comando                 | Descricao                                                                                    |
 | ----------------------- | -------------------------------------------------------------------------------------------- |
-| `yarn dev`              | Servidor de desenvolvimento em [http://localhost:3000](http://localhost:3000) com hot reload |
-| `yarn build`            | Build de producao na pasta `build/`                                                          |
-| `yarn preview`          | Servidor local para visualizar o build de producao                                           |
-| `yarn typecheck`        | Verificacao de tipos (`tsc --noEmit`)                                                        |
-| `yarn test`             | Roda testes com [Vitest](https://vitest.dev/)                                                |
-| `yarn test:watch`       | Testes em modo interativo                                                                    |
-| `yarn dev:docker:build` | Dev com Docker (build + up)                                                                  |
-| `yarn dev:docker`       | Dev com Docker (up)                                                                          |
+| `pnpm dev`              | Servidor de desenvolvimento em [http://localhost:3000](http://localhost:3000) com hot reload |
+| `pnpm build`            | Build de producao na pasta `build/`                                                          |
+| `pnpm preview`          | Servidor local para visualizar o build de producao                                           |
+| `pnpm typecheck`        | Verificacao de tipos (`tsc --noEmit`)                                                        |
+| `pnpm test`             | Roda testes com [Vitest](https://vitest.dev/)                                                |
+| `pnpm test:watch`       | Testes em modo interativo                                                                    |
+| `pnpm dev:docker:build` | Dev com Docker (build + up)                                                                  |
+| `pnpm dev:docker`       | Dev com Docker (up)                                                                          |
 
 ## Docker
 
 ### Desenvolvimento (hot reload)
 
 ```bash
-yarn dev:docker:build   # primeira vez
-yarn dev:docker         # vezes seguintes
+pnpm dev:docker:build   # primeira vez
+pnpm dev:docker         # vezes seguintes
 ```
 
 Usa `docker-compose.dev.yml` com volumes montados para hot reload.
@@ -183,9 +183,9 @@ ExperimentWorkspaceProvider (Context)
 3. **Verifique antes de commitar**:
 
    ```bash
-   yarn typecheck    # tipos ok?
-   yarn build        # build ok?
-   yarn test         # testes passando?
+   pnpm typecheck    # tipos ok?
+   pnpm build        # build ok?
+   pnpm test         # testes passando?
    ```
 
 4. **Commit com mensagens semanticas**:
@@ -240,9 +240,9 @@ ExperimentWorkspaceProvider (Context)
 
 ### Checklist do PR
 
-- [ ] `yarn typecheck` passa sem erros
-- [ ] `yarn build` compila com sucesso
-- [ ] `yarn test` passa (se testes existem para a area modificada)
+- [ ] `pnpm typecheck` passa sem erros
+- [ ] `pnpm build` compila com sucesso
+- [ ] `pnpm test` passa (se testes existem para a area modificada)
 - [ ] Sem `any` desnecessarios adicionados
 - [ ] Codigo duplicado foi extraido para `utils/` ou `hooks/`
 - [ ] Componentes grandes foram decompostos

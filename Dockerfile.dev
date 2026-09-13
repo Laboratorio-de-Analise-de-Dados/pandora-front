@@ -2,16 +2,14 @@ FROM node:26-slim
 
 WORKDIR /app
 
-COPY package.json yarn.lock ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN npm install -g yarn
+RUN npm install -g pnpm
 
-RUN yarn config set network-timeout 600000 -g
-
-RUN yarn install
+RUN pnpm install
 
 COPY . .
 
 EXPOSE 3000
 
-CMD ["yarn", "dev"]
+CMD ["pnpm", "dev"]
