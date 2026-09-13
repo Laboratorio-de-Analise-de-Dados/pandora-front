@@ -231,15 +231,29 @@ export function useExperimentPageActions() {
 	)
 
 	const handleDisableFile = useCallback(
-		async (fileDataId: number) => {
+		async (fileDataIds: number[]) => {
 			try {
-				await disableFileData(fileDataId)
-				toast.success("Amostra desabilitada. Os gates foram preservados.", {
-					position: "bottom-right",
-				})
-				if (source?.fileDataId === fileDataId) {
+				// API é uma amostra por chamada — lote = allSettled + um refetch.
+				const results = await Promise.allSettled(
+					fileDataIds.map((id) => disableFileData(id)),
+				)
+				const failed = results.filter((r) => r.status === "rejected").length
+				const done = fileDataIds.length - failed
+				if (failed === 0) {
+					toast.success(
+						done === 1
+							? "Amostra desabilitada. Os gates foram preservados."
+							: `${done} amostras desabilitadas. Os gates foram preservados.`,
+						{ position: "bottom-right" },
+					)
+				} else {
+					toast.warn(`${done} desabilitada(s), ${failed} falharam.`, {
+						position: "bottom-right",
+					})
+				}
+				if (source && fileDataIds.includes(source.fileDataId)) {
 					const next = experimentFiles.find(
-						(file) => file.id !== fileDataId && file.active !== false,
+						(file) => !fileDataIds.includes(file.id) && file.active !== false,
 					)
 					setSource(
 						next
@@ -266,10 +280,23 @@ export function useExperimentPageActions() {
 	)
 
 	const handleEnableFile = useCallback(
-		async (fileDataId: number) => {
+		async (fileDataIds: number[]) => {
 			try {
-				await enableFileData(fileDataId)
-				toast.success("Amostra reativada", { position: "bottom-right" })
+				const results = await Promise.allSettled(
+					fileDataIds.map((id) => enableFileData(id)),
+				)
+				const failed = results.filter((r) => r.status === "rejected").length
+				const done = fileDataIds.length - failed
+				if (failed === 0) {
+					toast.success(
+						done === 1 ? "Amostra reativada" : `${done} amostras reativadas`,
+						{ position: "bottom-right" },
+					)
+				} else {
+					toast.warn(`${done} reativada(s), ${failed} falharam.`, {
+						position: "bottom-right",
+					})
+				}
 				invalidateExperiment()
 			} catch (error) {
 				toast.error(

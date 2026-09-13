@@ -8,7 +8,6 @@ import {
 	MdRestoreFromTrash as EnableIcon,
 	MdFolder as FolderIcon,
 	MdCreateNewFolder as NewSubsampleIcon,
-	MdSelectAll as SelectAllIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -24,6 +23,7 @@ import {
 	ListItemText,
 	Menu,
 	MenuItem as MuiMenuItem,
+	Select,
 	TextField,
 	Tooltip,
 	Typography,
@@ -61,8 +61,8 @@ interface TreeHandlers {
 	onDeleteGate?: (gateId: number, gateName: string) => void
 	onRenameGate?: (gateId: number, newName: string) => void
 	onApplyGate?: (gateId: number, gateName: string) => void
-	onDisableFile?: (fileDataId: number) => void
-	onEnableFile?: (fileDataId: number) => void
+	onDisableFile?: (fileDataIds: number[]) => void
+	onEnableFile?: (fileDataIds: number[]) => void
 	onMenuOpen: (event: React.MouseEvent, gate: Gate) => void
 	onContextMenu: (event: React.MouseEvent, gate: Gate) => void
 	onFileMenuOpen: (event: React.MouseEvent, file: ExperimentFiles) => void
@@ -386,8 +386,8 @@ export default function ParentTree({
 	onDeleteGate?: (gateId: number, gateName: string) => void
 	onRenameGate?: (gateId: number, newName: string) => void
 	onApplyGate?: (gateId: number, gateName: string) => void
-	onDisableFile?: (fileDataId: number) => void
-	onEnableFile?: (fileDataId: number) => void
+	onDisableFile?: (fileDataIds: number[]) => void
+	onEnableFile?: (fileDataIds: number[]) => void
 	onCreateSubsample?: (name: string) => Promise<string | null>
 	onRenameSubsample?: (
 		subsampleId: number,
@@ -416,10 +416,9 @@ export default function ParentTree({
 	// Menu e confirmação por amostra (desabilitar / reativar / mover)
 	const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null)
 	const [menuFile, setMenuFile] = useState<ExperimentFiles | null>(null)
-	const [disableTarget, setDisableTarget] = useState<ExperimentFiles | null>(
-		null,
-	)
-	// Mover em lote: modo de seleção (toggle) + checkboxes + diálogo com a lista.
+	const [disableTargets, setDisableTargets] = useState<ExperimentFiles[]>([])
+	// Seleção em lote: select liga o modo; as ações (mover/desabilitar/reativar)
+	// aparecem como chips com a contagem de selecionadas.
 	const [selectionMode, setSelectionMode] = useState(false)
 	const [selectedFileIds, setSelectedFileIds] = useState<Set<number>>(new Set())
 	const [moveTargets, setMoveTargets] = useState<ExperimentFiles[]>([])
@@ -457,12 +456,12 @@ export default function ParentTree({
 	}
 
 	const handleFileMenuDisable = () => {
-		if (menuFile) setDisableTarget(menuFile)
+		if (menuFile) setDisableTargets([menuFile])
 		handleFileMenuClose()
 	}
 
 	const handleFileMenuEnable = () => {
-		if (menuFile && onEnableFile) onEnableFile(menuFile.id)
+		if (menuFile && onEnableFile) onEnableFile([menuFile.id])
 		handleFileMenuClose()
 	}
 
@@ -480,9 +479,19 @@ export default function ParentTree({
 		})
 	}
 
+	const selectedFiles = files.filter((f) => selectedFileIds.has(f.id))
+
 	const handleMoveSelected = () => {
-		const selected = files.filter((f) => selectedFileIds.has(f.id))
-		if (selected.length > 0) setMoveTargets(selected)
+		if (selectedFiles.length > 0) setMoveTargets(selectedFiles)
+	}
+
+	const handleDisableSelected = () => {
+		if (selectedFiles.length > 0) setDisableTargets(selectedFiles)
+	}
+
+	const handleEnableSelected = () => {
+		if (selectedFiles.length > 0 && onEnableFile)
+			onEnableFile(selectedFiles.map((f) => f.id))
 	}
 
 	const handleSubsampleMenuOpen = (
@@ -520,9 +529,13 @@ export default function ParentTree({
 		return "Ação indisponível"
 	}
 
+	const canBulk = !!(onMoveFile || onDisableFile || onEnableFile)
+
 	const handleConfirmDisable = () => {
-		if (disableTarget && onDisableFile) onDisableFile(disableTarget.id)
-		setDisableTarget(null)
+		if (disableTargets.length > 0 && onDisableFile)
+			onDisableFile(disableTargets.map((f) => f.id))
+		setDisableTargets([])
+		setSelectedFileIds(new Set())
 	}
 
 	const handleMenuOpen = (event: React.MouseEvent, gate: Gate) => {
@@ -616,7 +629,7 @@ export default function ParentTree({
 				? handleSubsampleMenuOpen
 				: undefined,
 		selectedFileIds,
-		onToggleFile: onMoveFile && selectionMode ? handleToggleFile : undefined,
+		onToggleFile: canBulk && selectionMode ? handleToggleFile : undefined,
 		onFileInfo: setMetadataTarget,
 	}
 
@@ -644,35 +657,61 @@ export default function ParentTree({
 						</Typography>
 					</Box>
 				</Tooltip>
-				{onMoveFile && (
-					<Tooltip
-						title={
-							selectionMode ? "Concluir seleção" : "Selecionar várias amostras"
-						}
-						arrow
+				{canBulk && (
+					<Select
+						size="small"
+						value={selectionMode ? "multi" : "nav"}
+						onChange={(e) => {
+							setSelectionMode(e.target.value === "multi")
+							setSelectedFileIds(new Set())
+						}}
+						sx={{
+							ml: "auto",
+							height: 24,
+							fontSize: "0.72rem",
+							"& .MuiSelect-select": { py: 0.25, pr: "24px !important" },
+						}}
 					>
-						<IconButton
-							size="small"
-							onClick={() => {
-								setSelectionMode((v) => !v)
-								setSelectedFileIds(new Set())
-							}}
-							sx={{ p: 0.25, ml: "auto" }}
-							color={selectionMode ? "primary" : "default"}
-						>
-							<SelectAllIcon style={{ fontSize: 18 }} />
-						</IconButton>
-					</Tooltip>
+						<MuiMenuItem value="nav" sx={{ fontSize: "0.75rem" }} dense>
+							Navegar
+						</MuiMenuItem>
+						<MuiMenuItem value="multi" sx={{ fontSize: "0.75rem" }} dense>
+							Selecionar
+						</MuiMenuItem>
+					</Select>
 				)}
 				{selectionMode && selectedFileIds.size > 0 && (
-					<Chip
-						label={`Mover ${selectedFileIds.size}`}
-						size="small"
-						color="primary"
-						onClick={handleMoveSelected}
-						onDelete={() => setSelectedFileIds(new Set())}
-						sx={{ height: 22, fontSize: "0.7rem" }}
-					/>
+					<>
+						{onMoveFile && (
+							<Chip
+								label={`Mover ${selectedFileIds.size}`}
+								size="small"
+								color="primary"
+								onClick={handleMoveSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+						{onDisableFile && (
+							<Chip
+								label={`Desabilitar ${selectedFileIds.size}`}
+								size="small"
+								color="warning"
+								variant="outlined"
+								onClick={handleDisableSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+						{onEnableFile && (
+							<Chip
+								label={`Reativar ${selectedFileIds.size}`}
+								size="small"
+								color="success"
+								variant="outlined"
+								onClick={handleEnableSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+					</>
 				)}
 				{onCreateSubsample && (
 					<Tooltip title="Novo subsample" arrow>
@@ -682,7 +721,7 @@ export default function ParentTree({
 								setSubsampleFormTarget(null)
 								setSubsampleFormOpen(true)
 							}}
-							sx={{ p: 0.25, ml: onMoveFile ? 0 : "auto" }}
+							sx={{ p: 0.25, ml: canBulk ? 0 : "auto" }}
 						>
 							<NewSubsampleIcon style={{ fontSize: 18 }} />
 						</IconButton>
@@ -903,22 +942,36 @@ export default function ParentTree({
 			/>
 
 			<Dialog
-				open={!!disableTarget}
-				onClose={() => setDisableTarget(null)}
+				open={disableTargets.length > 0}
+				onClose={() => setDisableTargets([])}
 				fullWidth
 				maxWidth="xs"
 				PaperProps={{ sx: { maxHeight: "90vh", overflowY: "auto" } }}
 			>
-				<DialogTitle>Desabilitar amostra</DialogTitle>
+				<DialogTitle>
+					{disableTargets.length > 1
+						? `Desabilitar ${disableTargets.length} amostras`
+						: "Desabilitar amostra"}
+				</DialogTitle>
 				<DialogContent>
 					<Typography>
-						A amostra <strong>{disableTarget?.file_name}</strong> sai da
-						listagem, mas nada é apagado: os gates e os dados ficam preservados
-						e você pode reativá-la depois pelo filtro “Mostrar desabilitadas”.
+						{disableTargets.length === 1 ? (
+							<>
+								A amostra <strong>{disableTargets[0]?.file_name}</strong> sai da
+								listagem,{" "}
+							</>
+						) : (
+							<>
+								As <strong>{disableTargets.length} amostras</strong>{" "}
+								selecionadas saem da listagem,{" "}
+							</>
+						)}
+						mas nada é apagado: os gates e os dados ficam preservados e você
+						pode reativar depois pelo filtro “Mostrar desabilitadas”.
 					</Typography>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setDisableTarget(null)}>Cancelar</Button>
+					<Button onClick={() => setDisableTargets([])}>Cancelar</Button>
 					<Button onClick={handleConfirmDisable} variant="contained">
 						Desabilitar
 					</Button>
