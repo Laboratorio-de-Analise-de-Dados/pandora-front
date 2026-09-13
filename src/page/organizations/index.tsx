@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
 	Box,
 	Button,
@@ -19,28 +19,23 @@ import {
 	Divider,
 } from "@mui/material"
 import { toast } from "react-toastify"
-import CytometryApi from "../../API"
 import { useAuth } from "../../providers/AuthContext"
 import { useInvites } from "../../hooks/useInvites"
 import { useSentInvites } from "../../hooks/useSentInvites"
+import { useOrganizations } from "../../hooks/useOrganizations"
+import { Organization, RoleName } from "../../services/organizationService"
 import InviteModal from "../../components/InviteModal"
-
-interface Member {
-	id: number
-	user: { id: number; username: string; email: string }
-	role: { name: string }
-}
-
-interface Organization {
-	id: number
-	name: string
-	org_type: string
-	members: Member[]
-}
+import OrganizationMembers from "../../components/OrganizationMembers"
 
 export default function OrganizationsPage() {
 	const { user, refreshUser } = useAuth()
-	const [organizations, setOrganizations] = useState<Organization[]>([])
+	const {
+		organizations,
+		refresh: loadOrganizations,
+		create: createOrg,
+		changeRole,
+		remove: removeMembership,
+	} = useOrganizations()
 	const [tab, setTab] = useState(0)
 	const [newOrgName, setNewOrgName] = useState("")
 	const [newOrgType, setNewOrgType] = useState("lab")
@@ -63,24 +58,42 @@ export default function OrganizationsPage() {
 		refresh: refreshSent,
 	} = useSentInvites(Boolean(user) && tab === 2)
 
-	const loadOrganizations = async () => {
-		const res = await CytometryApi.get("/accounts/organizations/")
-		setOrganizations(res.data)
-	}
-
-	useEffect(() => {
-		loadOrganizations()
-	}, [])
-
 	const handleCreateOrg = async (e: React.FormEvent) => {
 		e.preventDefault()
-		await CytometryApi.post("/accounts/organizations/", {
-			name: newOrgName,
-			org_type: newOrgType,
-		})
+		await createOrg(newOrgName, newOrgType)
 		setNewOrgName("")
 		setTab(0)
-		loadOrganizations()
+		await refreshUser()
+	}
+
+	const handleChangeRole = async (orgId: number, membershipId: number, role: RoleName) => {
+		try {
+			await changeRole(orgId, membershipId, role)
+			toast.success("Permissão atualizada.", { position: "bottom-right" })
+			await refreshUser()
+		} catch (err: any) {
+			toast.error(
+				err.response?.data?.role?.[0] ||
+					err.response?.data?.detail ||
+					"Erro ao atualizar a permissão.",
+				{ position: "bottom-right" },
+			)
+		}
+	}
+
+	const handleRemoveMember = async (orgId: number, membershipId: number) => {
+		try {
+			await removeMembership(orgId, membershipId)
+			toast.success("Membro removido.", { position: "bottom-right" })
+			await refreshUser()
+		} catch (err: any) {
+			toast.error(
+				err.response?.data?.role?.[0] ||
+					err.response?.data?.detail ||
+					"Erro ao remover o membro.",
+				{ position: "bottom-right" },
+			)
+		}
 	}
 
 	const openInvite = (org: Organization) => {
@@ -141,7 +154,7 @@ export default function OrganizationsPage() {
 		user?.memberships?.some((m) => m.organization?.id === orgId && getRoleName(m) === "org_admin")
 
 	return (
-		<Box sx={{ p: 4, maxWidth: 900, mx: "auto" }}>
+		<Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: { xs: "100%", md: 1200 }, mx: "auto" }}>
 			<Typography variant="h4" mb={3}>
 				Organizações
 			</Typography>
@@ -152,11 +165,11 @@ export default function OrganizationsPage() {
 				<Tab label="Convites" />
 			</Tabs>
 
-			<Paper sx={{ p: 3, minHeight: 360 }}>
+			<Paper sx={{ p: { xs: 2, md: 3 }, minHeight: 360 }}>
 				{tab === 0 && (
 					<Box>
 						{organizations.map((org) => (
-							<Paper key={org.id} sx={{ p: 2, mb: 2 }}>
+							<Paper key={org.id} variant="outlined" sx={{ p: { xs: 1.5, md: 2 }, mb: 2 }}>
 								<Box
 									sx={{
 										display: "flex",
@@ -185,18 +198,15 @@ export default function OrganizationsPage() {
 										</Button>
 									)}
 								</Box>
-								{org.members && org.members.length > 0 && (
-									<List dense sx={{ mt: 1 }}>
-										{org.members.map((m) => (
-											<ListItem key={m.id} divider>
-												<ListItemText
-													primary={m.user.username}
-													secondary={`${m.user.email} — ${m.role.name}`}
-												/>
-											</ListItem>
-										))}
-										</List>
-									)}
+								<OrganizationMembers
+									members={org.members || []}
+									canManage={Boolean(isOrgAdmin(org.id))}
+									currentUserId={user?.id}
+									onChangeRole={(membershipId, role) =>
+										handleChangeRole(org.id, membershipId, role)
+									}
+									onRemove={(membershipId) => handleRemoveMember(org.id, membershipId)}
+								/>
 								</Paper>
 							))}
 							{organizations.length === 0 && (
