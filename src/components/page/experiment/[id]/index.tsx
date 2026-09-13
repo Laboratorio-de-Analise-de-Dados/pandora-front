@@ -18,7 +18,7 @@ import {
 import { useExperimentPageActions } from "../../../../features/experiment/hooks/useExperimentPageActions"
 import { PlotStateProvider } from "../../../../features/plot/context/PlotStateContext"
 import ScatterPlot from "../../../plotly"
-import ParentTree from "../../../parent_tree"
+import ParentTree from "../../../../features/experiment/components/parent-tree"
 import SourceDropdown from "../../../../features/experiment/components/SourceDropdown"
 import CollapsiblePanel from "../../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../stats_panel"

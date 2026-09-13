@@ -16,7 +16,7 @@ import {
 	MdTune as TuneIcon,
 } from "react-icons/md"
 import { fetchFileStats } from "../../services/experimentService"
-import type { SelectedSource } from "../parent_tree"
+import type { SelectedSource } from "../../types"
 import type { AnalysisResultData, ExperimentFiles, Gate } from "../../types"
 import {
 	findGateInTree,

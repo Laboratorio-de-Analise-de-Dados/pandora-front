@@ -4,7 +4,7 @@ import {
 	MdKeyboardArrowDown as ArrowDownIcon,
 	MdChevronRight as ChevronIcon,
 } from "react-icons/md"
-import type { SelectedSource } from "../../../components/parent_tree"
+import type { SelectedSource } from "../../../types"
 import type { SelectableItem } from "../utils/selectable"
 
 interface SourceSelectorProps {
