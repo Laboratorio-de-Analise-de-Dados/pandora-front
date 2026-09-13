@@ -53,15 +53,17 @@ ordem de custo-benefício:
 
 1. **Remover deps mortas**: `@mui/x-data-grid` e `@mui/x-charts` têm zero
    imports — ~12,7 MB de disco e dependências a menos para manter. Custo: zero.
+   _(executado em 13/09/2026 na branch `refactor/node-26-upgrade`)_
 2. **Code-split por rota**: `React.lazy` na página do experimento (a que usa
    plotly) — o resto do app (login, listagem, organizações) deixaria de baixar
    o plotly.
 3. **Plotly parcial**: trocar `plotly.js` por `plotly.js-basic-dist` ou bundle
    custom (scatter/heatmap/histogram apenas) — pode cortar o plotly pela
    metade ou mais.
-4. **Avaliar `@mui/x-tree-view`**: usado em 1 arquivo; se a árvore precisa de
-   pouco, um componente próprio em styled-components pode bastar — ou mantê-lo
-   e aceitar ~30 KB gzip.
+4. **`@mui/x-tree-view`**: usado em 1 arquivo (`parent_tree`). **Decisão
+   (13/09/2026):** remover junto do FE-11 — a árvore vai ganhar o nível
+   "subsample" (3 níveis heterogêneos) e será reescrita como componente
+   próprio, eliminando o último `@mui/x-*`.
 
 ### C) Manter tudo como está
 
@@ -76,7 +78,7 @@ onde está: plotly, deps mortas e ausência de code-splitting.
 
 ## Critérios de decisão (registrar quando executado)
 
-- [ ] Deps mortas (`x-data-grid`, `x-charts`) removidas
+- [x] Deps mortas (`x-data-grid`, `x-charts`) removidas (13/09/2026)
 - [ ] Bundle inicial sem plotly para rotas que não o usam
 - [ ] Chunk principal abaixo de ~1 MB gzip
 - [ ] Reavaliar remoção do MUI **somente se** o uso de componentes encolher
