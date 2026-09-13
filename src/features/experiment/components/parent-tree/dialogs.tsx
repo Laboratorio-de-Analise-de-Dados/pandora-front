@@ -20,8 +20,8 @@ import {
 	Typography,
 } from "@mui/material"
 import { useEffect, useState } from "react"
-import type { ExperimentFiles, Subsample } from "../../types"
-import { fetchFileHeaders } from "../../services/experimentService"
+import type { ExperimentFiles, Subsample } from "../../../../types"
+import { fetchFileHeaders } from "../../../../services/experimentService"
 
 /**
  * Cria ou renomeia um subsample. Com `target` é rename (mostra o `source_path`

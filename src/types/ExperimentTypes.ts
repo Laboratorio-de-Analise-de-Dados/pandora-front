@@ -38,6 +38,15 @@ export interface ExperimentFiles {
 	subsample?: number | null
 }
 
+/** Nó selecionado na árvore/plot: uma amostra ou um gate dentro dela. */
+export interface SelectedSource {
+	type: "file" | "gate"
+	id: number
+	name: string
+	fileDataId: number
+	copiedFromId?: number | null
+}
+
 export interface FileData {
 	id: number
 	file_name: string

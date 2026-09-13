@@ -12,7 +12,7 @@ import {
 	MdChevronRight as ChevronIcon,
 } from "react-icons/md"
 import type { ExperimentFiles } from "../../../types"
-import type { SelectedSource } from "../../../components/parent_tree"
+import type { SelectedSource } from "../../../types"
 import { buildSelectableItems } from "../../stats/utils/selectable"
 
 interface SourceDropdownProps {
