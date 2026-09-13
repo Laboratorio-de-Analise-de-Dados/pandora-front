@@ -82,11 +82,10 @@ export function useExperimentPageActions() {
 			user &&
 			(user.is_super_admin ||
 				experiment.created_by === user.id ||
-				(experiment.organization !== null &&
-					user.memberships.some(
-						(membership) =>
-							membership.organization.id === experiment.organization,
-					))),
+				user.memberships.some(
+					(membership) =>
+						membership.organization.id === experiment.organization?.id,
+				)),
 	)
 
 	const handleUpdateExperiment = useCallback(

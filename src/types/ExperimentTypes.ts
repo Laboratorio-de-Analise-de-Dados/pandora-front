@@ -4,7 +4,7 @@ export interface Experiment {
 	type: string
 	values: string[]
 	active: boolean
-	organization: Organization
+	organization: Organization | null
 	created_by: number
 }
 

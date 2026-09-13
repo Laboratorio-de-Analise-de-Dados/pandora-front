@@ -527,7 +527,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											? { selectdirection: "h" as const }
 											: {}),
 										xaxis: {
-											title: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
+											title: {
+												text: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
+											},
 											...(xTicks
 												? {
 														tickmode: "array" as const,
@@ -540,10 +542,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											fixedrange: true,
 										},
 										yaxis: {
-											title:
-												plotMode === "histogram"
-													? "Contagem"
-													: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
+											title: {
+												text:
+													plotMode === "histogram"
+														? "Contagem"
+														: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
+											},
 											...(plotMode !== "histogram" && yTicks
 												? {
 														tickmode: "array" as const,

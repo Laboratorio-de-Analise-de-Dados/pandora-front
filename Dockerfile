@@ -1,10 +1,10 @@
 # Etapa de build
-FROM node:22-alpine AS build
+FROM node:26-slim AS build
 WORKDIR /app
 
 # Instala dependências
-COPY package*.json ./
-RUN yarn install --frozen-lockfile
+COPY package.json yarn.lock ./
+RUN npm install -g yarn && yarn install --frozen-lockfile
 
 # Copia o restante do código e gera o build
 COPY . .

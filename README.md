@@ -8,7 +8,7 @@ Construido com [React](https://react.dev/) 18, [TypeScript](https://www.typescri
 
 ## Requisitos
 
-- **Node.js** 18+ (recomendado 22)
+- **Node.js** 22+ (recomendado 26 — imagem `node:26-slim` no Docker)
 - **Yarn** 1.x (Classic)
 - **Backend** [pandora-backend](https://github.com/Laboratorio-de-Analise-de-Dados/pandora-backend) rodando (para API)
 
