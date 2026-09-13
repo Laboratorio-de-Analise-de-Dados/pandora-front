@@ -11,6 +11,11 @@ import CytometryApi from "../../API"
 import { AxiosResponse } from "axios"
 import type { Experiment } from "../../types"
 import { useAuth } from "../AuthContext"
+import {
+	completeExperimentFileUpload,
+	initExperimentFileUpload,
+	uploadExperimentFileChunk,
+} from "../../services/experimentService"
 
 type ChunkStatus = "pending" | "uploaded" | "failed"
 
@@ -28,6 +33,10 @@ interface ExperimentContextProps {
 		file: File,
 		organizationId?: number | null,
 	) => Promise<AxiosResponse>
+	addExperimentFile: (
+		experimentId: number,
+		file: File,
+	) => Promise<{ added: number; skipped: string[] }>
 	progress: ChunkProgress[]
 }
 
@@ -60,6 +69,40 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 		setExperiments([...experiments.data])
 	}, [])
 
+	const chunkSize = 0.5 * 1024 * 1024
+
+	const sendAllChunks = useCallback(
+		async (
+			file: File,
+			totalChunks: number,
+			send: (index: number, chunk: Blob) => Promise<void>,
+		) => {
+			const guide: ChunkProgress[] = Array.from(
+				{ length: totalChunks },
+				(_, i) => ({ index: i, status: "pending" as ChunkStatus }),
+			)
+			setProgress(guide)
+
+			const sendChunk = async (index: number) => {
+				const start = index * chunkSize
+				const end = Math.min(file.size, start + chunkSize)
+				try {
+					await send(index, file.slice(start, end))
+					guide[index].status = "uploaded"
+				} catch {
+					guide[index].status = "failed"
+				}
+				setProgress([...guide])
+			}
+
+			await Promise.allSettled(guide.map((c) => sendChunk(c.index)))
+			if (!guide.every((c) => c.status === "uploaded")) {
+				throw new Error("Nem todos os chunks foram enviados com sucesso")
+			}
+		},
+		[chunkSize],
+	)
+
 	const createExperiment = useCallback(
 		async (
 			title: string,
@@ -67,7 +110,6 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			file: File,
 			organizationId?: number | null,
 		) => {
-			const chunkSize = 0.5 * 1024 * 1024
 			const totalChunks = Math.ceil(file.size / chunkSize)
 			const orgId =
 				organizationId === undefined
@@ -88,52 +130,46 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				JSON.stringify({ fileId, title, type }),
 			)
 
-			let guide: ChunkProgress[] = Array.from(
-				{ length: totalChunks },
-				(_, i) => ({
-					index: i,
-					status: "pending",
-				}),
-			)
-			setProgress(guide)
-
-			const sendChunk = async (index: number) => {
-				const start = index * chunkSize
-				const end = Math.min(file.size, start + chunkSize)
-				const chunk = file.slice(start, end)
-
+			await sendAllChunks(file, totalChunks, async (index, chunk) => {
 				const formData = new FormData()
 				formData.append("fileId", fileId)
 				formData.append("chunkIndex", index.toString())
 				formData.append("chunk", chunk)
+				await CytometryApi.post("/experiment/upload-chunk/", formData)
+			})
 
-				try {
-					await CytometryApi.post("/experiment/upload-chunk/", formData)
-					guide[index].status = "uploaded"
-				} catch {
-					guide[index].status = "failed"
-				}
-				setProgress([...guide])
-			}
-
-			await Promise.allSettled(guide.map((c) => sendChunk(c.index)))
-
-			if (guide.every((c) => c.status === "uploaded")) {
-				const completeResponse = await CytometryApi.post(
-					"/experiment/complete/",
-					{
-						fileId,
-						fileName: file.name,
-					},
-				)
-				await listExperiments()
-				localStorage.removeItem("currentUpload")
-				return completeResponse
-			} else {
-				throw new Error("Nem todos os chunks foram enviados com sucesso")
-			}
+			const completeResponse = await CytometryApi.post(
+				"/experiment/complete/",
+				{ fileId, fileName: file.name },
+			)
+			await listExperiments()
+			localStorage.removeItem("currentUpload")
+			return completeResponse
 		},
-		[listExperiments, user],
+		[listExperiments, sendAllChunks, chunkSize, user],
+	)
+
+	// "Adicionar arquivos" num experimento existente (BE-12): mesmo protocolo
+	// de chunks, mas anexa via /experiment/files/* — o servidor aglutina .fcs
+	// em ZIP e pula amostras já presentes no experimento.
+	const addExperimentFile = useCallback(
+		async (experimentId: number, file: File) => {
+			const totalChunks = Math.ceil(file.size / chunkSize)
+			const init = await initExperimentFileUpload(
+				experimentId,
+				file.name,
+				totalChunks,
+			)
+			const fileId = init.fileId
+
+			await sendAllChunks(file, totalChunks, (index, chunk) =>
+				uploadExperimentFileChunk(fileId, index, chunk),
+			)
+
+			const done = await completeExperimentFileUpload(fileId, file.name)
+			return { added: done.added, skipped: done.skipped }
+		},
+		[chunkSize, sendAllChunks],
 	)
 
 	useEffect(() => {
@@ -142,7 +178,13 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 
 	return (
 		<ExperimentContext.Provider
-			value={{ experiments, listExperiments, createExperiment, progress }}
+			value={{
+				experiments,
+				listExperiments,
+				createExperiment,
+				addExperimentFile,
+				progress,
+			}}
 		>
 			{children}
 		</ExperimentContext.Provider>

@@ -1,7 +1,7 @@
 # FE-15 — Copiar/mover experimento entre contextos (pessoal ↔ organização)
 
 **Repo:** pandora-front · **Tipo:** feature · **Base:** `refactor/node-26-upgrade`
-**Status:** não iniciado — bloqueado no
+**Status:** implementado na branch `feat/copy-move-dedup` — backend no
 [BE-11](../../../pandora-backend/docs/prd/BE-11-copiar-mover-experimento.md).
 
 ## Problema

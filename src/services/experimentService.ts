@@ -42,6 +42,109 @@ export const deleteExperiment = async (id: number): Promise<void> => {
 	await CytometryApi.delete(`/experiment/${id}`)
 }
 
+export interface CopyExperimentPayload {
+	title?: string
+	/** `null` = espaço pessoal do usuário. */
+	organization_id: number | null
+}
+
+export const copyExperiment = async (
+	id: number,
+	payload: CopyExperimentPayload,
+): Promise<Experiment> => {
+	const res = await CytometryApi.post(`/experiment/${id}/copy`, payload)
+	return res.data
+}
+
+export const moveExperiment = async (
+	id: number,
+	organizationId: number | null,
+): Promise<Experiment> => {
+	const res = await CytometryApi.patch(`/experiment/${id}/`, {
+		organization_id: organizationId,
+	})
+	return res.data
+}
+
+export interface FileHashCheckResponse {
+	exists: boolean
+	file_name: string | null
+}
+
+export const checkFileHash = async (
+	sha256: string,
+	experimentId?: number,
+): Promise<FileHashCheckResponse> => {
+	const res = await CytometryApi.post("/experiment/check-hash/", {
+		sha256,
+		...(experimentId != null ? { experiment_id: experimentId } : {}),
+	})
+	return res.data
+}
+
+export interface FileUploadInitResponse {
+	fileId: number
+}
+
+export const initExperimentFileUpload = async (
+	experimentId: number,
+	fileName: string,
+	totalChunks: number,
+): Promise<FileUploadInitResponse> => {
+	const res = await CytometryApi.post(
+		`/experiment/${experimentId}/files/init`,
+		{ fileName, totalChunks },
+	)
+	return res.data
+}
+
+export const uploadExperimentFileChunk = async (
+	fileId: number,
+	chunkIndex: number,
+	chunk: Blob,
+): Promise<void> => {
+	const formData = new FormData()
+	formData.append("fileId", String(fileId))
+	formData.append("chunkIndex", String(chunkIndex))
+	formData.append("chunk", chunk)
+	await CytometryApi.post("/experiment/files/upload-chunk/", formData)
+}
+
+export interface FileUploadCompleteResponse {
+	status: string
+	/** Quantas amostras novas entraram no experimento. */
+	added: number
+	/** Amostras puladas por já existirem no experimento. */
+	skipped: string[]
+}
+
+export const completeExperimentFileUpload = async (
+	fileId: number,
+	fileName: string,
+): Promise<FileUploadCompleteResponse> => {
+	const res = await CytometryApi.post("/experiment/files/complete/", {
+		fileId,
+		fileName,
+	})
+	return res.data
+}
+
+/** Baixa o experimento como ZIP reconstruído pelos subsamples atuais. */
+export const downloadExperiment = async (
+	id: number,
+	title: string,
+): Promise<void> => {
+	const res = await CytometryApi.get(`/experiment/${id}/download`, {
+		responseType: "blob",
+	})
+	const url = URL.createObjectURL(res.data as Blob)
+	const anchor = document.createElement("a")
+	anchor.href = url
+	anchor.download = `${title}.zip`
+	anchor.click()
+	URL.revokeObjectURL(url)
+}
+
 export const fetchFileStats = async (
 	fileDataId: number,
 ): Promise<AnalysisResultData> => {

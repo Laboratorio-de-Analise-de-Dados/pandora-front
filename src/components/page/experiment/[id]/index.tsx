@@ -33,7 +33,10 @@ import {
 	MdChevronLeft as PrevIcon,
 	MdChevronRight as NextIcon,
 	MdAccountTree as TreeIcon,
+	MdUploadFile as UploadIcon,
+	MdDownload as DownloadIcon,
 } from "react-icons/md"
+import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../../utils/experimentFile"
 
 function ExperimentPageContent() {
 	const {
@@ -78,6 +81,9 @@ function ExperimentPageContent() {
 		handleUpdateExperiment,
 		savingExperiment,
 		canEditExperiment,
+		handleAddFile,
+		addingFile,
+		handleDownload,
 		applyTarget,
 		applyLoading,
 		setApplyTarget,
@@ -120,23 +126,55 @@ function ExperimentPageContent() {
 				gap="2rem"
 			>
 				{experiment?.title}
-				{experiment && canEditExperiment && (
+				{experiment && (
 					<Box sx={{ display: "flex", gap: 0.5 }}>
-						<Tooltip title="Editar experimento">
-							<IconButton
-								onClick={() => {
-									setEditError(null)
-									setEditOpen(true)
-								}}
-							>
-								<EditIcon fontSize="small" />
+						{canEditExperiment && (
+							<Tooltip title="Adicionar arquivos (.zip ou .fcs)">
+								<span>
+									<IconButton component="label" disabled={addingFile}>
+										{addingFile ? (
+											<CircularProgress size={18} />
+										) : (
+											<UploadIcon fontSize="small" />
+										)}
+										<input
+											type="file"
+											accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
+											hidden
+											onChange={(e) => {
+												const selected = e.target.files?.[0]
+												e.target.value = ""
+												if (selected) void handleAddFile(selected)
+											}}
+										/>
+									</IconButton>
+								</span>
+							</Tooltip>
+						)}
+						<Tooltip title="Baixar dados (ZIP por subsample)">
+							<IconButton onClick={handleDownload}>
+								<DownloadIcon fontSize="small" />
 							</IconButton>
 						</Tooltip>
-						<Tooltip title="Excluir experimento">
-							<IconButton onClick={handleDelete} color="error">
-								<DeleteIcon fontSize="small" />
-							</IconButton>
-						</Tooltip>
+						{canEditExperiment && (
+							<>
+								<Tooltip title="Editar experimento">
+									<IconButton
+										onClick={() => {
+											setEditError(null)
+											setEditOpen(true)
+										}}
+									>
+										<EditIcon fontSize="small" />
+									</IconButton>
+								</Tooltip>
+								<Tooltip title="Excluir experimento">
+									<IconButton onClick={handleDelete} color="error">
+										<DeleteIcon fontSize="small" />
+									</IconButton>
+								</Tooltip>
+							</>
+						)}
 					</Box>
 				)}
 			</Typography>

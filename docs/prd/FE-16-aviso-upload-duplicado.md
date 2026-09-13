@@ -1,51 +1,64 @@
-# FE-16 — Aviso de arquivo duplicado no upload
+# FE-16 — Adicionar arquivos ao experimento e dedup por escopo
 
-**Repo:** pandora-front · **Tipo:** feature · **Base:** `refactor/node-26-upgrade`
-**Status:** não iniciado — bloqueado no
+**Repo:** pandora-front · **Tipo:** feature · **Base:** `main`
+**Status:** implementado na branch `feat/copy-move-dedup` — backend no
 [BE-12](../../../pandora-backend/docs/prd/BE-12-dedup-no-upload.md).
 
 ## Problema
 
-Subir um arquivo que já existe no servidor hoje envia o ZIP inteiro de novo —
-tempo e storage desperdiçados. Com `sha256` no `FileModel` (BE-10/12), o front
-pode conferir antes de subir e oferecer reuso instantâneo.
+O cliente entende que está sempre "adicionando arquivos de citometria" a um
+experimento — não só na criação. E a deduplicação que importa é "este
+arquivo já está **neste** experimento?", não uma otimização global de
+storage (descartada no BE-12).
 
 ## Escopo
 
-### 1. Hash local antes do upload
+### 1. "Adicionar arquivos" dentro do experimento
 
-- No fluxo de `NewExperiment`, calcular `sha256` do arquivo via Web Crypto
-  (`crypto.subtle.digest`) antes de chamar `init/`.
-- `checkHash(sha256)` → `POST /experiment/check-hash/`.
+- Botão de upload (ícone) na página do experimento, ao lado de editar/
+  excluir, visível pra quem pode editar.
+- Aceita `.zip` ou `.fcs`; o fluxo é o mesmo chunked upload
+  (`files/init → files/upload-chunk → files/complete`), reutilizando o
+  progresso do provider — o servidor aglutina `.fcs` em ZIP.
+- Ao concluir: toast com `added` amostras novas e `skipped` amostras
+  ignoradas por já existirem; a árvore invalida e refaz o fetch.
 
-### 2. Diálogo de duplicata
+### 2. Aviso de duplicata escopado ao experimento
 
-- `exists: true` → diálogo "Este arquivo já foi enviado":
-  - mostra `file_name` e, se a API trouxer, quando/por quem
-  - opções: **Reutilizar** (cria experimento sem upload — instantâneo) ou
-    **Subir mesmo assim** (fluxo normal)
-- `exists: false` → segue o fluxo atual sem interromper.
+- Antes de subir, hash local (`sha256File`, Web Crypto) +
+  `checkFileHash(sha256, experimentId)` → `POST /experiment/check-hash/`.
+- `exists: true` → `window.confirm` "já está neste experimento — enviar
+  mesmo assim?" (o servidor ignora duplicatas de qualquer forma).
+- Hash falhando não bloqueia: upload segue, dedup vira server-side.
 
-### 3. Aviso pós-upload
+### 3. Download organizado por subsample
 
-- Se o `complete/` responder `reused: true` (fallback de quem não checou),
-  toast "Arquivo reutilizado — já existia no servidor".
+- Ícone de download na página do experimento → `GET /experiment/<id>/download`
+  → `<title>.zip` reconstruído com `subsample.name/arquivo.fcs`.
 
 ## Arquivos a tocar
 
-- `src/components/page/experiments/NewExperiment/` — hook do hash + diálogo
-- `src/services/experimentService.ts` — `checkFileHash`, campo `reused`
-- `src/features/experiment/utils/` — helper `sha256File(file)` puro/testável
+- `src/providers/ExperimentContext/index.tsx` — `addExperimentFile`
+  (chunks compartilhados com a criação via `sendAllChunks`)
+- `src/services/experimentService.ts` — `initExperimentFileUpload`,
+  `uploadExperimentFileChunk`, `completeExperimentFileUpload`,
+  `checkFileHash(sha, experimentId?)`, `downloadExperiment`
+- `src/features/experiment/hooks/useExperimentPageActions.ts` —
+  `handleAddFile`, `handleDownload`
+- `src/components/page/experiment/[id]/index.tsx` — ícones upload/download
+- `src/components/page/experiments/NewExperiment/` — diálogo de reuse
+  cross-experiment **removido** (dedup é por experimento agora)
 
 ## Critérios de aceite
 
-- [ ] Arquivo já existente oferece reuso antes de subir um byte.
-- [ ] Reuso cria experimento funcional apontando pro blob existente.
-- [ ] Hash falhando (browser sem Web Crypto) não bloqueia o upload — segue
-      o fluxo antigo.
-- [ ] `reused: true` vindo do `complete/` vira aviso visível.
+- [x] Experimento recebe ZIP ou `.fcs` depois de criado, via ação interna.
+- [x] Duplicata no mesmo experimento avisa antes de subir; servidor pula e
+      reporta `skipped` no toast.
+- [x] Mesmo arquivo em outro experimento nunca é bloqueado.
+- [x] Download sai organizado pelos subsamples atuais.
 
 ## Fora de escopo
 
-- Dedup de `.fcs` dentro do ZIP (chave é o blob; interno usa `guid` — BE-10).
-- UI de "onde já existe este arquivo" (listar experimentos que o usam).
+- Reuso/dedup de blob cross-experiment — descartado (BE-12); copiar
+  experimento (FE-15) é o único compartilhamento.
+- Seleção múltipla de arquivos num único gesto (hoje é um por upload).
