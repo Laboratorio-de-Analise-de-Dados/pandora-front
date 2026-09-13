@@ -5,13 +5,23 @@ import { ExperimentContainer } from "./style"
 
 interface ContainerProps {
 	experiments: Experiment[]
+	onChanged?: () => void
 }
-export default function ExperimentsContainer({ experiments }: ContainerProps) {
+export default function ExperimentsContainer({
+	experiments,
+	onChanged,
+}: ContainerProps) {
 	return (
 		<ExperimentContainer>
 			<NewExperimentCard />
 			{experiments.map((experiment) => {
-				return <ExperimentCard key={experiment.id} experiment={experiment} />
+				return (
+					<ExperimentCard
+						key={experiment.id}
+						experiment={experiment}
+						onChanged={onChanged}
+					/>
+				)
 			})}
 		</ExperimentContainer>
 	)

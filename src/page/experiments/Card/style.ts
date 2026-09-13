@@ -1,6 +1,6 @@
-import styled from "styled-components"
+import styled, { css } from "styled-components"
 
-export const ExperimentComponent = styled.li`
+export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -34,6 +34,22 @@ export const ExperimentComponent = styled.li`
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
 	}
 
+	${(props) =>
+		props.$inactive &&
+		css`
+			border-color: ${props.theme.palette.text.disabled};
+			border-style: dashed;
+			background-color: ${props.theme.palette.action.disabledBackground};
+			color: ${props.theme.palette.text.disabled};
+			filter: grayscale(0.8);
+			opacity: 0.65;
+
+			h1,
+			div {
+				color: ${props.theme.palette.text.disabled};
+			}
+		`}
+
 	/* Estilos para o título dentro do card */
 	h1 {
 		font-size: 1.2rem; /* Tamanho da fonte ajustado para o card */
@@ -49,5 +65,13 @@ export const ExperimentComponent = styled.li`
 	div {
 		font-size: 0.9rem;
 		color: ${(props) => props.theme.palette.text.secondary}; /* Cor mais suave para o tipo */
+	}
+
+	.inactive-badge {
+		margin-top: 0.5rem;
+		font-size: 0.75rem;
+		font-weight: bold;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 `

@@ -28,7 +28,7 @@ interface ChunkProgress {
 
 interface ExperimentContextProps {
 	experiments: Experiment[]
-	listExperiments: () => void
+	listExperiments: (includeInactive?: boolean) => void
 	createExperiment: (
 		title: string,
 		type: string,
@@ -66,8 +66,10 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	const { user } = useAuth()
 	const [experiments, setExperiments] = useState<Experiment[]>([])
 	const [progress, setProgress] = useState<ChunkProgress[]>([])
-	const listExperiments = useCallback(async function nts() {
-		const experiments = await fetchExperiments()
+	const listExperiments = useCallback(async function nts(
+		includeInactive = false,
+	) {
+		const experiments = await fetchExperiments(includeInactive)
 		setExperiments([...experiments])
 	}, [])
 
