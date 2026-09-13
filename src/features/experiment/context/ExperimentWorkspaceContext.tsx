@@ -12,6 +12,7 @@ import type {
 	AnalysisResultData,
 	Gate,
 	PlotViewConfig,
+	Subsample,
 } from "../../../types"
 import type { SelectedSource } from "../../../components/parent_tree"
 import {
@@ -24,6 +25,7 @@ import { defaultScale } from "../../plot/utils/biex"
 import {
 	useExperimentQuery,
 	useExperimentFilesQuery,
+	useSubsamplesQuery,
 	useFileStatsQuery,
 	useInvalidateExperiment,
 } from "../hooks/useExperimentData"
@@ -32,6 +34,7 @@ interface ExperimentWorkspaceValue {
 	experimentId: string
 	experiment: Experiment | undefined
 	experimentFiles: ExperimentFiles[]
+	subsamples: Subsample[]
 	isLoading: boolean
 	source: SelectedSource | undefined
 	setSource: (source: SelectedSource | undefined) => void
@@ -89,6 +92,10 @@ export function ExperimentWorkspaceProvider({
 	const { data: experiment, isLoading } = useExperimentQuery(experimentId)
 	const [showInactiveFiles, setShowInactiveFiles] = useState(false)
 	const { data: experimentFiles = [] } = useExperimentFilesQuery(
+		experimentId,
+		showInactiveFiles,
+	)
+	const { data: subsamples = [] } = useSubsamplesQuery(
 		experimentId,
 		showInactiveFiles,
 	)
@@ -221,6 +228,7 @@ export function ExperimentWorkspaceProvider({
 			experimentId,
 			experiment,
 			experimentFiles,
+			subsamples,
 			isLoading,
 			source,
 			setSource,
@@ -245,6 +253,7 @@ export function ExperimentWorkspaceProvider({
 			experimentId,
 			experiment,
 			experimentFiles,
+			subsamples,
 			isLoading,
 			source,
 			setSource,

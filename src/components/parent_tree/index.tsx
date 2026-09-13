@@ -27,7 +27,7 @@ import {
 	Divider,
 } from "@mui/material"
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
-import { ExperimentFiles, Gate } from "../../types"
+import { ExperimentFiles, Gate, Subsample } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
 import { gateAxesLabel, gateAuthorLabel } from "../../features/gate/utils"
 import {
@@ -261,11 +261,17 @@ const renderSubsampleGroup = (
 	group: SubsampleGroup,
 	handlers: TreeHandlers,
 ) => {
-	const name = group.subsample?.name ?? "Sem subsample"
+	const name =
+		group.subsample?.name ??
+		(group.subsampleId !== null
+			? `Subsample #${group.subsampleId}`
+			: "Sem subsample")
 	return (
 		<TreeNode
 			key={
-				group.subsample ? `subsample-${group.subsample.id}` : "subsample-none"
+				group.subsampleId !== null
+					? `subsample-${group.subsampleId}`
+					: "subsample-none"
 			}
 			depth={0}
 			label={
@@ -293,6 +299,7 @@ const renderSubsampleGroup = (
 
 export default function ParentTree({
 	files,
+	subsamples = [],
 	onSelect,
 	onDeleteGate,
 	onRenameGate,
@@ -301,6 +308,7 @@ export default function ParentTree({
 	onEnableFile,
 }: {
 	files: ExperimentFiles[]
+	subsamples?: Subsample[]
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number, gateName: string) => void
 	onRenameGate?: (gateId: number, newName: string) => void
@@ -332,7 +340,10 @@ export default function ParentTree({
 		null,
 	)
 
-	const groups = useMemo(() => groupFilesBySubsample(files), [files])
+	const groups = useMemo(
+		() => groupFilesBySubsample(files, subsamples),
+		[files, subsamples],
+	)
 	const grouped = hasSubsampleLevel(groups)
 
 	const handleFileMenuOpen = (

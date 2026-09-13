@@ -15,12 +15,17 @@ export type Organization = {
 }
 
 /**
- * Agrupamento de amostras por diretório do ZIP (BE-07). Opcional até a API
- * expor o campo — ausente/null significa "Sem subsample".
+ * Subsample = agrupamento de amostras por diretório do ZIP (BE-07 do backend).
+ * `source_path` é imutável (o que veio no ZIP); `name` é o rótulo editável.
  */
 export interface Subsample {
 	id: number
 	name: string
+	source_path: string
+	active: boolean
+	created_at: string
+	/** Só amostras ativas. */
+	files_count: number
 }
 
 export interface ExperimentFiles {
@@ -29,7 +34,8 @@ export interface ExperimentFiles {
 	gates: Gate[]
 	active: boolean
 	deactivated_at: string | null
-	subsample?: Subsample | null
+	/** FK do subsample — a API serializa como id (null = "Sem subsample"). */
+	subsample?: number | null
 }
 
 export interface FileData {

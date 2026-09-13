@@ -39,6 +39,7 @@ function ExperimentPageContent() {
 	const {
 		experiment,
 		experimentFiles,
+		subsamples,
 		isLoading,
 		source,
 		setSource,
@@ -149,6 +150,7 @@ function ExperimentPageContent() {
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
 				<ParentTree
 					files={experimentFiles}
+					subsamples={subsamples}
 					onSelect={(s) => {
 						setSource(s)
 						if (isMobile) setShowTree(false)
