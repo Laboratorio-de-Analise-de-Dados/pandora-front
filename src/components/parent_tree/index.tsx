@@ -8,6 +8,7 @@ import {
 	MdRestoreFromTrash as EnableIcon,
 	MdFolder as FolderIcon,
 	MdCreateNewFolder as NewSubsampleIcon,
+	MdSelectAll as SelectAllIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -23,7 +24,6 @@ import {
 	ListItemText,
 	Menu,
 	MenuItem as MuiMenuItem,
-	Select,
 	TextField,
 	Tooltip,
 	Typography,
@@ -689,27 +689,24 @@ export default function ParentTree({
 					</Box>
 				</Tooltip>
 				{canBulk && (
-					<Select
-						size="small"
-						value={selectionMode ? "multi" : "nav"}
-						onChange={(e) => {
-							setSelectionMode(e.target.value === "multi")
-							setSelectedFileIds(new Set())
-						}}
-						sx={{
-							ml: "auto",
-							height: 24,
-							fontSize: "0.72rem",
-							"& .MuiSelect-select": { py: 0.25, pr: "24px !important" },
-						}}
+					<Tooltip
+						title={
+							selectionMode ? "Concluir seleção" : "Selecionar várias amostras"
+						}
+						arrow
 					>
-						<MuiMenuItem value="nav" sx={{ fontSize: "0.75rem" }} dense>
-							Navegar
-						</MuiMenuItem>
-						<MuiMenuItem value="multi" sx={{ fontSize: "0.75rem" }} dense>
-							Selecionar
-						</MuiMenuItem>
-					</Select>
+						<IconButton
+							size="small"
+							onClick={() => {
+								setSelectionMode((v) => !v)
+								setSelectedFileIds(new Set())
+							}}
+							sx={{ p: 0.25, ml: "auto" }}
+							color={selectionMode ? "primary" : "default"}
+						>
+							<SelectAllIcon style={{ fontSize: 18 }} />
+						</IconButton>
+					</Tooltip>
 				)}
 				{selectionMode && selectedFileIds.size > 0 && (
 					<>
