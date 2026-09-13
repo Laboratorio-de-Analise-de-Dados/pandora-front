@@ -25,12 +25,13 @@ decisão que muda ganha um ADR novo (`Substitui ADR-XXXX`) e o antigo passa a
 
 ## Índice de ADRs
 
-| ADR | Decisão | Status |
-|---|---|---|
-| [0001](adr/0001-camadas-services-hooks-componentes.md) | Serviços, hooks e componentes como camadas separadas | Aceito |
-| [0002](adr/0002-mobile-first-com-breakpoints-mui.md) | Mobile-first com breakpoints do MUI | Aceito |
-| [0003](adr/0003-convites-no-sininho-do-header.md) | Convites pendentes no sino do header | Aceito |
+| ADR                                                                | Decisão                                                   | Status |
+| ------------------------------------------------------------------ | --------------------------------------------------------- | ------ |
+| [0001](adr/0001-camadas-services-hooks-componentes.md)             | Serviços, hooks e componentes como camadas separadas      | Aceito |
+| [0002](adr/0002-mobile-first-com-breakpoints-mui.md)               | Mobile-first com breakpoints do MUI                       | Aceito |
+| [0003](adr/0003-convites-no-sininho-do-header.md)                  | Convites pendentes no sino do header                      | Aceito |
 | [0004](adr/0004-usuario-decide-o-escopo-e-confirma-sobrescrita.md) | UI pergunta o escopo e confirma sobrescrita com `dry_run` | Aceito |
-| [0005](adr/0005-estado-do-plot-persiste-ao-trocar-amostra.md) | Seleção de canais persiste ao trocar de amostra/gate | Aceito |
-| [0006](adr/0006-cache-de-usuario-e-refresh-no-interceptor.md) | Usuário cacheado com TTL; refresh de token no interceptor | Aceito |
-| [0007](adr/0007-node-26-slim-yarn-via-npm.md) | Node 26-slim nos containers; Yarn 1.x via npm global | Aceito |
+| [0005](adr/0005-estado-do-plot-persiste-ao-trocar-amostra.md)      | Seleção de canais persiste ao trocar de amostra/gate      | Aceito |
+| [0006](adr/0006-cache-de-usuario-e-refresh-no-interceptor.md)      | Usuário cacheado com TTL; refresh de token no interceptor | Aceito |
+| [0007](adr/0007-node-26-slim-yarn-via-npm.md)                      | Node 26-slim nos containers; Yarn 1.x via npm global      | Aceito |
+| [0008](adr/0008-engine-de-dominio-desacoplada.md)                  | Núcleo de domínio desacoplado de React/MUI/HTTP           | Aceito |
