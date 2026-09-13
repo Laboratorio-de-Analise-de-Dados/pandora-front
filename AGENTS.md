@@ -88,6 +88,9 @@ Antes de codar em área de decisão arquitetural, consulte `docs/adr/` (índice 
 ## Git
 
 - `main` é protegida — trabalhe em `feature/*` ou `devin/*`, nunca commit direto
+- **Ao receber um pedido de mudança, crie a branch antes de codar**:
+  `git checkout main && git pull` → `git checkout -b <tipo>/<slug>`.
+  Não deixe mudanças soltas na `main`.
 - Commits semânticos em PT-BR: `feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`
 - Push para `main` dispara build + deploy da imagem Docker no CI — trate como produção
 - Adicione arquivos específicos ao commit; **não** use `git add .`
