@@ -8,6 +8,7 @@ import {
 	MdRestoreFromTrash as EnableIcon,
 	MdFolder as FolderIcon,
 	MdCreateNewFolder as NewSubsampleIcon,
+	MdSelectAll as SelectAllIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -82,6 +83,7 @@ const renderGate = (
 ) => {
 	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
 	const authorLabel = gateAuthorLabel(gate)
+	const authorName = gate.created_by_name?.trim() || null
 	const hasActions =
 		handlers.onApplyGate || handlers.onRenameGate || handlers.onDeleteGate
 	return (
@@ -131,12 +133,25 @@ const renderGate = (
 									flexShrink: 0,
 								}}
 							/>
-							{authorLabel ? (
+							{authorName ? (
 								<Tooltip title={authorLabel} arrow placement="top-start">
 									<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
 								</Tooltip>
 							) : (
 								<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
+							)}
+							{authorName && (
+								<Chip
+									label={authorName.split(" ")[0]}
+									size="small"
+									variant="outlined"
+									sx={{
+										height: 16,
+										fontSize: "0.6rem",
+										flexShrink: 0,
+										"& .MuiChip-label": { px: 0.5 },
+									}}
+								/>
 							)}
 							{gate.copied_from_id && (
 								<Tooltip
@@ -214,6 +229,8 @@ const renderFile = (
 ) => {
 	const inactive = file.active === false
 	const canManage = handlers.onDisableFile || handlers.onEnableFile
+	// No modo de seleção, clicar na linha marca/desmarca — não troca a amostra.
+	const selecting = !!handlers.onToggleFile
 	return (
 		<TreeNode
 			key={`file-${file.id}`}
@@ -221,13 +238,15 @@ const renderFile = (
 			onSelect={
 				inactive
 					? undefined
-					: () =>
-							handlers.onSelect({
-								type: "file",
-								id: file.id,
-								name: file.file_name,
-								fileDataId: file.id,
-							})
+					: selecting
+						? () => handlers.onToggleFile?.(file.id)
+						: () =>
+								handlers.onSelect({
+									type: "file",
+									id: file.id,
+									name: file.file_name,
+									fileDataId: file.id,
+								})
 			}
 			label={
 				<Box
@@ -400,7 +419,8 @@ export default function ParentTree({
 	const [disableTarget, setDisableTarget] = useState<ExperimentFiles | null>(
 		null,
 	)
-	// Mover em lote: seleção por checkbox + diálogo recebe a lista de amostras.
+	// Mover em lote: modo de seleção (toggle) + checkboxes + diálogo com a lista.
+	const [selectionMode, setSelectionMode] = useState(false)
 	const [selectedFileIds, setSelectedFileIds] = useState<Set<number>>(new Set())
 	const [moveTargets, setMoveTargets] = useState<ExperimentFiles[]>([])
 	const [metadataTarget, setMetadataTarget] = useState<ExperimentFiles | null>(
@@ -596,7 +616,7 @@ export default function ParentTree({
 				? handleSubsampleMenuOpen
 				: undefined,
 		selectedFileIds,
-		onToggleFile: onMoveFile ? handleToggleFile : undefined,
+		onToggleFile: onMoveFile && selectionMode ? handleToggleFile : undefined,
 		onFileInfo: setMetadataTarget,
 	}
 
@@ -624,14 +644,34 @@ export default function ParentTree({
 						</Typography>
 					</Box>
 				</Tooltip>
-				{onMoveFile && selectedFileIds.size > 0 && (
+				{onMoveFile && (
+					<Tooltip
+						title={
+							selectionMode ? "Concluir seleção" : "Selecionar várias amostras"
+						}
+						arrow
+					>
+						<IconButton
+							size="small"
+							onClick={() => {
+								setSelectionMode((v) => !v)
+								setSelectedFileIds(new Set())
+							}}
+							sx={{ p: 0.25, ml: "auto" }}
+							color={selectionMode ? "primary" : "default"}
+						>
+							<SelectAllIcon style={{ fontSize: 18 }} />
+						</IconButton>
+					</Tooltip>
+				)}
+				{selectionMode && selectedFileIds.size > 0 && (
 					<Chip
 						label={`Mover ${selectedFileIds.size}`}
 						size="small"
 						color="primary"
 						onClick={handleMoveSelected}
 						onDelete={() => setSelectedFileIds(new Set())}
-						sx={{ height: 22, fontSize: "0.7rem", ml: "auto" }}
+						sx={{ height: 22, fontSize: "0.7rem" }}
 					/>
 				)}
 				{onCreateSubsample && (
@@ -642,10 +682,7 @@ export default function ParentTree({
 								setSubsampleFormTarget(null)
 								setSubsampleFormOpen(true)
 							}}
-							sx={{
-								p: 0.25,
-								ml: selectedFileIds.size > 0 ? 0 : "auto",
-							}}
+							sx={{ p: 0.25, ml: onMoveFile ? 0 : "auto" }}
 						>
 							<NewSubsampleIcon style={{ fontSize: 18 }} />
 						</IconButton>
