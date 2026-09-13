@@ -7,13 +7,15 @@ import React, {
 	useEffect,
 	useCallback,
 } from "react"
-import CytometryApi from "../../API"
-import { AxiosResponse } from "axios"
 import type { Experiment } from "../../types"
 import { useAuth } from "../AuthContext"
 import {
 	completeExperimentFileUpload,
+	completeExperimentUpload,
+	fetchExperiments,
 	initExperimentFileUpload,
+	initExperimentUpload,
+	uploadExperimentChunk,
 	uploadExperimentFileChunk,
 } from "../../services/experimentService"
 
@@ -32,7 +34,7 @@ interface ExperimentContextProps {
 		type: string,
 		file: File,
 		organizationId?: number | null,
-	) => Promise<AxiosResponse>
+	) => Promise<void>
 	addExperimentFile: (
 		experimentId: number,
 		file: File,
@@ -48,7 +50,7 @@ export const useExperimentsContext = (): ExperimentContextProps => {
 	const context = useContext(ExperimentContext)
 	if (!context) {
 		throw new Error(
-			"useExperimentsContext must be used within a SelectionProvider",
+			"useExperimentsContext must be used within an ExperimentProvider",
 		)
 	}
 	return context
@@ -65,8 +67,8 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	const [experiments, setExperiments] = useState<Experiment[]>([])
 	const [progress, setProgress] = useState<ChunkProgress[]>([])
 	const listExperiments = useCallback(async function nts() {
-		const experiments = await CytometryApi.get("/experiment")
-		setExperiments([...experiments.data])
+		const experiments = await fetchExperiments()
+		setExperiments([...experiments])
 	}, [])
 
 	const chunkSize = 0.5 * 1024 * 1024
@@ -116,35 +118,27 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 					? (user?.memberships?.[0]?.organization?.id ?? null)
 					: organizationId
 
-			const initResponse = await CytometryApi.post("/experiment/init/", {
+			const initResponse = await initExperimentUpload({
 				title,
 				type,
 				totalChunks,
 				fileName: file.name,
 				organizationId: orgId,
 			})
-			const fileId = initResponse.data.fileId
+			const fileId = initResponse.fileId
 
 			localStorage.setItem(
 				"currentUpload",
 				JSON.stringify({ fileId, title, type }),
 			)
 
-			await sendAllChunks(file, totalChunks, async (index, chunk) => {
-				const formData = new FormData()
-				formData.append("fileId", fileId)
-				formData.append("chunkIndex", index.toString())
-				formData.append("chunk", chunk)
-				await CytometryApi.post("/experiment/upload-chunk/", formData)
-			})
-
-			const completeResponse = await CytometryApi.post(
-				"/experiment/complete/",
-				{ fileId, fileName: file.name },
+			await sendAllChunks(file, totalChunks, (index, chunk) =>
+				uploadExperimentChunk(fileId, index, chunk),
 			)
+
+			await completeExperimentUpload(fileId, file.name)
 			await listExperiments()
 			localStorage.removeItem("currentUpload")
-			return completeResponse
 		},
 		[listExperiments, sendAllChunks, chunkSize, user],
 	)

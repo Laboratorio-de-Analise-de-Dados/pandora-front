@@ -39,24 +39,7 @@ import {
 	getGatePathNames,
 } from "../../gate/utils"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
-
-const extractErrorMessage = (error: unknown): string => {
-	const err = error as {
-		response?: { data?: unknown }
-		message?: string
-	}
-	const data = err?.response?.data
-	if (data && typeof data === "object") {
-		const detail = (data as { detail?: unknown }).detail
-		if (typeof detail === "string") return detail
-		// Erros de campo do serializer: { title: ["..."], type: ["..."] }
-		const fieldErrors = Object.values(data as Record<string, unknown>)
-			.flatMap((value) => (Array.isArray(value) ? value : [value]))
-			.filter((value): value is string => typeof value === "string")
-		if (fieldErrors.length > 0) return fieldErrors.join(" ")
-	}
-	return err?.message ?? String(error)
-}
+import { extractErrorMessage } from "../../../utils/apiError"
 
 export interface ApplyTarget {
 	id: number
@@ -111,9 +94,7 @@ export function useExperimentPageActions() {
 			setSavingExperiment(true)
 			try {
 				await updateExperiment(experiment.id, payload)
-				toast.success("Experimento atualizado!", {
-					position: "bottom-right",
-				})
+				toast.success("Experimento atualizado!")
 				invalidateExperiment()
 				return null
 			} catch (error) {
@@ -131,16 +112,12 @@ export function useExperimentPageActions() {
 		if (!confirmed) return
 		try {
 			await deleteExperiment(experiment.id)
-			toast.success("Experimento excluído com sucesso!", {
-				position: "bottom-right",
-			})
+			toast.success("Experimento excluído com sucesso!")
 			navigate("/experiments")
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o experimento: ${errorMessage}`, {
-				position: "bottom-right",
-			})
+			toast.error(`Erro ao excluir o experimento: ${errorMessage}`)
 		}
 	}, [experiment, navigate])
 
@@ -151,9 +128,7 @@ export function useExperimentPageActions() {
 		async (file: File) => {
 			if (!experiment) return
 			if (!isAcceptedExperimentFile(file.name)) {
-				toast.error(ACCEPTED_EXPERIMENT_FILE_MESSAGE, {
-					position: "bottom-right",
-				})
+				toast.error(ACCEPTED_EXPERIMENT_FILE_MESSAGE)
 				return
 			}
 			try {
@@ -179,21 +154,17 @@ export function useExperimentPageActions() {
 					toast.warn(
 						`${added} amostra(s) adicionada(s); ${skipped.length} ` +
 							`já existia(m) no experimento e foram ignoradas.`,
-						{ position: "bottom-right" },
 					)
 				} else {
 					toast.success(
 						added === 1
 							? "1 amostra adicionada"
 							: `${added} amostras adicionadas`,
-						{ position: "bottom-right" },
 					)
 				}
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(`Erro ao enviar o arquivo: ${extractErrorMessage(error)}`, {
-					position: "bottom-right",
-				})
+				toast.error(`Erro ao enviar o arquivo: ${extractErrorMessage(error)}`)
 			} finally {
 				setAddingFile(false)
 			}
@@ -206,9 +177,7 @@ export function useExperimentPageActions() {
 		try {
 			await downloadExperiment(experiment.id, experiment.title)
 		} catch (error) {
-			toast.error(`Erro ao baixar: ${extractErrorMessage(error)}`, {
-				position: "bottom-right",
-			})
+			toast.error(`Erro ao baixar: ${extractErrorMessage(error)}`)
 		}
 	}, [experiment])
 
@@ -271,7 +240,6 @@ export function useExperimentPageActions() {
 				})
 				toast.success(
 					`${result.deleted} gate(s) excluído(s) em ${result.details.length} amostra(s).`,
-					{ position: "bottom-right" },
 				)
 				const sourceWasDeleted =
 					(options.scope === "file" || options.includeSource) &&
@@ -293,16 +261,12 @@ export function useExperimentPageActions() {
 		async (gateId: number, newName: string) => {
 			try {
 				await updateGate(gateId, { name: newName })
-				toast.success("Gate renomeado com sucesso!", {
-					position: "bottom-right",
-				})
+				toast.success("Gate renomeado com sucesso!")
 				invalidateExperiment()
 			} catch (error) {
 				const errorMessage =
 					error instanceof Error ? error.message : String(error)
-				toast.error(`Erro ao renomear o gate: ${errorMessage}`, {
-					position: "bottom-right",
-				})
+				toast.error(`Erro ao renomear o gate: ${errorMessage}`)
 			}
 		},
 		[invalidateExperiment],
@@ -322,12 +286,9 @@ export function useExperimentPageActions() {
 						done === 1
 							? "Amostra desabilitada. Os gates foram preservados."
 							: `${done} amostras desabilitadas. Os gates foram preservados.`,
-						{ position: "bottom-right" },
 					)
 				} else {
-					toast.warn(`${done} desabilitada(s), ${failed} falharam.`, {
-						position: "bottom-right",
-					})
+					toast.warn(`${done} desabilitada(s), ${failed} falharam.`)
 				}
 				if (source && fileDataIds.includes(source.fileDataId)) {
 					const next = experimentFiles.find(
@@ -348,9 +309,6 @@ export function useExperimentPageActions() {
 			} catch (error) {
 				toast.error(
 					`Erro ao desabilitar a amostra: ${extractErrorMessage(error)}`,
-					{
-						position: "bottom-right",
-					},
 				)
 			}
 		},
@@ -368,21 +326,13 @@ export function useExperimentPageActions() {
 				if (failed === 0) {
 					toast.success(
 						done === 1 ? "Amostra reativada" : `${done} amostras reativadas`,
-						{ position: "bottom-right" },
 					)
 				} else {
-					toast.warn(`${done} reativada(s), ${failed} falharam.`, {
-						position: "bottom-right",
-					})
+					toast.warn(`${done} reativada(s), ${failed} falharam.`)
 				}
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(
-					`Erro ao reativar a amostra: ${extractErrorMessage(error)}`,
-					{
-						position: "bottom-right",
-					},
-				)
+				toast.error(`Erro ao reativar a amostra: ${extractErrorMessage(error)}`)
 			}
 		},
 		[invalidateExperiment],
@@ -394,7 +344,7 @@ export function useExperimentPageActions() {
 		async (name: string): Promise<string | null> => {
 			try {
 				await createSubsample(experimentId, name)
-				toast.success("Subsample criado", { position: "bottom-right" })
+				toast.success("Subsample criado")
 				invalidateExperiment()
 				return null
 			} catch (error) {
@@ -408,7 +358,7 @@ export function useExperimentPageActions() {
 		async (subsampleId: number, name: string): Promise<string | null> => {
 			try {
 				await renameSubsample(experimentId, subsampleId, name)
-				toast.success("Subsample renomeado", { position: "bottom-right" })
+				toast.success("Subsample renomeado")
 				invalidateExperiment()
 				return null
 			} catch (error) {
@@ -422,15 +372,11 @@ export function useExperimentPageActions() {
 		async (subsampleId: number) => {
 			try {
 				await archiveSubsample(experimentId, subsampleId)
-				toast.success(
-					"Subsample arquivado. As amostras ficaram sem subsample.",
-					{ position: "bottom-right" },
-				)
+				toast.success("Subsample arquivado. As amostras ficaram sem subsample.")
 				invalidateExperiment()
 			} catch (error) {
 				toast.error(
 					`Erro ao arquivar o subsample: ${extractErrorMessage(error)}`,
-					{ position: "bottom-right" },
 				)
 			}
 		},
@@ -450,19 +396,15 @@ export function useExperimentPageActions() {
 						fileDataIds.length === 1
 							? "Amostra movida"
 							: `${fileDataIds.length} amostras movidas`,
-						{ position: "bottom-right" },
 					)
 				} else {
 					toast.warn(
 						`${fileDataIds.length - failed} movida(s), ${failed} falharam.`,
-						{ position: "bottom-right" },
 					)
 				}
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(`Erro ao mover a amostra: ${extractErrorMessage(error)}`, {
-					position: "bottom-right",
-				})
+				toast.error(`Erro ao mover a amostra: ${extractErrorMessage(error)}`)
 			}
 		},
 		[invalidateExperiment],
@@ -497,16 +439,13 @@ export function useExperimentPageActions() {
 				})
 				toast.success(
 					`Gates aplicados: ${result.created} criado(s), ${result.replaced} sobrescrito(s)`,
-					{ position: "bottom-right" },
 				)
 				setApplyConflicts([])
 				pendingApply.current = null
 				setApplyTarget(null)
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(`Erro ao aplicar gates: ${extractErrorMessage(error)}`, {
-					position: "bottom-right",
-				})
+				toast.error(`Erro ao aplicar gates: ${extractErrorMessage(error)}`)
 			} finally {
 				setApplyLoading(false)
 			}
@@ -533,9 +472,7 @@ export function useExperimentPageActions() {
 					return
 				}
 			} catch (error) {
-				toast.error(`Erro ao aplicar gates: ${extractErrorMessage(error)}`, {
-					position: "bottom-right",
-				})
+				toast.error(`Erro ao aplicar gates: ${extractErrorMessage(error)}`)
 				return
 			} finally {
 				setApplyLoading(false)

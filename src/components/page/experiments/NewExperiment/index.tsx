@@ -23,6 +23,7 @@ import {
 	ACCEPTED_EXPERIMENT_FILE_MESSAGE,
 	isAcceptedExperimentFile,
 } from "../../../../utils/experimentFile"
+import { extractErrorMessage } from "../../../../utils/apiError"
 
 export default function NewExperimentCard() {
 	const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
@@ -34,8 +35,7 @@ export default function NewExperimentCard() {
 	const [file, setFile] = useState<File | null>(null)
 	const [uploading, setUploading] = useState<boolean>(false)
 
-	const { createExperiment } = useExperimentsContext()
-	const { progress } = useExperimentsContext() as any // progress vem do provider
+	const { createExperiment, progress } = useExperimentsContext()
 	const { user } = useAuth()
 
 	const handleOpen = () => setOpen(true)
@@ -55,13 +55,9 @@ export default function NewExperimentCard() {
 			setUploading(true)
 			const orgId = organizationId === "" ? null : parseInt(organizationId, 10)
 			await createExperiment(title, experimentType, file, orgId)
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Erro ao criar experimento:", error)
-			toast.error(
-				error?.response?.data?.detail ||
-					error?.message ||
-					"Erro ao criar experimento.",
-			)
+			toast.error(extractErrorMessage(error) || "Erro ao criar experimento.")
 		} finally {
 			setUploading(false)
 			handleClose()

@@ -9,7 +9,7 @@ import { ToastContainer } from "react-toastify"
 function App() {
 	return (
 		<ThemeModeProvider>
-			<ToastContainer />
+			<ToastContainer position="bottom-right" />
 			<CssBaseline />
 			<Box
 				sx={{

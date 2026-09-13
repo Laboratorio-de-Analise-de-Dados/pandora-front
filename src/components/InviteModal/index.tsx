@@ -14,7 +14,8 @@ import {
 	Typography,
 } from "@mui/material"
 import { toast } from "react-toastify"
-import CytometryApi from "../../API"
+import { createInvite } from "../../services/inviteService"
+import { extractErrorMessage } from "../../utils/apiError"
 
 interface InviteModalProps {
 	open: boolean
@@ -40,30 +41,19 @@ export default function InviteModal({
 		e.preventDefault()
 		if (!organizationId) return
 		try {
-			const res = await CytometryApi.post(
-				`/accounts/organizations/${organizationId}/invites/`,
-				{
-					email,
-					role,
-				},
-			)
+			const res = await createInvite(organizationId, email, role)
 			setSubmitted(true)
-			setEmailSent(res.data.email_sent)
-			if (res.data.email_sent) {
-				toast.success("Convite enviado por email.", {
-					position: "bottom-right",
-				})
+			setEmailSent(res.email_sent)
+			if (res.email_sent) {
+				toast.success("Convite enviado por email.")
 			} else {
 				toast.warning(
 					"Convite criado, mas o email não foi enviado. Verifique o SMTP.",
-					{ position: "bottom-right" },
 				)
 			}
 			if (onInvited) onInvited()
-		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao enviar convite.", {
-				position: "bottom-right",
-			})
+		} catch (err) {
+			toast.error(extractErrorMessage(err) || "Erro ao enviar convite.")
 		}
 	}
 

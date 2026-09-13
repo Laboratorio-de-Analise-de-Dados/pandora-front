@@ -1,36 +1,33 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Box, Button, Paper, Typography } from "@mui/material"
-import CytometryApi from "../../API"
+import { acceptInvite, fetchInvite, Invite } from "../../services/inviteService"
+import { extractErrorMessage } from "../../utils/apiError"
 import { useAuth } from "../../providers/AuthContext"
 
 export default function InvitePage() {
 	const { token } = useParams<{ token: string }>()
 	const navigate = useNavigate()
 	const { user, isAuthenticated } = useAuth()
-	const [invite, setInvite] = useState<any>(null)
+	const [invite, setInvite] = useState<Invite | null>(null)
 	const [error, setError] = useState("")
 	const [accepted, setAccepted] = useState(false)
 
 	useEffect(() => {
 		if (!token) return
-		CytometryApi.get(`/accounts/invites/${token}/`)
-			.then((res) => setInvite(res.data))
+		fetchInvite(token)
+			.then(setInvite)
 			.catch(() => setError("Convite inválido, expirado ou já processado."))
 	}, [token])
 
 	const handleAccept = async () => {
 		if (!token) return
 		try {
-			await CytometryApi.post(`/accounts/invites/accept/${token}/`, {})
+			await acceptInvite(token)
 			setAccepted(true)
 			setTimeout(() => navigate("/experiments"), 2000)
-		} catch (err: any) {
-			const msg =
-				err.response?.data?.detail ||
-				err.response?.data?.email ||
-				"Erro ao aceitar convite."
-			setError(msg)
+		} catch (err) {
+			setError(extractErrorMessage(err) || "Erro ao aceitar convite.")
 		}
 	}
 

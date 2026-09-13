@@ -26,6 +26,7 @@ import { useOrganizations } from "../../hooks/useOrganizations"
 import { Organization, RoleName } from "../../services/organizationService"
 import InviteModal from "../../components/InviteModal"
 import OrganizationMembers from "../../components/OrganizationMembers"
+import { extractErrorMessage } from "../../utils/apiError"
 
 export default function OrganizationsPage() {
 	const { user, refreshUser } = useAuth()
@@ -73,30 +74,20 @@ export default function OrganizationsPage() {
 	) => {
 		try {
 			await changeRole(orgId, membershipId, role)
-			toast.success("Permissão atualizada.", { position: "bottom-right" })
+			toast.success("Permissão atualizada.")
 			await refreshUser()
 		} catch (err: any) {
-			toast.error(
-				err.response?.data?.role?.[0] ||
-					err.response?.data?.detail ||
-					"Erro ao atualizar a permissão.",
-				{ position: "bottom-right" },
-			)
+			toast.error(extractErrorMessage(err) || "Erro ao atualizar a permissão.")
 		}
 	}
 
 	const handleRemoveMember = async (orgId: number, membershipId: number) => {
 		try {
 			await removeMembership(orgId, membershipId)
-			toast.success("Membro removido.", { position: "bottom-right" })
+			toast.success("Membro removido.")
 			await refreshUser()
 		} catch (err: any) {
-			toast.error(
-				err.response?.data?.role?.[0] ||
-					err.response?.data?.detail ||
-					"Erro ao remover o membro.",
-				{ position: "bottom-right" },
-			)
+			toast.error(extractErrorMessage(err) || "Erro ao remover o membro.")
 		}
 	}
 
@@ -108,26 +99,22 @@ export default function OrganizationsPage() {
 	const handleAccept = async (invite: any) => {
 		try {
 			await accept(invite)
-			toast.success("Convite aceito.", { position: "bottom-right" })
+			toast.success("Convite aceito.")
 			await refreshUser()
 			await loadOrganizations()
 			await refreshReceived()
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao aceitar convite.", {
-				position: "bottom-right",
-			})
+			toast.error(extractErrorMessage(err) || "Erro ao aceitar convite.")
 		}
 	}
 
 	const handleDecline = async (invite: any) => {
 		try {
 			await decline(invite)
-			toast.info("Convite recusado.", { position: "bottom-right" })
+			toast.info("Convite recusado.")
 			await refreshReceived()
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao recusar convite.", {
-				position: "bottom-right",
-			})
+			toast.error(extractErrorMessage(err) || "Erro ao recusar convite.")
 		}
 	}
 
@@ -135,31 +122,24 @@ export default function OrganizationsPage() {
 		try {
 			const emailSent = await resend(invite)
 			if (emailSent) {
-				toast.success("Convite reenviado por email.", {
-					position: "bottom-right",
-				})
+				toast.success("Convite reenviado por email.")
 			} else {
 				toast.warning(
 					"Convite reenviado, mas o email não foi entregue. Verifique o SMTP.",
-					{ position: "bottom-right" },
 				)
 			}
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao reenviar convite.", {
-				position: "bottom-right",
-			})
+			toast.error(extractErrorMessage(err) || "Erro ao reenviar convite.")
 		}
 	}
 
 	const handleCancel = async (invite: any) => {
 		try {
 			await cancel(invite)
-			toast.info("Convite cancelado.", { position: "bottom-right" })
+			toast.info("Convite cancelado.")
 			await refreshSent()
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao cancelar convite.", {
-				position: "bottom-right",
-			})
+			toast.error(extractErrorMessage(err) || "Erro ao cancelar convite.")
 		}
 	}
 

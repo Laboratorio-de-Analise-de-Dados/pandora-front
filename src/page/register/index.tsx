@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Box, Button, TextField, Typography, Paper } from "@mui/material"
-import CytometryApi from "../../API"
+import { registerUser } from "../../services/authService"
+import { fetchInvite } from "../../services/inviteService"
+import { extractErrorMessage } from "../../utils/apiError"
 
 export default function RegisterPage() {
 	const [searchParams] = useSearchParams()
@@ -19,11 +21,11 @@ export default function RegisterPage() {
 
 	useEffect(() => {
 		if (inviteToken) {
-			CytometryApi.get(`/accounts/invites/${inviteToken}/`)
-				.then((res) => {
-					setInviteOrg(res.data.organization?.name || "Grupo")
-					if (res.data.email) {
-						setForm((prev) => ({ ...prev, email: res.data.email }))
+			fetchInvite(inviteToken)
+				.then((invite) => {
+					setInviteOrg(invite.organization?.name || "Grupo")
+					if (invite.email) {
+						setForm((prev) => ({ ...prev, email: invite.email }))
 					}
 				})
 				.catch(() => setError("Convite inválido ou expirado"))
@@ -37,20 +39,17 @@ export default function RegisterPage() {
 			setError("As senhas não coincidem")
 			return
 		}
-		const payload: any = {
-			username: form.username,
-			email: form.email,
-			password: form.password,
-		}
-		if (inviteToken) payload.invite_token = inviteToken
 		try {
-			await CytometryApi.post("/accounts/register/", payload)
+			await registerUser({
+				username: form.username,
+				email: form.email,
+				password: form.password,
+				...(inviteToken ? { invite_token: inviteToken } : {}),
+			})
 			setSuccess(true)
 			setTimeout(() => navigate("/experiments"), 2000)
-		} catch (err: any) {
-			const msg =
-				err.response?.data?.detail || Object.values(err.response?.data || {})[0]
-			setError(msg || "Erro ao criar conta")
+		} catch (err) {
+			setError(extractErrorMessage(err) || "Erro ao criar conta")
 		}
 	}
 

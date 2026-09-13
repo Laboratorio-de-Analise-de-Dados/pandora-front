@@ -2,21 +2,18 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Box, Button, Card, CardContent, Typography } from "@mui/material"
 import Layout from "../../components/Layout"
-import CytometryApi from "../../API"
-
-interface Organization {
-	id: number
-	name: string
-	org_type: string
-}
+import {
+	fetchOrganizations,
+	Organization,
+} from "../../services/organizationService"
 
 export default function HomePage() {
 	const navigate = useNavigate()
 	const [organizations, setOrganizations] = useState<Organization[]>([])
 
 	useEffect(() => {
-		CytometryApi.get("/accounts/organizations/")
-			.then((res) => setOrganizations(res.data))
+		fetchOrganizations()
+			.then(setOrganizations)
 			.catch(() => setOrganizations([]))
 	}, [])
 

@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Tipo:** refactor · **Base:** `main`
 **Branch sugerida:** `refactor/http-layer`
-**Status:** não iniciado. Decisões: ADR-0001, ADR-0008, ADR-0011.
+**Status:** implementado em `refactor/http-layer` — depende de merge.
 
 ## Problema
 

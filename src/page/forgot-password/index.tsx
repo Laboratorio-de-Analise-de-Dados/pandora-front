@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Box, Button, TextField, Typography, Paper } from "@mui/material"
 import { toast } from "react-toastify"
-import CytometryApi from "../../API"
+import { requestPasswordReset } from "../../services/authService"
 
 export default function ForgotPasswordPage() {
 	const [email, setEmail] = useState("")
@@ -12,15 +12,12 @@ export default function ForgotPasswordPage() {
 		e.preventDefault()
 		setLoading(true)
 		try {
-			await CytometryApi.post("/accounts/password-reset/", { email })
+			await requestPasswordReset(email)
 			toast.success(
 				"Se o email estiver cadastrado, você receberá um link de recuperação.",
-				{ position: "bottom-right" },
 			)
 		} catch {
-			toast.error("Erro ao solicitar recuperação. Tente novamente.", {
-				position: "bottom-right",
-			})
+			toast.error("Erro ao solicitar recuperação. Tente novamente.")
 		} finally {
 			setLoading(false)
 		}

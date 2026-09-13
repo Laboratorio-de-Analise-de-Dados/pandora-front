@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, useNavigate, Link } from "react-router-dom"
 import { Box, Button, TextField, Typography, Paper } from "@mui/material"
-import CytometryApi from "../../API"
+import { confirmPasswordReset } from "../../services/authService"
+import { extractErrorMessage } from "../../utils/apiError"
 
 export default function ResetPasswordPage() {
 	const [searchParams] = useSearchParams()
@@ -32,18 +33,11 @@ export default function ResetPasswordPage() {
 
 		setLoading(true)
 		try {
-			await CytometryApi.post("/accounts/password-reset/confirm/", {
-				token,
-				new_password: newPassword,
-			})
+			await confirmPasswordReset(token!, newPassword)
 			setMessage("Senha redefinida com sucesso. Redirecionando para o login...")
 			setTimeout(() => navigate("/login"), 2000)
-		} catch (err: any) {
-			const msg =
-				err.response?.data?.detail ||
-				err.response?.data?.token ||
-				"Erro ao redefinir senha."
-			setError(msg)
+		} catch (err) {
+			setError(extractErrorMessage(err) || "Erro ao redefinir senha.")
 		} finally {
 			setLoading(false)
 		}

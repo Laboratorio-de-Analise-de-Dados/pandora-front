@@ -13,6 +13,7 @@ import {
 	getQuadrantLabels,
 	quadrantPrefixFits,
 } from "../../gate/utils/gateNaming"
+import { extractErrorMessage } from "../../../utils/apiError"
 import { toRaw } from "../utils/biex"
 import { isDegenerateSelection } from "../utils/gateSelection"
 import { buildAxisRange } from "../utils/plotAxes"
@@ -133,11 +134,7 @@ export function useGateDrawing({
 				onGateDrawn?.()
 				loadFile()
 			} catch (error: unknown) {
-				const err = error as { response?: { data?: unknown }; message?: string }
-				const msg = err?.response?.data
-					? JSON.stringify(err.response.data)
-					: (err?.message ?? "Erro desconhecido")
-				toast.error(`Erro ao criar gate: ${msg}`, { position: "bottom-right" })
+				toast.error(`Erro ao criar gate: ${extractErrorMessage(error)}`)
 			}
 		},
 		[
@@ -167,7 +164,6 @@ export function useGateDrawing({
 	const rejectDegenerate = useCallback(() => {
 		toast.info(
 			"Arraste para desenhar o gate: a área selecionada é pequena demais.",
-			{ position: "bottom-right" },
 		)
 	}, [])
 
@@ -314,13 +310,7 @@ export function useGateDrawing({
 				})
 				loadFile()
 			} catch (error: unknown) {
-				const err = error as { response?: { data?: unknown }; message?: string }
-				const msg = err?.response?.data
-					? JSON.stringify(err.response.data)
-					: (err?.message ?? "Erro desconhecido")
-				toast.error(`Erro ao criar quadrante: ${msg}`, {
-					position: "bottom-right",
-				})
+				toast.error(`Erro ao criar quadrante: ${extractErrorMessage(error)}`)
 			}
 		},
 		[

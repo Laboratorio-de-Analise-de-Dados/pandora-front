@@ -1,5 +1,4 @@
 import { ExperimentProvider } from "./ExperimentContext"
-import { SelectionProvider } from "./SelectionContext"
 import { AuthProvider } from "./AuthContext"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import React, { ReactNode } from "react"
@@ -25,9 +24,7 @@ const Providers: React.FC<ProvidersProps> = ({ children }) => {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
-				<ExperimentProvider>
-					<SelectionProvider>{children}</SelectionProvider>
-				</ExperimentProvider>
+				<ExperimentProvider>{children}</ExperimentProvider>
 			</AuthProvider>
 		</QueryClientProvider>
 	)

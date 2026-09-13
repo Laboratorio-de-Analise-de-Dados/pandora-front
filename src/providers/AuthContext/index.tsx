@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
-import CytometryApi from "../../API"
 import { Organization } from "../../types"
+import { fetchCurrentUser, loginUser } from "../../services/authService"
 
 export interface Membership {
 	id: number
@@ -88,9 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 			return
 		}
 		try {
-			const res = await CytometryApi.get("/accounts/users/me/")
-			setUser(res.data)
-			setCachedUser(res.data)
+			const me = await fetchCurrentUser<AuthUser>()
+			setUser(me)
+			setCachedUser(me)
 		} catch {
 			localStorage.removeItem("access_token")
 			localStorage.removeItem("refresh_token")
@@ -112,13 +112,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	}, [])
 
 	const login = async (username: string, password: string) => {
-		const res = await CytometryApi.post("/accounts/login/", {
-			username,
-			password,
-		})
-		localStorage.setItem("access_token", res.data.access)
-		localStorage.setItem("refresh_token", res.data.refresh)
-		const userData = res.data as AuthUser
+		const res = await loginUser(username, password)
+		localStorage.setItem("access_token", res.access)
+		localStorage.setItem("refresh_token", res.refresh)
+		const userData = res as unknown as AuthUser
 		setUser(userData)
 		setCachedUser(userData)
 	}
