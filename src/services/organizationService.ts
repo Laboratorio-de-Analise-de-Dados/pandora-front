@@ -21,7 +21,10 @@ export const fetchOrganizations = async (): Promise<Organization[]> => {
 	return res.data
 }
 
-export const createOrganization = async (name: string, orgType: string): Promise<Organization> => {
+export const createOrganization = async (
+	name: string,
+	orgType: string,
+): Promise<Organization> => {
 	const res = await CytometryApi.post("/accounts/organizations/", {
 		name,
 		org_type: orgType,
@@ -41,7 +44,10 @@ export const updateMemberRole = async (
 	return res.data
 }
 
-export const removeMember = async (organizationId: number, membershipId: number): Promise<void> => {
+export const removeMember = async (
+	organizationId: number,
+	membershipId: number,
+): Promise<void> => {
 	await CytometryApi.delete(
 		`/accounts/organizations/${organizationId}/memberships/${membershipId}/`,
 	)

@@ -46,7 +46,9 @@ export default function ApplyConflictDialog({
 						<ListItem key={`${conflict.file_data_id}-${conflict.gate_id}`}>
 							<ListItemText
 								primary={conflict.name}
-								secondary={conflict.file_name ?? `arquivo ${conflict.file_data_id}`}
+								secondary={
+									conflict.file_name ?? `arquivo ${conflict.file_data_id}`
+								}
 							/>
 						</ListItem>
 					))}

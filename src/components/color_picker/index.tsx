@@ -71,7 +71,10 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
 									borderRadius: "4px",
 									backgroundColor: color,
 									cursor: "pointer",
-									border: color === value ? "2px solid #000" : "2px solid transparent",
+									border:
+										color === value
+											? "2px solid #000"
+											: "2px solid transparent",
 									"&:hover": { opacity: 0.8, border: "2px solid #666" },
 								}}
 							/>

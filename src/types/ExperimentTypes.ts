@@ -9,9 +9,9 @@ export interface Experiment {
 }
 
 export type Organization = {
-	id: number,
-	name: string,
-	org_type: "lab" | "cliente",
+	id: number
+	name: string
+	org_type: "lab" | "cliente"
 }
 
 export interface ExperimentFiles {

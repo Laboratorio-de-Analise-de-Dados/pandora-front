@@ -20,16 +20,28 @@ const StatsSummaryCard: React.FC<StatsSummaryCardProps> = ({ summary }) => (
 		}}
 	>
 		<Box sx={{ textAlign: "center" }}>
-			<Typography variant="caption" color="text.secondary">Count</Typography>
-			<Typography variant="body2" fontWeight="bold">{summary.count.toLocaleString()}</Typography>
+			<Typography variant="caption" color="text.secondary">
+				Count
+			</Typography>
+			<Typography variant="body2" fontWeight="bold">
+				{summary.count.toLocaleString()}
+			</Typography>
 		</Box>
 		<Box sx={{ textAlign: "center" }}>
-			<Typography variant="caption" color="text.secondary">%P</Typography>
-			<Typography variant="body2" fontWeight="bold">{fmtPct(summary.percent_of_parent_population)}</Typography>
+			<Typography variant="caption" color="text.secondary">
+				%P
+			</Typography>
+			<Typography variant="body2" fontWeight="bold">
+				{fmtPct(summary.percent_of_parent_population)}
+			</Typography>
 		</Box>
 		<Box sx={{ textAlign: "center" }}>
-			<Typography variant="caption" color="text.secondary">%T</Typography>
-			<Typography variant="body2" fontWeight="bold">{fmtPct(summary.percent_of_total_population)}</Typography>
+			<Typography variant="caption" color="text.secondary">
+				%T
+			</Typography>
+			<Typography variant="body2" fontWeight="bold">
+				{fmtPct(summary.percent_of_total_population)}
+			</Typography>
 		</Box>
 	</Box>
 )

@@ -9,7 +9,11 @@
 O nome é gerado em `src/features/plot/hooks/useGateDrawing.ts`:
 
 ```ts
-const getNextGateName = (existingNames) => { let n = 1; while (existingNames.has(`P${n}`)) n++; return `P${n}` }
+const getNextGateName = (existingNames) => {
+	let n = 1
+	while (existingNames.has(`P${n}`)) n++
+	return `P${n}`
+}
 ```
 
 com `existingNames` = **irmãos** (`siblingGateNames`) + criados localmente. O banco reforça a mesma regra:

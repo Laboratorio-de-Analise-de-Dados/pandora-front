@@ -39,7 +39,10 @@ export default function ResetPasswordPage() {
 			setMessage("Senha redefinida com sucesso. Redirecionando para o login...")
 			setTimeout(() => navigate("/login"), 2000)
 		} catch (err: any) {
-			const msg = err.response?.data?.detail || err.response?.data?.token || "Erro ao redefinir senha."
+			const msg =
+				err.response?.data?.detail ||
+				err.response?.data?.token ||
+				"Erro ao redefinir senha."
 			setError(msg)
 		} finally {
 			setLoading(false)
@@ -59,7 +62,11 @@ export default function ResetPasswordPage() {
 				<Typography variant="h5" mb={2}>
 					Nova senha
 				</Typography>
-				<Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+				<Box
+					component="form"
+					onSubmit={handleSubmit}
+					sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+				>
 					<TextField
 						label="Nova senha"
 						type="password"
@@ -76,7 +83,11 @@ export default function ResetPasswordPage() {
 					/>
 					{error && <Typography color="error">{error}</Typography>}
 					{message && <Typography color="success.main">{message}</Typography>}
-					<Button type="submit" variant="contained" disabled={loading || !token}>
+					<Button
+						type="submit"
+						variant="contained"
+						disabled={loading || !token}
+					>
 						{loading ? "Salvando..." : "Redefinir senha"}
 					</Button>
 					<Button component={Link} to="/login" variant="text" fullWidth>

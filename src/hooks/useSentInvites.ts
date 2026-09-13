@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
-import { cancelInvite, fetchSentInvites, resendInvite, Invite } from "../services/inviteService"
+import {
+	cancelInvite,
+	fetchSentInvites,
+	resendInvite,
+	Invite,
+} from "../services/inviteService"
 
 interface UseSentInvitesResult {
 	invites: Invite[]
@@ -30,11 +35,14 @@ export const useSentInvites = (enabled: boolean): UseSentInvitesResult => {
 		refresh()
 	}, [refresh])
 
-	const resend = useCallback(async (invite: Invite) => {
-		const result = await resendInvite(invite.organization.id, invite.id)
-		await refresh()
-		return result.email_sent
-	}, [refresh])
+	const resend = useCallback(
+		async (invite: Invite) => {
+			const result = await resendInvite(invite.organization.id, invite.id)
+			await refresh()
+			return result.email_sent
+		},
+		[refresh],
+	)
 
 	const cancel = useCallback(async (invite: Invite) => {
 		await cancelInvite(invite.organization.id, invite.id)

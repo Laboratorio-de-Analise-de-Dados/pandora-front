@@ -95,9 +95,7 @@ export default function ApplyGateDialog({
 									size="small"
 								/>
 							}
-							label={
-								<Typography variant="body2">Incluir sub-gates</Typography>
-							}
+							label={<Typography variant="body2">Incluir sub-gates</Typography>}
 						/>
 					}
 				/>
@@ -109,7 +107,9 @@ export default function ApplyGateDialog({
 					variant="contained"
 					disabled={selectedIds.size === 0 || loading}
 				>
-					{loading ? "Aplicando..." : `Aplicar (${selectedIds.size} arquivo${selectedIds.size !== 1 ? "s" : ""})`}
+					{loading
+						? "Aplicando..."
+						: `Aplicar (${selectedIds.size} arquivo${selectedIds.size !== 1 ? "s" : ""})`}
 				</Button>
 			</DialogActions>
 		</Dialog>

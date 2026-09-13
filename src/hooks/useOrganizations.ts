@@ -13,7 +13,11 @@ interface UseOrganizationsResult {
 	loading: boolean
 	refresh: () => Promise<void>
 	create: (name: string, orgType: string) => Promise<void>
-	changeRole: (organizationId: number, membershipId: number, role: RoleName) => Promise<void>
+	changeRole: (
+		organizationId: number,
+		membershipId: number,
+		role: RoleName,
+	) => Promise<void>
 	remove: (organizationId: number, membershipId: number) => Promise<void>
 }
 

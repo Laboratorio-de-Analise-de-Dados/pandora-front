@@ -5,7 +5,11 @@ import {
 	fetchExperimentFiles,
 	fetchFileStats,
 } from "../../../services/experimentService"
-import type { Experiment, ExperimentFiles, AnalysisResultData } from "../../../types"
+import type {
+	Experiment,
+	ExperimentFiles,
+	AnalysisResultData,
+} from "../../../types"
 
 export function useExperimentQuery(id: string) {
 	return useQuery<Experiment>({
@@ -23,7 +27,10 @@ export function useExperimentFilesQuery(id: string, includeInactive = false) {
 	})
 }
 
-export function useFileStatsQuery(sourceType: string | undefined, sourceId: number | undefined) {
+export function useFileStatsQuery(
+	sourceType: string | undefined,
+	sourceId: number | undefined,
+) {
 	return useQuery<AnalysisResultData>({
 		queryKey: ["file-stats", sourceId],
 		queryFn: async () => fetchFileStats(sourceId as number),

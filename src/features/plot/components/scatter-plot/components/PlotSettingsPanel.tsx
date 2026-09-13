@@ -1,5 +1,8 @@
 import React, { useState } from "react"
-import { MdClose as CloseIcon, MdSettings as SettingsIcon } from "react-icons/md"
+import {
+	MdClose as CloseIcon,
+	MdSettings as SettingsIcon,
+} from "react-icons/md"
 import {
 	Box,
 	Divider,
@@ -320,7 +323,9 @@ const PlotSettingsContent: React.FC<
 							min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
 							max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
 							step={yScale === "biex" ? 0.01 : 500}
-							marks={yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+							marks={
+								yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS
+							}
 							valueLabelDisplay="auto"
 							valueLabelFormat={(v) => {
 								const raw = sliderToRaw(v, yScale)

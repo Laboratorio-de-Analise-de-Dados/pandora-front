@@ -29,24 +29,24 @@ cp .env.example .env
 
 ### Variaveis de Ambiente
 
-| Variavel | Descricao | Exemplo |
-|----------|-----------|---------|
+| Variavel       | Descricao                  | Exemplo                 |
+| -------------- | -------------------------- | ----------------------- |
 | `VITE_API_URL` | URL base da API do Pandora | `http://localhost:8085` |
 
 > Variaveis expostas ao cliente precisam do prefixo `VITE_`.
 
 ## Scripts
 
-| Comando | Descricao |
-|---------|-----------|
-| `yarn dev` | Servidor de desenvolvimento em [http://localhost:3000](http://localhost:3000) com hot reload |
-| `yarn build` | Build de producao na pasta `build/` |
-| `yarn preview` | Servidor local para visualizar o build de producao |
-| `yarn typecheck` | Verificacao de tipos (`tsc --noEmit`) |
-| `yarn test` | Roda testes com [Vitest](https://vitest.dev/) |
-| `yarn test:watch` | Testes em modo interativo |
-| `yarn dev:docker:build` | Dev com Docker (build + up) |
-| `yarn dev:docker` | Dev com Docker (up) |
+| Comando                 | Descricao                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| `yarn dev`              | Servidor de desenvolvimento em [http://localhost:3000](http://localhost:3000) com hot reload |
+| `yarn build`            | Build de producao na pasta `build/`                                                          |
+| `yarn preview`          | Servidor local para visualizar o build de producao                                           |
+| `yarn typecheck`        | Verificacao de tipos (`tsc --noEmit`)                                                        |
+| `yarn test`             | Roda testes com [Vitest](https://vitest.dev/)                                                |
+| `yarn test:watch`       | Testes em modo interativo                                                                    |
+| `yarn dev:docker:build` | Dev com Docker (build + up)                                                                  |
+| `yarn dev:docker`       | Dev com Docker (up)                                                                          |
 
 ## Docker
 
@@ -132,32 +132,32 @@ ExperimentWorkspaceProvider (Context)
 
 ### Conceitos-Chave
 
-| Conceito | Descricao |
-|----------|-----------|
-| **Gate** | Fronteira geometrica (retangulo, poligono, quadrante, intervalo) que isola uma populacao de celulas |
-| **Gate Hierarchy** | Gates podem ter filhos, formando uma arvore (ex: Lymphocytes > CD3+ > CD4+) |
+| Conceito                 | Descricao                                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| **Gate**                 | Fronteira geometrica (retangulo, poligono, quadrante, intervalo) que isola uma populacao de celulas                         |
+| **Gate Hierarchy**       | Gates podem ter filhos, formando uma arvore (ex: Lymphocytes > CD3+ > CD4+)                                                 |
 | **Biexponential (biex)** | Transformacao `arcsinh(v / cofactor)` para visualizar dados de alta faixa dinamica incluindo negativos. Cofator padrao: 150 |
-| **Density Plot** | Heatmap mostrando concentracao de eventos via escala de cor |
-| **FCS** | Formato padrao de dados para citometria de fluxo |
-| **MFI** | Mean/Median Fluorescence Intensity — metrica estatistica principal |
-| **%P / %T** | Porcentagem da populacao pai e porcentagem do total de eventos |
-| **Apply Gate** | Propagar coordenadas de gate para outros arquivos do experimento |
-| **Source** | Item selecionado na arvore — pode ser um arquivo (`file`) ou um gate (`gate`) |
+| **Density Plot**         | Heatmap mostrando concentracao de eventos via escala de cor                                                                 |
+| **FCS**                  | Formato padrao de dados para citometria de fluxo                                                                            |
+| **MFI**                  | Mean/Median Fluorescence Intensity — metrica estatistica principal                                                          |
+| **%P / %T**              | Porcentagem da populacao pai e porcentagem do total de eventos                                                              |
+| **Apply Gate**           | Propagar coordenadas de gate para outros arquivos do experimento                                                            |
+| **Source**               | Item selecionado na arvore — pode ser um arquivo (`file`) ou um gate (`gate`)                                               |
 
 ### Stack Tecnica
 
-| Camada | Tecnologia | Versao |
-|--------|-----------|--------|
-| UI Framework | React | ^18.2.0 |
-| Linguagem | TypeScript | ^4.4.2 |
-| Component Library | MUI | ^7.2.0 |
-| Graficos | Plotly.js + react-plotly.js | ^2.29.1 |
-| Data Fetching | TanStack Query | ^5 |
-| Roteamento | React Router | 6.28.0 |
-| HTTP Client | Axios | ^1.6.8 |
-| Bundler | Vite | ^5.4.11 |
-| Testes | Vitest + Testing Library | ^2.1.8 |
-| Styling | styled-components + Emotion | ^6.1.8 / ^11.14.0 |
+| Camada            | Tecnologia                  | Versao            |
+| ----------------- | --------------------------- | ----------------- |
+| UI Framework      | React                       | ^18.2.0           |
+| Linguagem         | TypeScript                  | ^4.4.2            |
+| Component Library | MUI                         | ^7.2.0            |
+| Graficos          | Plotly.js + react-plotly.js | ^2.29.1           |
+| Data Fetching     | TanStack Query              | ^5                |
+| Roteamento        | React Router                | 6.28.0            |
+| HTTP Client       | Axios                       | ^1.6.8            |
+| Bundler           | Vite                        | ^5.4.11           |
+| Testes            | Vitest + Testing Library    | ^2.1.8            |
+| Styling           | styled-components + Emotion | ^6.1.8 / ^11.14.0 |
 
 ---
 
@@ -172,6 +172,7 @@ ExperimentWorkspaceProvider (Context)
 ### Fluxo de Trabalho
 
 1. **Crie uma branch** a partir de `main`:
+
    ```bash
    git checkout main && git pull
    git checkout -b feature/nome-descritivo
@@ -180,6 +181,7 @@ ExperimentWorkspaceProvider (Context)
 2. **Desenvolva** seguindo os padroes abaixo
 
 3. **Verifique antes de commitar**:
+
    ```bash
    yarn typecheck    # tipos ok?
    yarn build        # build ok?
@@ -187,6 +189,7 @@ ExperimentWorkspaceProvider (Context)
    ```
 
 4. **Commit com mensagens semanticas**:
+
    ```
    feat: adiciona filtro por fluorescencia no StatsPanel
    fix: corrige transformacao biex para valores negativos
@@ -257,12 +260,12 @@ Quando propor mudancas estruturais (nova feature, refactor grande, nova dependen
 
 #### Escala de Risco para PRs
 
-| Risco | Tipo de Mudanca | Exemplo |
-|-------|----------------|---------|
-| Zero | Extrair funcao pura para utils | `biex.ts`, `geometry.ts` |
-| Baixo | Extrair hook ou sub-componente | `usePlotState`, `StatsTable` |
-| Medio | Mudar data fetching ou estado compartilhado | React Query, Context |
-| Alto | Trocar dependencia core ou reorganizar pastas | React Router, folder moves |
+| Risco | Tipo de Mudanca                               | Exemplo                      |
+| ----- | --------------------------------------------- | ---------------------------- |
+| Zero  | Extrair funcao pura para utils                | `biex.ts`, `geometry.ts`     |
+| Baixo | Extrair hook ou sub-componente                | `usePlotState`, `StatsTable` |
+| Medio | Mudar data fetching ou estado compartilhado   | React Query, Context         |
+| Alto  | Trocar dependencia core ou reorganizar pastas | React Router, folder moves   |
 
 ---
 

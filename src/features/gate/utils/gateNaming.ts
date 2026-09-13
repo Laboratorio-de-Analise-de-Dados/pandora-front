@@ -52,10 +52,7 @@ export const getNextQuadrantGroup = (
  * Quadrantes só ganham o prefixo do parent se todos os 4 rótulos couberem no
  * limite do backend.
  */
-export const quadrantPrefixFits = (
-	n: number,
-	parentName?: string,
-): boolean =>
+export const quadrantPrefixFits = (n: number, parentName?: string): boolean =>
 	getQuadrantLabels(n, parentName).every(
 		(label) => label.length <= GATE_NAME_MAX_LENGTH,
 	)

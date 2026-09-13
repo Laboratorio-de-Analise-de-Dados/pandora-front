@@ -25,7 +25,10 @@ import { getCopyFamilyIds } from "../../features/gate/utils"
 
 import { COFACTOR } from "../../features/plot/utils/biex"
 import { buildTicks } from "../../features/plot/utils/ticks"
-import { buildPlotData, hasPlotData } from "../../features/plot/utils/plotTraces"
+import {
+	buildPlotData,
+	hasPlotData,
+} from "../../features/plot/utils/plotTraces"
 import { buildAxisRange } from "../../features/plot/utils/plotAxes"
 
 import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
@@ -205,7 +208,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		siblingGateNames,
 		loadFile,
 		setTool,
-		plotConfig: { xAxis, yAxis, xScale, yScale, xMin, xMax, yMin, yMax, cutoff, plotMode },
+		plotConfig: {
+			xAxis,
+			yAxis,
+			xScale,
+			yScale,
+			xMin,
+			xMax,
+			yMin,
+			yMax,
+			cutoff,
+			plotMode,
+		},
 		onGateDrawn: clearSelectionOutline,
 	})
 

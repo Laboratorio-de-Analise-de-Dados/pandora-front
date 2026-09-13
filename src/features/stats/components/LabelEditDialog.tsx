@@ -37,16 +37,31 @@ const LabelEditDialog: React.FC<LabelEditDialogProps> = ({
 	onClose,
 }) => (
 	<Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-		<DialogTitle sx={{ fontSize: "0.95rem" }}>Editar Labels dos Canais</DialogTitle>
+		<DialogTitle sx={{ fontSize: "0.95rem" }}>
+			Editar Labels dos Canais
+		</DialogTitle>
 		<DialogContent>
-			<Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
-				Adicione labels customizados (ex: FITC-A → CFSE). O nome original do canal é preservado.
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				sx={{ mb: 1, display: "block" }}
+			>
+				Adicione labels customizados (ex: FITC-A → CFSE). O nome original do
+				canal é preservado.
 			</Typography>
 			<Table size="small">
 				<TableHead>
 					<TableRow>
-						<TableCell sx={{ py: 0.5, fontSize: "0.75rem", fontWeight: "bold" }}>Canal Original</TableCell>
-						<TableCell sx={{ py: 0.5, fontSize: "0.75rem", fontWeight: "bold" }}>Label Customizado</TableCell>
+						<TableCell
+							sx={{ py: 0.5, fontSize: "0.75rem", fontWeight: "bold" }}
+						>
+							Canal Original
+						</TableCell>
+						<TableCell
+							sx={{ py: 0.5, fontSize: "0.75rem", fontWeight: "bold" }}
+						>
+							Label Customizado
+						</TableCell>
 					</TableRow>
 				</TableHead>
 				<TableBody>
@@ -61,9 +76,14 @@ const LabelEditDialog: React.FC<LabelEditDialogProps> = ({
 									placeholder={channelLabelMap[ch] ?? ch}
 									value={editingLabels[ch] ?? ""}
 									onChange={(e) =>
-										onEditingLabelsChange({ ...editingLabels, [ch]: e.target.value })
+										onEditingLabelsChange({
+											...editingLabels,
+											[ch]: e.target.value,
+										})
 									}
-									sx={{ "& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 } }}
+									sx={{
+										"& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 },
+									}}
 									fullWidth
 								/>
 							</TableCell>
@@ -73,10 +93,16 @@ const LabelEditDialog: React.FC<LabelEditDialogProps> = ({
 			</Table>
 		</DialogContent>
 		<DialogActions>
-			<Button size="small" onClick={onClearAll}>Limpar Todos</Button>
+			<Button size="small" onClick={onClearAll}>
+				Limpar Todos
+			</Button>
 			<Box sx={{ flex: 1 }} />
-			<Button size="small" onClick={onClose}>Cancelar</Button>
-			<Button size="small" variant="contained" onClick={onSave}>Salvar</Button>
+			<Button size="small" onClick={onClose}>
+				Cancelar
+			</Button>
+			<Button size="small" variant="contained" onClick={onSave}>
+				Salvar
+			</Button>
 		</DialogActions>
 	</Dialog>
 )

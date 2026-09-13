@@ -1,5 +1,10 @@
 export { usePlotState } from "./usePlotState"
-export type { PlotMode, GateTool, PlotState, PlotStateActions } from "./usePlotState"
+export type {
+	PlotMode,
+	GateTool,
+	PlotState,
+	PlotStateActions,
+} from "./usePlotState"
 export { useDensityQuery } from "./useDensityQuery"
 export { useGateDrawing } from "./useGateDrawing"
 export { useGateShapes } from "./useGateShapes"

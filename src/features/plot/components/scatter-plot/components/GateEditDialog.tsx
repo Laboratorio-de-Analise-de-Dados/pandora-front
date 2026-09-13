@@ -91,9 +91,7 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 					</FormLabel>
 					<RadioGroup
 						value={scope}
-						onChange={(_, value: string) =>
-							onScopeChange(value as GateScope)
-						}
+						onChange={(_, value: string) => onScopeChange(value as GateScope)}
 					>
 						<FormControlLabel
 							value="file"

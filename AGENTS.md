@@ -10,14 +10,14 @@ React 18 + TypeScript (strict) + Vite + MUI 7 + Plotly + TanStack Query 5.
 
 ## Comandos
 
-| Tarefa | Comando |
-|--------|---------|
-| Instalar dependências | `yarn install` |
-| Dev server | `yarn dev` → http://localhost:3000 |
-| Typecheck | `yarn typecheck` (`tsc --noEmit`) |
-| Testes | `yarn test` (Vitest + jsdom) |
-| Build | `yarn build` → saída em `build/` |
-| Dev com Docker | `yarn dev:docker` |
+| Tarefa                | Comando                            |
+| --------------------- | ---------------------------------- |
+| Instalar dependências | `yarn install`                     |
+| Dev server            | `yarn dev` → http://localhost:3000 |
+| Typecheck             | `yarn typecheck` (`tsc --noEmit`)  |
+| Testes                | `yarn test` (Vitest + jsdom)       |
+| Build                 | `yarn build` → saída em `build/`   |
+| Dev com Docker        | `yarn dev:docker`                  |
 
 - Gerenciador de pacotes: **Yarn 1.x Classic**. Não use `npm install` (o
   `package-lock.json` é legado; a fonte de verdade é o `yarn.lock`).

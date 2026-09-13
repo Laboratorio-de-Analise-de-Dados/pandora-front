@@ -66,7 +66,11 @@ export default function OrganizationsPage() {
 		await refreshUser()
 	}
 
-	const handleChangeRole = async (orgId: number, membershipId: number, role: RoleName) => {
+	const handleChangeRole = async (
+		orgId: number,
+		membershipId: number,
+		role: RoleName,
+	) => {
 		try {
 			await changeRole(orgId, membershipId, role)
 			toast.success("Permissão atualizada.", { position: "bottom-right" })
@@ -109,7 +113,9 @@ export default function OrganizationsPage() {
 			await loadOrganizations()
 			await refreshReceived()
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao aceitar convite.", { position: "bottom-right" })
+			toast.error(err.response?.data?.detail || "Erro ao aceitar convite.", {
+				position: "bottom-right",
+			})
 		}
 	}
 
@@ -119,7 +125,9 @@ export default function OrganizationsPage() {
 			toast.info("Convite recusado.", { position: "bottom-right" })
 			await refreshReceived()
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao recusar convite.", { position: "bottom-right" })
+			toast.error(err.response?.data?.detail || "Erro ao recusar convite.", {
+				position: "bottom-right",
+			})
 		}
 	}
 
@@ -127,12 +135,19 @@ export default function OrganizationsPage() {
 		try {
 			const emailSent = await resend(invite)
 			if (emailSent) {
-				toast.success("Convite reenviado por email.", { position: "bottom-right" })
+				toast.success("Convite reenviado por email.", {
+					position: "bottom-right",
+				})
 			} else {
-				toast.warning("Convite reenviado, mas o email não foi entregue. Verifique o SMTP.", { position: "bottom-right" })
+				toast.warning(
+					"Convite reenviado, mas o email não foi entregue. Verifique o SMTP.",
+					{ position: "bottom-right" },
+				)
 			}
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao reenviar convite.", { position: "bottom-right" })
+			toast.error(err.response?.data?.detail || "Erro ao reenviar convite.", {
+				position: "bottom-right",
+			})
 		}
 	}
 
@@ -142,7 +157,9 @@ export default function OrganizationsPage() {
 			toast.info("Convite cancelado.", { position: "bottom-right" })
 			await refreshSent()
 		} catch (err: any) {
-			toast.error(err.response?.data?.detail || "Erro ao cancelar convite.", { position: "bottom-right" })
+			toast.error(err.response?.data?.detail || "Erro ao cancelar convite.", {
+				position: "bottom-right",
+			})
 		}
 	}
 
@@ -151,10 +168,18 @@ export default function OrganizationsPage() {
 
 	const isOrgAdmin = (orgId: number) =>
 		Boolean(user?.is_super_admin) ||
-		user?.memberships?.some((m) => m.organization?.id === orgId && getRoleName(m) === "org_admin")
+		user?.memberships?.some(
+			(m) => m.organization?.id === orgId && getRoleName(m) === "org_admin",
+		)
 
 	return (
-		<Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: { xs: "100%", md: 1200 }, mx: "auto" }}>
+		<Box
+			sx={{
+				p: { xs: 2, sm: 3, md: 4 },
+				maxWidth: { xs: "100%", md: 1200 },
+				mx: "auto",
+			}}
+		>
 			<Typography variant="h4" mb={3}>
 				Organizações
 			</Typography>
@@ -169,7 +194,11 @@ export default function OrganizationsPage() {
 				{tab === 0 && (
 					<Box>
 						{organizations.map((org) => (
-							<Paper key={org.id} variant="outlined" sx={{ p: { xs: 1.5, md: 2 }, mb: 2 }}>
+							<Paper
+								key={org.id}
+								variant="outlined"
+								sx={{ p: { xs: 1.5, md: 2 }, mb: 2 }}
+							>
 								<Box
 									sx={{
 										display: "flex",
@@ -205,20 +234,31 @@ export default function OrganizationsPage() {
 									onChangeRole={(membershipId, role) =>
 										handleChangeRole(org.id, membershipId, role)
 									}
-									onRemove={(membershipId) => handleRemoveMember(org.id, membershipId)}
+									onRemove={(membershipId) =>
+										handleRemoveMember(org.id, membershipId)
+									}
 								/>
-								</Paper>
-							))}
-							{organizations.length === 0 && (
-								<Typography color="text.secondary" mt={2}>
-									Nenhuma organização encontrada.
-								</Typography>
-							)}
-						</Box>
-					)}
+							</Paper>
+						))}
+						{organizations.length === 0 && (
+							<Typography color="text.secondary" mt={2}>
+								Nenhuma organização encontrada.
+							</Typography>
+						)}
+					</Box>
+				)}
 
 				{tab === 1 && (
-					<Box component="form" onSubmit={handleCreateOrg} sx={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: 500 }}>
+					<Box
+						component="form"
+						onSubmit={handleCreateOrg}
+						sx={{
+							display: "flex",
+							flexDirection: "column",
+							gap: 2,
+							maxWidth: 500,
+						}}
+					>
 						<TextField
 							label="Nome da organização"
 							value={newOrgName}
@@ -227,7 +267,11 @@ export default function OrganizationsPage() {
 						/>
 						<FormControl>
 							<InputLabel>Tipo</InputLabel>
-							<Select value={newOrgType} onChange={(e) => setNewOrgType(e.target.value)} label="Tipo">
+							<Select
+								value={newOrgType}
+								onChange={(e) => setNewOrgType(e.target.value)}
+								label="Tipo"
+							>
 								<MenuItem value="lab">Laboratório</MenuItem>
 								<MenuItem value="customer">Cliente</MenuItem>
 							</Select>
@@ -244,9 +288,13 @@ export default function OrganizationsPage() {
 							Convites recebidos
 						</Typography>
 						{receivedLoading ? (
-							<Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
+							<Box
+								sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}
+							>
 								<CircularProgress size={20} />
-								<Typography variant="body2" color="text.secondary">Carregando...</Typography>
+								<Typography variant="body2" color="text.secondary">
+									Carregando...
+								</Typography>
 							</Box>
 						) : receivedInvites.length === 0 ? (
 							<Typography color="text.secondary" mb={3}>
@@ -255,12 +303,17 @@ export default function OrganizationsPage() {
 						) : (
 							<List dense sx={{ mb: 4 }}>
 								{receivedInvites.map((invite) => {
-									const emailMatch = user?.email.toLowerCase() === invite.email.toLowerCase()
+									const emailMatch =
+										user?.email.toLowerCase() === invite.email.toLowerCase()
 									return (
 										<ListItem
 											key={invite.id}
 											divider
-											sx={{ flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: "flex-start", sm: "center" }, gap: 1 }}
+											sx={{
+												flexDirection: { xs: "column", sm: "row" },
+												alignItems: { xs: "flex-start", sm: "center" },
+												gap: 1,
+											}}
 										>
 											<ListItemText
 												primary={`Convite para ${invite.organization.name}`}
@@ -268,7 +321,11 @@ export default function OrganizationsPage() {
 											/>
 											<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
 												{!emailMatch && (
-													<Chip label="Outro email" size="small" color="warning" />
+													<Chip
+														label="Outro email"
+														size="small"
+														color="warning"
+													/>
 												)}
 												<Button
 													variant="contained"
@@ -301,7 +358,9 @@ export default function OrganizationsPage() {
 						{sentLoading ? (
 							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
 								<CircularProgress size={20} />
-								<Typography variant="body2" color="text.secondary">Carregando...</Typography>
+								<Typography variant="body2" color="text.secondary">
+									Carregando...
+								</Typography>
 							</Box>
 						) : sentInvites.length === 0 ? (
 							<Typography color="text.secondary">
@@ -313,7 +372,11 @@ export default function OrganizationsPage() {
 									<ListItem
 										key={invite.id}
 										divider
-										sx={{ flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: "flex-start", sm: "center" }, gap: 1 }}
+										sx={{
+											flexDirection: { xs: "column", sm: "row" },
+											alignItems: { xs: "flex-start", sm: "center" },
+											gap: 1,
+										}}
 									>
 										<ListItemText
 											primary={`${invite.organization.name}`}

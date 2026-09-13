@@ -143,9 +143,7 @@ function ExperimentPageContent() {
 						onChange={(e) => setShowInactiveFiles(e.target.checked)}
 					/>
 				}
-				label={
-					<Typography variant="caption">Mostrar desabilitadas</Typography>
-				}
+				label={<Typography variant="caption">Mostrar desabilitadas</Typography>}
 				sx={{ flexShrink: 0, mt: 0.5 }}
 			/>
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", mt: 1 }}>
@@ -263,9 +261,7 @@ function ExperimentPageContent() {
 										sourceType={source.type}
 										sourceId={source.id}
 										fileDataId={source.fileDataId}
-										parentId={
-											source.type === "gate" ? source.id : undefined
-										}
+										parentId={source.type === "gate" ? source.id : undefined}
 										parentName={
 											source.type === "gate" ? selectedGate?.name : undefined
 										}

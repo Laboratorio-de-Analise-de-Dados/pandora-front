@@ -39,7 +39,8 @@ export const buildAnalysisRows = (
 		"%Total (%T)",
 	]
 	for (const ch of displayChannels)
-		for (const m of metricCols) header.push(`${channelLabel(ch)}_${m.shortLabel}`)
+		for (const m of metricCols)
+			header.push(`${channelLabel(ch)}_${m.shortLabel}`)
 
 	const rows: string[][] = [header]
 

@@ -7,7 +7,10 @@ interface AuthProvidersConfig {
 }
 
 export function useAuthProviders() {
-	const [providers, setProviders] = useState<AuthProvidersConfig>({ google: false, microsoft: false })
+	const [providers, setProviders] = useState<AuthProvidersConfig>({
+		google: false,
+		microsoft: false,
+	})
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {

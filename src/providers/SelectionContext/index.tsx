@@ -14,14 +14,14 @@ interface SelectionContextProps {
 }
 
 const SelectionContext = createContext<SelectionContextProps | undefined>(
-	undefined
+	undefined,
 )
 
 export const useSelectionContext = (): SelectionContextProps => {
 	const context = useContext(SelectionContext)
 	if (!context) {
 		throw new Error(
-			"useSelectionContext must be used within a SelectionProvider"
+			"useSelectionContext must be used within a SelectionProvider",
 		)
 	}
 	return context

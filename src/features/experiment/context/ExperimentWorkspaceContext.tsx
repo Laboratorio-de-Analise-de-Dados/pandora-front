@@ -65,17 +65,25 @@ const DEFAULT_VIEW_CONFIG: PlotViewConfig = {
 	plotMode: "heatmap",
 }
 
-const ExperimentWorkspaceContext = createContext<ExperimentWorkspaceValue | undefined>(undefined)
+const ExperimentWorkspaceContext = createContext<
+	ExperimentWorkspaceValue | undefined
+>(undefined)
 
 export function useExperimentWorkspace(): ExperimentWorkspaceValue {
 	const ctx = useContext(ExperimentWorkspaceContext)
 	if (!ctx) {
-		throw new Error("useExperimentWorkspace must be used within ExperimentWorkspaceProvider")
+		throw new Error(
+			"useExperimentWorkspace must be used within ExperimentWorkspaceProvider",
+		)
 	}
 	return ctx
 }
 
-export function ExperimentWorkspaceProvider({ children }: { children: React.ReactNode }) {
+export function ExperimentWorkspaceProvider({
+	children,
+}: {
+	children: React.ReactNode
+}) {
 	const { id: experimentId = "" } = useParams<{ id: string }>()
 
 	const { data: experiment, isLoading } = useExperimentQuery(experimentId)
@@ -104,13 +112,17 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 		() => getChildGatesForSource(experimentFiles, source),
 		[experimentFiles, source],
 	)
-	const siblingGateNames = useMemo(() => childGates.map((g) => g.name), [childGates])
+	const siblingGateNames = useMemo(
+		() => childGates.map((g) => g.name),
+		[childGates],
+	)
 	const values = useMemo(() => experiment?.values ?? [], [experiment])
 
 	// Config de visualização corrente (carry-forward em memória, estilo FlowJo):
 	// segue de um arquivo/gate pro próximo até que um gate com config própria a
 	// sobrescreva.
-	const [viewConfig, setViewConfig] = useState<PlotViewConfig>(DEFAULT_VIEW_CONFIG)
+	const [viewConfig, setViewConfig] =
+		useState<PlotViewConfig>(DEFAULT_VIEW_CONFIG)
 
 	const selectedGate = useMemo(() => {
 		if (source?.type !== "gate") return undefined
@@ -130,7 +142,9 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 
 	const currentFileIndex = useMemo(() => {
 		if (!source) return -1
-		return navigableFiles.findIndex((f: ExperimentFiles) => f.id === source.fileDataId)
+		return navigableFiles.findIndex(
+			(f: ExperimentFiles) => f.id === source.fileDataId,
+		)
 	}, [navigableFiles, source])
 
 	const canGoPrevFile = currentFileIndex > 0
@@ -226,7 +240,27 @@ export function ExperimentWorkspaceProvider({ children }: { children: React.Reac
 			showInactiveFiles,
 			setShowInactiveFiles,
 		}),
-		[showInactiveFiles, experimentId, experiment, experimentFiles, isLoading, source, setSource, fileStats, invalidateExperiment, childGates, siblingGateNames, values, selectedGate, viewConfig, plotInitialConfig, sourceLabel, goToAdjacentFile, canGoPrevFile, canGoNextFile],
+		[
+			showInactiveFiles,
+			experimentId,
+			experiment,
+			experimentFiles,
+			isLoading,
+			source,
+			setSource,
+			fileStats,
+			invalidateExperiment,
+			childGates,
+			siblingGateNames,
+			values,
+			selectedGate,
+			viewConfig,
+			plotInitialConfig,
+			sourceLabel,
+			goToAdjacentFile,
+			canGoPrevFile,
+			canGoNextFile,
+		],
 	)
 
 	return (

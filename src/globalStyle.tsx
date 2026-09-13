@@ -28,7 +28,7 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 					info: {
 						main: "#27AE60", // tom de verde complementar
 					},
-			  }
+				}
 			: {
 					background: {
 						default: "#121212", // dark black
@@ -52,7 +52,7 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 					info: {
 						main: "#58D68D",
 					},
-			  }),
+				}),
 	},
 	typography: {
 		fontFamily: "Inter, Roboto, Helvetica Neue, sans-serif",

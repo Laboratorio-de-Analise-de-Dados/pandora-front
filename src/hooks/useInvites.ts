@@ -1,5 +1,10 @@
 import { useEffect, useState, useCallback } from "react"
-import { fetchPendingInvites, acceptInvite, declineInvite, Invite } from "../services/inviteService"
+import {
+	fetchPendingInvites,
+	acceptInvite,
+	declineInvite,
+	Invite,
+} from "../services/inviteService"
 
 interface UseInvitesResult {
 	invites: Invite[]

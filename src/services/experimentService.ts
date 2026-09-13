@@ -1,9 +1,5 @@
 import CytometryApi from "../API"
-import type {
-	AnalysisResultData,
-	Experiment,
-	ExperimentFiles,
-} from "../types"
+import type { AnalysisResultData, Experiment, ExperimentFiles } from "../types"
 
 export const fetchExperiment = async (id: string): Promise<Experiment> => {
 	const res = await CytometryApi.get(`/experiment/${id}`)

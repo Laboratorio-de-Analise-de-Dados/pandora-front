@@ -16,10 +16,16 @@ export const fetchPendingInvites = async (): Promise<Invite[]> => {
 	return res.data
 }
 
-export const fetchOrganizationPendingInvites = async (organizationId: number, status = "pending"): Promise<Invite[]> => {
-	const res = await CytometryApi.get(`/accounts/organizations/${organizationId}/invites/`, {
-		params: { status },
-	})
+export const fetchOrganizationPendingInvites = async (
+	organizationId: number,
+	status = "pending",
+): Promise<Invite[]> => {
+	const res = await CytometryApi.get(
+		`/accounts/organizations/${organizationId}/invites/`,
+		{
+			params: { status },
+		},
+	)
 	return res.data
 }
 
@@ -36,11 +42,21 @@ export const declineInvite = async (token: string): Promise<void> => {
 	await CytometryApi.post(`/accounts/invites/decline/${token}/`, {})
 }
 
-export const resendInvite = async (organizationId: number, inviteId: number): Promise<{ email_sent: boolean }> => {
-	const res = await CytometryApi.post(`/accounts/organizations/${organizationId}/invites/${inviteId}/resend/`)
+export const resendInvite = async (
+	organizationId: number,
+	inviteId: number,
+): Promise<{ email_sent: boolean }> => {
+	const res = await CytometryApi.post(
+		`/accounts/organizations/${organizationId}/invites/${inviteId}/resend/`,
+	)
 	return res.data
 }
 
-export const cancelInvite = async (organizationId: number, inviteId: number): Promise<void> => {
-	await CytometryApi.delete(`/accounts/organizations/${organizationId}/invites/${inviteId}/`)
+export const cancelInvite = async (
+	organizationId: number,
+	inviteId: number,
+): Promise<void> => {
+	await CytometryApi.delete(
+		`/accounts/organizations/${organizationId}/invites/${inviteId}/`,
+	)
 }

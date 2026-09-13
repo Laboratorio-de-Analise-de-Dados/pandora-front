@@ -27,7 +27,9 @@ const AxisSelect: React.FC<AxisSelectProps> = ({
 	size = "medium",
 	label,
 }) => {
-	const selectId = label ? `axis-select-${label.replace(/\s+/g, "-")}` : undefined
+	const selectId = label
+		? `axis-select-${label.replace(/\s+/g, "-")}`
+		: undefined
 	const select = (
 		<Select
 			value={value}

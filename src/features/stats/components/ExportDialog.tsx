@@ -33,9 +33,15 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 	onClose,
 }) => (
 	<Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-		<DialogTitle sx={{ fontSize: "0.95rem", pb: 0.5 }}>Exportar Estatísticas</DialogTitle>
+		<DialogTitle sx={{ fontSize: "0.95rem", pb: 0.5 }}>
+			Exportar Estatísticas
+		</DialogTitle>
 		<DialogContent>
-			<Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				sx={{ mb: 1, display: "block" }}
+			>
 				Escolha o nome do arquivo e o formato:
 			</Typography>
 			<TextField
@@ -63,12 +69,10 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 			</Box>
 		</DialogContent>
 		<DialogActions>
-			<Button size="small" onClick={onClose}>Cancelar</Button>
-			<Button
-				size="small"
-				variant="contained"
-				onClick={onExport}
-			>
+			<Button size="small" onClick={onClose}>
+				Cancelar
+			</Button>
+			<Button size="small" variant="contained" onClick={onExport}>
 				Exportar
 			</Button>
 		</DialogActions>

@@ -34,9 +34,9 @@ O nome da amostra deve ficar visível acima do gráfico, junto dos controles de 
 
 ```ts
 const defaultRange =
-  scale === "biex"
-    ? [biex(-100000, cof), biex(1000000, cof)]   // ← começa negativo
-    : [0, LINEAR_SLIDER_MAX]                     // ← linear já começa em 0
+	scale === "biex"
+		? [biex(-100000, cof), biex(1000000, cof)] // ← começa negativo
+		: [0, LINEAR_SLIDER_MAX] // ← linear já começa em 0
 ```
 
 Ou seja, o problema é só o default do **biex**. Trocar o piso para `biex(0, cof)` (ou um piso configurável), garantindo que os eventos empilhados na borda (comportamento FlowJo já implementado no backend) continuem visíveis. Verificar que gates existentes com `xMin`/`xMax` salvos não mudam de posição.

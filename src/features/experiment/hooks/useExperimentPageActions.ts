@@ -79,13 +79,13 @@ export function useExperimentPageActions() {
 	// experimento podem editar/excluir.
 	const canEditExperiment = Boolean(
 		experiment &&
-			user &&
-			(user.is_super_admin ||
-				experiment.created_by === user.id ||
-				user.memberships.some(
-					(membership) =>
-						membership.organization.id === experiment.organization?.id,
-				)),
+		user &&
+		(user.is_super_admin ||
+			experiment.created_by === user.id ||
+			user.memberships.some(
+				(membership) =>
+					membership.organization.id === experiment.organization?.id,
+			)),
 	)
 
 	const handleUpdateExperiment = useCallback(
@@ -201,12 +201,7 @@ export function useExperimentPageActions() {
 				setDeleteGateLoading(false)
 			}
 		},
-		[
-			deleteGateTarget,
-			invalidateExperiment,
-			selectParentOfDeletedGate,
-			source,
-		],
+		[deleteGateTarget, invalidateExperiment, selectParentOfDeletedGate, source],
 	)
 
 	const handleRenameGate = useCallback(
@@ -252,9 +247,12 @@ export function useExperimentPageActions() {
 				}
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(`Erro ao desabilitar a amostra: ${extractErrorMessage(error)}`, {
-					position: "bottom-right",
-				})
+				toast.error(
+					`Erro ao desabilitar a amostra: ${extractErrorMessage(error)}`,
+					{
+						position: "bottom-right",
+					},
+				)
 			}
 		},
 		[experimentFiles, invalidateExperiment, setSource, source],
@@ -267,9 +265,12 @@ export function useExperimentPageActions() {
 				toast.success("Amostra reativada", { position: "bottom-right" })
 				invalidateExperiment()
 			} catch (error) {
-				toast.error(`Erro ao reativar a amostra: ${extractErrorMessage(error)}`, {
-					position: "bottom-right",
-				})
+				toast.error(
+					`Erro ao reativar a amostra: ${extractErrorMessage(error)}`,
+					{
+						position: "bottom-right",
+					},
+				)
 			}
 		},
 		[invalidateExperiment],

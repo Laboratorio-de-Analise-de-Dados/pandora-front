@@ -85,7 +85,9 @@ export default function OrganizationMembers({
 								<Select
 									size="small"
 									value={member.role.name}
-									onChange={(e) => onChangeRole(member.id, e.target.value as RoleName)}
+									onChange={(e) =>
+										onChangeRole(member.id, e.target.value as RoleName)
+									}
 									sx={{ minWidth: { xs: "100%", sm: 160 } }}
 								>
 									<MenuItem value="member">Membro</MenuItem>

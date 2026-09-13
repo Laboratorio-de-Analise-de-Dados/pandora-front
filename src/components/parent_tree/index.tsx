@@ -48,8 +48,6 @@ export interface SelectedSource {
 	copiedFromId?: number | null
 }
 
-
-
 // Função recursiva para renderizar os gates e seus sub-gates
 const renderGate = (
 	gate: Gate,
@@ -84,7 +82,14 @@ const renderGate = (
 						}
 					}}
 				>
-					<Box sx={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: "column",
+							minWidth: 0,
+							flex: 1,
+						}}
+					>
 						<Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
 							<Box
 								component="span"
@@ -105,20 +110,42 @@ const renderGate = (
 								<span style={{ fontSize: "0.85rem" }}>{gate.name}</span>
 							)}
 							{gate.copied_from_id && (
-								<Tooltip title={`Copiado de gate #${gate.copied_from_id}`} arrow>
+								<Tooltip
+									title={`Copiado de gate #${gate.copied_from_id}`}
+									arrow
+								>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
-										<LinkIcon style={{ fontSize: 14, color: "rgba(0,120,255,0.7)" }} />
+										<LinkIcon
+											style={{ fontSize: 14, color: "rgba(0,120,255,0.7)" }}
+										/>
 									</Box>
 								</Tooltip>
 							)}
 						</Box>
 						{gateAxesLabel(gate.gate_coordinates) && (
-							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem", pl: 2.5, lineHeight: 1.1, fontStyle: "italic" }}>
+							<Typography
+								variant="caption"
+								sx={{
+									color: "text.secondary",
+									fontSize: "0.65rem",
+									pl: 2.5,
+									lineHeight: 1.1,
+									fontStyle: "italic",
+								}}
+							>
 								{gateAxesLabel(gate.gate_coordinates)}
 							</Typography>
 						)}
 						{metrics && (
-							<Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem", pl: 2.5, lineHeight: 1.2 }}>
+							<Typography
+								variant="caption"
+								sx={{
+									color: "text.secondary",
+									fontSize: "0.65rem",
+									pl: 2.5,
+									lineHeight: 1.2,
+								}}
+							>
 								{metrics.count.toLocaleString()} events
 								{" | "}
 								%P {fmtPct(metrics.percent_of_parent_population)}
@@ -144,7 +171,16 @@ const renderGate = (
 			}
 		>
 			{gate.children?.map((childGate, childIdx) =>
-				renderGate(childGate, itemId, onRequestDelete, onRequestRename, onRequestApply, childIdx, onMenuOpen, onContextMenu),
+				renderGate(
+					childGate,
+					itemId,
+					onRequestDelete,
+					onRequestRename,
+					onRequestApply,
+					childIdx,
+					onMenuOpen,
+					onContextMenu,
+				),
 			)}
 		</TreeItem>
 	)
@@ -163,44 +199,57 @@ const renderFile = (
 	const fileId = `file-${file.id}`
 	const inactive = file.active === false
 	return (
-		<TreeItem key={fileId} itemId={fileId} label={
-		<Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
-			<Typography
-				sx={{ fontSize: "0.8rem", opacity: inactive ? 0.5 : 1 }}
-				noWrap
-			>
-				📄{file.file_name}
-			</Typography>
-			{inactive && (
-				<Chip
-					label="Desabilitada"
-					size="small"
-					sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
-				/>
-			)}
-			{onFileMenuOpen && (
-				<IconButton
-					size="small"
-					onClick={(e) => {
-						e.stopPropagation()
-						onFileMenuOpen(e, file)
-					}}
-					sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
-					title="Opções da amostra"
+		<TreeItem
+			key={fileId}
+			itemId={fileId}
+			label={
+				<Box
+					sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}
 				>
-					<MoreVertIcon style={{ fontSize: 16 }} />
-				</IconButton>
-			)}
-		</Box>
-	}>
+					<Typography
+						sx={{ fontSize: "0.8rem", opacity: inactive ? 0.5 : 1 }}
+						noWrap
+					>
+						📄{file.file_name}
+					</Typography>
+					{inactive && (
+						<Chip
+							label="Desabilitada"
+							size="small"
+							sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
+						/>
+					)}
+					{onFileMenuOpen && (
+						<IconButton
+							size="small"
+							onClick={(e) => {
+								e.stopPropagation()
+								onFileMenuOpen(e, file)
+							}}
+							sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
+							title="Opções da amostra"
+						>
+							<MoreVertIcon style={{ fontSize: 16 }} />
+						</IconButton>
+					)}
+				</Box>
+			}
+		>
 			{file.gates.map((gate, idx) =>
-				renderGate(gate, fileId, onRequestDelete, onRequestRename, onRequestApply, idx, onMenuOpen, onContextMenu),
+				renderGate(
+					gate,
+					fileId,
+					onRequestDelete,
+					onRequestRename,
+					onRequestApply,
+					idx,
+					onMenuOpen,
+					onContextMenu,
+				),
 			)}
 		</TreeItem>
 	)
 }
-
-
 
 export default function ParentTree({
 	files,
@@ -230,7 +279,10 @@ export default function ParentTree({
 	const [menuGate, setMenuGate] = useState<Gate | null>(null)
 
 	// Context menu state (right-click)
-	const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+	const [contextMenu, setContextMenu] = useState<{
+		x: number
+		y: number
+	} | null>(null)
 	const [contextGate, setContextGate] = useState<Gate | null>(null)
 
 	// Menu e confirmação por amostra (desabilitar / reativar)
@@ -313,7 +365,8 @@ export default function ParentTree({
 
 	// Context menu actions
 	const handleCtxApply = () => {
-		if (contextGate && onApplyGate) onApplyGate(contextGate.id, contextGate.name)
+		if (contextGate && onApplyGate)
+			onApplyGate(contextGate.id, contextGate.name)
 		handleContextMenuClose()
 	}
 
@@ -348,7 +401,6 @@ export default function ParentTree({
 		setRenameTarget(null)
 		setRenameValue("")
 	}
-
 
 	const handleItemClick = (event: React.MouseEvent, itemId: string) => {
 		// Paramos a propagação para evitar o evento do pai quando o filho é clicado
@@ -397,9 +449,18 @@ export default function ParentTree({
 					arrow
 					placement="bottom-start"
 				>
-					<Box sx={{ display: "inline-flex", alignItems: "center", cursor: "help" }}>
+					<Box
+						sx={{
+							display: "inline-flex",
+							alignItems: "center",
+							cursor: "help",
+						}}
+					>
 						<InfoIcon style={{ fontSize: 14, opacity: 0.6 }} />
-						<Typography variant="caption" sx={{ ml: 0.5, color: "text.secondary", fontSize: "0.7rem" }}>
+						<Typography
+							variant="caption"
+							sx={{ ml: 0.5, color: "text.secondary", fontSize: "0.7rem" }}
+						>
 							%P = Parent · %T = Total
 						</Typography>
 					</Box>
@@ -425,9 +486,7 @@ export default function ParentTree({
 						onApplyGate,
 						handleMenuOpen,
 						handleContextMenu,
-						onDisableFile || onEnableFile
-							? handleFileMenuOpen
-							: undefined,
+						onDisableFile || onEnableFile ? handleFileMenuOpen : undefined,
 					),
 				)}
 			</SimpleTreeView>
@@ -463,7 +522,11 @@ export default function ParentTree({
 				)}
 				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
 				{onDeleteGate && (
-					<MuiMenuItem onClick={handleMenuDelete} dense sx={{ color: "error.main" }}>
+					<MuiMenuItem
+						onClick={handleMenuDelete}
+						dense
+						sx={{ color: "error.main" }}
+					>
 						<ListItemIcon sx={{ minWidth: 28, color: "error.main" }}>
 							<DeleteIcon style={{ fontSize: 18 }} />
 						</ListItemIcon>
@@ -508,7 +571,11 @@ export default function ParentTree({
 				)}
 				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
 				{onDeleteGate && (
-					<MuiMenuItem onClick={handleCtxDelete} dense sx={{ color: "error.main" }}>
+					<MuiMenuItem
+						onClick={handleCtxDelete}
+						dense
+						sx={{ color: "error.main" }}
+					>
 						<ListItemIcon sx={{ minWidth: 28, color: "error.main" }}>
 							<DeleteIcon style={{ fontSize: 18 }} />
 						</ListItemIcon>
@@ -562,9 +629,8 @@ export default function ParentTree({
 				<DialogContent>
 					<Typography>
 						A amostra <strong>{disableTarget?.file_name}</strong> sai da
-						listagem, mas nada é apagado: os gates e os dados ficam
-						preservados e você pode reativá-la depois pelo filtro
-						“Mostrar desabilitadas”.
+						listagem, mas nada é apagado: os gates e os dados ficam preservados
+						e você pode reativá-la depois pelo filtro “Mostrar desabilitadas”.
 					</Typography>
 				</DialogContent>
 				<DialogActions>

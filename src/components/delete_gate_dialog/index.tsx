@@ -73,8 +73,7 @@ export default function DeleteGateDialog({
 
 	// Amostras desabilitadas (BE-01) não entram como alvo.
 	const targetFiles = useMemo(
-		() =>
-			files.filter((f) => f.active !== false && f.id !== target.fileDataId),
+		() => files.filter((f) => f.active !== false && f.id !== target.fileDataId),
 		[files, target.fileDataId],
 	)
 
@@ -135,8 +134,7 @@ export default function DeleteGateDialog({
 	const handleConfirm = () => {
 		onConfirm({
 			scope,
-			targetFileDataIds:
-				scope === "experiment" ? Array.from(selectedIds) : [],
+			targetFileDataIds: scope === "experiment" ? Array.from(selectedIds) : [],
 			recursive,
 			includeSource,
 		})
@@ -197,11 +195,7 @@ export default function DeleteGateDialog({
 							size="small"
 						/>
 					}
-					label={
-						<Typography variant="body2">
-							Incluir sub-gates
-						</Typography>
-					}
+					label={<Typography variant="body2">Incluir sub-gates</Typography>}
 					sx={{ display: "block" }}
 				/>
 

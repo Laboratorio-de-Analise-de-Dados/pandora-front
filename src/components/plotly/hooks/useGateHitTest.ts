@@ -67,9 +67,7 @@ export function useGateHitTest({
 				const gc = shape._gateData.gate_coordinates
 				const swapped = shape._swapped ?? false
 				if (isPointInGate(dataX, dataY, gc, swapped, effXScale, effYScale)) {
-					const idx = childGates.findIndex(
-						(g) => g.id === shape._gateData.id,
-					)
+					const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
 					return {
 						gate: shape._gateData,
 						gateIndex: idx < 0 ? 0 : idx,
@@ -94,9 +92,7 @@ export function useGateHitTest({
 				const gc = shape._gateData.gate_coordinates
 				const swapped = shape._swapped ?? false
 				if (isPointInGate(dataX, dataY, gc, swapped, effXScale, effYScale)) {
-					const idx = childGates.findIndex(
-						(g) => g.id === shape._gateData.id,
-					)
+					const idx = childGates.findIndex((g) => g.id === shape._gateData.id)
 					return {
 						gate: shape._gateData,
 						gateIndex: idx < 0 ? 0 : idx,

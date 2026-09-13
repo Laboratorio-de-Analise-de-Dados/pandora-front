@@ -203,11 +203,7 @@ export function useGateShapes({
 					]
 				}
 
-				if (
-					gateType === "quadrant" &&
-					"center_x" in gc &&
-					"center_y" in gc
-				) {
+				if (gateType === "quadrant" && "center_x" in gc && "center_y" in gc) {
 					const rawCx = swapped ? gc.center_y : gc.center_x
 					const rawCy = swapped ? gc.center_x : gc.center_y
 					const cx = xScale === "biex" ? biex(rawCx, cof) : rawCx
