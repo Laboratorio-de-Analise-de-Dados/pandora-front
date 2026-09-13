@@ -70,6 +70,7 @@ interface TreeHandlers {
 	/** Seleção múltipla de amostras (mover em lote); omitido sem onMoveFile. */
 	selectedFileIds?: Set<number>
 	onToggleFile?: (fileId: number) => void
+	onToggleGroup?: (fileIds: number[], checked: boolean) => void
 	onFileInfo?: (file: ExperimentFiles) => void
 }
 
@@ -322,6 +323,12 @@ const renderSubsampleGroup = (
 		(group.subsampleId !== null
 			? `Subsample #${group.subsampleId}`
 			: "Sem subsample")
+	// Checkbox "selecionar grupo" — visível só no modo de seleção.
+	const selectedCount = group.files.filter((f) =>
+		handlers.selectedFileIds?.has(f.id),
+	).length
+	const allChecked =
+		group.files.length > 0 && selectedCount === group.files.length
 	return (
 		<TreeNode
 			key={
@@ -334,6 +341,21 @@ const renderSubsampleGroup = (
 				<Box
 					sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}
 				>
+					{handlers.onToggleGroup && (
+						<Checkbox
+							size="small"
+							checked={allChecked}
+							indeterminate={!allChecked && selectedCount > 0}
+							onClick={(e) => e.stopPropagation()}
+							onChange={(e) =>
+								handlers.onToggleGroup?.(
+									group.files.map((f) => f.id),
+									e.target.checked,
+								)
+							}
+							sx={{ p: 0.25 }}
+						/>
+					)}
 					<FolderIcon style={{ fontSize: 15, flexShrink: 0, opacity: 0.7 }} />
 					<Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }} noWrap>
 						{name}
@@ -475,6 +497,14 @@ export default function ParentTree({
 			const next = new Set(prev)
 			if (next.has(fileId)) next.delete(fileId)
 			else next.add(fileId)
+			return next
+		})
+	}
+
+	const handleToggleGroup = (fileIds: number[], checked: boolean) => {
+		setSelectedFileIds((prev) => {
+			const next = new Set(prev)
+			fileIds.forEach((id) => (checked ? next.add(id) : next.delete(id)))
 			return next
 		})
 	}
@@ -630,6 +660,7 @@ export default function ParentTree({
 				: undefined,
 		selectedFileIds,
 		onToggleFile: canBulk && selectionMode ? handleToggleFile : undefined,
+		onToggleGroup: canBulk && selectionMode ? handleToggleGroup : undefined,
 		onFileInfo: setMetadataTarget,
 	}
 
