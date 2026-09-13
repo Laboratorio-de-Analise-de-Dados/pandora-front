@@ -2,8 +2,8 @@
 
 **Repo:** pandora-front · **Tipo:** refactor · **Base:** `main`
 **Branch sugerida:** `refactor/dir-layout`
-**Status:** não iniciado. Decisão: ADR-0011. Rodar depois de FE-18/FE-19
-para não mover arquivos que ainda serão decompostos.
+**Status:** implementado em `refactor/dir-layout` — depende de merge.
+Decisão: ADR-0011.
 
 ## Problema
 

@@ -1,4 +1,4 @@
-import Header from "./components/headers"
+import Header from "./components/header"
 import Footer from "./components/footer"
 import CssBaseline from "@mui/material/CssBaseline"
 import { ThemeModeProvider } from "./providers/ThemeContext"

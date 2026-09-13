@@ -15,30 +15,30 @@ import {
 	MdExpandLess as ExpandLessIcon,
 	MdTune as TuneIcon,
 } from "react-icons/md"
-import { fetchFileStats } from "../../services/experimentService"
-import type { SelectedSource } from "../../types"
-import type { AnalysisResultData, ExperimentFiles, Gate } from "../../types"
+import { fetchFileStats } from "../../../services/experimentService"
+import type { SelectedSource } from "../../../types"
+import type { AnalysisResultData, ExperimentFiles, Gate } from "../../../types"
 import {
 	findGateInTree,
 	collectAllGates,
 	findFileForGate,
 	getGateStrategy,
-} from "../../features/gate/utils"
-import { normalizeChannelName } from "../../features/stats/utils/channelHelpers"
-import { isFluorescence } from "../../features/stats/utils/channelHelpers"
-import { exportRows } from "../../features/stats/utils/exportHelpers"
-import { buildSelectableItems } from "../../features/stats/utils/selectable"
-import { buildAnalysisRows } from "../../features/stats/utils/statsRows"
-import type { PopulationRow } from "../../features/stats/utils/statsRows"
-import { fmtPct } from "../../utils/format"
-import SourceSelector from "../../features/stats/components/SourceSelector"
-import type { SelectableItem } from "../../features/stats/components/SourceSelector"
-import StatsSummaryCard from "../../features/stats/components/StatsSummaryCard"
-import StatsTable from "../../features/stats/components/StatsTable"
-import ChannelConfigPopover from "../../features/stats/components/ChannelConfigPopover"
-import ComparisonPanel from "../../features/stats/components/ComparisonPanel"
-import ExportDialog from "../../features/stats/components/ExportDialog"
-import LabelEditDialog from "../../features/stats/components/LabelEditDialog"
+} from "../../gate/utils"
+import { normalizeChannelName } from "../utils/channelHelpers"
+import { isFluorescence } from "../utils/channelHelpers"
+import { exportRows } from "../utils/exportHelpers"
+import { buildSelectableItems } from "../utils/selectable"
+import { buildAnalysisRows } from "../utils/statsRows"
+import type { PopulationRow } from "../utils/statsRows"
+import { fmtPct } from "../../../utils/format"
+import SourceSelector from "./SourceSelector"
+import type { SelectableItem } from "./SourceSelector"
+import StatsSummaryCard from "./StatsSummaryCard"
+import StatsTable from "./StatsTable"
+import ChannelConfigPopover from "./ChannelConfigPopover"
+import ComparisonPanel from "./ComparisonPanel"
+import ExportDialog from "./ExportDialog"
+import LabelEditDialog from "./LabelEditDialog"
 
 // --- Types ---
 

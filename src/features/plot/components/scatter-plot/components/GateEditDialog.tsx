@@ -14,7 +14,7 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material"
-import ColorPicker from "../../../../../components/color_picker"
+import ColorPicker from "../../../../gate/components/color-picker"
 import type { GateScope } from "../../../../../services/gateService"
 import type { Gate } from "../../../../../types"
 import { fmtPct } from "../../../../../utils/format"

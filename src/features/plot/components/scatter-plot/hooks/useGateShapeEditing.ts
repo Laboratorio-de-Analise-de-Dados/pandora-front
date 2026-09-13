@@ -1,8 +1,8 @@
 import { useCallback, useRef } from "react"
-import type { Gate, GateCoordinates, Scale } from "../../../types"
-import type { GateShape } from "../../../features/plot/hooks/useGateShapes"
-import type { GateTool } from "../../../features/plot/hooks/usePlotState"
-import { COFACTOR, toRaw } from "../../../features/plot/utils/biex"
+import type { Gate, GateCoordinates, Scale } from "../../../../../types"
+import type { GateShape } from "../../../hooks/useGateShapes"
+import type { GateTool } from "../../../hooks/usePlotState"
+import { COFACTOR, toRaw } from "../../../utils/biex"
 
 interface UseGateShapeEditingParams {
 	gateShapes: GateShape[]

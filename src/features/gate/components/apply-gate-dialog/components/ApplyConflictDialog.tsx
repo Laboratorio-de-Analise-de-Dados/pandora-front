@@ -9,7 +9,7 @@ import {
 	ListItemText,
 	Typography,
 } from "@mui/material"
-import type { ApplyGateConflict } from "../../../services/gateService"
+import type { ApplyGateConflict } from "../../../../../services/gateService"
 
 interface ApplyConflictDialogProps {
 	conflicts: ApplyGateConflict[]

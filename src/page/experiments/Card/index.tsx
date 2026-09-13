@@ -2,13 +2,13 @@ import { useState } from "react"
 import { IconButton, ListItemText, Menu, MenuItem } from "@mui/material"
 import { MdMoreVert as MoreIcon } from "react-icons/md"
 import { ExperimentComponent } from "./style"
-import { Experiment } from "../../../../types"
+import { Experiment } from "../../../types"
 import { useNavigate } from "react-router-dom"
-import { useAuth } from "../../../../providers/AuthContext"
-import { useExperimentsContext } from "../../../../providers/ExperimentContext"
+import { useAuth } from "../../../providers/AuthContext"
+import { useExperimentsContext } from "../../../providers/ExperimentContext"
 import ExperimentContextDialog, {
 	ContextDialogMode,
-} from "../../../../features/experiment/components/ExperimentContextDialog"
+} from "../../../features/experiment/components/ExperimentContextDialog"
 
 interface ExperimentCardProps {
 	experiment: Experiment

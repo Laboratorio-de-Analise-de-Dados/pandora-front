@@ -1,4 +1,4 @@
-import { Experiment } from "../../../../types"
+import { Experiment } from "../../../types"
 import ExperimentCard from "../Card"
 import NewExperimentCard from "../NewExperiment"
 import { ExperimentContainer } from "./style"
