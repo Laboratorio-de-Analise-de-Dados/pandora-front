@@ -16,6 +16,7 @@ export default function TreeNode({
 	depth = 0,
 	onSelect,
 	defaultExpanded = true,
+	inactive = false,
 }: {
 	label: ReactNode
 	children?: ReactNode
@@ -23,6 +24,8 @@ export default function TreeNode({
 	/** Seleção do nó (plot). Nós agrupadores não recebem onSelect. */
 	onSelect?: () => void
 	defaultExpanded?: boolean
+	/** Amostra desabilitada: tinta vermelha suave + contorno no item. */
+	inactive?: boolean
 }) {
 	const [expanded, setExpanded] = useState(defaultExpanded)
 	const expandable = Boolean(children)
@@ -43,7 +46,7 @@ export default function TreeNode({
 					}
 				}}
 				tabIndex={0}
-				sx={{
+				sx={(theme) => ({
 					display: "flex",
 					alignItems: "center",
 					pl: 0.5 + depth * 2,
@@ -52,12 +55,20 @@ export default function TreeNode({
 					cursor: "pointer",
 					borderRadius: 1,
 					userSelect: "none",
-					"&:hover": { backgroundColor: "action.hover" },
+					...(inactive && {
+						backgroundColor: `${theme.palette.error.main}12`,
+						boxShadow: `inset 0 0 0 1px ${theme.palette.error.main}45`,
+					}),
+					"&:hover": {
+						backgroundColor: inactive
+							? `${theme.palette.error.main}20`
+							: "action.hover",
+					},
 					"&:focus-visible": {
 						outline: "2px solid",
 						outlineColor: "primary.main",
 					},
-				}}
+				})}
 			>
 				<Box
 					sx={{

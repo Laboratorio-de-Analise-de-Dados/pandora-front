@@ -254,6 +254,7 @@ const HEADER_LABELS: Record<string, string> = {
 	fil: "Arquivo original",
 	tot: "Total de eventos",
 	par: "Parâmetros",
+	guid: "GUID",
 }
 
 const headerValue = (v: unknown): string =>

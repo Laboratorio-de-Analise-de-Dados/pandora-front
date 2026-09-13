@@ -236,6 +236,7 @@ const renderFile = (
 		<TreeNode
 			key={`file-${file.id}`}
 			depth={depth}
+			inactive={inactive}
 			onSelect={
 				selecting
 					? () => handlers.onToggleFile?.(file.id)
