@@ -1,5 +1,4 @@
 import {
-	Box,
 	Button,
 	Dialog,
 	DialogActions,
@@ -9,6 +8,12 @@ import {
 	InputLabel,
 	MenuItem,
 	Select,
+	Table,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
 	TextField,
 	Typography,
 } from "@mui/material"
@@ -243,6 +248,48 @@ const HEADER_LABELS: Record<string, string> = {
 const headerValue = (v: unknown): string =>
 	typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? "")
 
+const MetadataTable = ({
+	head,
+	rows,
+	monoKey,
+}: {
+	head: [string, string]
+	rows: [string, unknown][]
+	monoKey?: boolean
+}) => (
+	<TableContainer sx={{ border: 1, borderColor: "divider", borderRadius: 1 }}>
+		<Table size="small">
+			<TableHead>
+				<TableRow>
+					<TableCell sx={{ fontWeight: 600, width: "40%" }}>
+						{head[0]}
+					</TableCell>
+					<TableCell sx={{ fontWeight: 600 }}>{head[1]}</TableCell>
+				</TableRow>
+			</TableHead>
+			<TableBody>
+				{rows.map(([key, value]) => (
+					<TableRow key={key} hover>
+						<TableCell
+							sx={{
+								color: "text.secondary",
+								fontFamily: monoKey ? "monospace" : undefined,
+								fontSize: monoKey ? "0.75rem" : undefined,
+								verticalAlign: "top",
+							}}
+						>
+							{key}
+						</TableCell>
+						<TableCell sx={{ wordBreak: "break-word" }}>
+							{headerValue(value)}
+						</TableCell>
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
+	</TableContainer>
+)
+
 /**
  * Metadados do header FCS da amostra (`GET /experiment/file/<id>/headers`).
  * Busca só ao abrir; amostras inativas também têm header legível.
@@ -278,18 +325,23 @@ export function FileMetadataDialog({
 		}
 	}, [file])
 
-	const curated = Object.entries(HEADER_LABELS)
-		.filter(
-			([key]) => headers && headers[key] !== undefined && headers[key] !== "",
-		)
-		.map(([key, label]) => ({ label, value: headerValue(headers?.[key]) }))
+	const curated: [string, unknown][] = headers
+		? Object.entries(HEADER_LABELS)
+				.filter(([key]) => headers[key] !== undefined && headers[key] !== "")
+				.map(([key, label]) => [label, headers[key]])
+		: []
 	const rest = headers
 		? Object.entries(headers).filter(([key]) => !(key in HEADER_LABELS))
 		: []
 
 	return (
-		<Dialog open={!!file} onClose={onClose} fullWidth maxWidth="xs">
-			<DialogTitle>Metadados — {file?.file_name}</DialogTitle>
+		<Dialog open={!!file} onClose={onClose} fullWidth maxWidth="sm">
+			<DialogTitle sx={{ pb: 1 }}>
+				Metadados do arquivo
+				<Typography variant="body2" color="text.secondary" noWrap>
+					{file?.file_name}
+				</Typography>
+			</DialogTitle>
 			<DialogContent>
 				{error && (
 					<Typography variant="body2" color="error">
@@ -301,56 +353,41 @@ export function FileMetadataDialog({
 						Carregando…
 					</Typography>
 				)}
-				{headers && curated.length === 0 && (
-					<Typography variant="body2" color="text.secondary">
-						O header não traz campos conhecidos — veja a lista completa.
-					</Typography>
-				)}
-				{curated.map(({ label, value }) => (
-					<Box key={label} sx={{ display: "flex", gap: 1, py: 0.25 }}>
-						<Typography
-							variant="body2"
-							sx={{ color: "text.secondary", minWidth: 150 }}
-						>
-							{label}
-						</Typography>
-						<Typography variant="body2" sx={{ wordBreak: "break-word" }}>
-							{value}
-						</Typography>
-					</Box>
-				))}
-				{headers && rest.length > 0 && (
+				{headers && (
 					<>
-						<Button
-							size="small"
-							onClick={() => setShowAll((v) => !v)}
-							sx={{ mt: 1, textTransform: "none" }}
+						<Typography
+							variant="overline"
+							sx={{ color: "text.secondary", display: "block", mb: 0.5 }}
 						>
-							{showAll
-								? "Ocultar campos brutos"
-								: `Ver todos os campos (${rest.length})`}
-						</Button>
-						{showAll &&
-							rest.map(([key, value]) => (
-								<Box key={key} sx={{ display: "flex", gap: 1, py: 0.25 }}>
-									<Typography
-										variant="caption"
-										sx={{
-											color: "text.secondary",
-											minWidth: 150,
-											fontFamily: "monospace",
-										}}
-									>
-										{key}
-									</Typography>
-									<Typography
-										variant="caption"
-										sx={{ wordBreak: "break-word" }}
-									>
-										{headerValue(value)}
-									</Typography>
-								</Box>
-							))}
+							Informações principais
+						</Typography>
+						{curated.length > 0 ? (
+							<MetadataTable head={["Campo", "Valor"]} rows={curated} />
+						) : (
+							<Typography variant="body2" color="text.secondary">
+								O header não traz campos conhecidos — veja a lista completa.
+							</Typography>
+						)}
+						{rest.length > 0 && (
+							<>
+								<Button
+									size="small"
+									onClick={() => setShowAll((v) => !v)}
+									sx={{ mt: 1.5, mb: 0.5, textTransform: "none" }}
+								>
+									{showAll
+										? "Ocultar campos brutos"
+										: `Ver todos os campos (${rest.length})`}
+								</Button>
+								{showAll && (
+									<MetadataTable
+										head={["Keyword", "Valor"]}
+										rows={rest}
+										monoKey
+									/>
+								)}
+							</>
+						)}
 					</>
 				)}
 			</DialogContent>

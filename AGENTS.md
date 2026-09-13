@@ -55,6 +55,9 @@ Definido pelo `.prettierrc` e observado no código existente:
 - Tipos compartilhados em `src/types/`; utilitários globais em `src/utils/`
 - Barrel exports: cada módulo expõe via `index.ts`
 - Data fetching **sempre** via TanStack Query — nunca `useState` + `useEffect` para API
+- **Mobile-first sempre** (ADR-0002): a app roda majoritariamente em desktop,
+  mas todo layout novo é desenhado de `xs` para cima — breakpoints do MUI
+  (`sx`, props responsivas), sem largura fixa que estoure em tela pequena
 - Funções puras em `utils/` (testáveis); estado/side-effects em custom hooks
 - Testes colocados ao lado do código: `foo.ts` → `foo.test.ts`
 
