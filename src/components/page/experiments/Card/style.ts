@@ -1,6 +1,7 @@
 import styled from "styled-components"
 
 export const ExperimentComponent = styled.li`
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start; /* Alinha o conteúdo interno ao topo */

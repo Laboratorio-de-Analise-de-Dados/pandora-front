@@ -42,6 +42,42 @@ export const deleteExperiment = async (id: number): Promise<void> => {
 	await CytometryApi.delete(`/experiment/${id}`)
 }
 
+export interface CopyExperimentPayload {
+	title?: string
+	/** `null` = espaço pessoal do usuário. */
+	organization_id: number | null
+}
+
+export const copyExperiment = async (
+	id: number,
+	payload: CopyExperimentPayload,
+): Promise<Experiment> => {
+	const res = await CytometryApi.post(`/experiment/${id}/copy`, payload)
+	return res.data
+}
+
+export const moveExperiment = async (
+	id: number,
+	organizationId: number | null,
+): Promise<Experiment> => {
+	const res = await CytometryApi.patch(`/experiment/${id}/`, {
+		organization_id: organizationId,
+	})
+	return res.data
+}
+
+export interface FileHashCheckResponse {
+	exists: boolean
+	file_name: string | null
+}
+
+export const checkFileHash = async (
+	sha256: string,
+): Promise<FileHashCheckResponse> => {
+	const res = await CytometryApi.post("/experiment/check-hash/", { sha256 })
+	return res.data
+}
+
 export const fetchFileStats = async (
 	fileDataId: number,
 ): Promise<AnalysisResultData> => {

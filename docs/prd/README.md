@@ -16,8 +16,8 @@
 | [FE-12](FE-12-runtime-node-26.md)                  | Runtime Node 26 + pnpm e deps em faixa            | Entregue na branch `refactor/node-26-upgrade` |
 | [FE-13](FE-13-avaliacao-mui-vs-styled.md)          | Avaliação MUI vs styled-components puro           | Avaliação: manter MUI (recomendado)           |
 | [FE-14](FE-14-selecao-multipla-e-metadados-fcs.md) | Seleção múltipla e metadados do header FCS        | Na branch `refactor/node-26-upgrade`          |
-| [FE-15](FE-15-copiar-mover-experimento.md)         | Copiar/mover experimento entre contextos          | Bloqueado no BE-11                            |
-| [FE-16](FE-16-aviso-upload-duplicado.md)           | Aviso de arquivo duplicado no upload              | Bloqueado no BE-12                            |
+| [FE-15](FE-15-copiar-mover-experimento.md)         | Copiar/mover experimento entre contextos          | Implementado (depende do merge do BE-11)      |
+| [FE-16](FE-16-aviso-upload-duplicado.md)           | Aviso de arquivo duplicado no upload              | Implementado (depende do merge do BE-12)      |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de

@@ -1,7 +1,7 @@
 # FE-16 — Aviso de arquivo duplicado no upload
 
 **Repo:** pandora-front · **Tipo:** feature · **Base:** `refactor/node-26-upgrade`
-**Status:** não iniciado — bloqueado no
+**Status:** implementado na branch `feat/copy-move-dedup` — backend no
 [BE-12](../../../pandora-backend/docs/prd/BE-12-dedup-no-upload.md).
 
 ## Problema

@@ -19,6 +19,13 @@ interface ChunkProgress {
 	status: ChunkStatus
 }
 
+interface CreateExperimentOptions {
+	/** SHA-256 do arquivo, calculado no cliente para o dedup (BE-12). */
+	sha256?: string
+	/** Reutiliza o blob já armazenado com este hash — pula o envio dos chunks. */
+	reuse?: boolean
+}
+
 interface ExperimentContextProps {
 	experiments: Experiment[]
 	listExperiments: () => void
@@ -27,6 +34,7 @@ interface ExperimentContextProps {
 		type: string,
 		file: File,
 		organizationId?: number | null,
+		options?: CreateExperimentOptions,
 	) => Promise<AxiosResponse>
 	progress: ChunkProgress[]
 }
@@ -66,9 +74,10 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			type: string,
 			file: File,
 			organizationId?: number | null,
+			options?: CreateExperimentOptions,
 		) => {
 			const chunkSize = 0.5 * 1024 * 1024
-			const totalChunks = Math.ceil(file.size / chunkSize)
+			const totalChunks = options?.reuse ? 0 : Math.ceil(file.size / chunkSize)
 			const orgId =
 				organizationId === undefined
 					? (user?.memberships?.[0]?.organization?.id ?? null)
@@ -87,6 +96,21 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				"currentUpload",
 				JSON.stringify({ fileId, title, type }),
 			)
+
+			if (options?.reuse) {
+				const completeResponse = await CytometryApi.post(
+					"/experiment/complete/",
+					{
+						fileId,
+						fileName: file.name,
+						sha256: options.sha256,
+						reuse: true,
+					},
+				)
+				await listExperiments()
+				localStorage.removeItem("currentUpload")
+				return completeResponse
+			}
 
 			let guide: ChunkProgress[] = Array.from(
 				{ length: totalChunks },
@@ -124,6 +148,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 					{
 						fileId,
 						fileName: file.name,
+						sha256: options?.sha256,
 					},
 				)
 				await listExperiments()

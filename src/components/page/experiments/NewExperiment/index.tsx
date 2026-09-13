@@ -3,6 +3,10 @@ import { MdCloudUpload as CloudUploadIcon } from "react-icons/md"
 import {
 	Box,
 	Button,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 	FormControl,
 	FormHelperText,
 	InputLabel,
@@ -18,6 +22,8 @@ import { toast } from "react-toastify"
 import { useExperimentsContext } from "../../../../providers/ExperimentContext"
 import { useAuth } from "../../../../providers/AuthContext"
 import ExperimentFields from "../../../../features/experiment/components/ExperimentFields"
+import { checkFileHash } from "../../../../services/experimentService"
+import { sha256File } from "../../../../utils/fileHash"
 import {
 	ACCEPTED_EXPERIMENT_FILE_ACCEPT,
 	ACCEPTED_EXPERIMENT_FILE_MESSAGE,
@@ -33,6 +39,9 @@ export default function NewExperimentCard() {
 	const [disabled, setDisabled] = useState<boolean>(true)
 	const [file, setFile] = useState<File | null>(null)
 	const [uploading, setUploading] = useState<boolean>(false)
+	const [fileHash, setFileHash] = useState<string | null>(null)
+	const [dupFileName, setDupFileName] = useState<string | null>(null)
+	const [dupDialogOpen, setDupDialogOpen] = useState<boolean>(false)
 
 	const { createExperiment } = useExperimentsContext()
 	const { progress } = useExperimentsContext() as any // progress vem do provider
@@ -47,14 +56,32 @@ export default function NewExperimentCard() {
 		setOrganizationId("")
 		setFile(null)
 		setUploading(false)
+		setFileHash(null)
+		setDupFileName(null)
+		setDupDialogOpen(false)
 	}
 
 	const onSave = async () => {
 		if (!file || !title || !experimentType) return
+		// FE-16: se o check-hash encontrou o mesmo blob no servidor, o usuário
+		// decide — reutilizar (sem re-upload) ou enviar uma cópia mesmo assim.
+		if (fileHash && dupFileName && !dupDialogOpen) {
+			setDupDialogOpen(true)
+			return
+		}
+		await doCreate(false)
+	}
+
+	const doCreate = async (reuse: boolean) => {
+		if (!file || !title || !experimentType) return
 		try {
 			setUploading(true)
 			const orgId = organizationId === "" ? null : parseInt(organizationId, 10)
-			await createExperiment(title, experimentType, file, orgId)
+			await createExperiment(title, experimentType, file, orgId, {
+				sha256: fileHash ?? undefined,
+				reuse,
+			})
+			if (reuse) toast.info("Arquivo já enviado — blob reutilizado.")
 		} catch (error: any) {
 			console.error("Erro ao criar experimento:", error)
 			toast.error(
@@ -104,6 +131,20 @@ export default function NewExperimentCard() {
 
 		setSelectedFileName(selected.name)
 		setFile(selected)
+		setFileHash(null)
+		setDupFileName(null)
+
+		// Dedup (FE-16): hash local + consulta ao servidor em background —
+		// no Save o usuário decide entre reutilizar o blob ou subir mesmo assim.
+		sha256File(selected)
+			.then(async (hash) => {
+				setFileHash(hash)
+				const check = await checkFileHash(hash)
+				if (check.exists) setDupFileName(check.file_name ?? selected.name)
+			})
+			.catch(() => {
+				// Sem hash não há dedup — o upload segue o fluxo normal.
+			})
 	}
 
 	// calcula progresso geral
@@ -208,6 +249,12 @@ export default function NewExperimentCard() {
 								Selected file: {selectedFileName}
 							</Typography>
 						)}
+						{dupFileName && (
+							<Typography variant="body2" color="warning.main" marginTop={1}>
+								Este arquivo já foi enviado antes — ao salvar você poderá
+								reutilizá-lo sem novo upload.
+							</Typography>
+						)}
 						<FormHelperText id="file-helper">
 							Field for uploading an experiment file
 						</FormHelperText>
@@ -230,6 +277,32 @@ export default function NewExperimentCard() {
 					</Button>
 				</Box>
 			</Modal>
+			<Dialog
+				open={dupDialogOpen}
+				onClose={() => setDupDialogOpen(false)}
+				fullWidth
+				maxWidth="xs"
+			>
+				<DialogTitle>Arquivo já enviado</DialogTitle>
+				<DialogContent>
+					<Typography variant="body2">
+						Um arquivo idêntico ({dupFileName}) já existe no servidor. Você pode
+						reutilizá-lo sem novo upload — o experimento será criado sobre os
+						mesmos dados — ou enviar o arquivo mesmo assim.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setDupDialogOpen(false)}>Cancelar</Button>
+					<Button onClick={() => doCreate(false)}>Enviar mesmo assim</Button>
+					<Button
+						variant="contained"
+						onClick={() => doCreate(true)}
+						disabled={uploading}
+					>
+						Reutilizar arquivo
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</>
 	)
 }
