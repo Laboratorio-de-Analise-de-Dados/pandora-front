@@ -9,8 +9,8 @@ import {
 	Typography,
 } from "@mui/material"
 import { useState } from "react"
-import { ExperimentFiles } from "../../types"
-import FileSelectList from "../file_select_list"
+import { ExperimentFiles } from "../../../../types"
+import FileSelectList from "../file-select-list"
 
 interface ApplyGateDialogProps {
 	open: boolean

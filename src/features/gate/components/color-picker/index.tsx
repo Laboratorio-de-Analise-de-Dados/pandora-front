@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { Box, Popover, TextField, IconButton } from "@mui/material"
-import { GATE_PALETTE } from "../../constants/gateColors"
+import { GATE_PALETTE } from "../../../../constants/gateColors"
 
 interface ColorPickerProps {
 	value: string

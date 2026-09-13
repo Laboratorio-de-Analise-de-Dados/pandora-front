@@ -12,7 +12,7 @@ import { useSearchParams, useNavigate } from "react-router-dom"
 import Layout from "../../components/Layout"
 import { useExperimentsContext } from "../../providers/ExperimentContext"
 import { useAuth } from "../../providers/AuthContext"
-import ExperimentsContainer from "../../components/page/experiments/Container"
+import ExperimentsContainer from "./Container"
 
 export type EventData = {
 	id: number

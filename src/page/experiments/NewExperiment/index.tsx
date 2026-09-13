@@ -15,15 +15,15 @@ import {
 } from "@mui/material"
 import { ChangeEvent, useEffect, useState } from "react"
 import { toast } from "react-toastify"
-import { useExperimentsContext } from "../../../../providers/ExperimentContext"
-import { useAuth } from "../../../../providers/AuthContext"
-import ExperimentFields from "../../../../features/experiment/components/ExperimentFields"
+import { useExperimentsContext } from "../../../providers/ExperimentContext"
+import { useAuth } from "../../../providers/AuthContext"
+import ExperimentFields from "../../../features/experiment/components/ExperimentFields"
 import {
 	ACCEPTED_EXPERIMENT_FILE_ACCEPT,
 	ACCEPTED_EXPERIMENT_FILE_MESSAGE,
 	isAcceptedExperimentFile,
-} from "../../../../utils/experimentFile"
-import { extractErrorMessage } from "../../../../utils/apiError"
+} from "../../../utils/experimentFile"
+import { extractErrorMessage } from "../../../utils/apiError"
 
 export default function NewExperimentCard() {
 	const [selectedFileName, setSelectedFileName] = useState<string | null>(null)

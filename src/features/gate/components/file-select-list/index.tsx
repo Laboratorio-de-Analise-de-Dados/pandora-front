@@ -10,7 +10,7 @@ import {
 	Typography,
 } from "@mui/material"
 import React from "react"
-import { ExperimentFiles } from "../../types"
+import { ExperimentFiles } from "../../../../types"
 
 interface FileSelectListProps {
 	files: ExperimentFiles[]

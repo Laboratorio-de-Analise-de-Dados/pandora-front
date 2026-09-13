@@ -10,25 +10,25 @@ import {
 } from "@mui/material"
 import { Theme, useTheme } from "@mui/material/styles"
 import { useState } from "react"
-import Layout from "../../../Layout"
+import Layout from "../../../components/Layout"
 import {
 	ExperimentWorkspaceProvider,
 	useExperimentWorkspace,
-} from "../../../../features/experiment/context/ExperimentWorkspaceContext"
-import { useExperimentMetaActions } from "../../../../features/experiment/hooks/useExperimentMetaActions"
-import { useFileActions } from "../../../../features/experiment/hooks/useFileActions"
-import { useGateActions } from "../../../../features/experiment/hooks/useGateActions"
-import { useSubsampleActions } from "../../../../features/experiment/hooks/useSubsampleActions"
-import { PlotStateProvider } from "../../../../features/plot/context/PlotStateContext"
-import ScatterPlot from "../../../plotly"
-import ParentTree from "../../../../features/experiment/components/parent-tree"
-import SourceDropdown from "../../../../features/experiment/components/SourceDropdown"
-import CollapsiblePanel from "../../../../features/experiment/components/CollapsiblePanel"
-import StatsPanel from "../../../stats_panel"
-import ApplyGateDialog from "../../../apply_gate_dialog"
-import ApplyConflictDialog from "../../../apply_gate_dialog/components/ApplyConflictDialog"
-import EditExperimentDialog from "../../../../features/experiment/components/EditExperimentDialog"
-import DeleteGateDialog from "../../../delete_gate_dialog"
+} from "../../../features/experiment/context/ExperimentWorkspaceContext"
+import { useExperimentMetaActions } from "../../../features/experiment/hooks/useExperimentMetaActions"
+import { useFileActions } from "../../../features/experiment/hooks/useFileActions"
+import { useGateActions } from "../../../features/experiment/hooks/useGateActions"
+import { useSubsampleActions } from "../../../features/experiment/hooks/useSubsampleActions"
+import { PlotStateProvider } from "../../../features/plot/context/PlotStateContext"
+import ScatterPlot from "../../../features/plot/components/scatter-plot"
+import ParentTree from "../../../features/experiment/components/parent-tree"
+import SourceDropdown from "../../../features/experiment/components/SourceDropdown"
+import CollapsiblePanel from "../../../features/experiment/components/CollapsiblePanel"
+import StatsPanel from "../../../features/stats/components/StatsPanel"
+import ApplyGateDialog from "../../../features/gate/components/apply-gate-dialog"
+import ApplyConflictDialog from "../../../features/gate/components/apply-gate-dialog/components/ApplyConflictDialog"
+import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
+import DeleteGateDialog from "../../../features/gate/components/delete-gate-dialog"
 import {
 	MdDelete as DeleteIcon,
 	MdEdit as EditIcon,
@@ -39,7 +39,7 @@ import {
 	MdUploadFile as UploadIcon,
 	MdDownload as DownloadIcon,
 } from "react-icons/md"
-import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../../utils/experimentFile"
+import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../utils/experimentFile"
 
 function ExperimentPageContent() {
 	const {

@@ -1,7 +1,7 @@
 import { useCallback } from "react"
-import type { Gate, Scale } from "../../../types"
-import type { GateShape } from "../../../features/plot/hooks/useGateShapes"
-import { isPointInGate } from "../../../features/plot/utils/gateHitTest"
+import type { Gate, Scale } from "../../../../../types"
+import type { GateShape } from "../../../hooks/useGateShapes"
+import { isPointInGate } from "../../../utils/gateHitTest"
 
 interface PlotlyAxis {
 	p2d: (v: number) => number

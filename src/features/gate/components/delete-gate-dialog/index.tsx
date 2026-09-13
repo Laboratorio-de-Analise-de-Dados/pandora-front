@@ -13,14 +13,14 @@ import {
 	Typography,
 } from "@mui/material"
 import React, { useEffect, useMemo, useState } from "react"
-import { ExperimentFiles, Gate, Subsample } from "../../types"
+import { ExperimentFiles, Gate, Subsample } from "../../../../types"
 import {
 	collectAllGates,
 	findGateByPathNames,
 	getGatePathNames,
-} from "../../features/gate/utils"
-import type { GateScope } from "../../services/gateService"
-import FileSelectList from "../file_select_list"
+} from "../../utils"
+import type { GateScope } from "../../../../services/gateService"
+import FileSelectList from "../file-select-list"
 
 export interface DeleteGateTarget {
 	id: number

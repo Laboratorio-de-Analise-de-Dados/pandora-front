@@ -9,7 +9,7 @@ import type { ApplyGateConflict } from "../../../services/gateService"
 import type {
 	DeleteGateOptions,
 	DeleteGateTarget,
-} from "../../../components/delete_gate_dialog"
+} from "../../gate/components/delete-gate-dialog"
 import {
 	findFileForGate,
 	findGateByPathNames,

@@ -9,42 +9,39 @@ import {
 import { useTheme } from "@mui/material/styles"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Plot from "react-plotly.js"
-import { Gate, Scale } from "../../types"
-import type { GateScope } from "../../services/gateService"
-import { getGateColor } from "../../constants/gateColors"
+import { Gate, Scale } from "../../../../types"
+import type { GateScope } from "../../../../services/gateService"
+import { getGateColor } from "../../../../constants/gateColors"
 
-import { usePlotContext } from "../../features/plot/context/PlotStateContext"
-import { useExperimentWorkspace } from "../../features/experiment/context/ExperimentWorkspaceContext"
-import { useDebouncedValue } from "../../features/plot/hooks/useDebouncedValue"
-import { useDensityQuery } from "../../features/plot/hooks/useDensityQuery"
-import { useGateDrawing } from "../../features/plot/hooks/useGateDrawing"
-import { useGateShapes } from "../../features/plot/hooks/useGateShapes"
-import { useGateMutations } from "../../features/plot/hooks/useGateMutations"
-import { useReshapeScope } from "../../features/plot/hooks/useReshapeScope"
-import { getCopyFamilyIds } from "../../features/gate/utils"
+import { usePlotContext } from "../../context/PlotStateContext"
+import { useExperimentWorkspace } from "../../../experiment/context/ExperimentWorkspaceContext"
+import { useDebouncedValue } from "../../hooks/useDebouncedValue"
+import { useDensityQuery } from "../../hooks/useDensityQuery"
+import { useGateDrawing } from "../../hooks/useGateDrawing"
+import { useGateShapes } from "../../hooks/useGateShapes"
+import { useGateMutations } from "../../hooks/useGateMutations"
+import { useReshapeScope } from "../../hooks/useReshapeScope"
+import { getCopyFamilyIds } from "../../../gate/utils"
 
-import { COFACTOR } from "../../features/plot/utils/biex"
-import { buildTicks } from "../../features/plot/utils/ticks"
-import {
-	buildPlotData,
-	hasPlotData,
-} from "../../features/plot/utils/plotTraces"
-import { buildAxisRange } from "../../features/plot/utils/plotAxes"
+import { COFACTOR } from "../../utils/biex"
+import { buildTicks } from "../../utils/ticks"
+import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
+import { buildAxisRange } from "../../utils/plotAxes"
 
 import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
 import { useGateHitTest } from "./hooks/useGateHitTest"
 import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
-import GateEditDialog from "../../features/plot/components/scatter-plot/components/GateEditDialog"
-import ReshapeScopeDialog from "../../features/plot/components/scatter-plot/components/ReshapeScopeDialog"
-import GateToolToggle from "../../features/plot/components/scatter-plot/components/GateToolToggle"
+import GateEditDialog from "./components/GateEditDialog"
+import ReshapeScopeDialog from "./components/ReshapeScopeDialog"
+import GateToolToggle from "./components/GateToolToggle"
 import {
 	PlotSettingsButton,
 	PlotSettingsPanel,
-} from "../../features/plot/components/scatter-plot/components/PlotSettingsPanel"
-import GateContextMenu from "../../features/plot/components/scatter-plot/components/GateContextMenu"
-import AxisSelect from "../../features/plot/components/scatter-plot/components/AxisSelect"
-import PolygonEditOverlay from "../../features/plot/components/scatter-plot/components/PolygonEditOverlay"
+} from "./components/PlotSettingsPanel"
+import GateContextMenu from "./components/GateContextMenu"
+import AxisSelect from "./components/AxisSelect"
+import PolygonEditOverlay from "./components/PolygonEditOverlay"
 
 // Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
 // backend (evita uma request por evento de slider).
