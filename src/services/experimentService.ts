@@ -1,8 +1,12 @@
 import CytometryApi from "../API"
 import type { AnalysisResultData, Experiment, ExperimentFiles } from "../types"
 
-export const fetchExperiments = async (): Promise<Experiment[]> => {
-	const res = await CytometryApi.get("/experiment")
+export const fetchExperiments = async (
+	includeInactive = false,
+): Promise<Experiment[]> => {
+	const res = await CytometryApi.get("/experiment", {
+		params: includeInactive ? { include_inactive: "true" } : undefined,
+	})
 	return res.data
 }
 
@@ -83,6 +87,12 @@ export const updateExperiment = async (
 
 export const deleteExperiment = async (id: number): Promise<void> => {
 	await CytometryApi.delete(`/experiment/${id}`)
+}
+
+/** Reativa um experimento desativado (o DELETE é arquivamento, não apaga). */
+export const restoreExperiment = async (id: number): Promise<Experiment> => {
+	const res = await CytometryApi.post(`/experiment/${id}/restore`)
+	return res.data
 }
 
 export interface CopyExperimentPayload {

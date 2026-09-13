@@ -168,7 +168,7 @@ function ExperimentPageContent() {
 										<EditIcon fontSize="small" />
 									</IconButton>
 								</Tooltip>
-								<Tooltip title="Excluir experimento">
+								<Tooltip title="Desativar experimento">
 									<IconButton onClick={handleDelete} color="error">
 										<DeleteIcon fontSize="small" />
 									</IconButton>

@@ -3,11 +3,13 @@ import {
 	Typography,
 	Button,
 	FormControl,
+	FormControlLabel,
 	InputLabel,
 	MenuItem,
 	Select,
+	Switch,
 } from "@mui/material"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import Layout from "../../components/Layout"
 import { useExperimentsContext } from "../../providers/ExperimentContext"
@@ -24,12 +26,13 @@ export default function ExperimentsPage() {
 	const navigate = useNavigate()
 	const { user } = useAuth()
 	const { experiments, listExperiments } = useExperimentsContext()
+	const [showInactive, setShowInactive] = useState(false)
 	const orgIdParam = searchParams.get("orgId")
 	const orgId = orgIdParam ? parseInt(orgIdParam, 10) : null
 
 	useEffect(() => {
-		listExperiments()
-	}, [listExperiments])
+		listExperiments(showInactive)
+	}, [listExperiments, showInactive])
 
 	const filteredExperiments = useMemo(() => {
 		if (orgId === null) return experiments
@@ -124,6 +127,17 @@ export default function ExperimentsPage() {
 								))}
 							</Select>
 						</FormControl>
+						<FormControlLabel
+							control={
+								<Switch
+									size="small"
+									checked={showInactive}
+									onChange={(e) => setShowInactive(e.target.checked)}
+								/>
+							}
+							label="Mostrar desativados"
+							sx={{ whiteSpace: "nowrap" }}
+						/>
 						<Button
 							variant="outlined"
 							size="small"
@@ -140,7 +154,10 @@ export default function ExperimentsPage() {
 						Escolha um experimento:
 					</Typography>
 					<Box>
-						<ExperimentsContainer experiments={filteredExperiments} />
+						<ExperimentsContainer
+							experiments={filteredExperiments}
+							onChanged={() => listExperiments(showInactive)}
+						/>
 					</Box>
 				</Box>
 			</Box>

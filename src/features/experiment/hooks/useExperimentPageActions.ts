@@ -106,18 +106,23 @@ export function useExperimentPageActions() {
 		[experiment, invalidateExperiment],
 	)
 
+	// DELETE é arquivamento (ADR-0005): o experimento sai das listagens mas
+	// dados, gates e subsamples são preservados e ele pode ser reativado.
 	const handleDelete = useCallback(async () => {
 		if (!experiment) return
-		const confirmed = window.confirm("Tem certeza que deseja excluir?")
+		const confirmed = window.confirm(
+			"Desativar este experimento? Ele sai das listagens, mas os dados " +
+				"são preservados e ele pode ser reativado depois.",
+		)
 		if (!confirmed) return
 		try {
 			await deleteExperiment(experiment.id)
-			toast.success("Experimento excluído com sucesso!")
+			toast.success("Experimento desativado.")
 			navigate("/experiments")
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error)
-			toast.error(`Erro ao excluir o experimento: ${errorMessage}`)
+			toast.error(`Erro ao desativar o experimento: ${errorMessage}`)
 		}
 	}, [experiment, navigate])
 
