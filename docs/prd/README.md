@@ -12,9 +12,10 @@
 | [FE-08](FE-08-relatorio-percentuais.md)            | Percentuais no relatório                          | Entregue (#46)                                |
 | [FE-09](FE-09-nomes-gates-unicos.md)               | Identificação de gates (nome + linhagem)          | Entregue (#47, #49)                           |
 | [FE-10](FE-10-convites-grupos.md)                  | Convites/grupos                                   | Verificação manual não executada              |
-| [FE-11](FE-11-subsamples.md)                       | Subsamples na UI                                  | Não iniciado                                  |
+| [FE-11](FE-11-subsamples.md)                       | Subsamples na UI                                  | Na branch `refactor/node-26-upgrade`          |
 | [FE-12](FE-12-runtime-node-26.md)                  | Runtime Node 26 + pnpm e deps em faixa            | Entregue na branch `refactor/node-26-upgrade` |
 | [FE-13](FE-13-avaliacao-mui-vs-styled.md)          | Avaliação MUI vs styled-components puro           | Avaliação: manter MUI (recomendado)           |
+| [FE-14](FE-14-selecao-multipla-e-metadados-fcs.md) | Seleção múltipla e metadados do header FCS        | Na branch `refactor/node-26-upgrade`          |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
