@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Tipo:** refactor · **Base:** `main`
 **Branch sugerida:** `refactor/parent-tree`
-**Status:** não iniciado. Decisões: ADR-0011, ADR-0012.
+**Status:** implementado em `refactor/parent-tree` — depende de merge.
 
 ## Problema
 
