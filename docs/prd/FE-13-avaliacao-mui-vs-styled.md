@@ -61,9 +61,9 @@ ordem de custo-benefício:
    custom (scatter/heatmap/histogram apenas) — pode cortar o plotly pela
    metade ou mais.
 4. **`@mui/x-tree-view`**: usado em 1 arquivo (`parent_tree`). **Decisão
-   (13/09/2026):** remover junto do FE-11 — a árvore vai ganhar o nível
-   "subsample" (3 níveis heterogêneos) e será reescrita como componente
-   próprio, eliminando o último `@mui/x-*`.
+   executada (13/09/2026):** removido — a árvore ganhou o nível "subsample"
+   (FE-11) e foi reescrita com `TreeNode` próprio, eliminando o último
+   `@mui/x-*`.
 
 ### C) Manter tudo como está
 

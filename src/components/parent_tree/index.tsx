@@ -1,8 +1,4 @@
-import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView"
-import { TreeItem } from "@mui/x-tree-view/TreeItem"
 import {
-	MdExpandMore as ExpandMore,
-	MdChevronRight as ChevronRight,
 	MdDelete as DeleteIcon,
 	MdEdit as EditIcon,
 	MdMoreVert as MoreVertIcon,
@@ -10,6 +6,7 @@ import {
 	MdDriveFileMove as TransferIcon,
 	MdVisibilityOff as DisableIcon,
 	MdRestoreFromTrash as EnableIcon,
+	MdFolder as FolderIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -32,13 +29,15 @@ import {
 import { MdInfoOutline as InfoIcon } from "react-icons/md"
 import { ExperimentFiles, Gate } from "../../types"
 import { getGateColor } from "../../constants/gateColors"
+import { gateAxesLabel, gateAuthorLabel } from "../../features/gate/utils"
 import {
-	gateAxesLabel,
-	findGateInTree,
-	gateAuthorLabel,
-} from "../../features/gate/utils"
+	groupFilesBySubsample,
+	hasSubsampleLevel,
+	SubsampleGroup,
+} from "../../features/experiment/utils/groupBySubsample"
 import { fmtPct } from "../../utils/format"
-import React, { useState } from "react"
+import React, { useMemo, useState } from "react"
+import TreeNode from "./TreeNode"
 
 export interface SelectedSource {
 	type: "file" | "gate"
@@ -48,24 +47,43 @@ export interface SelectedSource {
 	copiedFromId?: number | null
 }
 
-// Função recursiva para renderizar os gates e seus sub-gates
+interface TreeHandlers {
+	onSelect: (source: SelectedSource) => void
+	onDeleteGate?: (gateId: number, gateName: string) => void
+	onRenameGate?: (gateId: number, newName: string) => void
+	onApplyGate?: (gateId: number, gateName: string) => void
+	onDisableFile?: (fileDataId: number) => void
+	onEnableFile?: (fileDataId: number) => void
+	onMenuOpen: (event: React.MouseEvent, gate: Gate) => void
+	onContextMenu: (event: React.MouseEvent, gate: Gate) => void
+	onFileMenuOpen: (event: React.MouseEvent, file: ExperimentFiles) => void
+}
+
+// Renderiza um gate e seus sub-gates recursivamente
 const renderGate = (
 	gate: Gate,
-	parentId: string,
-	onRequestDelete?: (gateId: number, gateName: string) => void,
-	onRequestRename?: (gateId: number, gateName: string) => void,
-	onRequestApply?: (gateId: number, gateName: string) => void,
-	gateIndex = 0,
-	onMenuOpen?: (event: React.MouseEvent, gate: Gate) => void,
-	onContextMenu?: (event: React.MouseEvent, gate: Gate) => void,
+	fileDataId: number,
+	depth: number,
+	gateIndex: number,
+	handlers: TreeHandlers,
 ) => {
-	const itemId = `gate-${gate.id}-${parentId}`
 	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
 	const authorLabel = gateAuthorLabel(gate)
+	const hasActions =
+		handlers.onApplyGate || handlers.onRenameGate || handlers.onDeleteGate
 	return (
-		<TreeItem
-			key={itemId}
-			itemId={itemId}
+		<TreeNode
+			key={`gate-${gate.id}`}
+			depth={depth}
+			onSelect={() =>
+				handlers.onSelect({
+					type: "gate",
+					id: gate.id,
+					name: gate.name,
+					fileDataId,
+					copiedFromId: gate.copied_from_id,
+				})
+			}
 			label={
 				<Box
 					sx={{
@@ -75,11 +93,9 @@ const renderGate = (
 						width: "100%",
 					}}
 					onContextMenu={(e) => {
-						if (onContextMenu) {
-							e.preventDefault()
-							e.stopPropagation()
-							onContextMenu(e, gate)
-						}
+						e.preventDefault()
+						e.stopPropagation()
+						handlers.onContextMenu(e, gate)
 					}}
 				>
 					<Box
@@ -154,12 +170,12 @@ const renderGate = (
 							</Typography>
 						)}
 					</Box>
-					{(onRequestApply || onRequestRename || onRequestDelete) && (
+					{hasActions && (
 						<IconButton
 							size="small"
 							onClick={(e) => {
 								e.stopPropagation()
-								if (onMenuOpen) onMenuOpen(e, gate)
+								handlers.onMenuOpen(e, gate)
 							}}
 							sx={{ p: 0.25, flexShrink: 0 }}
 							title="Opções do gate"
@@ -171,37 +187,35 @@ const renderGate = (
 			}
 		>
 			{gate.children?.map((childGate, childIdx) =>
-				renderGate(
-					childGate,
-					itemId,
-					onRequestDelete,
-					onRequestRename,
-					onRequestApply,
-					childIdx,
-					onMenuOpen,
-					onContextMenu,
-				),
+				renderGate(childGate, fileDataId, depth + 1, childIdx, handlers),
 			)}
-		</TreeItem>
+		</TreeNode>
 	)
 }
 
-// Função para renderizar os arquivos e seus gates
+// Renderiza uma amostra e seus gates
 const renderFile = (
 	file: ExperimentFiles,
-	onRequestDelete?: (gateId: number, gateName: string) => void,
-	onRequestRename?: (gateId: number, gateName: string) => void,
-	onRequestApply?: (gateId: number, gateName: string) => void,
-	onMenuOpen?: (event: React.MouseEvent, gate: Gate) => void,
-	onContextMenu?: (event: React.MouseEvent, gate: Gate) => void,
-	onFileMenuOpen?: (event: React.MouseEvent, file: ExperimentFiles) => void,
+	depth: number,
+	handlers: TreeHandlers,
 ) => {
-	const fileId = `file-${file.id}`
 	const inactive = file.active === false
+	const canManage = handlers.onDisableFile || handlers.onEnableFile
 	return (
-		<TreeItem
-			key={fileId}
-			itemId={fileId}
+		<TreeNode
+			key={`file-${file.id}`}
+			depth={depth}
+			onSelect={
+				inactive
+					? undefined
+					: () =>
+							handlers.onSelect({
+								type: "file",
+								id: file.id,
+								name: file.file_name,
+								fileDataId: file.id,
+							})
+			}
 			label={
 				<Box
 					sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}
@@ -219,12 +233,12 @@ const renderFile = (
 							sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
 						/>
 					)}
-					{onFileMenuOpen && (
+					{canManage && (
 						<IconButton
 							size="small"
 							onClick={(e) => {
 								e.stopPropagation()
-								onFileMenuOpen(e, file)
+								handlers.onFileMenuOpen(e, file)
 							}}
 							sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
 							title="Opções da amostra"
@@ -236,18 +250,44 @@ const renderFile = (
 			}
 		>
 			{file.gates.map((gate, idx) =>
-				renderGate(
-					gate,
-					fileId,
-					onRequestDelete,
-					onRequestRename,
-					onRequestApply,
-					idx,
-					onMenuOpen,
-					onContextMenu,
-				),
+				renderGate(gate, file.id, depth + 1, idx, handlers),
 			)}
-		</TreeItem>
+		</TreeNode>
+	)
+}
+
+// Nível subsample: agrupador, não selecionável
+const renderSubsampleGroup = (
+	group: SubsampleGroup,
+	handlers: TreeHandlers,
+) => {
+	const name = group.subsample?.name ?? "Sem subsample"
+	return (
+		<TreeNode
+			key={
+				group.subsample ? `subsample-${group.subsample.id}` : "subsample-none"
+			}
+			depth={0}
+			label={
+				<Box
+					sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}
+				>
+					<FolderIcon style={{ fontSize: 15, flexShrink: 0, opacity: 0.7 }} />
+					<Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }} noWrap>
+						{name}
+					</Typography>
+					<Typography
+						variant="caption"
+						sx={{ color: "text.secondary", fontSize: "0.65rem", flexShrink: 0 }}
+					>
+						{group.files.length}{" "}
+						{group.files.length === 1 ? "amostra" : "amostras"}
+					</Typography>
+				</Box>
+			}
+		>
+			{group.files.map((file) => renderFile(file, 1, handlers))}
+		</TreeNode>
 	)
 }
 
@@ -291,6 +331,9 @@ export default function ParentTree({
 	const [disableTarget, setDisableTarget] = useState<ExperimentFiles | null>(
 		null,
 	)
+
+	const groups = useMemo(() => groupFilesBySubsample(files), [files])
+	const grouped = hasSubsampleLevel(groups)
 
 	const handleFileMenuOpen = (
 		event: React.MouseEvent,
@@ -384,11 +427,6 @@ export default function ParentTree({
 		handleContextMenuClose()
 	}
 
-	const handleRequestRename = (gateId: number, gateName: string) => {
-		setRenameTarget({ id: gateId, name: gateName })
-		setRenameValue(gateName)
-	}
-
 	const handleConfirmRename = () => {
 		if (renameTarget && onRenameGate && renameValue.trim()) {
 			onRenameGate(renameTarget.id, renameValue.trim())
@@ -402,43 +440,16 @@ export default function ParentTree({
 		setRenameValue("")
 	}
 
-	const handleItemClick = (event: React.MouseEvent, itemId: string) => {
-		// Paramos a propagação para evitar o evento do pai quando o filho é clicado
-		event.stopPropagation()
-
-		const isFile = itemId.startsWith("file-")
-		const isGate = itemId.startsWith("gate-")
-		const id = parseInt(itemId.split("-")[1])
-
-		if (!isFile && !isGate) return
-
-		if (isFile) {
-			const file = files.find((f) => f.id === id)
-			if (file?.active === false) return
-			onSelect({
-				type: "file",
-				id,
-				name: file?.file_name ?? `Arquivo ${id}`,
-				fileDataId: id,
-			})
-		} else {
-			let gate: Gate | undefined
-			let fileDataId = id
-			for (const file of files) {
-				gate = findGateInTree(file.gates, id)
-				if (gate) {
-					fileDataId = file.id
-					break
-				}
-			}
-			onSelect({
-				type: "gate",
-				id,
-				name: gate?.name ?? `Gate ${id}`,
-				fileDataId,
-				copiedFromId: gate?.copied_from_id,
-			})
-		}
+	const handlers: TreeHandlers = {
+		onSelect,
+		onDeleteGate,
+		onRenameGate,
+		onApplyGate,
+		onDisableFile,
+		onEnableFile,
+		onMenuOpen: handleMenuOpen,
+		onContextMenu: handleContextMenu,
+		onFileMenuOpen: handleFileMenuOpen,
 	}
 
 	return (
@@ -466,30 +477,18 @@ export default function ParentTree({
 					</Box>
 				</Tooltip>
 			</Box>
-			<SimpleTreeView
-				slots={{
-					expandIcon: ChevronRight,
-					collapseIcon: ExpandMore,
-				}}
-				onItemClick={handleItemClick}
+			<Box
+				role="tree"
 				sx={(theme) => ({
 					flexGrow: 1,
 					overflowY: "auto",
 					color: theme.palette.text.primary,
 				})}
 			>
-				{files.map((file) =>
-					renderFile(
-						file,
-						onDeleteGate,
-						onRenameGate ? handleRequestRename : undefined,
-						onApplyGate,
-						handleMenuOpen,
-						handleContextMenu,
-						onDisableFile || onEnableFile ? handleFileMenuOpen : undefined,
-					),
-				)}
-			</SimpleTreeView>
+				{grouped
+					? groups.map((group) => renderSubsampleGroup(group, handlers))
+					: files.map((file) => renderFile(file, 0, handlers))}
+			</Box>
 
 			{/* Hamburger dropdown menu (⋮ button) */}
 			<Menu

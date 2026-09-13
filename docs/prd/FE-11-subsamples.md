@@ -29,6 +29,10 @@ mostrando uma lista plana de arquivos pelo basename. Sem a UI:
   (`@mui/x-tree-view`) por um componente próprio: a árvore vira 3 níveis
   (subsample → amostra → gate) com nós heterogêneos, e é o único uso restante
   dos pacotes `@mui/x-*` (ver FE-13). Menus, diálogos e tooltip continuam MUI.
+- **Entregue (13/09/2026, `refactor/node-26-upgrade`):** `TreeNode` próprio
+  substituiu `@mui/x-tree-view`; `groupFilesBySubsample` (util puro testado)
+  agrupa por `file.subsample`; o nível subsample só aparece quando a API envia
+  o campo — sem ele, renderiza flat como antes.
 - Amostras sem subsample (arquivo na raiz do ZIP) ficam em um grupo
   **"Sem subsample"**, que não é um subsample de verdade — não pode ser
   renomeado nem inativado.
@@ -67,15 +71,15 @@ mostrando uma lista plana de arquivos pelo basename. Sem a UI:
   `renameSubsample`, `archiveSubsample`, `moveFileToSubsample` + tipagens.
 - `src/hooks/useSubsamples.ts` (novo) — estado, loading/erro, invalidação da
   listagem de amostras após mover/arquivar.
-- `src/components/parent_tree/index.tsx` — reestruturar para 3 níveis e
-  substituir `@mui/x-tree-view` por componente próprio (desacoplar dep, FE-13).
+- `src/components/parent_tree/index.tsx` — ✅ reestruturado (3 níveis,
+  `TreeNode` próprio, `@mui/x-tree-view` removido).
 - Diálogos de escopo existentes.
 - Testes dos hooks.
 
 ## Critérios de aceite
 
-- [ ] Amostras aparecem agrupadas por subsample, com contagem, e a raiz do ZIP
-      cai em "Sem subsample".
+- [x] Amostras aparecem agrupadas por subsample, com contagem, e a raiz do ZIP
+      cai em "Sem subsample" (aguarda o campo `subsample` na API do BE-07).
 - [ ] Criar, renomear e arquivar subsample pela UI; nome duplicado mostra o erro
       da API no campo.
 - [ ] Mover amostra entre subsamples e para "Sem subsample", com a listagem

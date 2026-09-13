@@ -14,12 +14,22 @@ export type Organization = {
 	org_type: "lab" | "cliente"
 }
 
+/**
+ * Agrupamento de amostras por diretório do ZIP (BE-07). Opcional até a API
+ * expor o campo — ausente/null significa "Sem subsample".
+ */
+export interface Subsample {
+	id: number
+	name: string
+}
+
 export interface ExperimentFiles {
 	id: number
 	file_name: string
 	gates: Gate[]
 	active: boolean
 	deactivated_at: string | null
+	subsample?: Subsample | null
 }
 
 export interface FileData {
