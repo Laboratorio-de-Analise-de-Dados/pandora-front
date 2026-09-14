@@ -1,6 +1,6 @@
 # ADR-0013 — Replicar nome/cor de gate é opt-in; a edição acontece onde o gate está
 
-- **Status:** Proposto
+- **Status:** Aceito
 - **Data:** 2026-09-14
 - **Contexto do código:** `GateEditDialog.tsx`, menus do gate em
   `parent-tree/index.tsx` (`Renomear` simples) vs. `GateContextMenu` do plot
