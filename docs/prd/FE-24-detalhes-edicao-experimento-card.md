@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Item do doc:** teste 14/09/2026, item 3 · **Tipo:** fix (UX) · **Base:** `main`
 **Branch sugerida:** `fix/experiment-card-edit`
-**Status:** não iniciado.
+**Status:** implementado em `fix/density-missing-channel`.
 
 ## Problema
 

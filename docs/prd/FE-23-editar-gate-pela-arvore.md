@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Item do doc:** teste 14/09/2026, item 1 · **Tipo:** fix (UX) · **Base:** `main`
 **Branch sugerida:** `fix/gate-edit-from-tree` · **Depende de:** [ADR-0013](../adr/0013-replicacao-de-nome-cor-opt-in.md)
-**Status:** não iniciado.
+**Status:** implementado em `fix/density-missing-channel`.
 
 ## Problema
 

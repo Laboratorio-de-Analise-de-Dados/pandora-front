@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Item do doc:** teste 14/09/2026, item 2 · **Tipo:** fix · **Base:** `main`
 **Branch sugerida:** `fix/density-missing-channel` · **Depende de:** BE-18 (contrato de erro)
-**Status:** não iniciado.
+**Status:** implementado em `fix/density-missing-channel`.
 
 ## Problema
 

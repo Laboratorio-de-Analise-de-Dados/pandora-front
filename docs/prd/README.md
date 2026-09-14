@@ -23,9 +23,9 @@
 | [FE-19](FE-19-dividir-use-experiment-page-actions.md) | Dividir useExperimentPageActions por domínio          | Implementado em `refactor/experiment-actions` |
 | [FE-20](FE-20-reorganizar-pages-e-features.md)        | Reorganizar page/ vs components/ e concluir features/ | Implementado em `refactor/dir-layout`         |
 | [FE-21](FE-21-desativar-reativar-experimento.md)      | Desativar/reativar experimentos na listagem           | Implementado em `feat/experiment-restore`     |
-| [FE-22](FE-22-density-erro-canais.md)                 | Erro real e pré-checagem de canais no plot            | Não iniciado (depende do BE-18)               |
-| [FE-23](FE-23-editar-gate-pela-arvore.md)             | Editar gate (nome/cor/escopo) a partir da árvore      | Não iniciado (depende do ADR-0013)            |
-| [FE-24](FE-24-detalhes-edicao-experimento-card.md)    | Detalhes e edição do experimento no card              | Não iniciado                                  |
+| [FE-22](FE-22-density-erro-canais.md)                 | Erro real e pré-checagem de canais no plot            | Implementado em `fix/density-missing-channel` |
+| [FE-23](FE-23-editar-gate-pela-arvore.md)             | Editar gate (nome/cor/escopo) a partir da árvore      | Implementado em `fix/density-missing-channel` |
+| [FE-24](FE-24-detalhes-edicao-experimento-card.md)    | Detalhes e edição do experimento no card              | Implementado em `fix/density-missing-channel` |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
