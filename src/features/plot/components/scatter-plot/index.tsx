@@ -34,7 +34,7 @@ import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
 import { useGateHitTest } from "./hooks/useGateHitTest"
 import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
-import GateEditDialog from "./components/GateEditDialog"
+import GateEditDialog from "../../../gate/components/gate-edit-dialog"
 import ReshapeScopeDialog from "./components/ReshapeScopeDialog"
 import GateToolToggle from "./components/GateToolToggle"
 import {
@@ -739,6 +739,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				name={editGateName}
 				color={editGateColor}
 				scope={editGateScope}
+				familySize={selectedGate ? familySizeOf(selectedGate.id) : 0}
 				subsampleName={currentSubsampleName}
 				error={editGateError}
 				saving={savingGate}

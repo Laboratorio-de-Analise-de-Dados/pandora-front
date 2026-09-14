@@ -83,7 +83,7 @@ function ExperimentPageContent() {
 		deleteGateLoading,
 		deleteGateError,
 		setDeleteGateTarget,
-		handleRenameGate,
+		handleEditGate,
 		handleApplyGate,
 		handleConfirmApply,
 		applyTarget,
@@ -207,7 +207,7 @@ function ExperimentPageContent() {
 						if (isMobile) setShowTree(false)
 					}}
 					onDeleteGate={handleRequestDeleteGate}
-					onRenameGate={handleRenameGate}
+					onEditGate={handleEditGate}
 					onApplyGate={handleApplyGate}
 					onDisableFile={handleDisableFile}
 					onEnableFile={handleEnableFile}

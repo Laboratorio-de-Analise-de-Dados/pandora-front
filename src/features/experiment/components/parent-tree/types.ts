@@ -5,6 +5,14 @@ import type {
 	SelectedSource,
 	Subsample,
 } from "../../../../types"
+import type { GateScope } from "../../../../services/gateService"
+
+/** Payload da edição completa do gate (nome + cor + escopo, FE-23). */
+export interface GateEditPayload {
+	name: string
+	color: string
+	scope: GateScope
+}
 
 /** Callbacks que os itens da árvore disparam — montado por
  * `useTreeInteractions` e repassado de GateTreeItem/FileTreeItem/
@@ -12,7 +20,11 @@ import type {
 export interface TreeHandlers {
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number, gateName: string) => void
-	onRenameGate?: (gateId: number, newName: string) => void
+	/** Salva nome/cor/escopo; devolve mensagem de erro ou null no sucesso. */
+	onEditGate?: (
+		gateId: number,
+		payload: GateEditPayload,
+	) => Promise<string | null>
 	onApplyGate?: (gateId: number, gateName: string) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void

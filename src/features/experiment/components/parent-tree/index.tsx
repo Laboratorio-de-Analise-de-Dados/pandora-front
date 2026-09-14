@@ -21,7 +21,6 @@ import {
 	ListItemText,
 	Menu,
 	MenuItem as MuiMenuItem,
-	TextField,
 	Tooltip,
 	Typography,
 	Divider,
@@ -37,6 +36,9 @@ import {
 	hasSubsampleLevel,
 } from "../../utils/groupBySubsample"
 import { useTreeInteractions } from "../../hooks/useTreeInteractions"
+import { findFileForGate, getCopyFamilyIds } from "../../../gate/utils"
+import GateEditDialog from "../../../gate/components/gate-edit-dialog"
+import type { GateEditPayload } from "./types"
 import FileTreeItem from "./FileTreeItem"
 import SubsampleGroupItem from "./SubsampleGroupItem"
 import {
@@ -51,7 +53,7 @@ export default function ParentTree({
 	subsamples = [],
 	onSelect,
 	onDeleteGate,
-	onRenameGate,
+	onEditGate,
 	onApplyGate,
 	onDisableFile,
 	onEnableFile,
@@ -64,7 +66,10 @@ export default function ParentTree({
 	subsamples?: Subsample[]
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number, gateName: string) => void
-	onRenameGate?: (gateId: number, newName: string) => void
+	onEditGate?: (
+		gateId: number,
+		payload: GateEditPayload,
+	) => Promise<string | null>
 	onApplyGate?: (gateId: number, gateName: string) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void
@@ -83,7 +88,7 @@ export default function ParentTree({
 		gateContextMenu,
 		fileMenu,
 		subsampleMenu,
-		renameDialog,
+		editDialog,
 		disableDialog,
 		moveDialog,
 		metadataDialog,
@@ -93,7 +98,7 @@ export default function ParentTree({
 		files,
 		onSelect,
 		onDeleteGate,
-		onRenameGate,
+		onEditGate,
 		onApplyGate,
 		onDisableFile,
 		onEnableFile,
@@ -246,17 +251,17 @@ export default function ParentTree({
 						</ListItemText>
 					</MuiMenuItem>
 				)}
-				{onRenameGate && (
-					<MuiMenuItem onClick={gateMenu.rename} dense>
+				{onEditGate && (
+					<MuiMenuItem onClick={gateMenu.edit} dense>
 						<ListItemIcon sx={{ minWidth: 28 }}>
 							<EditIcon style={{ fontSize: 18 }} />
 						</ListItemIcon>
 						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
-							Renomear
+							Editar
 						</ListItemText>
 					</MuiMenuItem>
 				)}
-				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
+				{(onApplyGate || onEditGate) && onDeleteGate && <Divider />}
 				{onDeleteGate && (
 					<MuiMenuItem
 						onClick={gateMenu.remove}
@@ -298,17 +303,17 @@ export default function ParentTree({
 						</ListItemText>
 					</MuiMenuItem>
 				)}
-				{onRenameGate && (
-					<MuiMenuItem onClick={gateContextMenu.rename} dense>
+				{onEditGate && (
+					<MuiMenuItem onClick={gateContextMenu.edit} dense>
 						<ListItemIcon sx={{ minWidth: 28 }}>
 							<EditIcon style={{ fontSize: 18 }} />
 						</ListItemIcon>
 						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
-							Renomear
+							Editar
 						</ListItemText>
 					</MuiMenuItem>
 				)}
-				{(onApplyGate || onRenameGate) && onDeleteGate && <Divider />}
+				{(onApplyGate || onEditGate) && onDeleteGate && <Divider />}
 				{onDeleteGate && (
 					<MuiMenuItem
 						onClick={gateContextMenu.remove}
@@ -460,32 +465,36 @@ export default function ParentTree({
 				</DialogActions>
 			</Dialog>
 
-			<Dialog open={!!renameDialog.target} onClose={renameDialog.cancel}>
-				<DialogTitle>Renomear Gate</DialogTitle>
-				<DialogContent>
-					<TextField
-						autoFocus
-						label="Novo nome"
-						value={renameDialog.value}
-						onChange={(e) => renameDialog.setValue(e.target.value)}
-						fullWidth
-						sx={{ mt: 1 }}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") renameDialog.confirm()
-						}}
-					/>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={renameDialog.cancel}>Cancelar</Button>
-					<Button
-						onClick={renameDialog.confirm}
-						variant="contained"
-						disabled={!renameDialog.value.trim()}
-					>
-						Salvar
-					</Button>
-				</DialogActions>
-			</Dialog>
+			{/* FE-23: edição completa do gate pela árvore — mesmo diálogo do
+				gráfico (nome + cor + escopo opt-in). */}
+			<GateEditDialog
+				open={!!editDialog.gate}
+				gate={editDialog.gate}
+				name={editDialog.name}
+				color={editDialog.color}
+				scope={editDialog.scope}
+				familySize={
+					editDialog.gate
+						? getCopyFamilyIds(files, editDialog.gate.id).length
+						: 0
+				}
+				subsampleName={
+					subsamples.find(
+						(s) =>
+							s.id ===
+							(editDialog.gate
+								? findFileForGate(files, editDialog.gate.id)?.subsample
+								: undefined),
+					)?.name
+				}
+				error={editDialog.error}
+				saving={editDialog.saving}
+				onNameChange={editDialog.setName}
+				onColorChange={editDialog.setColor}
+				onScopeChange={editDialog.setScope}
+				onSave={editDialog.confirm}
+				onClose={editDialog.close}
+			/>
 		</>
 	)
 }

@@ -1,10 +1,6 @@
 import { useCallback, useRef, useState } from "react"
 import { toast } from "react-toastify"
-import {
-	applyGates,
-	deleteGatesBatch,
-	updateGate,
-} from "../../../services/gateService"
+import { applyGates, deleteGatesBatch } from "../../../services/gateService"
 import type {
 	ApplyGateConflict,
 	NonEvaluableTarget,
@@ -18,8 +14,10 @@ import {
 	findGateByPathNames,
 	getGatePathNames,
 } from "../../gate/utils"
+import { useGateMutations } from "../../plot/hooks/useGateMutations"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
 import { extractErrorMessage } from "../../../utils/apiError"
+import type { GateEditPayload } from "../components/parent-tree/types"
 
 export interface ApplyTarget {
 	id: number
@@ -125,19 +123,13 @@ export function useGateActions() {
 		[deleteGateTarget, invalidateExperiment, selectParentOfDeletedGate, source],
 	)
 
-	const handleRenameGate = useCallback(
-		async (gateId: number, newName: string) => {
-			try {
-				await updateGate(gateId, { name: newName })
-				toast.success("Gate renomeado com sucesso!")
-				invalidateExperiment()
-			} catch (error) {
-				const errorMessage =
-					error instanceof Error ? error.message : String(error)
-				toast.error(`Erro ao renomear o gate: ${errorMessage}`)
-			}
-		},
-		[invalidateExperiment],
+	// FE-23: mesma gravação do diálogo do gráfico — nome + cor + escopo opt-in.
+	// Devolve a mensagem de erro para o diálogo (que permanece aberto) ou null.
+	const { saveGateNameColor } = useGateMutations(invalidateExperiment)
+	const handleEditGate = useCallback(
+		(gateId: number, payload: GateEditPayload) =>
+			saveGateNameColor(gateId, payload.name, payload.color, payload.scope),
+		[saveGateNameColor],
 	)
 
 	const handleApplyGate = useCallback(
@@ -258,7 +250,7 @@ export function useGateActions() {
 		deleteGateLoading,
 		deleteGateError,
 		setDeleteGateTarget,
-		handleRenameGate,
+		handleEditGate,
 		handleApplyGate,
 		handleConfirmApply,
 		applyTarget,

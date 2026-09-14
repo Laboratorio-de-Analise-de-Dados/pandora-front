@@ -39,7 +39,7 @@ export default function GateTreeItem({
 	const authorLabel = gateAuthorLabel(gate)
 	const authorName = gate.created_by_name?.trim() || null
 	const hasActions =
-		handlers.onApplyGate || handlers.onRenameGate || handlers.onDeleteGate
+		handlers.onApplyGate || handlers.onEditGate || handlers.onDeleteGate
 	return (
 		<TreeNode
 			depth={depth}
