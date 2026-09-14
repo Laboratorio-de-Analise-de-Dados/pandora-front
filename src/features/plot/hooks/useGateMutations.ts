@@ -6,21 +6,7 @@ import {
 } from "../../../services/gateService"
 import type { GateScope } from "../../../services/gateService"
 import type { Gate, GateCoordinates } from "../../../types"
-
-const TOAST_POS = { position: "bottom-right" as const }
-
-const extractError = (error: unknown): string => {
-	const err = error as {
-		response?: { data?: { detail?: string } | unknown }
-		message?: string
-	}
-	const data = err?.response?.data
-	if (data && typeof data === "object" && "detail" in data) {
-		const detail = (data as { detail?: unknown }).detail
-		if (typeof detail === "string") return detail
-	}
-	return data ? JSON.stringify(data) : (err?.message ?? "Erro desconhecido")
-}
+import { extractErrorMessage } from "../../../utils/apiError"
 
 /**
  * Centraliza as mutações de gate (API + toast + reload), evitando o try/catch
@@ -46,12 +32,11 @@ export function useGateMutations(loadFile: () => void) {
 				if (scope !== "file") {
 					toast.success(
 						`Geometria aplicada em ${result.propagated_gate_ids.length + 1} amostra(s)`,
-						TOAST_POS,
 					)
 				}
 				loadFile()
 			} catch (error: unknown) {
-				toast.error(`Erro ao atualizar gate: ${extractError(error)}`, TOAST_POS)
+				toast.error(`Erro ao atualizar gate: ${extractErrorMessage(error)}`)
 			}
 		},
 		[loadFile],
@@ -61,10 +46,10 @@ export function useGateMutations(loadFile: () => void) {
 		async (gate: Gate) => {
 			try {
 				await deleteGateById(gate.id)
-				toast.success(`Gate "${gate.name}" excluído`, TOAST_POS)
+				toast.success(`Gate "${gate.name}" excluído`)
 				loadFile()
 			} catch (error: unknown) {
-				toast.error(`Erro ao excluir gate: ${extractError(error)}`, TOAST_POS)
+				toast.error(`Erro ao excluir gate: ${extractErrorMessage(error)}`)
 			}
 		},
 		[loadFile],
@@ -88,23 +73,21 @@ export function useGateMutations(loadFile: () => void) {
 				if (scope !== "file") {
 					toast.success(
 						`Gate atualizado em ${result.propagated_gate_ids.length + 1} amostra(s)`,
-						TOAST_POS,
 					)
 					if (result.conflicts.length > 0) {
 						toast.warn(
 							`Nome já usado em: ${result.conflicts
 								.map((conflict) => conflict.file_name)
 								.join(", ")}`,
-							TOAST_POS,
 						)
 					}
 				} else {
-					toast.success("Gate atualizado com sucesso!", TOAST_POS)
+					toast.success("Gate atualizado com sucesso!")
 				}
 				loadFile()
 				return null
 			} catch (error: unknown) {
-				return extractError(error)
+				return extractErrorMessage(error)
 			}
 		},
 		[loadFile],

@@ -19,6 +19,7 @@ import {
 	copyExperiment,
 	moveExperiment,
 } from "../../../services/experimentService"
+import { extractErrorMessage } from "../../../utils/apiError"
 
 export type ContextDialogMode = "copy" | "move"
 
@@ -66,10 +67,9 @@ export default function ExperimentContextDialog({
 			}
 			onDone()
 			onClose()
-		} catch (error: any) {
+		} catch (error) {
 			toast.error(
-				error?.response?.data?.detail ||
-					"Não foi possível concluir a operação.",
+				extractErrorMessage(error) || "Não foi possível concluir a operação.",
 			)
 		} finally {
 			setSaving(false)

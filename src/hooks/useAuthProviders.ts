@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react"
-import CytometryApi from "../API"
-
-interface AuthProvidersConfig {
-	google: boolean
-	microsoft: boolean
-}
+import {
+	AuthProvidersConfig,
+	fetchAuthProviders,
+} from "../services/authService"
 
 export function useAuthProviders() {
 	const [providers, setProviders] = useState<AuthProvidersConfig>({
@@ -14,8 +12,8 @@ export function useAuthProviders() {
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		CytometryApi.get("/accounts/auth/providers/")
-			.then((res) => setProviders(res.data))
+		fetchAuthProviders()
+			.then(setProviders)
 			.catch(() => setProviders({ google: false, microsoft: false }))
 			.finally(() => setLoading(false))
 	}, [])

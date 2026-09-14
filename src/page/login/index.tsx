@@ -11,7 +11,7 @@ import {
 
 import { useAuth } from "../../providers/AuthContext"
 import { useAuthProviders } from "../../hooks/useAuthProviders"
-import CytometryApi from "../../API"
+import { acceptInvite } from "../../services/inviteService"
 
 export default function LoginPage() {
 	const [username, setUsername] = useState("")
@@ -32,10 +32,7 @@ export default function LoginPage() {
 			await login(username, password)
 			if (inviteToken) {
 				try {
-					await CytometryApi.post(
-						`/accounts/invites/accept/${inviteToken}/`,
-						{},
-					)
+					await acceptInvite(inviteToken)
 				} catch (err) {
 					// ignore accept errors; user is logged in
 				}

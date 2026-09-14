@@ -1,4 +1,4 @@
-import Header from "./components/headers"
+import Header from "./components/header"
 import Footer from "./components/footer"
 import CssBaseline from "@mui/material/CssBaseline"
 import { ThemeModeProvider } from "./providers/ThemeContext"
@@ -9,7 +9,7 @@ import { ToastContainer } from "react-toastify"
 function App() {
 	return (
 		<ThemeModeProvider>
-			<ToastContainer />
+			<ToastContainer position="bottom-right" />
 			<CssBaseline />
 			<Box
 				sx={{

@@ -6,7 +6,7 @@ import { useAuth } from "../../providers/AuthContext"
 export default function AuthCallbackPage() {
 	const [searchParams] = useSearchParams()
 	const navigate = useNavigate()
-	const { storeToken } = useAuth() as any
+	const { storeToken } = useAuth()
 	const [error, setError] = useState("")
 
 	useEffect(() => {

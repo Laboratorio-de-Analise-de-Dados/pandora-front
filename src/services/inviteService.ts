@@ -11,6 +11,23 @@ export interface Invite {
 	expires_at?: string
 }
 
+export const fetchInvite = async (token: string): Promise<Invite> => {
+	const res = await CytometryApi.get(`/accounts/invites/${token}/`)
+	return res.data
+}
+
+export const createInvite = async (
+	organizationId: number,
+	email: string,
+	role: string,
+): Promise<{ email_sent: boolean }> => {
+	const res = await CytometryApi.post(
+		`/accounts/organizations/${organizationId}/invites/`,
+		{ email, role },
+	)
+	return res.data
+}
+
 export const fetchPendingInvites = async (): Promise<Invite[]> => {
 	const res = await CytometryApi.get("/accounts/invites/pending/")
 	return res.data

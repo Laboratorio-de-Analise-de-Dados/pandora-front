@@ -14,7 +14,7 @@ import type {
 	PlotViewConfig,
 	Subsample,
 } from "../../../types"
-import type { SelectedSource } from "../../../components/parent_tree"
+import type { SelectedSource } from "../../../types"
 import {
 	getChildGatesForSource,
 	findGateInTree,

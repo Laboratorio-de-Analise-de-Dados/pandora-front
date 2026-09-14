@@ -1,9 +1,56 @@
 import CytometryApi from "../API"
 import type { AnalysisResultData, Experiment, ExperimentFiles } from "../types"
 
+export const fetchExperiments = async (
+	includeInactive = false,
+): Promise<Experiment[]> => {
+	const res = await CytometryApi.get("/experiment", {
+		params: includeInactive ? { include_inactive: "true" } : undefined,
+	})
+	return res.data
+}
+
 export const fetchExperiment = async (id: string): Promise<Experiment> => {
 	const res = await CytometryApi.get(`/experiment/${id}`)
 	return res.data
+}
+
+export interface ExperimentInitPayload {
+	title: string
+	type: string
+	totalChunks: number
+	fileName?: string
+	organizationId?: number | null
+}
+
+export interface ExperimentInitResponse {
+	fileId: number
+}
+
+export const initExperimentUpload = async (
+	payload: ExperimentInitPayload,
+): Promise<ExperimentInitResponse> => {
+	const res = await CytometryApi.post("/experiment/init/", payload)
+	return res.data
+}
+
+export const uploadExperimentChunk = async (
+	fileId: number,
+	chunkIndex: number,
+	chunk: Blob,
+): Promise<void> => {
+	const formData = new FormData()
+	formData.append("fileId", String(fileId))
+	formData.append("chunkIndex", String(chunkIndex))
+	formData.append("chunk", chunk)
+	await CytometryApi.post("/experiment/upload-chunk/", formData)
+}
+
+export const completeExperimentUpload = async (
+	fileId: number,
+	fileName: string,
+): Promise<void> => {
+	await CytometryApi.post("/experiment/complete/", { fileId, fileName })
 }
 
 export const fetchExperimentFiles = async (
@@ -40,6 +87,12 @@ export const updateExperiment = async (
 
 export const deleteExperiment = async (id: number): Promise<void> => {
 	await CytometryApi.delete(`/experiment/${id}`)
+}
+
+/** Reativa um experimento desativado (o DELETE é arquivamento, não apaga). */
+export const restoreExperiment = async (id: number): Promise<Experiment> => {
+	const res = await CytometryApi.post(`/experiment/${id}/restore`)
+	return res.data
 }
 
 export interface CopyExperimentPayload {

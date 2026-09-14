@@ -3,16 +3,18 @@ import {
 	Typography,
 	Button,
 	FormControl,
+	FormControlLabel,
 	InputLabel,
 	MenuItem,
 	Select,
+	Switch,
 } from "@mui/material"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import Layout from "../../components/Layout"
 import { useExperimentsContext } from "../../providers/ExperimentContext"
 import { useAuth } from "../../providers/AuthContext"
-import ExperimentsContainer from "../../components/page/experiments/Container"
+import ExperimentsContainer from "./Container"
 
 export type EventData = {
 	id: number
@@ -24,15 +26,15 @@ export default function ExperimentsPage() {
 	const navigate = useNavigate()
 	const { user } = useAuth()
 	const { experiments, listExperiments } = useExperimentsContext()
+	const [showInactive, setShowInactive] = useState(false)
 	const orgIdParam = searchParams.get("orgId")
 	const orgId = orgIdParam ? parseInt(orgIdParam, 10) : null
 
 	useEffect(() => {
-		listExperiments()
-	}, [listExperiments])
+		listExperiments(showInactive)
+	}, [listExperiments, showInactive])
 
 	const filteredExperiments = useMemo(() => {
-		console.log(experiments, orgId)
 		if (orgId === null) return experiments
 		if (orgId === 0) return experiments.filter((e) => !e.organization)
 		return experiments.filter(
@@ -125,6 +127,17 @@ export default function ExperimentsPage() {
 								))}
 							</Select>
 						</FormControl>
+						<FormControlLabel
+							control={
+								<Switch
+									size="small"
+									checked={showInactive}
+									onChange={(e) => setShowInactive(e.target.checked)}
+								/>
+							}
+							label="Mostrar desativados"
+							sx={{ whiteSpace: "nowrap" }}
+						/>
 						<Button
 							variant="outlined"
 							size="small"
@@ -141,7 +154,10 @@ export default function ExperimentsPage() {
 						Escolha um experimento:
 					</Typography>
 					<Box>
-						<ExperimentsContainer experiments={filteredExperiments} />
+						<ExperimentsContainer
+							experiments={filteredExperiments}
+							onChanged={() => listExperiments(showInactive)}
+						/>
 					</Box>
 				</Box>
 			</Box>
