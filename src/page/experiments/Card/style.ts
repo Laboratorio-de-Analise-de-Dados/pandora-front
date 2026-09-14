@@ -74,4 +74,26 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
+
+	.card-footer {
+		margin-top: auto; /* Empurra o rodapé para a base do card */
+		padding-top: 0.5rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		font-size: 0.7rem;
+
+		.creator,
+		.org {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.org {
+			text-align: right;
+		}
+	}
 `
