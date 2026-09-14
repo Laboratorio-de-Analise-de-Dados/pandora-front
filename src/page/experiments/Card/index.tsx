@@ -103,6 +103,12 @@ export default function ExperimentCard({
 				<h1>{experiment.title}</h1>
 				<div>Type: {experiment.type}</div>
 				{inactive && <div className="inactive-badge">Desativado</div>}
+				<div className="card-footer">
+					<span className="creator">{experiment.created_by_name ?? "—"}</span>
+					<span className="org">
+						{experiment.organization?.name ?? "Pessoal"}
+					</span>
+				</div>
 			</ExperimentComponent>
 			<Menu
 				anchorEl={menuAnchor}

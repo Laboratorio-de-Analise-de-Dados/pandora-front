@@ -6,6 +6,8 @@ export interface Experiment {
 	active: boolean
 	organization: Organization | null
 	created_by: number
+	/** Username do criador (ListExperimentSerializer); ausente se o back ainda não expõe. */
+	created_by_name?: string | null
 }
 
 export type Organization = {
