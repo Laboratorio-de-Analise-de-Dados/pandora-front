@@ -5,7 +5,10 @@ import {
 	deleteGatesBatch,
 	updateGate,
 } from "../../../services/gateService"
-import type { ApplyGateConflict } from "../../../services/gateService"
+import type {
+	ApplyGateConflict,
+	NonEvaluableTarget,
+} from "../../../services/gateService"
 import type {
 	DeleteGateOptions,
 	DeleteGateTarget,
@@ -35,9 +38,11 @@ export function useGateActions() {
 	const [applyTarget, setApplyTarget] = useState<ApplyTarget | null>(null)
 	const [applyLoading, setApplyLoading] = useState(false)
 	const [applyConflicts, setApplyConflicts] = useState<ApplyGateConflict[]>([])
+	const [applyWarnings, setApplyWarnings] = useState<NonEvaluableTarget[]>([])
 	const pendingApply = useRef<{
 		targetFileDataIds: number[]
 		recursive: boolean
+		conflicts: ApplyGateConflict[]
 	} | null>(null)
 	const [deleteGateTarget, setDeleteGateTarget] =
 		useState<DeleteGateTarget | null>(null)
@@ -178,8 +183,10 @@ export function useGateActions() {
 		[applyTarget, invalidateExperiment],
 	)
 
-	// Antes de aplicar, um dry run descobre os gates de mesmo nome que seriam
-	// sobrescritos nos destinos; a sobrescrita só acontece após confirmação.
+	// Antes de aplicar, um dry run descobre (a) amostras sem os canais que os
+	// gates referenciam — aviso não-bloqueante, BE-18 — e (b) gates de mesmo
+	// nome que seriam sobrescritos nos destinos; a sobrescrita só acontece após
+	// confirmação.
 	const handleConfirmApply = useCallback(
 		async (targetFileDataIds: number[], recursive: boolean) => {
 			if (!applyTarget) return
@@ -191,9 +198,15 @@ export function useGateActions() {
 					recursive,
 					dry_run: true,
 				})
-				if (preview.conflicts.length > 0) {
-					pendingApply.current = { targetFileDataIds, recursive }
-					setApplyConflicts(preview.conflicts)
+				const warnings = preview.non_evaluable ?? []
+				if (warnings.length > 0 || preview.conflicts.length > 0) {
+					pendingApply.current = {
+						targetFileDataIds,
+						recursive,
+						conflicts: preview.conflicts,
+					}
+					if (warnings.length > 0) setApplyWarnings(warnings)
+					else setApplyConflicts(preview.conflicts)
 					return
 				}
 			} catch (error) {
@@ -205,6 +218,26 @@ export function useGateActions() {
 			await runApply(targetFileDataIds, recursive, "rename")
 		},
 		[applyTarget, runApply],
+	)
+
+	// Aviso de canal ausente não bloqueia: confirmado, segue para os conflitos
+	// de nome (se houver) ou aplica direto.
+	const handleResolveApplyWarnings = useCallback(
+		(proceed: boolean) => {
+			const pending = pendingApply.current
+			setApplyWarnings([])
+			if (!pending || !proceed) {
+				pendingApply.current = null
+				return
+			}
+			if (pending.conflicts.length > 0) {
+				setApplyConflicts(pending.conflicts)
+				return
+			}
+			pendingApply.current = null
+			void runApply(pending.targetFileDataIds, pending.recursive, "rename")
+		},
+		[runApply],
 	)
 
 	const handleResolveApplyConflicts = useCallback(
@@ -232,6 +265,8 @@ export function useGateActions() {
 		applyLoading,
 		setApplyTarget,
 		applyConflicts,
+		applyWarnings,
+		handleResolveApplyWarnings,
 		handleResolveApplyConflicts,
 	}
 }

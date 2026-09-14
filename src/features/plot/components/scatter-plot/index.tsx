@@ -1,4 +1,5 @@
 import {
+	Alert,
 	Box,
 	Button,
 	CircularProgress,
@@ -27,6 +28,7 @@ import { COFACTOR } from "../../utils/biex"
 import { buildTicks } from "../../utils/ticks"
 import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
 import { buildAxisRange } from "../../utils/plotAxes"
+import { extractErrorMessage } from "../../../../utils/apiError"
 
 import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
 import { useGateHitTest } from "./hooks/useGateHitTest"
@@ -147,20 +149,38 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const dXMax = useDebouncedValue(xMax, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMin = useDebouncedValue(yMin, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMax = useDebouncedValue(yMax, RANGE_REFETCH_DEBOUNCE_MS)
-	const { data, isLoading, isFetching, isError, refetch } = useDensityQuery({
-		sourceType,
-		sourceId,
-		xAxis,
-		yAxis,
-		plotMode,
-		xScale,
-		yScale,
-		cutoff,
-		xMin: dXMin,
-		xMax: dXMax,
-		yMin: dYMin,
-		yMax: dYMax,
-	})
+	const { data, isLoading, isFetching, isError, error, refetch } =
+		useDensityQuery({
+			sourceType,
+			sourceId,
+			xAxis,
+			yAxis,
+			plotMode,
+			xScale,
+			yScale,
+			cutoff,
+			xMin: dXMin,
+			xMax: dXMax,
+			yMin: dYMin,
+			yMax: dYMax,
+		})
+
+	// BE-18: erro de canal ausente vem com `missing_channels` no payload — vira
+	// aviso explicável; o resto segue como erro genérico com o detail real.
+	const densityError = useMemo(() => {
+		if (!isError) return null
+		const resp = (
+			error as {
+				response?: {
+					data?: { detail?: string; missing_channels?: string[] }
+				}
+			}
+		)?.response?.data
+		return {
+			message: extractErrorMessage(error),
+			missingChannels: resp?.missing_channels ?? [],
+		}
+	}, [isError, error])
 
 	const loadFile = useCallback(() => {
 		refetch()
@@ -509,7 +529,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								/>
 							)}
 							{isError && !data ? (
-								<Typography color="error">Erro ao carregar dados.</Typography>
+								<Alert
+									severity={
+										densityError?.missingChannels.length ? "warning" : "error"
+									}
+									sx={{ maxWidth: 480 }}
+								>
+									{densityError?.message ?? "Erro ao carregar dados."}
+								</Alert>
 							) : hasData ? (
 								<Plot
 									key={
@@ -599,7 +626,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									}
 								/>
 							) : isLoading ? null : (
-								<Typography>Sem dados para os eixos selecionados.</Typography>
+								<Typography>
+									{data && data.total_events === 0
+										? "O gate não contém eventos nesta amostra."
+										: "Sem dados para os eixos selecionados."}
+								</Typography>
 							)}
 							{isLoading && !hasData && (
 								<Box

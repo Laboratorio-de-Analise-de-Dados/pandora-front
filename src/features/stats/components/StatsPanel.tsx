@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import {
+	Alert,
 	Box,
 	Chip,
 	Collapse,
@@ -478,6 +479,16 @@ export default function StatsPanel({
 				source={source}
 				onSelect={setStatsSource}
 			/>
+
+			{/* BE-18: gate não-avaliável nesta amostra — sem métricas, explicar. */}
+			{analysisData?.applicable === false && (
+				<Alert severity="warning" sx={{ mt: 0.5 }}>
+					{analysisData.blocked_by_gate &&
+					analysisData.blocked_by_gate.id !== currentGate?.id
+						? `Gate não avaliável nesta amostra: o gate "${analysisData.blocked_by_gate.name}" usa canal(is) ausente(s) (${analysisData.missing_channels?.join(", ")}).`
+						: `Gate não avaliável nesta amostra: canal(is) ausente(s) (${analysisData.missing_channels?.join(", ")}).`}
+				</Alert>
+			)}
 
 			{/* Collapsable stats section */}
 			<Box

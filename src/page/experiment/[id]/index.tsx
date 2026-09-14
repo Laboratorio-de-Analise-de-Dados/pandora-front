@@ -27,6 +27,7 @@ import CollapsiblePanel from "../../../features/experiment/components/Collapsibl
 import StatsPanel from "../../../features/stats/components/StatsPanel"
 import ApplyGateDialog from "../../../features/gate/components/apply-gate-dialog"
 import ApplyConflictDialog from "../../../features/gate/components/apply-gate-dialog/components/ApplyConflictDialog"
+import ApplyWarningDialog from "../../../features/gate/components/apply-gate-dialog/components/ApplyWarningDialog"
 import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
 import DeleteGateDialog from "../../../features/gate/components/delete-gate-dialog"
 import {
@@ -89,6 +90,8 @@ function ExperimentPageContent() {
 		applyLoading,
 		setApplyTarget,
 		applyConflicts,
+		applyWarnings,
+		handleResolveApplyWarnings,
 		handleResolveApplyConflicts,
 	} = useGateActions()
 	const {
@@ -421,6 +424,12 @@ function ExperimentPageContent() {
 					loading={applyLoading}
 				/>
 			)}
+
+			<ApplyWarningDialog
+				warnings={applyWarnings}
+				loading={applyLoading}
+				onResolve={handleResolveApplyWarnings}
+			/>
 
 			<ApplyConflictDialog
 				conflicts={applyConflicts}

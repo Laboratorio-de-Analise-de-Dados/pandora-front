@@ -115,6 +115,14 @@ export interface SummaryMetrics {
 export interface AnalysisResultData {
 	summary_metrics?: SummaryMetrics
 	channel_statistics?: Record<string, ChannelStat>
+	/**
+	 * ADR-0016 (backend): `false` quando o gate referencia canal ausente na
+	 * amostra — a linhagem abaixo dele fica cortada e sem métricas.
+	 */
+	applicable?: boolean
+	reason?: string
+	missing_channels?: string[]
+	blocked_by_gate?: { id: number; name: string }
 }
 
 /**
