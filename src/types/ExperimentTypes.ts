@@ -4,6 +4,8 @@ export interface Experiment {
 	type: string
 	values: string[]
 	active: boolean
+	/** Ciclo de vida do processamento (`new|uploading|processing|done|error`). */
+	status?: string
 	organization: Organization | null
 	created_by: number
 	/** Username do criador (ListExperimentSerializer); ausente se o back ainda não expõe. */
