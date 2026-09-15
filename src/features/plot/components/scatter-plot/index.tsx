@@ -500,7 +500,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						<Box
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
-							sx={{
+							sx={(theme) => ({
 								width: { xs: "min(95vw, 480px)", md: "min(70vh, 560px)" },
 								maxWidth: "100%",
 								aspectRatio: "1 / 1",
@@ -510,7 +510,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								display: "flex",
 								alignItems: "center",
 								justifyContent: "center",
-							}}
+								// Separa o plot do canvas (FE-26): superfície com borda
+								// suave + raio — o gráfico fica como um "poço" escuro.
+								bgcolor: "background.paper",
+								border: `1px solid ${theme.palette.divider}`,
+								borderRadius: 3,
+								boxShadow: theme.shadows[2],
+								overflow: "hidden",
+							})}
 						>
 							{/* Configurações do gráfico, ancorado ao canto superior esquerdo */}
 							{settingsAvailable && (
