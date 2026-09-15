@@ -38,7 +38,12 @@ const AxisSelect: React.FC<AxisSelectProps> = ({
 			size={size}
 			labelId={selectId}
 			label={label}
-			sx={rotated ? { transform: "rotate(-90deg)" } : undefined}
+			variant="standard"
+			disableUnderline
+			sx={{
+				...(rotated && { transform: "rotate(-90deg)" }),
+				fontWeight: 600,
+			}}
 		>
 			{options.map((option, index) => (
 				<MenuItem key={index} value={option}>

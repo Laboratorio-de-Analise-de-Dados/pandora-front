@@ -691,7 +691,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								)}
 							{reshapingGateId !== null && (
 								<Box
-									sx={{ position: "absolute", top: 8, right: 8, zIndex: 30 }}
+									sx={{
+										position: "absolute",
+										top: 12,
+										right: 12,
+										zIndex: 30,
+									}}
 								>
 									<Button
 										variant="contained"

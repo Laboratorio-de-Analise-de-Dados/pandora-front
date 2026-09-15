@@ -67,8 +67,8 @@ export const PlotSettingsButton: React.FC<{
 			size="small"
 			sx={(theme) => ({
 				position: "absolute",
-				top: 8,
-				left: 8,
+				top: 12,
+				left: 12,
 				zIndex: 25,
 				backgroundColor:
 					theme.palette.mode === "dark"

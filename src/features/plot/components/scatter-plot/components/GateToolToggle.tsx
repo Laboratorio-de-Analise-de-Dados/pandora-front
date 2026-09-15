@@ -25,8 +25,8 @@ const GateToolToggle: React.FC<GateToolToggleProps> = ({
 		onChange={(_, v: GateTool | null) => v && onChange(v)}
 		sx={(theme) => ({
 			position: "absolute",
-			top: 8,
-			right: 8,
+			top: 12,
+			right: 12,
 			zIndex: 25,
 			backgroundColor:
 				theme.palette.mode === "dark"
