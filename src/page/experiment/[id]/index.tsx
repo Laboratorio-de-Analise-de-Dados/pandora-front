@@ -324,6 +324,7 @@ function ExperimentPageContent() {
 									color="text.secondary"
 									sx={{
 										flex: 1,
+										minWidth: 0,
 										textAlign: "center",
 										overflow: "hidden",
 										textOverflow: "ellipsis",
@@ -342,6 +343,7 @@ function ExperimentPageContent() {
 									alignItems: "center",
 									gap: 0.5,
 									ml: "auto",
+									flexShrink: 0,
 								}}
 							>
 								{/* Propagar Gate: botão verde no header (desktop);
