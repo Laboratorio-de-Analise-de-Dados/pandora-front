@@ -587,6 +587,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
+											gridcolor: theme.palette.divider,
+											linecolor: theme.palette.divider,
+											zerolinecolor: theme.palette.divider,
 										},
 										yaxis: {
 											title: {
@@ -606,11 +609,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
+											gridcolor: theme.palette.divider,
+											linecolor: theme.palette.divider,
+											zerolinecolor: theme.palette.divider,
 										},
 										autosize: true,
 										margin: { l: 60, r: 20, t: 20, b: 60 },
-										plot_bgcolor: "#FFFFFF",
-										paper_bgcolor: "#FFFFFF",
+										plot_bgcolor: theme.palette.background.default,
+										paper_bgcolor: theme.palette.background.default,
+										font: { color: theme.palette.text.secondary },
 										bargap: 0,
 									}}
 									onSelected={

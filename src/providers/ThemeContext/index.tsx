@@ -23,7 +23,7 @@ export const useThemeMode = () => {
 export const ThemeModeProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
 }) => {
-	const [mode, setMode] = useState<ThemeMode>("light")
+	const [mode, setMode] = useState<ThemeMode>("dark")
 
 	const toggleMode = () => {
 		setMode((prev) => (prev === "light" ? "dark" : "light"))

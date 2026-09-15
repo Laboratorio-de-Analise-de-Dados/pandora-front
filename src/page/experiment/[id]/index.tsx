@@ -205,6 +205,7 @@ function ExperimentPageContent() {
 				<ParentTree
 					files={experimentFiles}
 					subsamples={subsamples}
+					source={source}
 					onSelect={(s) => {
 						setSource(s)
 						if (isMobile) setShowTree(false)

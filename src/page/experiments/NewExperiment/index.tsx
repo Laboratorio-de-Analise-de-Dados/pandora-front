@@ -116,24 +116,32 @@ export default function NewExperimentCard() {
 		<>
 			<Tooltip title="New Experiment">
 				<Box
-					sx={{
+					component="li"
+					sx={(theme) => ({
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
 						justifyContent: "center",
-						width: "10rem",
-						border: "0.2rem dotted #001f36",
+						flex: "1 1 15rem",
+						maxWidth: "24rem",
+						minHeight: "8rem",
+						border: `1px dashed ${theme.palette.divider}`,
+						color: theme.palette.text.secondary,
 						padding: "1rem",
-						borderRadius: "15px",
+						borderRadius: "16px",
+						transition: "border-color 180ms ease, color 180ms ease",
 						"&:hover": {
-							color: "#79ae92",
-							borderColor: "#79ae92",
+							color: theme.palette.primary.main,
+							borderColor: theme.palette.primary.main,
 							cursor: "pointer",
 						},
-					}}
+					})}
 					onClick={handleOpen}
 				>
 					<AddIcon />
+					<Typography variant="caption" sx={{ mt: 0.5 }}>
+						Novo experimento
+					</Typography>
 				</Box>
 			</Tooltip>
 			<Modal

@@ -40,9 +40,13 @@ export default function GateTreeItem({
 	const authorName = gate.created_by_name?.trim() || null
 	const hasActions =
 		handlers.onApplyGate || handlers.onEditGate || handlers.onDeleteGate
+	const selected =
+		handlers.selectedSource?.type === "gate" &&
+		handlers.selectedSource.id === gate.id
 	return (
 		<TreeNode
 			depth={depth}
+			selected={selected}
 			onSelect={() =>
 				handlers.onSelect({
 					type: "gate",
@@ -109,7 +113,12 @@ export default function GateTreeItem({
 							{notEvaluable && (
 								<Tooltip title={warningTip} arrow>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
-										<WarningIcon style={{ fontSize: 15, color: "#ed6c02" }} />
+										<WarningIcon
+											style={{
+												fontSize: 15,
+												color: "var(--mui-palette-warning-main, #FBBF24)",
+											}}
+										/>
 									</Box>
 								</Tooltip>
 							)}
@@ -120,7 +129,10 @@ export default function GateTreeItem({
 								>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
 										<LinkIcon
-											style={{ fontSize: 14, color: "rgba(0,120,255,0.7)" }}
+											style={{
+												fontSize: 14,
+												color: "var(--mui-palette-info-main, #34D399)",
+											}}
 										/>
 									</Box>
 								</Tooltip>

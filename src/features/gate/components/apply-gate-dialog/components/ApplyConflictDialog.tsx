@@ -70,7 +70,7 @@ export default function ApplyConflictDialog({
 				<Button
 					onClick={() => onResolve("replace")}
 					variant="contained"
-					color="warning"
+					color="error"
 					fullWidth
 					disabled={loading}
 				>

@@ -7,6 +7,18 @@ import { edgesToCenters } from "./geometry"
 // dá conta sem o erro "WebGL is not supported".
 const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
 
+// Rampa de densidade do tema dark (FE-26): base quase preta soma no canvas e
+// os aglomerados "acendem" em emerald → neon. `Jet` foi feito para fundo
+// claro e perdia as baixas densidades no preto.
+const DENSITY_COLORSCALE: [number, string][] = [
+	[0, "#0B1F17"],
+	[0.18, "#064E3B"],
+	[0.4, "#047857"],
+	[0.62, "#10B981"],
+	[0.8, "#34D399"],
+	[1, "#D1FAE5"],
+]
+
 /** Monta os traces do Plotly conforme o modo do gráfico. */
 export const buildPlotData = (
 	plotMode: PlotMode,
@@ -19,7 +31,7 @@ export const buildPlotData = (
 				z: data?.histogram ?? [],
 				x: edgesToCenters(data?.x_edges),
 				y: edgesToCenters(data?.y_edges),
-				colorscale: "Jet" as const,
+				colorscale: DENSITY_COLORSCALE,
 				showscale: true,
 			},
 		]
@@ -30,7 +42,7 @@ export const buildPlotData = (
 				type: "bar" as const,
 				x: edgesToCenters(data?.edges),
 				y: data?.counts ?? [],
-				marker: { color: "#1976d2" },
+				marker: { color: "#10B981" },
 			},
 		]
 	}
@@ -40,7 +52,7 @@ export const buildPlotData = (
 			mode: "markers" as const,
 			x: data?.x ?? [],
 			y: data?.y ?? [],
-			marker: { color: "black", size: 2 },
+			marker: { color: "rgba(52, 211, 153, 0.7)", size: 2 },
 		},
 	]
 }

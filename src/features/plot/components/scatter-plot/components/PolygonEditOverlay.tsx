@@ -100,8 +100,8 @@ const PolygonEditOverlay: React.FC<PolygonEditOverlayProps> = ({
 		>
 			<path
 				d={polyPath}
-				fill="rgba(0,120,255,0.05)"
-				stroke="rgba(0,120,255,0.9)"
+				fill="rgba(52,211,153,0.08)"
+				stroke="rgba(52,211,153,0.9)"
 				strokeWidth={2}
 				pointerEvents="none"
 			/>
@@ -111,8 +111,8 @@ const PolygonEditOverlay: React.FC<PolygonEditOverlayProps> = ({
 					cx={v.px}
 					cy={v.py}
 					r={6}
-					fill="white"
-					stroke="rgba(0,120,255,0.9)"
+					fill="#0D0D0D"
+					stroke="rgba(52,211,153,0.9)"
 					strokeWidth={2}
 					style={{ cursor: "grab", pointerEvents: "all" }}
 					onMouseDown={handleVertexDrag(i)}

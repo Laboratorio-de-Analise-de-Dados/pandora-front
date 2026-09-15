@@ -21,10 +21,16 @@ export default function FileTreeItem({
 	const inactive = file.active === false
 	const canManage = handlers.onDisableFile || handlers.onEnableFile
 	const selecting = !!handlers.onToggleFile
+	const sel = handlers.selectedSource
+	const selected =
+		sel?.type === "file"
+			? sel.id === file.id
+			: sel?.type === "gate" && sel.fileDataId === file.id
 	return (
 		<TreeNode
 			depth={depth}
 			inactive={inactive}
+			selected={!selecting && selected}
 			onSelect={
 				selecting
 					? () => handlers.onToggleFile?.(file.id)

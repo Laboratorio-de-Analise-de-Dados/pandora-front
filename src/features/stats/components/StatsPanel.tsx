@@ -541,7 +541,12 @@ export default function StatsPanel({
 								onClick={() => handleExport("current", "xlsx")}
 								sx={{ p: 0.25 }}
 							>
-								<ExportIcon style={{ fontSize: 14, color: "#1976d2" }} />
+								<ExportIcon
+									style={{
+										fontSize: 14,
+										color: "var(--mui-palette-primary-main, #10B981)",
+									}}
+								/>
 							</IconButton>
 						</Tooltip>
 					</Box>

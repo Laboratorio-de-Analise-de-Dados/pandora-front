@@ -1,6 +1,8 @@
 import { useState } from "react"
 import {
 	Button,
+	Chip,
+	CircularProgress,
 	Dialog,
 	DialogActions,
 	DialogContent,
@@ -88,6 +90,48 @@ export default function ExperimentCard({
 				(m) => m.organization.id === experiment.organization?.id,
 			))
 
+	// Chip de status do pipeline (FE-26): done verde translúcido, processing
+	// com spinner, error vermelho, inativado cinza (renderizado pelo estado
+	// do card, sem chip extra).
+	const statusChip = (() => {
+		if (inactive || !experiment.status || experiment.status === "done")
+			return null
+		if (experiment.status === "error") {
+			return (
+				<Chip
+					label="Erro no processamento"
+					size="small"
+					color="error"
+					variant="outlined"
+					sx={{ height: 22, fontSize: "0.7rem" }}
+				/>
+			)
+		}
+		if (
+			experiment.status === "processing" ||
+			experiment.status === "uploading" ||
+			experiment.status === "new"
+		) {
+			return (
+				<Chip
+					icon={<CircularProgress size={12} color="inherit" thickness={6} />}
+					label={
+						experiment.status === "new"
+							? "Na fila"
+							: experiment.status === "uploading"
+								? "Enviando"
+								: "Processando"
+					}
+					size="small"
+					color="primary"
+					variant="outlined"
+					sx={{ height: 22, fontSize: "0.7rem" }}
+				/>
+			)
+		}
+		return null
+	})()
+
 	const openDialog = (mode: ContextDialogMode) => {
 		setMenuAnchor(null)
 		setDialogMode(mode)
@@ -154,6 +198,7 @@ export default function ExperimentCard({
 				)}
 				<h1>{experiment.title}</h1>
 				<div>Type: {experiment.type}</div>
+				{statusChip && <div className="status-row">{statusChip}</div>}
 				{inactive && <div className="inactive-badge">Desativado</div>}
 				<div className="card-footer">
 					<span className="creator">{experiment.created_by_name ?? "—"}</span>

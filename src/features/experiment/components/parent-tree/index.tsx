@@ -61,9 +61,12 @@ export default function ParentTree({
 	onRenameSubsample,
 	onArchiveSubsample,
 	onMoveFile,
+	source,
 }: {
 	files: ExperimentFiles[]
 	subsamples?: Subsample[]
+	/** Fonte carregada no plot — destaca o nó na árvore (FE-26). */
+	source?: SelectedSource | null
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number, gateName: string) => void
 	onEditGate?: (
@@ -113,6 +116,10 @@ export default function ParentTree({
 		[files, subsamples],
 	)
 	const grouped = hasSubsampleLevel(groups)
+	const treeHandlers = useMemo(
+		() => ({ ...handlers, selectedSource: source }),
+		[handlers, source],
+	)
 
 	return (
 		<>
@@ -219,7 +226,7 @@ export default function ParentTree({
 										: "subsample-none"
 								}
 								group={group}
-								handlers={handlers}
+								handlers={treeHandlers}
 							/>
 						))
 					: files.map((file) => (
@@ -227,7 +234,7 @@ export default function ParentTree({
 								key={`file-${file.id}`}
 								file={file}
 								depth={0}
-								handlers={handlers}
+								handlers={treeHandlers}
 							/>
 						))}
 			</Box>

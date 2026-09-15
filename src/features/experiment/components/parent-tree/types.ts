@@ -32,6 +32,8 @@ export interface TreeHandlers {
 	onContextMenu: (event: React.MouseEvent, gate: Gate) => void
 	onFileMenuOpen: (event: React.MouseEvent, file: ExperimentFiles) => void
 	onSubsampleMenuOpen?: (event: React.MouseEvent, subsample: Subsample) => void
+	/** Fonte atualmente carregada no plot — destaca o nó correspondente. */
+	selectedSource?: SelectedSource | null
 	/** Seleção múltipla de amostras (mover em lote); omitido sem onMoveFile. */
 	selectedFileIds?: Set<number>
 	onToggleFile?: (fileId: number) => void

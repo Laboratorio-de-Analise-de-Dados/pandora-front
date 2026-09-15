@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Box, Paper, Tab, Tabs, Typography } from "@mui/material"
+import { Badge, Box, Paper, Tab, Tabs, Typography } from "@mui/material"
 import { toast } from "react-toastify"
 import { useAuth } from "../../providers/AuthContext"
 import { useInvites } from "../../hooks/useInvites"
@@ -147,10 +147,27 @@ export default function OrganizationsPage() {
 				Organizações
 			</Typography>
 
-			<Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+			<Tabs
+				value={tab}
+				onChange={(_, v) => setTab(v)}
+				sx={{ mb: 3 }}
+				textColor="primary"
+				indicatorColor="primary"
+			>
 				<Tab label="Meus grupos" />
 				<Tab label="Criar grupo" />
-				<Tab label="Convites" />
+				<Tab
+					label={
+						<Badge
+							badgeContent={receivedInvites.length}
+							color="primary"
+							max={9}
+							sx={{ "& .MuiBadge-badge": { right: -14, top: 4 } }}
+						>
+							Convites
+						</Badge>
+					}
+				/>
 			</Tabs>
 
 			<Paper sx={{ p: { xs: 2, md: 3 }, minHeight: 360 }}>

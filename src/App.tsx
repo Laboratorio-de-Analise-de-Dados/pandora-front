@@ -1,5 +1,6 @@
 import Header from "./components/header"
 import Footer from "./components/footer"
+import BottomNav from "./components/BottomNav"
 import CssBaseline from "@mui/material/CssBaseline"
 import { ThemeModeProvider } from "./providers/ThemeContext"
 import { Box } from "@mui/material"
@@ -17,11 +18,14 @@ function App() {
 					flexDirection: "column",
 					minHeight: "100vh",
 					justifyContent: "space-between",
+					// Respiro para a bottom nav fixa no mobile (FE-26).
+					pb: { xs: 8, md: 0 },
 				}}
 			>
 				<Header />
 				<AppRoutes />
 				<Footer />
+				<BottomNav />
 			</Box>
 		</ThemeModeProvider>
 	)

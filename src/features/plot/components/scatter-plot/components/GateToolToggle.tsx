@@ -23,13 +23,18 @@ const GateToolToggle: React.FC<GateToolToggleProps> = ({
 		exclusive
 		size="small"
 		onChange={(_, v: GateTool | null) => v && onChange(v)}
-		sx={{
+		sx={(theme) => ({
 			position: "absolute",
 			top: 8,
 			right: 8,
 			zIndex: 25,
-			backgroundColor: "rgba(255, 255, 255, 0.85)",
-		}}
+			backgroundColor:
+				theme.palette.mode === "dark"
+					? "rgba(22, 22, 22, 0.85)"
+					: "rgba(255, 255, 255, 0.85)",
+			border: `1px solid ${theme.palette.divider}`,
+			borderRadius: 2,
+		})}
 	>
 		<ToggleButton value="rect">
 			<Tooltip
