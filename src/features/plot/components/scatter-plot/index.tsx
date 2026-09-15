@@ -29,6 +29,7 @@ import { getCopyFamilyIds } from "../../../gate/utils"
 import { COFACTOR } from "../../utils/biex"
 import { buildTicks } from "../../utils/ticks"
 import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
+import { buildGateHoverTraces } from "../../utils/gateHoverTraces"
 import { buildAxisRange } from "../../utils/plotAxes"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
@@ -373,6 +374,21 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const plotData = buildPlotData(plotMode, data, theme.palette.mode)
 	const hasData = hasPlotData(plotMode, data)
 
+	// Traces transparentes só para hover: passar o mouse sobre a área de um
+	// gate mostra um tooltip com as estatísticas dele (count/%pai/%total).
+	// Desligado nas ferramentas quad/edit — nelas o clique usa
+	// event.points[0] e um trace de fill poderia virar o ponto clicado.
+	const histogramMaxY = data?.counts?.length
+		? Math.max(...data.counts) * 1.05
+		: 1
+	const gateHoverTraces = useMemo(
+		() =>
+			tool === "quad" || tool === "edit" || reshapingGateId !== null
+				? []
+				: buildGateHoverTraces(gateShapes, histogramMaxY),
+		[gateShapes, histogramMaxY, tool, reshapingGateId],
+	)
+
 	// Axis ranges and ticks
 	const xAxisRange = buildAxisRange(xMin, xMax, effXScale, effCof)
 	const yAxisRange = buildAxisRange(yMin, yMax, effYScale, effCof)
@@ -585,7 +601,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? "edit-mode"
 												: `draw-mode-${drawRevision}`
 										}
-										data={plotData}
+										data={[...plotData, ...gateHoverTraces]}
 										useResizeHandler
 										style={{ width: "100%", height: "100%" }}
 										config={
@@ -655,6 +671,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												zerolinecolor: theme.palette.divider,
 											},
 											autosize: true,
+											hovermode: "closest",
+											hoverlabel: {
+												bgcolor: theme.palette.background.paper,
+												bordercolor: theme.palette.divider,
+												font: {
+													color: theme.palette.text.primary,
+													size: 12,
+												},
+											},
 											margin: { l: 60, r: 20, t: 20, b: 60 },
 											plot_bgcolor: theme.palette.background.default,
 											paper_bgcolor: theme.palette.background.default,

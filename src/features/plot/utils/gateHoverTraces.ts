@@ -1,0 +1,129 @@
+import type { Gate } from "../../../types"
+import type { GateShape } from "../hooks/useGateShapes"
+import { fmtPct } from "../../../utils/format"
+
+// Nome de trace reservado para as áreas de hover dos gates — nunca aparece
+// (o hovertemplate termina com <extra></extra>) e serve para identificar os
+// traces em eventos do Plotly se necessário.
+const HOVER_TRACE_NAME = "__gate-hover__"
+
+const escapeHtml = (s: string): string =>
+	s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+/** Texto do tooltip: nome + métricas do gate (ou motivo de não-avaliação). */
+export const gateHoverTemplate = (gate: Gate): string => {
+	const ar = gate.analysis_result?.analysis_result
+	const m = ar?.summary_metrics
+	const lines = [`<b>${escapeHtml(gate.name)}</b>`]
+	if (ar?.applicable === false) {
+		const missing = ar.missing_channels?.join(", ")
+		lines.push(
+			`<i>Não avaliável nesta amostra${missing ? `: sem ${escapeHtml(missing)}` : ""}</i>`,
+		)
+	} else if (m) {
+		lines.push(`Eventos: ${m.count.toLocaleString("pt-BR")}`)
+		lines.push(`% do pai: ${fmtPct(m.percent_of_parent_population)}`)
+		lines.push(`% do total: ${fmtPct(m.percent_of_total_population)}`)
+	} else {
+		lines.push("<i>Sem estatísticas</i>")
+	}
+	return `${lines.join("<br>")}<extra></extra>`
+}
+
+const parsePathPoints = (path: string): { xs: number[]; ys: number[] } => {
+	const nums = (path.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? []).map(Number)
+	return {
+		xs: nums.filter((_, i) => i % 2 === 0),
+		ys: nums.filter((_, i) => i % 2 === 1),
+	}
+}
+
+const fillTrace = (
+	xs: number[],
+	ys: number[],
+	hovertemplate: string,
+): Plotly.Data => ({
+	type: "scatter",
+	mode: "lines",
+	x: xs,
+	y: ys,
+	fill: "toself",
+	fillcolor: "rgba(0,0,0,0)",
+	line: { width: 0, color: "rgba(0,0,0,0)" },
+	hoveron: "fills",
+	hovertemplate,
+	name: HOVER_TRACE_NAME,
+	showlegend: false,
+})
+
+/**
+ * Converte os shapes dos gates em traces transparentes que só existem para o
+ * hover: shapes do Plotly não emitem eventos, então cada gate vira um polígono
+ * preenchido invisível com `hoveron: "fills"` (tooltip em qualquer ponto da
+ * área) ou, no caso do quadrante, um marcador invisível no centro da cruz.
+ */
+export const buildGateHoverTraces = (
+	shapes: GateShape[],
+	histogramMaxY = 1,
+): Plotly.Data[] => {
+	const byGate = new Map<number, GateShape[]>()
+	for (const s of shapes) {
+		const group = byGate.get(s._gateId)
+		if (group) group.push(s)
+		else byGate.set(s._gateId, [s])
+	}
+
+	const traces: Plotly.Data[] = []
+	for (const group of byGate.values()) {
+		const gate = group[0]._gateData
+		const hovertemplate = gateHoverTemplate(gate)
+
+		const pathShape = group.find((s) => s.type === "path" && s.path)
+		if (pathShape?.path) {
+			const { xs, ys } = parsePathPoints(pathShape.path)
+			if (xs.length >= 3) traces.push(fillTrace(xs, ys, hovertemplate))
+			continue
+		}
+
+		const rect = group.find((s) => s.type === "rect")
+		if (rect && typeof rect.x0 === "number" && typeof rect.x1 === "number") {
+			// Gate de intervalo (histograma): o shape usa yref "paper" — no trace
+			// a banda precisa de limites de dados, então cobre até o pico máximo.
+			const [ry0, ry1] =
+				rect.yref === "paper"
+					? [0, histogramMaxY]
+					: [Number(rect.y0), Number(rect.y1)]
+			traces.push(
+				fillTrace(
+					[rect.x0, rect.x1, rect.x1, rect.x0],
+					[ry0, ry0, ry1, ry1],
+					hovertemplate,
+				),
+			)
+			continue
+		}
+
+		// Quadrante: duas linhas "paper" (vertical + horizontal) — um marcador
+		// invisível no centro da cruz dá um alvo de hover para as stats.
+		const vline = group.find((s) => s.type === "line" && s.yref === "paper")
+		const hline = group.find((s) => s.type === "line" && s.xref === "paper")
+		if (
+			vline &&
+			hline &&
+			typeof vline.x0 === "number" &&
+			typeof hline.y0 === "number"
+		) {
+			traces.push({
+				type: "scatter",
+				mode: "markers",
+				x: [vline.x0],
+				y: [hline.y0],
+				marker: { size: 40, opacity: 0 },
+				hovertemplate,
+				name: HOVER_TRACE_NAME,
+				showlegend: false,
+			})
+		}
+	}
+	return traces
+}
