@@ -55,6 +55,11 @@ const SourceDropdown: React.FC<SourceDropdownProps> = ({
 		setSearch("")
 	}
 
+	// O botão sempre mostra o nome do ARQUIVO da fonte atual — o gate
+	// selecionado aparece no breadcrumb ao lado, como no mockup (FE-26).
+	const fileName =
+		files.find((f) => f.id === source?.fileDataId)?.file_name ?? source?.name
+
 	return (
 		<>
 			<Button
@@ -70,7 +75,7 @@ const SourceDropdown: React.FC<SourceDropdownProps> = ({
 				}}
 			>
 				<Typography variant="body2" noWrap sx={{ maxWidth: "100%" }}>
-					{source?.name ?? "Selecionar..."}
+					{fileName ?? "Selecionar..."}
 				</Typography>
 			</Button>
 			<Menu
