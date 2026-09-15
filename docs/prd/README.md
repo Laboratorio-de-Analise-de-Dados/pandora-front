@@ -27,6 +27,7 @@
 | [FE-23](FE-23-editar-gate-pela-arvore.md)             | Editar gate (nome/cor/escopo) a partir da árvore      | Implementado em `fix/density-missing-channel` |
 | [FE-24](FE-24-detalhes-edicao-experimento-card.md)    | Detalhes e edição do experimento no card              | Implementado em `fix/density-missing-channel` |
 | [FE-25](FE-25-painel-historico-checkpoints.md)        | Painel de histórico e checkpoints de análise          | Não iniciado (depende de BE-20)               |
+| [FE-26](FE-26-tema-visual-pandora.md)                 | Refactor visual: tema dark-first verde/preto/branco   | Não iniciado (validação local antes de prod)  |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
