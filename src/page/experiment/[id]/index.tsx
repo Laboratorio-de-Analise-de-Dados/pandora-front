@@ -58,7 +58,6 @@ function ExperimentPageContent() {
 		selectedGate,
 		values,
 		plotInitialConfig,
-		sourceLabel,
 		setViewConfig,
 		goToAdjacentFile,
 		canGoPrevFile,
@@ -344,26 +343,6 @@ function ExperimentPageContent() {
 										</IconButton>
 									</span>
 								</Tooltip>
-
-								{sourceLabel && (
-									<Typography
-										variant="subtitle2"
-										fontWeight="bold"
-										color="text.secondary"
-										sx={{
-											flex: 1,
-											minWidth: 0,
-											textAlign: "center",
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											whiteSpace: "nowrap",
-											px: 1,
-											fontSize: { xs: "0.75rem", md: "0.85rem" },
-										}}
-									>
-										{sourceLabel}
-									</Typography>
-								)}
 
 								<Box
 									sx={{
