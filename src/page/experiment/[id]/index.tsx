@@ -265,216 +265,227 @@ function ExperimentPageContent() {
 					overflow: "hidden",
 				}}
 			>
-				{/* Coluna do workspace: header fixado no topo (seletor de
-				    amostra + navegação + ações) e área do plot centralizada
-				    no espaço restante — como no mockup (FE-26). */}
-				<Box
-					sx={{
-						display: "flex",
-						flexDirection: "column",
-						width: "100%",
-						height: "100%",
-					}}
-				>
-					{!isLoading && (
-						<Box
-							sx={{
-								display: "flex",
-								alignItems: "center",
-								gap: { xs: 0.5, md: 1 },
-								width: "100%",
-								px: { xs: 1, md: 2 },
-								pt: { xs: 1, md: 1.5 },
-								pb: 0.5,
-								flexShrink: 0,
-							}}
-						>
-							<SourceDropdown
-								files={experimentFiles}
-								source={source}
-								onSelect={setSource}
-							/>
-							<Tooltip title="Arquivo anterior">
-								<span>
-									<IconButton
-										size="small"
-										disabled={!source || !canGoPrevFile}
-										onClick={() => goToAdjacentFile(-1)}
-									>
-										<PrevIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
-							<Tooltip title="Próximo arquivo">
-								<span>
-									<IconButton
-										size="small"
-										disabled={!source || !canGoNextFile}
-										onClick={() => goToAdjacentFile(1)}
-									>
-										<NextIcon />
-									</IconButton>
-								</span>
-							</Tooltip>
+				{/* Workspace no formato do mockup (FE-26): no desktop a árvore
+				    e as stats são colunas fixas (in-flow) e o plot ocupa o centro;
+				    no mobile tudo vira drawer/bottom sheet. */}
+				<Box sx={{ display: "flex", height: "100%", width: "100%" }}>
+					{/* Coluna esquerda: árvore de gates */}
+					<CollapsiblePanel
+						side="left"
+						open={showTree}
+						isMobile={isMobile}
+						onOpen={() => setShowTree(true)}
+						onClose={() => setShowTree(false)}
+						label="Gates"
+						icon={<TreeIcon style={{ fontSize: 18 }} />}
+						desktopWidth="20%"
+						contentPadding="1rem"
+						mobileAnchor="bottom"
+						mobileTriggerTop={56}
+						paperSx={{
+							display: "flex",
+							flexDirection: "column",
+							p: 2,
+							overflow: "hidden",
+						}}
+					>
+						{treeContent}
+					</CollapsiblePanel>
 
-							{sourceLabel && (
-								<Typography
-									variant="subtitle2"
-									fontWeight="bold"
-									color="text.secondary"
-									sx={{
-										flex: 1,
-										minWidth: 0,
-										textAlign: "center",
-										overflow: "hidden",
-										textOverflow: "ellipsis",
-										whiteSpace: "nowrap",
-										px: 1,
-										fontSize: { xs: "0.75rem", md: "0.85rem" },
-									}}
-								>
-									{sourceLabel}
-								</Typography>
-							)}
-
+					{/* Coluna central: header fixado no topo (seletor de amostra +
+					    navegação + ações) e área do plot centralizada no espaço
+					    restante. */}
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: "column",
+							flex: 1,
+							minWidth: 0,
+							height: "100%",
+						}}
+					>
+						{!isLoading && (
 							<Box
 								sx={{
 									display: "flex",
 									alignItems: "center",
-									gap: 0.5,
-									ml: "auto",
+									gap: { xs: 0.5, md: 1 },
+									width: "100%",
+									px: { xs: 1, md: 2 },
+									pt: { xs: 1, md: 1.5 },
+									pb: 0.5,
 									flexShrink: 0,
 								}}
 							>
-								{/* Propagar Gate: botão verde no header (desktop);
-									    no mobile fica no rodapé do sheet da árvore. */}
-								{!isMobile && source?.type === "gate" && canEditExperiment && (
-									<Tooltip title="Aplicar este gate em outras amostras">
-										<Button
-											variant="contained"
+								<SourceDropdown
+									files={experimentFiles}
+									source={source}
+									onSelect={setSource}
+								/>
+								<Tooltip title="Arquivo anterior">
+									<span>
+										<IconButton
 											size="small"
-											startIcon={<BoltIcon />}
-											onClick={() =>
-												handleApplyGate(source.id, selectedGate?.name ?? "")
-											}
+											disabled={!source || !canGoPrevFile}
+											onClick={() => goToAdjacentFile(-1)}
 										>
-											Propagar Gate
-										</Button>
-									</Tooltip>
-								)}
-								<Tooltip title="Histórico e checkpoints">
-									<IconButton size="small" onClick={() => setShowHistory(true)}>
-										<HistoryIcon />
-									</IconButton>
+											<PrevIcon />
+										</IconButton>
+									</span>
 								</Tooltip>
-							</Box>
-						</Box>
-					)}
+								<Tooltip title="Próximo arquivo">
+									<span>
+										<IconButton
+											size="small"
+											disabled={!source || !canGoNextFile}
+											onClick={() => goToAdjacentFile(1)}
+										>
+											<NextIcon />
+										</IconButton>
+									</span>
+								</Tooltip>
 
-					{/* Área do plot: centralizada no espaço que sobra abaixo
-					    do header. */}
-					<Box
-						sx={{
-							flex: 1,
-							minHeight: 0,
-							overflowY: "auto",
-							display: "flex",
-							flexDirection: "column",
-							alignItems: "center",
-							justifyContent: "center",
-							gap: "1rem",
-							px: 1,
-							pb: { xs: 2, md: 3 },
-						}}
-					>
-						{isLoading ? (
-							<Box
-								sx={{
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									height: "100%",
-								}}
-							>
-								<CircularProgress />
+								{sourceLabel && (
+									<Typography
+										variant="subtitle2"
+										fontWeight="bold"
+										color="text.secondary"
+										sx={{
+											flex: 1,
+											minWidth: 0,
+											textAlign: "center",
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap",
+											px: 1,
+											fontSize: { xs: "0.75rem", md: "0.85rem" },
+										}}
+									>
+										{sourceLabel}
+									</Typography>
+								)}
+
+								<Box
+									sx={{
+										display: "flex",
+										alignItems: "center",
+										gap: 0.5,
+										ml: "auto",
+										flexShrink: 0,
+									}}
+								>
+									{/* Propagar Gate: botão verde no header (desktop);
+									    no mobile fica no rodapé do sheet da árvore. */}
+									{!isMobile &&
+										source?.type === "gate" &&
+										canEditExperiment && (
+											<Tooltip title="Aplicar este gate em outras amostras">
+												<Button
+													variant="contained"
+													size="small"
+													startIcon={<BoltIcon />}
+													onClick={() =>
+														handleApplyGate(source.id, selectedGate?.name ?? "")
+													}
+												>
+													Propagar Gate
+												</Button>
+											</Tooltip>
+										)}
+									<Tooltip title="Histórico e checkpoints">
+										<IconButton
+											size="small"
+											onClick={() => setShowHistory(true)}
+										>
+											<HistoryIcon />
+										</IconButton>
+									</Tooltip>
+								</Box>
 							</Box>
-						) : source ? (
-							<PlotStateProvider
-								key={`${source.type}-${source.id}`}
-								sourceType={source.type}
-								sourceId={source.id}
-								initialConfig={plotInitialConfig}
-								onPersist={setViewConfig}
-							>
-								<ScatterPlot
-									values={values}
+						)}
+
+						{/* Área do plot: centralizada no espaço que sobra abaixo
+					    do header. */}
+						<Box
+							sx={{
+								flex: 1,
+								minHeight: 0,
+								overflowY: "auto",
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "center",
+								justifyContent: "center",
+								gap: "1rem",
+								px: 1,
+								pb: { xs: 2, md: 3 },
+							}}
+						>
+							{isLoading ? (
+								<Box
+									sx={{
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										height: "100%",
+									}}
+								>
+									<CircularProgress />
+								</Box>
+							) : source ? (
+								<PlotStateProvider
+									key={`${source.type}-${source.id}`}
 									sourceType={source.type}
 									sourceId={source.id}
-									fileDataId={source.fileDataId}
-									parentId={source.type === "gate" ? source.id : undefined}
-									parentName={
-										source.type === "gate" ? selectedGate?.name : undefined
-									}
-									siblingGateNames={siblingGateNames}
-									childGates={childGates}
-								/>
-							</PlotStateProvider>
-						) : (
-							<Typography>Select a file to load</Typography>
-						)}
+									initialConfig={plotInitialConfig}
+									onPersist={setViewConfig}
+								>
+									<ScatterPlot
+										values={values}
+										sourceType={source.type}
+										sourceId={source.id}
+										fileDataId={source.fileDataId}
+										parentId={source.type === "gate" ? source.id : undefined}
+										parentName={
+											source.type === "gate" ? selectedGate?.name : undefined
+										}
+										siblingGateNames={siblingGateNames}
+										childGates={childGates}
+									/>
+								</PlotStateProvider>
+							) : (
+								<Typography>Select a file to load</Typography>
+							)}
+						</Box>
 					</Box>
+
+					{/* Coluna direita: estatísticas */}
+					<CollapsiblePanel
+						side="right"
+						open={showStats}
+						isMobile={isMobile}
+						onOpen={() => setShowStats(true)}
+						onClose={() => setShowStats(false)}
+						label="Estatísticas"
+						icon={<StatsIcon style={{ fontSize: 18 }} />}
+						desktopWidth="22%"
+						desktopMinWidth={260}
+						mobileAnchor="bottom"
+						mobileTriggerTop={56}
+						contentPadding="1rem"
+					>
+						<StatsPanel
+							source={source}
+							files={experimentFiles}
+							values={values}
+							fileStats={fileStats}
+							onClose={() => setShowStats(false)}
+						/>
+					</CollapsiblePanel>
 				</Box>
 
-				{/* Overlay esquerdo: árvore de gates */}
-				<CollapsiblePanel
-					side="left"
-					open={showTree}
-					isMobile={isMobile}
-					onOpen={() => setShowTree(true)}
-					onClose={() => setShowTree(false)}
-					label="Gates"
-					icon={<TreeIcon style={{ fontSize: 18 }} />}
-					desktopWidth="20%"
-					contentPadding="1rem"
-					mobileAnchor="bottom"
-					mobileTriggerTop={56}
-					paperSx={{
-						display: "flex",
-						flexDirection: "column",
-						p: 2,
-						overflow: "hidden",
-					}}
-				>
-					{treeContent}
-				</CollapsiblePanel>
-
-				{/* Overlay direito: estatísticas */}
-				<CollapsiblePanel
-					side="right"
-					open={showStats}
-					isMobile={isMobile}
-					onOpen={() => setShowStats(true)}
-					onClose={() => setShowStats(false)}
-					label="Estatísticas"
-					icon={<StatsIcon style={{ fontSize: 18 }} />}
-					desktopWidth="22%"
-					desktopMinWidth={260}
-					mobileAnchor="bottom"
-					mobileTriggerTop={56}
-					contentPadding="1rem"
-				>
-					<StatsPanel
-						source={source}
-						files={experimentFiles}
-						values={values}
-						fileStats={fileStats}
-						onClose={() => setShowStats(false)}
-					/>
-				</CollapsiblePanel>
-
 				{/* Overlay direito: histórico e checkpoints (FE-25). Sem aba
-				    própria — abre pelo ícone no header do workspace; no mobile
-				    vira bottom sheet. Sobrepõe o painel de estatísticas. */}
+			    própria — abre pelo ícone no header do workspace; no mobile
+			    vira bottom sheet. Sobrepõe o painel de estatísticas. */}
 				<CollapsiblePanel
 					side="right"
 					open={showHistory}
@@ -487,6 +498,7 @@ function ExperimentPageContent() {
 					desktopMinWidth={320}
 					mobileAnchor="bottom"
 					hideTrigger
+					overlay
 				>
 					<HistoryPanel
 						experimentId={experiment?.id}

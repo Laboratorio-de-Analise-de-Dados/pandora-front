@@ -43,6 +43,12 @@ export interface CollapsiblePanelProps {
 	 * Útil quando o controle de abrir/fechar vem de fora (ex.: Tabs).
 	 */
 	hideTrigger?: boolean
+	/**
+	 * Desktop apenas: `true` = painel flutua sobre o conteúdo (overlay
+	 * absoluto, ex.: histórico sobre as stats); `false`/omitido = coluna
+	 * fixa no flex row do workspace, como no mockup (árvore e stats).
+	 */
+	overlay?: boolean
 	/** `sx` aplicado ao papel do Drawer (mobile) ou ao Box do desktop. */
 	paperSx?: SxProps<Theme>
 	children: ReactNode
@@ -68,6 +74,7 @@ export default function CollapsiblePanel({
 	mobileTriggerTop = 8,
 	contentPadding = 0,
 	hideTrigger = false,
+	overlay = false,
 	paperSx,
 	children,
 }: CollapsiblePanelProps) {
@@ -161,17 +168,16 @@ export default function CollapsiblePanel({
 			{open && (
 				<Box
 					sx={(theme: Theme) => ({
-						position: "absolute",
-						top: 0,
-						[side]: 0,
-						zIndex: 20,
+						...(overlay
+							? { position: "absolute" as const, top: 0, [side]: 0, zIndex: 20 }
+							: { position: "relative" as const, flexShrink: 0 }),
 						width: desktopWidth,
 						minWidth: desktopMinWidth,
 						height: "100%",
 						[side === "left" ? "borderRight" : "borderLeft"]:
 							`1px solid ${theme.palette.divider}`,
 						bgcolor: theme.palette.background.default,
-						boxShadow: theme.shadows[8],
+						boxShadow: overlay ? theme.shadows[8] : "none",
 						overflowY: "auto",
 						display: "flex",
 						flexDirection: "column",

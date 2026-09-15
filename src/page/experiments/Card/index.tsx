@@ -97,8 +97,17 @@ export default function ExperimentCard({
 	// com spinner, error vermelho, inativado cinza (renderizado pelo estado
 	// do card, sem chip extra).
 	const statusChip = (() => {
-		if (inactive || !experiment.status || experiment.status === "done")
-			return null
+		if (inactive || !experiment.status) return null
+		if (experiment.status === "done") {
+			return (
+				<Chip
+					label="Concluído"
+					size="small"
+					color="primary"
+					sx={{ height: 22, fontSize: "0.7rem", fontWeight: 600 }}
+				/>
+			)
+		}
 		if (experiment.status === "error") {
 			return (
 				<Chip
@@ -203,14 +212,14 @@ export default function ExperimentCard({
 					experimentId={experiment.id}
 					enabled={!inactive && experiment.preview_available === true}
 				/>
-				<h1>{experiment.title}</h1>
-				<div>Type: {experiment.type}</div>
 				{(statusChip || experiment.my_role) && (
 					<div className="status-row">
 						{statusChip}
 						{experiment.my_role && <RoleChip role={experiment.my_role} />}
 					</div>
 				)}
+				<h1>{experiment.title}</h1>
+				<div>Type: {experiment.type}</div>
 				{typeof experiment.progress === "number" && (
 					<LinearProgress
 						variant="determinate"

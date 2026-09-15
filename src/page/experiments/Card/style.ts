@@ -65,7 +65,7 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 	}
 
 	.status-row {
-		margin: 0.35rem 0 0.15rem;
+		margin: 0 0 0.35rem;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
