@@ -34,6 +34,8 @@ export interface CollapsiblePanelProps {
 	desktopMinWidth?: number
 	/** Borda de onde o drawer sobe no mobile. Default = `side`. */
 	mobileAnchor?: "left" | "right" | "bottom"
+	/** Distância do gatilho flutuante ao topo no mobile (default 8). */
+	mobileTriggerTop?: number
 	/** Padding interno (o conteúdo que já se auto-espaça usa 0). */
 	contentPadding?: number | string
 	/**
@@ -63,6 +65,7 @@ export default function CollapsiblePanel({
 	desktopWidth,
 	desktopMinWidth,
 	mobileAnchor,
+	mobileTriggerTop = 8,
 	contentPadding = 0,
 	hideTrigger = false,
 	paperSx,
@@ -74,7 +77,14 @@ export default function CollapsiblePanel({
 			<>
 				{/* Marca-página no cantinho superior abre o drawer */}
 				{!hideTrigger && (
-					<Box sx={{ position: "absolute", top: 8, [side]: 8, zIndex: 21 }}>
+					<Box
+						sx={{
+							position: "absolute",
+							top: mobileTriggerTop,
+							[side]: 8,
+							zIndex: 21,
+						}}
+					>
 						<Tooltip title={`Mostrar ${label}`} placement="bottom">
 							<Box
 								role="button"

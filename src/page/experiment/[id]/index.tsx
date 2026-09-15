@@ -128,6 +128,20 @@ function ExperimentPageContent() {
 
 	const treeContent = (
 		<>
+			{/* Handle do bottom sheet no mobile (FE-26). */}
+			{isMobile && (
+				<Box
+					sx={{
+						width: 40,
+						height: 4,
+						borderRadius: 2,
+						bgcolor: "divider",
+						mx: "auto",
+						mb: 1,
+						flexShrink: 0,
+					}}
+				/>
+			)}
 			<Typography
 				sx={(theme: Theme) => ({
 					color: theme.palette.text.primary,
@@ -229,6 +243,19 @@ function ExperimentPageContent() {
 					onMoveFile={canEditExperiment ? handleMoveFileToSubsample : undefined}
 				/>
 			</Box>
+			{/* Ação principal do sheet no mobile (FE-26): propagação do gate
+			    selecionado, full-width no rodapé como no mockup. */}
+			{isMobile && source?.type === "gate" && canEditExperiment && (
+				<Button
+					variant="contained"
+					fullWidth
+					startIcon={<BoltIcon />}
+					sx={{ mt: 1, flexShrink: 0 }}
+					onClick={() => handleApplyGate(source.id, selectedGate?.name ?? "")}
+				>
+					Propagar Gate
+				</Button>
+			)}
 		</>
 	)
 
@@ -337,19 +364,12 @@ function ExperimentPageContent() {
 										ml: "auto",
 									}}
 								>
-									{source?.type === "gate" && canEditExperiment && (
-										<Tooltip title="Aplicar este gate em outras amostras">
-											{isMobile ? (
-												<IconButton
-													size="small"
-													color="primary"
-													onClick={() =>
-														handleApplyGate(source.id, selectedGate?.name ?? "")
-													}
-												>
-													<BoltIcon />
-												</IconButton>
-											) : (
+									{/* Propagar Gate: botão verde no header (desktop);
+									    no mobile fica no rodapé do sheet da árvore. */}
+									{!isMobile &&
+										source?.type === "gate" &&
+										canEditExperiment && (
+											<Tooltip title="Aplicar este gate em outras amostras">
 												<Button
 													variant="contained"
 													size="small"
@@ -360,9 +380,8 @@ function ExperimentPageContent() {
 												>
 													Propagar Gate
 												</Button>
-											)}
-										</Tooltip>
-									)}
+											</Tooltip>
+										)}
 									<Tooltip title="Histórico e checkpoints">
 										<IconButton
 											size="small"
@@ -423,6 +442,14 @@ function ExperimentPageContent() {
 					icon={<TreeIcon style={{ fontSize: 18 }} />}
 					desktopWidth="20%"
 					contentPadding="1rem"
+					mobileAnchor="bottom"
+					mobileTriggerTop={56}
+					paperSx={{
+						display: "flex",
+						flexDirection: "column",
+						p: 2,
+						overflow: "hidden",
+					}}
 				>
 					{treeContent}
 				</CollapsiblePanel>
@@ -439,6 +466,7 @@ function ExperimentPageContent() {
 					desktopWidth="22%"
 					desktopMinWidth={260}
 					mobileAnchor="bottom"
+					mobileTriggerTop={56}
 					contentPadding="1rem"
 				>
 					<StatsPanel
