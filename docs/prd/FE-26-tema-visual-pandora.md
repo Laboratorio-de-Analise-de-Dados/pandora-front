@@ -2,8 +2,9 @@
 
 **Repo:** pandora-front · **Tipo:** refactor visual · **Base:** `main`
 **Branch sugerida:** `refactor/tema-pandora-dark`
-**Status:** não iniciado — implementar e validar **localmente** primeiro;
-deploy em prod só depois da aprovação visual.
+**Status:** em andamento — base implementada em `refactor/tema-pandora-dark`
+(tokens, plot, árvore, cards, dialogs, bottom nav); em validação visual local
+antes de prod.
 
 Protótipos de referência (gerados por modelo externo a partir do
 descritivo de produto):

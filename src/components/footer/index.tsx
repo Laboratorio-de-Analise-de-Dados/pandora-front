@@ -6,8 +6,8 @@ const Footer = () => {
 	return (
 		<Box
 			component="footer"
-			color="secondary"
 			sx={{
+				color: "text.secondary",
 				display: "flex",
 				alignItems: "center",
 				textAlign: "center",
