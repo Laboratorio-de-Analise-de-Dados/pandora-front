@@ -25,6 +25,7 @@ import ParentTree from "../../../features/experiment/components/parent-tree"
 import SourceDropdown from "../../../features/experiment/components/SourceDropdown"
 import CollapsiblePanel from "../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../features/stats/components/StatsPanel"
+import HistoryPanel from "../../../features/history/components/HistoryPanel"
 import ApplyGateDialog from "../../../features/gate/components/apply-gate-dialog"
 import ApplyConflictDialog from "../../../features/gate/components/apply-gate-dialog/components/ApplyConflictDialog"
 import ApplyWarningDialog from "../../../features/gate/components/apply-gate-dialog/components/ApplyWarningDialog"
@@ -39,6 +40,7 @@ import {
 	MdAccountTree as TreeIcon,
 	MdUploadFile as UploadIcon,
 	MdDownload as DownloadIcon,
+	MdHistory as HistoryIcon,
 } from "react-icons/md"
 import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../utils/experimentFile"
 
@@ -120,6 +122,7 @@ function ExperimentPageContent() {
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 	const [showStats, setShowStats] = useState(() => !isMobile)
 	const [showTree, setShowTree] = useState(() => !isMobile)
+	const [showHistory, setShowHistory] = useState(false)
 
 	const treeContent = (
 		<>
@@ -293,6 +296,11 @@ function ExperimentPageContent() {
 										</IconButton>
 									</span>
 								</Tooltip>
+								<Tooltip title="Histórico e checkpoints">
+									<IconButton size="small" onClick={() => setShowHistory(true)}>
+										<HistoryIcon />
+									</IconButton>
+								</Tooltip>
 							</Box>
 
 							{sourceLabel && (
@@ -384,6 +392,30 @@ function ExperimentPageContent() {
 						values={values}
 						fileStats={fileStats}
 						onClose={() => setShowStats(false)}
+					/>
+				</CollapsiblePanel>
+
+				{/* Overlay direito: histórico e checkpoints (FE-25). Sem aba
+				    própria — abre pelo ícone no header do workspace; no mobile
+				    vira bottom sheet. Sobrepõe o painel de estatísticas. */}
+				<CollapsiblePanel
+					side="right"
+					open={showHistory}
+					isMobile={isMobile}
+					onOpen={() => setShowHistory(true)}
+					onClose={() => setShowHistory(false)}
+					label="Histórico"
+					icon={<HistoryIcon style={{ fontSize: 18 }} />}
+					desktopWidth="26%"
+					desktopMinWidth={320}
+					mobileAnchor="bottom"
+					hideTrigger
+				>
+					<HistoryPanel
+						experimentId={experiment?.id}
+						files={experimentFiles}
+						canEdit={canEditExperiment}
+						onClose={() => setShowHistory(false)}
 					/>
 				</CollapsiblePanel>
 			</Box>

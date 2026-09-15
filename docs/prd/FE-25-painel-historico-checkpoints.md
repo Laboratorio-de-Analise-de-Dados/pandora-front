@@ -2,11 +2,10 @@
 
 **Repo:** pandora-front · **Tipo:** feature · **Base:** `main`
 **Branch sugerida:** `feat/analysis-history-panel`
-**Status:** não iniciado — depende de BE-08 (histórico/revert, implementado em
-`fix/gate-density-missing-channel`) e de
-`pandora-backend/docs/prd/BE-20-checkpoints-de-analise.md` (não iniciado,
-ADR-0017 Proposto). UX detalhada definida (seção "UX — posicionamento e
-interação"), alinhada ao tema dark-first de FE-26.
+**Status:** implementado em `fix/density-missing-channel` (aguardando
+revisão) — sobre BE-08 + BE-20 (ambos entregues no backend). UX detalhada
+definida (seção "UX — posicionamento e interação"), alinhada ao tema
+dark-first de FE-26.
 
 ## Problema
 
@@ -166,18 +165,15 @@ Duas etapas, idênticas nos dois formatos:
 
 ## Decisões abertas
 
-- **Modo Preview (👁️)**: exige que o backend sirva o estado da análise numa
-  revisão passada (geometrias/gates daquele ponto) — hoje `GET
-.../history/<rev>/` devolve before/after por alvo, não a árvore pronta
-  para plotar. Opções: (a) primeira versão mostra só o detalhe textual
-  before/after (já coberto pelo item 2 do Escopo) e o preview gráfico vira
-  follow-up com PRD de back; (b) reconstruir a árvore no cliente aplicando
-  as revisões — caro e frágil, não recomendado. Pendente de conversa com o
-  backend antes de prometer o banner read-only.
+- **Modo Preview (👁️)**: implementado na primeira versão como árvore
+  read-only por amostra — o backend entrega `GET /analytics/history/<rev>/state/`
+  (BE-20) com a árvore de gates reconstruída naquela revisão, e o painel a
+  renderiza (nomes, cores, hierarquia) em dialog. O preview **gráfico**
+  (geometria desenhada no plot) fica para evolução — ver Fora de escopo.
 - **"Ponto de Controle Ativo" no mobile**: o conceito de "checkpoint ativo"
-  não existe na API (checkpoints são marcos, não estado). Exibir "último
-  checkpoint criado" como proxy ou cortar o bloco — decidir no PRD de
-  implementação.
+  não existe na API (checkpoints são marcos, não estado). Implementado como
+  bloco "Pontos salvos" listando todos os checkpoints ativos com ações —
+  resolve a dúvida sem inventar estado no backend.
 
 ## Critérios de aceite
 
