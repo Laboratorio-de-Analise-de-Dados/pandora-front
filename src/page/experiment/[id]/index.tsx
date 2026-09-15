@@ -28,8 +28,6 @@ import CollapsiblePanel from "../../../features/experiment/components/Collapsibl
 import StatsPanel from "../../../features/stats/components/StatsPanel"
 import HistoryPanel from "../../../features/history/components/HistoryPanel"
 import ApplyGateDialog from "../../../features/gate/components/apply-gate-dialog"
-import ApplyConflictDialog from "../../../features/gate/components/apply-gate-dialog/components/ApplyConflictDialog"
-import ApplyWarningDialog from "../../../features/gate/components/apply-gate-dialog/components/ApplyWarningDialog"
 import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
 import DeleteGateDialog from "../../../features/gate/components/delete-gate-dialog"
 import {
@@ -93,10 +91,6 @@ function ExperimentPageContent() {
 		applyTarget,
 		applyLoading,
 		setApplyTarget,
-		applyConflicts,
-		applyWarnings,
-		handleResolveApplyWarnings,
-		handleResolveApplyConflicts,
 	} = useGateActions()
 	const {
 		handleCreateSubsample,
@@ -531,24 +525,13 @@ function ExperimentPageContent() {
 					gateName={applyTarget.name}
 					gateId={applyTarget.id}
 					files={experimentFiles.filter((f) => f.active !== false)}
+					subsamples={subsamples}
 					sourceFileDataId={applyTarget.fileDataId}
 					onClose={() => setApplyTarget(null)}
 					onApply={handleConfirmApply}
 					loading={applyLoading}
 				/>
 			)}
-
-			<ApplyWarningDialog
-				warnings={applyWarnings}
-				loading={applyLoading}
-				onResolve={handleResolveApplyWarnings}
-			/>
-
-			<ApplyConflictDialog
-				conflicts={applyConflicts}
-				loading={applyLoading}
-				onResolve={handleResolveApplyConflicts}
-			/>
 		</Layout>
 	)
 }

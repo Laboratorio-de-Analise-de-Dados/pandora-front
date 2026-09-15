@@ -168,7 +168,20 @@ export default function DeleteGateDialog({
 			onClose={onClose}
 			maxWidth="sm"
 			fullWidth
-			PaperProps={{ sx: { maxHeight: "90vh", overflowY: "auto" } }}
+			sx={{
+				"& .MuiDialog-container": {
+					alignItems: { xs: "flex-end", sm: "center" },
+				},
+			}}
+			PaperProps={{
+				sx: {
+					maxHeight: "90vh",
+					overflowY: "auto",
+					width: { xs: "100%", sm: undefined },
+					m: { xs: 0, sm: undefined },
+					borderRadius: { xs: "20px 20px 0 0", sm: undefined },
+				},
+			}}
 		>
 			<DialogTitle>Excluir gate</DialogTitle>
 			<DialogContent>
@@ -276,12 +289,17 @@ export default function DeleteGateDialog({
 					apagados.
 				</Typography>
 			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Cancelar</Button>
+			<DialogActions
+				sx={{ flexDirection: { xs: "column", sm: "row" }, gap: 1, p: 2 }}
+			>
+				<Button onClick={onClose} fullWidth>
+					Cancelar
+				</Button>
 				<Button
 					onClick={handleConfirm}
 					color="error"
 					variant="contained"
+					fullWidth
 					disabled={loading || affected.gates === 0}
 				>
 					{loading ? "Excluindo..." : "Excluir"}
