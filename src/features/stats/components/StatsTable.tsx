@@ -65,10 +65,10 @@ const StatsTable: React.FC<StatsTableProps> = ({
 							key={ch}
 							hover
 							sx={(theme) => ({
-								// Linhas zebradas (FE-26): surface / surface-alt no dark.
+								// Linhas zebradas (FE-26): surface/surface-alt nos dois modos.
 								"&:nth-of-type(even) td": {
 									bgcolor:
-										theme.palette.mode === "dark" ? "#1A1A1A" : undefined,
+										theme.palette.mode === "dark" ? "#1A1A1A" : "#FAFAFA",
 								},
 							})}
 						>

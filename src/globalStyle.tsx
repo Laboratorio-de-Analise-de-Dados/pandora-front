@@ -106,14 +106,19 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 				root: ({ theme }) => ({
 					borderRadius: 16,
 					backgroundImage: "none",
+					// Borda sutil nos dois modos: no light é o que separa o card do
+					// fundo; no dark complementa a elevação.
+					border: `1px solid ${theme.palette.divider}`,
+					transition: "box-shadow 180ms ease, border-color 180ms ease",
+					"&:hover": {
+						borderColor: "rgba(16, 185, 129, 0.45)",
+						boxShadow:
+							theme.palette.mode === "dark"
+								? "0 8px 24px rgba(0, 0, 0, 0.45)"
+								: "0 8px 24px rgba(0, 0, 0, 0.10)",
+					},
 					...(theme.palette.mode === "dark" && {
 						backgroundColor: PANDORA.surface,
-						border: `1px solid ${PANDORA.divider}`,
-						transition: "box-shadow 180ms ease, border-color 180ms ease",
-						"&:hover": {
-							borderColor: "rgba(16, 185, 129, 0.45)",
-							boxShadow: "0 8px 24px rgba(0, 0, 0, 0.45)",
-						},
 					}),
 				}),
 			},
@@ -129,9 +134,9 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 			styleOverrides: {
 				paper: ({ theme }) => ({
 					borderRadius: 16,
+					border: `1px solid ${theme.palette.divider}`,
 					...(theme.palette.mode === "dark" && {
 						backgroundColor: PANDORA.surface,
-						border: `1px solid ${PANDORA.divider}`,
 					}),
 				}),
 			},

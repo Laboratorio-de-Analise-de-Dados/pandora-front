@@ -370,7 +370,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	// Build Plotly trace data
-	const plotData = buildPlotData(plotMode, data)
+	const plotData = buildPlotData(plotMode, data, theme.palette.mode)
 	const hasData = hasPlotData(plotMode, data)
 
 	// Axis ranges and ticks
