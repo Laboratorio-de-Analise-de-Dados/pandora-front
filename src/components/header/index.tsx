@@ -1,8 +1,6 @@
 import { useState } from "react"
 import {
 	Box,
-	List,
-	ListItem,
 	AppBar,
 	Toolbar,
 	Typography,
@@ -28,7 +26,7 @@ import {
 
 const Header = () => {
 	const { mode, toggleMode } = useThemeMode()
-	const { user, logout, loading, refreshUser } = useAuth()
+	const { user, logout, refreshUser } = useAuth()
 	const navigate = useNavigate()
 	const location = useLocation()
 	const isProfile = location.pathname === "/profile"
@@ -58,20 +56,14 @@ const Header = () => {
 		}
 	}
 
-	const NAVLINKS = [
-		{ id: 1, name: "Home", path: "/" },
-		{ id: 2, name: "Experiments", path: "/experiments" },
-		{ id: 3, name: "Groups", path: "/organizations" },
-	]
-
 	const providerLabel =
 		user?.auth_provider && user.auth_provider !== "local"
 			? `(${user.auth_provider})`
 			: ""
 
 	return (
-		<AppBar position="static" color="secondary">
-			<Toolbar>
+		<AppBar position="static" color="secondary" elevation={0}>
+			<Toolbar variant="dense">
 				<Box
 					sx={{
 						display: "flex",
@@ -80,41 +72,25 @@ const Header = () => {
 						width: "100%",
 					}}
 				>
-					<Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-						<Link
-							to="/"
-							style={{
-								textDecoration: "none",
-								display: "flex",
-								alignItems: "center",
-								gap: 1,
-							}}
-						>
-							<Box
-								component="img"
-								src="/pandora-icon.png"
-								alt="Pandora"
-								sx={{ height: 32, width: 32, borderRadius: "50%" }}
-							/>
-							<Typography variant="h6" sx={{ color: "#FFFFFF" }}>
-								Pandora
-							</Typography>
-						</Link>
-
-						{!loading && user && (
-							<List sx={{ display: { xs: "none", md: "flex" } }}>
-								{NAVLINKS.map((link) => (
-									<ListItem key={link.id} sx={{ width: "auto" }}>
-										<Link to={link.path} style={{ textDecoration: "none" }}>
-											<Typography sx={{ color: "#FFFFFF" }}>
-												{link.name}
-											</Typography>
-										</Link>
-									</ListItem>
-								))}
-							</List>
-						)}
-					</Box>
+					<Link
+						to="/"
+						style={{
+							textDecoration: "none",
+							display: "flex",
+							alignItems: "center",
+							gap: 8,
+						}}
+					>
+						<Box
+							component="img"
+							src="/pandora-icon.png"
+							alt="Pandora"
+							sx={{ height: 28, width: 28, borderRadius: "50%" }}
+						/>
+						<Typography variant="h6" sx={{ color: "#FFFFFF" }}>
+							Pandora
+						</Typography>
+					</Link>
 
 					<Box
 						sx={{

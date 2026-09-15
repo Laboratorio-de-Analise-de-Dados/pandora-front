@@ -266,7 +266,8 @@ function ExperimentPageContent() {
 					position: "relative",
 					flex: 1,
 					minWidth: 0,
-					height: "100vh",
+					// Viewport menos a barra fina do topo (Toolbar dense = 48px).
+					height: "calc(100dvh - 48px)",
 					overflow: "hidden",
 				}}
 			>
