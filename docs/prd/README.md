@@ -26,6 +26,7 @@
 | [FE-22](FE-22-density-erro-canais.md)                 | Erro real e pré-checagem de canais no plot            | Implementado em `fix/density-missing-channel` |
 | [FE-23](FE-23-editar-gate-pela-arvore.md)             | Editar gate (nome/cor/escopo) a partir da árvore      | Implementado em `fix/density-missing-channel` |
 | [FE-24](FE-24-detalhes-edicao-experimento-card.md)    | Detalhes e edição do experimento no card              | Implementado em `fix/density-missing-channel` |
+| [FE-25](FE-25-painel-historico-checkpoints.md)        | Painel de histórico e checkpoints de análise          | Não iniciado (depende de BE-20)               |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
@@ -35,5 +36,6 @@ roles/remoção de membros do grupo (#50).
 
 - FE-10 é roteiro de verificação manual (precisa de duas contas e ambiente
   rodando); o bug concreto relatado era backend e foi corrigido no PR #75.
-- Painel de histórico/rollback da análise depende de
-  `pandora-backend/docs/prd/BE-08-historico-rollback.md`.
+- Painel de histórico/checkpoints virou FE-25 — depende de
+  `pandora-backend/docs/prd/BE-08-historico-rollback.md` (implementado) e
+  `pandora-backend/docs/prd/BE-20-checkpoints-de-analise.md` (não iniciado).
