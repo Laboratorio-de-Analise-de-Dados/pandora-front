@@ -10,6 +10,14 @@ export interface Experiment {
 	created_by: number
 	/** Username do criador (ListExperimentSerializer); ausente se o back ainda não expõe. */
 	created_by_name?: string | null
+	// Campos do BE-21 (metadados visuais da listagem) — opcionais; o card
+	// renderiza sem eles até o back expor.
+	/** Papel do usuário logado no experimento ("dono"/"editor"/"viewer"). */
+	my_role?: string | null
+	/** Progresso 0–100 durante upload/processamento; null quando n/a. */
+	progress?: number | null
+	/** Se a API tem preview (histograma baixa-res) disponível para o card. */
+	preview_available?: boolean
 }
 
 export type Organization = {

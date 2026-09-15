@@ -172,27 +172,37 @@ não de forma — a execução final deve suavizar o que eles mostram.
 - `src/page/organizations/` — tabs, tabela de membros, chips de papel.
 - `src/components/header/` — sino de convites e toggle de tema no dark novo.
 
-## Decisões abertas (resolver na implementação)
+## Decisões (fechadas na implementação de `refactor/tema-pandora-dark`)
 
-- **Tema light**: o spec só define dark. Opções: manter o light atual como
-  está, derivar um light da mesma identidade, ou fazer dark o único modo.
-  Registrar a decisão aqui antes do merge.
-- **Cor do gate vs. cor de marca**: gates têm cor própria por usuário
-  (`gate.color` + `GATE_PALETTE`); o spec sugere `#34D399` para "gate ativo".
-  Proposta: neon verde só para **seleção/foco**, gates confirmados mantêm a
-  cor própria — confirmar com o dono do spec.
-- **"Buscar amostras"** na árvore e **botão "Propagar Gate" no header**:
-  são adições de UI além do reskin — entrar neste MR ou em follow-up.
-- **Colorscale do heatmap**: `Jet` foi feito para fundo claro; escolher
-  escala com bom contraste no `#0D0D0D` (ex.: Viridis-like ou gradiente
-  preto→verde) sem perder legibilidade de densidade.
-- **Bottom nav no mobile**: mudança de arquitetura de navegação (hoje é só
-  header). Decidir itens exatos e se "Timeline" entra já como slot
-  desabilitado ou só quando o FE-25 existir.
-- **Thumbnail de plot no card de experimento**: backend não gera imagem de
-  preview hoje. Opções: deixar fora deste refactor, placeholder estático,
-  ou gerar client-side sob demanda (custo de carregar density por card —
-  cuidado com N requests na listagem).
+- **Tema light**: mantido e derivado da identidade — primary `#10B981`,
+  bordas `#E4E4E7`, plot com rampa clara invertida. Borda sutil existe nos
+  dois modos (no light é o que separa superfície do fundo).
+- **Cor do gate vs. marca**: `#34D399` é cor de **seleção/foco/edição**;
+  gates confirmados mantêm `gate.color`/`GATE_PALETTE` própria.
+- **"Propagar Gate" no header**: entrou — botão verde quando um gate está
+  selecionado (desktop) e full-width no rodapé do sheet da árvore (mobile).
+  "Buscar amostras" ficou como follow-up.
+- **Colorscale do heatmap**: rampa preto→emerald→neon no dark e
+  claro→emerald-escuro no light (`plotTraces.ts`).
+- **Navegação**: desktop ganhou rail de ícones à esquerda (`SideRail`) +
+  topbar fina; mobile mantém bottom nav (`BottomNav`), escondida no
+  workspace.
+
+## Dependências de backend (BE-21)
+
+Os pontos do mockup que dependem de dados que a API não expõe foram
+registrados em `pandora-backend/docs/prd/BE-21-metadados-visuais-listagem.md`:
+
+- **Thumbnail do plot no card** → `GET /experiment/<id>/preview/`
+  (histograma 2D baixa resolução, reusa `utils/density`).
+- **Chip "Dono"** → `my_role` na listagem.
+- **"Processando (45%)"** → `progress` derivado de
+  `received_chunks/total_chunks` (upload); processing é síncrono, fica sem
+  percentual por ora.
+
+O front já tipa esses campos como opcionais em
+`src/types/ExperimentTypes.ts` — os cards renderizam sem eles até o BE-21
+existir.
 
 ## Critérios de aceite
 
