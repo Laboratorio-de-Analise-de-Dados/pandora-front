@@ -58,6 +58,9 @@ Definido pelo `.prettierrc` e observado no código existente:
 - **Mobile-first sempre** (ADR-0002): a app roda majoritariamente em desktop,
   mas todo layout novo é desenhado de `xs` para cima — breakpoints do MUI
   (`sx`, props responsivas), sem largura fixa que estoure em tela pequena
+- **Datas sempre no fuso do browser**: a API emite ISO-8601 em UTC — parseie
+  com `new Date(iso)` e formate com getters/`toLocale*` locais. Nunca fixe
+  `timeZone` nem exiba a string UTC crua.
 - Funções puras em `utils/` (testáveis); estado/side-effects em custom hooks
 - Testes colocados ao lado do código: `foo.ts` → `foo.test.ts`
 
