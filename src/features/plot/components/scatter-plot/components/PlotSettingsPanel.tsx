@@ -56,7 +56,7 @@ interface PlotSettingsPanelProps extends PlotSettingsControls {
 	variant: "inline" | "drawer"
 }
 
-/** Botão que abre/fecha as configurações, ancorado ao canto do gráfico. */
+/** Botão que abre/fecha as configurações, na barra superior do gráfico. */
 export const PlotSettingsButton: React.FC<{
 	open: boolean
 	onToggle: () => void
@@ -66,10 +66,6 @@ export const PlotSettingsButton: React.FC<{
 			onClick={onToggle}
 			size="small"
 			sx={(theme) => ({
-				position: "absolute",
-				top: 12,
-				left: 12,
-				zIndex: 25,
 				backgroundColor:
 					theme.palette.mode === "dark"
 						? "rgba(22, 22, 22, 0.85)"

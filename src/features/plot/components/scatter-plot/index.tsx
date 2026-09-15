@@ -4,6 +4,8 @@ import {
 	Button,
 	CircularProgress,
 	LinearProgress,
+	MenuItem,
+	Select,
 	Typography,
 	useMediaQuery,
 } from "@mui/material"
@@ -30,6 +32,7 @@ import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
 import { buildAxisRange } from "../../utils/plotAxes"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
+import type { PlotMode } from "../../hooks/usePlotState"
 import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
 import { useGateHitTest } from "./hooks/useGateHitTest"
 import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
@@ -479,26 +482,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							width: "100%",
 						}}
 					>
-						{plotMode !== "histogram" && (
-							<Box
-								sx={{
-									width: { xs: "min(95vw, 480px)", md: "auto" },
-									maxWidth: "100%",
-								}}
-							>
-								<AxisSelect
-									value={yAxis}
-									options={values}
-									onChange={handleSelectY}
-									rotated={!isMobile}
-									fullWidth={isMobile}
-									size={isMobile ? "small" : "medium"}
-									label={isMobile ? "Eixo Y" : undefined}
-								/>
-							</Box>
-						)}
-						{/* Coluna do plot: gráfico + barra inferior ficam sempre
-						    centrados no gráfico, mesmo com o painel de configs aberto. */}
+						{/* Coluna do plot: barras de controle + gráfico ficam
+						    sempre centrados no gráfico, mesmo com o painel de
+						    configs aberto (FE-26 — organização do mockup). */}
 						<Box
 							sx={{
 								display: "flex",
@@ -509,6 +495,55 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								flexShrink: 1,
 							}}
 						>
+							{/* Barra superior: modo + canal X vs canal Y + configs */}
+							<Box
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									flexWrap: "wrap",
+									gap: { xs: 0.5, sm: 1.5 },
+									width: "100%",
+								}}
+							>
+								<Select
+									value={plotMode}
+									onChange={(e) => setPlotMode(e.target.value as PlotMode)}
+									size="small"
+									variant="standard"
+									disableUnderline
+									sx={{ fontWeight: 600 }}
+								>
+									<MenuItem value="heatmap">Heatmap</MenuItem>
+									<MenuItem value="scatter">Scatter</MenuItem>
+									<MenuItem value="histogram">Histograma</MenuItem>
+								</Select>
+								<AxisSelect
+									value={xAxis}
+									options={values}
+									onChange={handleSelectX}
+									size="small"
+								/>
+								{plotMode !== "histogram" && (
+									<>
+										<Typography variant="caption" color="text.secondary">
+											vs
+										</Typography>
+										<AxisSelect
+											value={yAxis}
+											options={values}
+											onChange={handleSelectY}
+											size="small"
+										/>
+									</>
+								)}
+								{settingsAvailable && (
+									<PlotSettingsButton
+										open={settingsOpen}
+										onToggle={() => setSettingsOpen((prev) => !prev)}
+									/>
+								)}
+							</Box>
 							<Box
 								ref={plotContainerRef}
 								onContextMenu={handleContextMenu}
@@ -534,14 +569,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									overflow: "hidden",
 								})}
 							>
-								{/* Configurações do gráfico, ancorado ao canto superior esquerdo */}
-								{settingsAvailable && (
-									<PlotSettingsButton
-										open={settingsOpen}
-										onToggle={() => setSettingsOpen((prev) => !prev)}
-									/>
-								)}
-
 								{isError && !data ? (
 									<Alert
 										severity={
@@ -715,33 +742,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									</Box>
 								)}
 							</Box>
-							{/* Barra inferior do plot (FE-26): eixo X + ferramentas de
-							    gate centrados no gráfico, como no mockup. */}
-							<Box
-								sx={{
-									display: "flex",
-									flexDirection: { xs: "column", sm: "row" },
-									alignItems: "center",
-									justifyContent: "center",
-									gap: { xs: 0.5, sm: 2 },
-								}}
-							>
-								<AxisSelect
-									value={xAxis}
-									options={values}
-									onChange={handleSelectX}
-									fullWidth={isMobile}
-									size={isMobile ? "small" : "medium"}
-									label={isMobile ? "Eixo X" : undefined}
+							{/* Barra inferior do plot (FE-26): ferramentas de gate
+							    centradas no gráfico, como no mockup. */}
+							{tool !== "edit" && reshapingGateId === null && (
+								<GateToolToggle
+									value={tool}
+									onChange={setTool}
+									plotMode={plotMode}
 								/>
-								{tool !== "edit" && reshapingGateId === null && (
-									<GateToolToggle
-										value={tool}
-										onChange={setTool}
-										plotMode={plotMode}
-									/>
-								)}
-							</Box>
+							)}
 						</Box>
 						{settingsAvailable && (
 							<PlotSettingsPanel
