@@ -7,14 +7,13 @@ interface StatsSummaryCardProps {
 	summary: SummaryMetrics
 }
 
-/** Placas de métricas (FE-26): valor grande em branco sobre fundo canvas. */
+/** Placa de métrica (FE-26): card separado, label em cima e valor grande. */
 const Metric = ({ label, value }: { label: string; value: string }) => (
 	<Box
 		sx={(theme) => ({
-			textAlign: "center",
 			py: 1,
-			px: 0.5,
-			borderRadius: 2,
+			px: 1.5,
+			borderRadius: 2.5,
 			bgcolor:
 				theme.palette.mode === "dark"
 					? theme.palette.background.default
@@ -29,7 +28,7 @@ const Metric = ({ label, value }: { label: string; value: string }) => (
 		>
 			{label}
 		</Typography>
-		<Typography variant="subtitle1" fontWeight="bold" sx={{ lineHeight: 1.3 }}>
+		<Typography variant="h6" fontWeight="bold" sx={{ lineHeight: 1.25 }}>
 			{value}
 		</Typography>
 	</Box>
@@ -38,8 +37,8 @@ const Metric = ({ label, value }: { label: string; value: string }) => (
 const StatsSummaryCard: React.FC<StatsSummaryCardProps> = ({ summary }) => (
 	<Box
 		sx={{
-			display: "grid",
-			gridTemplateColumns: "1fr 1fr 1fr",
+			display: "flex",
+			flexDirection: "column",
 			gap: 0.75,
 			mb: 1,
 		}}

@@ -1,5 +1,6 @@
 import {
 	Box,
+	Button,
 	CircularProgress,
 	FormControlLabel,
 	Switch,
@@ -41,6 +42,7 @@ import {
 	MdUploadFile as UploadIcon,
 	MdDownload as DownloadIcon,
 	MdHistory as HistoryIcon,
+	MdFlashOn as BoltIcon,
 } from "react-icons/md"
 import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../utils/experimentFile"
 
@@ -269,7 +271,22 @@ function ExperimentPageContent() {
 						</Box>
 					) : (
 						<>
-							<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+							{/* Header do workspace (FE-26): seletor + navegação à
+							    esquerda, caminho atual no centro, ações à direita. */}
+							<Box
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									gap: { xs: 0.5, md: 1 },
+									width: "100%",
+									px: { xs: 1, md: 2 },
+								}}
+							>
+								<SourceDropdown
+									files={experimentFiles}
+									source={source}
+									onSelect={setSource}
+								/>
 								<Tooltip title="Arquivo anterior">
 									<span>
 										<IconButton
@@ -281,11 +298,6 @@ function ExperimentPageContent() {
 										</IconButton>
 									</span>
 								</Tooltip>
-								<SourceDropdown
-									files={experimentFiles}
-									source={source}
-									onSelect={setSource}
-								/>
 								<Tooltip title="Próximo arquivo">
 									<span>
 										<IconButton
@@ -297,28 +309,70 @@ function ExperimentPageContent() {
 										</IconButton>
 									</span>
 								</Tooltip>
-								<Tooltip title="Histórico e checkpoints">
-									<IconButton size="small" onClick={() => setShowHistory(true)}>
-										<HistoryIcon />
-									</IconButton>
-								</Tooltip>
-							</Box>
 
-							{sourceLabel && (
-								<Typography
-									variant="subtitle2"
-									fontWeight="bold"
-									textAlign="center"
+								{sourceLabel && (
+									<Typography
+										variant="subtitle2"
+										fontWeight="bold"
+										color="text.secondary"
+										sx={{
+											flex: 1,
+											textAlign: "center",
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap",
+											px: 1,
+											fontSize: { xs: "0.75rem", md: "0.85rem" },
+										}}
+									>
+										{sourceLabel}
+									</Typography>
+								)}
+
+								<Box
 									sx={{
-										px: 1,
-										maxWidth: "100%",
-										wordBreak: "break-word",
-										fontSize: { xs: "0.8rem", md: "0.9rem" },
+										display: "flex",
+										alignItems: "center",
+										gap: 0.5,
+										ml: "auto",
 									}}
 								>
-									{sourceLabel}
-								</Typography>
-							)}
+									{source?.type === "gate" && canEditExperiment && (
+										<Tooltip title="Aplicar este gate em outras amostras">
+											{isMobile ? (
+												<IconButton
+													size="small"
+													color="primary"
+													onClick={() =>
+														handleApplyGate(source.id, selectedGate?.name ?? "")
+													}
+												>
+													<BoltIcon />
+												</IconButton>
+											) : (
+												<Button
+													variant="contained"
+													size="small"
+													startIcon={<BoltIcon />}
+													onClick={() =>
+														handleApplyGate(source.id, selectedGate?.name ?? "")
+													}
+												>
+													Propagar Gate
+												</Button>
+											)}
+										</Tooltip>
+									)}
+									<Tooltip title="Histórico e checkpoints">
+										<IconButton
+											size="small"
+											onClick={() => setShowHistory(true)}
+										>
+											<HistoryIcon />
+										</IconButton>
+									</Tooltip>
+								</Box>
+							</Box>
 
 							{source ? (
 								<PlotStateProvider
