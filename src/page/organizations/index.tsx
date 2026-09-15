@@ -32,7 +32,7 @@ export default function OrganizationsPage() {
 		accept,
 		decline,
 		refresh: refreshReceived,
-	} = useInvites(Boolean(user) && tab === 2)
+	} = useInvites(Boolean(user) && tab === 1)
 
 	const {
 		invites: sentInvites,
@@ -40,7 +40,7 @@ export default function OrganizationsPage() {
 		resend,
 		cancel,
 		refresh: refreshSent,
-	} = useSentInvites(Boolean(user) && tab === 2)
+	} = useSentInvites(Boolean(user) && tab === 1)
 
 	const handleCreateOrg = async (name: string, orgType: string) => {
 		await createOrg(name, orgType)
@@ -154,8 +154,7 @@ export default function OrganizationsPage() {
 				textColor="primary"
 				indicatorColor="primary"
 			>
-				<Tab label="Meus grupos" />
-				<Tab label="Criar grupo" />
+				<Tab label="Minhas Organizações" />
 				<Tab
 					label={
 						<Badge
@@ -164,10 +163,11 @@ export default function OrganizationsPage() {
 							max={9}
 							sx={{ "& .MuiBadge-badge": { right: -14, top: 4 } }}
 						>
-							Convites
+							Convites Recebidos
 						</Badge>
 					}
 				/>
+				<Tab label="Criar Nova" />
 			</Tabs>
 
 			<Paper sx={{ p: { xs: 2, md: 3 }, minHeight: 360 }}>
@@ -181,8 +181,7 @@ export default function OrganizationsPage() {
 						onRemoveMember={handleRemoveMember}
 					/>
 				)}
-				{tab === 1 && <CreateOrgTab onSubmit={handleCreateOrg} />}
-				{tab === 2 && (
+				{tab === 1 && (
 					<InvitesTab
 						receivedInvites={receivedInvites}
 						receivedLoading={receivedLoading}
@@ -195,6 +194,7 @@ export default function OrganizationsPage() {
 						onCancel={handleCancel}
 					/>
 				)}
+				{tab === 2 && <CreateOrgTab onSubmit={handleCreateOrg} />}
 			</Paper>
 
 			<InviteModal
