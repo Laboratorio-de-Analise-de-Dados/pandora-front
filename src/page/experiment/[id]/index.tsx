@@ -271,165 +271,162 @@ function ExperimentPageContent() {
 					overflow: "hidden",
 				}}
 			>
-				{/* Área central: seletor sempre visível + gráfico centralizado */}
+				{/* Coluna do workspace: header fixado no topo (seletor de
+				    amostra + navegação + ações) e área do plot centralizada
+				    no espaço restante — como no mockup (FE-26). */}
 				<Box
 					sx={{
 						display: "flex",
 						flexDirection: "column",
-						justifyContent: "center",
-						alignItems: "center",
 						width: "100%",
 						height: "100%",
-						overflowY: "auto",
-						gap: "1rem",
-						pt: { xs: 2, md: 3 },
-						pb: { xs: 2, md: 3 },
 					}}
 				>
-					{isLoading ? (
+					{!isLoading && (
 						<Box
 							sx={{
 								display: "flex",
 								alignItems: "center",
-								justifyContent: "center",
-								height: "100%",
+								gap: { xs: 0.5, md: 1 },
+								width: "100%",
+								px: { xs: 1, md: 2 },
+								pt: { xs: 1, md: 1.5 },
+								pb: 0.5,
+								flexShrink: 0,
 							}}
 						>
-							<CircularProgress />
-						</Box>
-					) : (
-						<>
-							{/* Header do workspace (FE-26): seletor + navegação à
-							    esquerda, caminho atual no centro, ações à direita. */}
+							<SourceDropdown
+								files={experimentFiles}
+								source={source}
+								onSelect={setSource}
+							/>
+							<Tooltip title="Arquivo anterior">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!source || !canGoPrevFile}
+										onClick={() => goToAdjacentFile(-1)}
+									>
+										<PrevIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
+							<Tooltip title="Próximo arquivo">
+								<span>
+									<IconButton
+										size="small"
+										disabled={!source || !canGoNextFile}
+										onClick={() => goToAdjacentFile(1)}
+									>
+										<NextIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
+
+							{sourceLabel && (
+								<Typography
+									variant="subtitle2"
+									fontWeight="bold"
+									color="text.secondary"
+									sx={{
+										flex: 1,
+										textAlign: "center",
+										overflow: "hidden",
+										textOverflow: "ellipsis",
+										whiteSpace: "nowrap",
+										px: 1,
+										fontSize: { xs: "0.75rem", md: "0.85rem" },
+									}}
+								>
+									{sourceLabel}
+								</Typography>
+							)}
+
 							<Box
 								sx={{
 									display: "flex",
 									alignItems: "center",
-									gap: { xs: 0.5, md: 1 },
-									width: "100%",
-									px: { xs: 1, md: 2 },
+									gap: 0.5,
+									ml: "auto",
 								}}
 							>
-								<SourceDropdown
-									files={experimentFiles}
-									source={source}
-									onSelect={setSource}
-								/>
-								<Tooltip title="Arquivo anterior">
-									<span>
-										<IconButton
-											size="small"
-											disabled={!source || !canGoPrevFile}
-											onClick={() => goToAdjacentFile(-1)}
-										>
-											<PrevIcon />
-										</IconButton>
-									</span>
-								</Tooltip>
-								<Tooltip title="Próximo arquivo">
-									<span>
-										<IconButton
-											size="small"
-											disabled={!source || !canGoNextFile}
-											onClick={() => goToAdjacentFile(1)}
-										>
-											<NextIcon />
-										</IconButton>
-									</span>
-								</Tooltip>
-
-								{sourceLabel && (
-									<Typography
-										variant="subtitle2"
-										fontWeight="bold"
-										color="text.secondary"
-										sx={{
-											flex: 1,
-											textAlign: "center",
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											whiteSpace: "nowrap",
-											px: 1,
-											fontSize: { xs: "0.75rem", md: "0.85rem" },
-										}}
-									>
-										{sourceLabel}
-									</Typography>
-								)}
-
-								<Box
-									sx={{
-										display: "flex",
-										alignItems: "center",
-										gap: 0.5,
-										ml: "auto",
-									}}
-								>
-									{/* Propagar Gate: botão verde no header (desktop);
+								{/* Propagar Gate: botão verde no header (desktop);
 									    no mobile fica no rodapé do sheet da árvore. */}
-									{!isMobile &&
-										source?.type === "gate" &&
-										canEditExperiment && (
-											<Tooltip title="Aplicar este gate em outras amostras">
-												<Button
-													variant="contained"
-													size="small"
-													startIcon={<BoltIcon />}
-													onClick={() =>
-														handleApplyGate(source.id, selectedGate?.name ?? "")
-													}
-												>
-													Propagar Gate
-												</Button>
-											</Tooltip>
-										)}
-									<Tooltip title="Histórico e checkpoints">
-										<IconButton
+								{!isMobile && source?.type === "gate" && canEditExperiment && (
+									<Tooltip title="Aplicar este gate em outras amostras">
+										<Button
+											variant="contained"
 											size="small"
-											onClick={() => setShowHistory(true)}
+											startIcon={<BoltIcon />}
+											onClick={() =>
+												handleApplyGate(source.id, selectedGate?.name ?? "")
+											}
 										>
-											<HistoryIcon />
-										</IconButton>
+											Propagar Gate
+										</Button>
 									</Tooltip>
-								</Box>
+								)}
+								<Tooltip title="Histórico e checkpoints">
+									<IconButton size="small" onClick={() => setShowHistory(true)}>
+										<HistoryIcon />
+									</IconButton>
+								</Tooltip>
 							</Box>
+						</Box>
+					)}
 
-							{source ? (
-								<PlotStateProvider
-									key={`${source.type}-${source.id}`}
+					{/* Área do plot: centralizada no espaço que sobra abaixo
+					    do header. */}
+					<Box
+						sx={{
+							flex: 1,
+							minHeight: 0,
+							overflowY: "auto",
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							justifyContent: "center",
+							gap: "1rem",
+							px: 1,
+							pb: { xs: 2, md: 3 },
+						}}
+					>
+						{isLoading ? (
+							<Box
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									height: "100%",
+								}}
+							>
+								<CircularProgress />
+							</Box>
+						) : source ? (
+							<PlotStateProvider
+								key={`${source.type}-${source.id}`}
+								sourceType={source.type}
+								sourceId={source.id}
+								initialConfig={plotInitialConfig}
+								onPersist={setViewConfig}
+							>
+								<ScatterPlot
+									values={values}
 									sourceType={source.type}
 									sourceId={source.id}
-									initialConfig={plotInitialConfig}
-									onPersist={setViewConfig}
-								>
-									<ScatterPlot
-										values={values}
-										sourceType={source.type}
-										sourceId={source.id}
-										fileDataId={source.fileDataId}
-										parentId={source.type === "gate" ? source.id : undefined}
-										parentName={
-											source.type === "gate" ? selectedGate?.name : undefined
-										}
-										siblingGateNames={siblingGateNames}
-										childGates={childGates}
-									/>
-								</PlotStateProvider>
-							) : (
-								<Box
-									sx={{
-										display: "flex",
-										justifyContent: "center",
-										alignItems: "center",
-										flex: 1,
-										width: "100%",
-									}}
-								>
-									<Typography>Select a file to load</Typography>
-								</Box>
-							)}
-						</>
-					)}
+									fileDataId={source.fileDataId}
+									parentId={source.type === "gate" ? source.id : undefined}
+									parentName={
+										source.type === "gate" ? selectedGate?.name : undefined
+									}
+									siblingGateNames={siblingGateNames}
+									childGates={childGates}
+								/>
+							</PlotStateProvider>
+						) : (
+							<Typography>Select a file to load</Typography>
+						)}
+					</Box>
 				</Box>
 
 				{/* Overlay esquerdo: árvore de gates */}
