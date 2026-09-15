@@ -39,3 +39,4 @@ decisão que muda ganha um ADR novo (`Substitui ADR-XXXX`) e o antigo passa a
 | [0010](adr/0010-orquestracao-de-lote-e-metadados-no-cliente.md)    | Lote no cliente (allSettled + invalidação única); metadados sob demanda    | Aceito |
 | [0011](adr/0011-features-como-casa-de-componentes-de-dominio.md)   | `features/` é a casa de componentes de domínio; `components/` só UI neutra | Aceito |
 | [0012](adr/0012-limite-de-complexidade-por-arquivo.md)             | Um domínio por arquivo: decompor componentes/hooks que cruzam domínios     | Aceito |
+| [0013](adr/0013-replicacao-de-nome-cor-opt-in.md)                  | Replicar nome/cor é opt-in; edição completa também pela árvore             | Aceito |
