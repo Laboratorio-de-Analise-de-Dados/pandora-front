@@ -29,15 +29,19 @@ o que mudou, quem mudou, e permite voltar a um marco inteiro.
 - Filtro por autor e por tipo de alvo (gate/amostra/subsample/experimento) —
   parâmetros já existem na API.
 
-### 2. Checkpoints na timeline
+### 2. Timeline em sessões + checkpoints fixados
 
-- Botão "Salvar ponto" no topo do painel → dialog com campo de mensagem
-  opcional → `POST .../checkpoints/`. Sem mensagem, o backend gera o nome por
-  data/hora.
-- Checkpoints aparecem como marcos na timeline (chip/divisor destacado) vindos
-  de `GET .../checkpoints/`, intercalados por `created_at`/`revision_id`.
-- Revisões anteriores ao último checkpoint podem vir colapsadas ("N alterações
-  desde o último ponto") para a timeline não virar parede de texto.
+- A timeline consome `GET .../history/?grouped=1`: revisões chegam agrupadas
+  em **sessões** ("hoje 14:20–14:45 · 12 alterações") — são os
+  auto-checkpoints temporais, derivados no backend, sem custo de escrita.
+- Cada sessão aparece colapsável; sua borda é um ponto restaurável.
+- **Pin**: ação na borda de uma sessão (ou numa revisão) →
+  `POST .../checkpoints/` com `revision_id` e mensagem opcional → o ponto
+  vira checkpoint permanente e passa a renderizar destacado na timeline.
+- Botão "Salvar ponto" no topo = o mesmo endpoint sem `revision_id` (marca
+  o estado atual).
+- Checkpoints fixados vêm de `GET .../checkpoints/` e intercalam na timeline
+  por `created_at`/`revision_id`.
 
 ### 3. Restaurar (revert unitário e por checkpoint)
 
@@ -45,8 +49,9 @@ o que mudou, quem mudou, e permite voltar a um marco inteiro.
   `POST .../history/<rev>/revert/` com `dry_run` primeiro; dialog mostra
   `would_change`/`conflicts` antes de confirmar — mesmo padrão do
   `ApplyConflictDialog`.
-- Checkpoint → "Restaurar este ponto": `POST .../checkpoints/<cp>/restore/`
-  com `dry_run`; o dialog lista o plano composto e os conflitos.
+- Qualquer ponto (borda de sessão, checkpoint, revisão avulsa) → "Restaurar
+  até aqui": `POST .../history/<rev>/restore/` (ou `.../checkpoints/<cp>/restore/`
+  para marcos) com `dry_run`; o dialog lista o plano composto e os conflitos.
 - **Conflito detectado**: o restore normal falha (409) — o dialog passa a
   oferecer a opção explícita **"Sobrescrever alterações"** (`force=true`),
   com aviso nomeando o que será perdido. Sem força silenciosa.
@@ -74,11 +79,11 @@ o que mudou, quem mudou, e permite voltar a um marco inteiro.
 
 ## Critérios de aceite
 
-- [ ] Timeline lista revisões com summary, autor e horário; paginação por
-      cursor.
+- [ ] Timeline lista revisões agrupadas em sessões com summary, autor e
+      horário; paginação por cursor.
 - [ ] Detalhe de revisão mostra before/after legível.
-- [ ] "Salvar ponto" cria checkpoint com mensagem opcional; marcos aparecem
-      destacados na timeline.
+- [ ] Pin numa sessão/revisão fixa checkpoint com mensagem opcional; "Salvar
+      ponto" marca o estado atual; marcos aparecem destacados na timeline.
 - [ ] Revert unitário: dry-run → dialog → confirma; conflito bloqueia com
       explicação.
 - [ ] Restore de checkpoint: dry-run → dialog com plano composto; em
