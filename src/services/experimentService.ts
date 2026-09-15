@@ -218,3 +218,23 @@ export const fetchFileHeaders = async (
 	const res = await CytometryApi.get(`/experiment/file/${fileDataId}/headers`)
 	return res.data
 }
+
+/** Histograma 2D de baixa resolução da 1ª amostra ativa (BE-21). */
+export interface ExperimentPreviewResponse {
+	file_data_id: number
+	histogram: (number | null)[][]
+	x_edges: number[]
+	y_edges: number[]
+	x_label: string
+	y_label: string
+}
+
+/** `null` quando o back ainda não tem dado pronto (204). */
+export const fetchExperimentPreview = async (
+	experimentId: number,
+): Promise<ExperimentPreviewResponse | null> => {
+	const res = await CytometryApi.get<ExperimentPreviewResponse>(
+		`/experiment/${experimentId}/preview`,
+	)
+	return res.status === 204 || !res.data ? null : res.data
+}

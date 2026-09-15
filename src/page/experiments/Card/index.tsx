@@ -8,6 +8,7 @@ import {
 	DialogContent,
 	DialogTitle,
 	IconButton,
+	LinearProgress,
 	ListItemText,
 	Menu,
 	MenuItem,
@@ -34,6 +35,8 @@ import ExperimentContextDialog, {
 } from "../../../features/experiment/components/ExperimentContextDialog"
 import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
 import ExperimentDetailsDialog from "../../../features/experiment/components/ExperimentDetailsDialog"
+import ExperimentPreview from "../../../features/experiment/components/ExperimentPreview"
+import RoleChip from "../../../features/experiment/components/RoleChip"
 
 interface ExperimentCardProps {
 	experiment: Experiment
@@ -196,9 +199,26 @@ export default function ExperimentCard({
 						<MoreIcon />
 					</IconButton>
 				)}
+				<ExperimentPreview
+					experimentId={experiment.id}
+					enabled={!inactive && experiment.preview_available === true}
+				/>
 				<h1>{experiment.title}</h1>
 				<div>Type: {experiment.type}</div>
-				{statusChip && <div className="status-row">{statusChip}</div>}
+				{(statusChip || experiment.my_role) && (
+					<div className="status-row">
+						{statusChip}
+						{experiment.my_role && <RoleChip role={experiment.my_role} />}
+					</div>
+				)}
+				{typeof experiment.progress === "number" && (
+					<LinearProgress
+						variant="determinate"
+						value={experiment.progress}
+						aria-label={`Progresso: ${experiment.progress}%`}
+						sx={{ width: "100%", mt: 0.5, borderRadius: 2, height: 4 }}
+					/>
+				)}
 				{inactive && <div className="inactive-badge">Desativado</div>}
 				<div className="card-footer">
 					<span className="creator">{experiment.created_by_name ?? "—"}</span>
