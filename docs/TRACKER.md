@@ -25,6 +25,8 @@ serviços) ou alinhe com o responsável.
 
 ## Livres para pegar
 
-| Feature                     | Observação                    |
-| --------------------------- | ----------------------------- |
-| "Buscar amostras" na árvore | Follow-up registrado no FE-26 |
+| Feature                     | Observação                                                |
+| --------------------------- | --------------------------------------------------------- |
+| "Buscar amostras" na árvore | Follow-up registrado no FE-26                             |
+| FE-28 derivar análise       | Backend pronto — `POST /experiment/<id>/derive-analysis/` |
+| FE-29 branches de análise   | Backend pronto — `?branch=` + `/analytics/branches/*`     |
