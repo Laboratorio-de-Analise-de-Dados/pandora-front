@@ -46,6 +46,13 @@ Movê-lo para a linha do nome do arquivo, ao lado do indicador de
 compensação — os dois ícones formam o "cluster de análise" junto da fonte.
 Se mover quebrar o fluxo do toolbar, duplicar é aceitável no MVP.
 
+**Recorte por amostra**: o painel ganha um toggle "Este arquivo / Tudo".
+`GET .../history/?file=<file_data_id>` devolve só o que toca a amostra
+aberta + as ações experiment-wide (compensação, restore — `file_data`
+`null` na revisão). Sem o parâmetro, comportamento atual. Cada item da
+timeline agora expõe `file_data` (id da amostra ou `null`) — dá pra
+mostrar "amostra: a.fcs" na linha quando o toggle está em "Tudo".
+
 ### 3. Marcação por amostra na árvore e no seletor
 
 `list/data` já devolve `has_embedded_compensation` por arquivo:
