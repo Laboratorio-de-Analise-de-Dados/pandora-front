@@ -28,7 +28,7 @@
 | [FE-24](FE-24-detalhes-edicao-experimento-card.md)    | Detalhes e edição do experimento no card              | Implementado em `fix/density-missing-channel` |
 | [FE-25](FE-25-painel-historico-checkpoints.md)        | Painel de histórico e checkpoints de análise          | Implementado em `fix/density-missing-channel` |
 | [FE-26](FE-26-tema-visual-pandora.md)                 | Refactor visual: tema dark-first verde/preto/branco   | Em andamento em `refactor/tema-pandora-dark`  |
-| [FE-27](FE-27-indicadores-historico-compensacao.md)   | Ícones de compensação + histórico ao lado do arquivo  | Não iniciado (backend BE-22 pronto)           |
+| [FE-27](FE-27-indicadores-historico-compensacao.md)   | Ícones de compensação + histórico ao lado do arquivo  | Implementado em `refactor/tema-pandora-dark`  |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de

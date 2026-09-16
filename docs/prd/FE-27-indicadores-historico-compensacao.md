@@ -2,8 +2,8 @@
 
 **Repo:** pandora-front · **Tipo:** feature · **Base:** `main`
 **Branch sugerida:** `feat/indicadores-analise`
-**Status:** não iniciado — backend completo em `feat/analysis-checkpoints`
-(pandora-backend, BE-22 + BE-08/BE-20).
+**Status:** implementado em `refactor/tema-pandora-dark` (backend em
+`feat/analysis-checkpoints` — BE-22 + BE-08/BE-20).
 
 ## Problema
 

@@ -11,22 +11,20 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                               | Área afetada                                                                                                                                                                                              | Branch                       | Sessão                       | Desde      |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------- | ---------- |
-| FE-26 tema dark-first + layout mockup | `src/theme/`, `src/page/experiment/[id]/`, components globais                                                                                                                                             | `refactor/tema-pandora-dark` | sessão front (outro agente)  | 2026-09-15 |
-| FE-27 indicadores de análise          | `src/features/compensation/` (novo), `src/services/compensationService.ts`, `sourceNav` em `src/page/experiment/[id]/index.tsx` (overlap com FE-26 — diff mínimo), `FileTreeItem`, `SourceDropdown`, card | `refactor/tema-pandora-dark` | sessão Devin (usuário pediu) | 2026-09-16 |
+| Feature                               | Área afetada                                                  | Branch                       | Sessão                      | Desde      |
+| ------------------------------------- | ------------------------------------------------------------- | ---------------------------- | --------------------------- | ---------- |
+| FE-26 tema dark-first + layout mockup | `src/theme/`, `src/page/experiment/[id]/`, components globais | `refactor/tema-pandora-dark` | sessão front (outro agente) | 2026-09-15 |
 
 ## Concluído nesta branch
 
-| Feature                                    | Observação                                                  |
-| ------------------------------------------ | ----------------------------------------------------------- |
-| FE-25 painel de histórico/checkpoints      | `src/features/history/` — consome BE-20                     |
-| BE-21 client (thumbnail, papel, progresso) | `ExperimentPreview`, `RoleChip`, `LinearProgress` nos cards |
+| Feature                                    | Observação                                                                                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FE-25 painel de histórico/checkpoints      | `src/features/history/` — consome BE-20                                                                                                                       |
+| BE-21 client (thumbnail, papel, progresso) | `ExperimentPreview`, `RoleChip`, `LinearProgress` nos cards                                                                                                   |
+| FE-27 indicadores de análise               | `src/features/compensation/` + cluster na sourceNav, histórico por amostra (`?file=`), drawer de histórico no card, badge "Compensado", marcação de controles |
 
 ## Livres para pegar
 
-| Feature                          | Observação                                                                                                                                                                                                                    |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FE-27 indicadores de análise     | PRD pronto: `docs/prd/FE-27-indicadores-historico-compensacao.md` — ícones de compensação + histórico ao lado do nome do arquivo, `CompensationPanel`, marcação de controles. Backend completo em `feat/analysis-checkpoints` |
-| `member: "Membro"` no `RoleChip` | Label faltando — exibe "MEMBER" cru hoje                                                                                                                                                                                      |
-| "Buscar amostras" na árvore      | Follow-up registrado no FE-26                                                                                                                                                                                                 |
+| Feature                     | Observação                    |
+| --------------------------- | ----------------------------- |
+| "Buscar amostras" na árvore | Follow-up registrado no FE-26 |
