@@ -490,26 +490,23 @@ export default function StatsPanel({
 				</Alert>
 			)}
 
-			{/* Collapsable stats section */}
-			<Box
-				sx={{
-					mt: 0.5,
-					border: "1px solid",
-					borderColor: "divider",
-					borderRadius: 1,
-					overflow: "hidden",
-				}}
-			>
+			{/* Seção de detalhes colapsável: header em texto plano, sem caixa
+			    com borda — o painel já é a superfície (FE-26). */}
+			<Box sx={{ mt: 0.5 }}>
 				<Box
 					sx={{
 						display: "flex",
 						alignItems: "center",
 						gap: 0.5,
-						px: 1,
+						px: 0.5,
 						py: 0.5,
-						bgcolor: "action.hover",
+						borderRadius: 2,
 						cursor: "pointer",
-						"&:hover": { bgcolor: "action.selected" },
+						color: "text.secondary",
+						"&:hover": {
+							bgcolor: "action.hover",
+							color: "text.primary",
+						},
 					}}
 					onClick={() => setStatsExpanded((p) => !p)}
 				>
@@ -553,7 +550,7 @@ export default function StatsPanel({
 				</Box>
 
 				<Collapse in={statsExpanded}>
-					<Box sx={{ p: 1 }}>
+					<Box sx={{ px: 0.5, pt: 0.5 }}>
 						{summary && <StatsSummaryCard summary={summary} />}
 
 						{channelStats && (

@@ -131,7 +131,7 @@ export default function CollapsiblePanel({
 											height: "80vh",
 											borderTopLeftRadius: 16,
 											borderTopRightRadius: 16,
-											bgcolor: theme.palette.background.default,
+											bgcolor: theme.palette.background.paper,
 											overflowY: "auto",
 											...resolveSx(theme, paperSx),
 										}
@@ -139,7 +139,7 @@ export default function CollapsiblePanel({
 											width: "80%",
 											maxWidth: 340,
 											p: contentPadding,
-											bgcolor: theme.palette.background.default,
+											bgcolor: theme.palette.background.paper,
 											display: "flex",
 											flexDirection: "column",
 											minHeight: 0,
@@ -176,7 +176,9 @@ export default function CollapsiblePanel({
 						height: "100%",
 						[side === "left" ? "borderRight" : "borderLeft"]:
 							`1px solid ${theme.palette.divider}`,
-						bgcolor: theme.palette.background.default,
+						// Superfície elevada sobre o canvas (FE-26): #161616 sobre
+						// #0D0D0D — o painel se separa por tom, não por outline duro.
+						bgcolor: theme.palette.background.paper,
 						boxShadow: overlay ? theme.shadows[8] : "none",
 						overflowY: "auto",
 						display: "flex",
