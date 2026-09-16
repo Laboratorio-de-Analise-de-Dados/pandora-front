@@ -39,19 +39,25 @@ mobile). Três estados:
 Sugestão de glifo: `MdOutlineBlurOn`/`MdTune`/`MdOpacity` do react-icons —
 escolher o que remeta a "correção espectral" sem confundir com gate.
 
-### 2. Ícone de histórico no mesmo lugar
+### 2. Histórico em dois níveis: amostra × experimento
 
-O `MdHistory` já existe no fim da `PlotToolbar` (abre o `HistoryPanel`).
-Movê-lo para a linha do nome do arquivo, ao lado do indicador de
-compensação — os dois ícones formam o "cluster de análise" junto da fonte.
-Se mover quebrar o fluxo do toolbar, duplicar é aceitável no MVP.
+Dois pontos de entrada, dois recortes — sem toggle dentro do painel:
 
-**Recorte por amostra**: o painel ganha um toggle "Este arquivo / Tudo".
-`GET .../history/?file=<file_data_id>` devolve só o que toca a amostra
-aberta + as ações experiment-wide (compensação, restore — `file_data`
-`null` na revisão). Sem o parâmetro, comportamento atual. Cada item da
-timeline agora expõe `file_data` (id da amostra ou `null`) — dá pra
-mostrar "amostra: a.fcs" na linha quando o toggle está em "Tudo".
+- **Junto do arquivo** (`sourceNav`, ao lado do nome): abre o
+  `HistoryPanel` recortado — `GET .../history/?file=<file_data_id>`
+  devolve só o que toca a amostra aberta + as ações experiment-wide
+  (`file_data` `null`: compensação, restore etc. afetam todas). O painel
+  indica o recorte no título ("Histórico — a1.fcs").
+- **Junto do experimento**: um botão de ação no nível do experimento —
+  no card da listagem (menu ⋮ ou botão ao lado de editar/detalhes) e/ou
+  no topo do workspace. Abre o mesmo `HistoryPanel` sem o parâmetro
+  `file` → timeline completa. No modo "tudo", cada linha ganha o rótulo
+  da amostra quando `file_data` não é null (o item já expõe esse campo).
+
+O `MdHistory` que hoje fica no fim da `PlotToolbar` vira o botão do nível
+amostra na `sourceNav` (ou no cluster do experimento — ver qual leitura
+fica mais clara; os dois painéis são o mesmo componente com `file`
+opcional).
 
 ### 3. Marcação por amostra na árvore e no seletor
 
@@ -132,7 +138,9 @@ GET    /experiment/                               item.compensated
 
 - [ ] Ícone de compensação ao lado do nome do arquivo com 3 estados
       (nenhuma / embutida disponível / aplicada) + tooltip explicativo.
-- [ ] Ícone de histórico na mesma linha (cluster de análise junto da fonte).
+- [ ] Histórico em dois níveis: ícone junto do arquivo abre o painel
+      recortado (`?file=`), ação no nível do experimento abre a timeline
+      completa com rótulo de amostra por linha.
 - [ ] Amostra com matriz embutida marcada na árvore e no `SourceDropdown`.
 - [ ] Painel: preview da embutida, "usar do arquivo" em 1 clique, lista de
       matrizes com apply/remove, renomear e descartar.
