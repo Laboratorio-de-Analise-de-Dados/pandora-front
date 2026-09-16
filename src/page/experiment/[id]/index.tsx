@@ -2,7 +2,9 @@ import {
 	Box,
 	Button,
 	CircularProgress,
+	Collapse,
 	FormControlLabel,
+	Paper,
 	Switch,
 	Typography,
 	IconButton,
@@ -10,7 +12,7 @@ import {
 	useMediaQuery,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
-import { useRef, useState } from "react"
+import { useState } from "react"
 import Layout from "../../../components/Layout"
 import {
 	ExperimentWorkspaceProvider,
@@ -118,24 +120,22 @@ function ExperimentPageContent() {
 	const [showStats, setShowStats] = useState(() => !isMobile)
 	const [showTree, setShowTree] = useState(() => !isMobile)
 	const [showHistory, setShowHistory] = useState(false)
-	// Histórico e estatísticas dividem a borda direita: abrir um recolhe o
-	// outro em vez de sobrepor (FE-26). No desktop, fechar o histórico
-	// devolve as stats ao estado anterior; no mobile só um sheet aberto.
-	const statsBeforeHistory = useRef(false)
-
+	// Desktop: histórico é overlay sobre a área central — árvore e stats
+	// continuam abertas ao lado. No mobile os sheets seguem mutuamente
+	// exclusivos (um de cada vez).
 	const openHistory = () => {
-		statsBeforeHistory.current = showStats
-		setShowStats(false)
-		if (isMobile) setShowTree(false)
+		if (isMobile) {
+			setShowStats(false)
+			setShowTree(false)
+		}
 		setShowHistory(true)
 	}
-	const closeHistory = () => {
-		setShowHistory(false)
-		if (!isMobile && statsBeforeHistory.current) setShowStats(true)
-	}
+	const closeHistory = () => setShowHistory(false)
 	const openStats = () => {
-		setShowHistory(false)
-		if (isMobile) setShowTree(false)
+		if (isMobile) {
+			setShowHistory(false)
+			setShowTree(false)
+		}
 		setShowStats(true)
 	}
 	const openTree = () => {
@@ -333,6 +333,7 @@ function ExperimentPageContent() {
 							flex: 1,
 							minWidth: 0,
 							height: "100%",
+							position: "relative",
 						}}
 					>
 						{!isLoading && (
@@ -463,6 +464,42 @@ function ExperimentPageContent() {
 								<Typography>Select a file to load</Typography>
 							)}
 						</Box>
+
+						{/* Histórico e checkpoints (FE-25) no desktop: overlay que
+						    desce do topo da área central, com rolagem interna —
+						    árvore e estatísticas continuam visíveis ao lado. */}
+						{!isMobile && (
+							<Collapse
+								in={showHistory}
+								unmountOnExit
+								sx={{
+									position: "absolute",
+									top: 0,
+									left: 0,
+									right: 0,
+									zIndex: 20,
+								}}
+							>
+								<Paper
+									sx={(theme) => ({
+										maxHeight: "min(560px, 72vh)",
+										overflowY: "auto",
+										bgcolor: theme.palette.background.paper,
+										border: `1px solid ${theme.palette.divider}`,
+										borderTop: "none",
+										borderRadius: "0 0 16px 16px",
+										boxShadow: theme.shadows[8],
+									})}
+								>
+									<HistoryPanel
+										experimentId={experiment?.id}
+										files={experimentFiles}
+										canEdit={canEditExperiment}
+										onClose={closeHistory}
+									/>
+								</Paper>
+							</Collapse>
+						)}
 					</Box>
 
 					{/* Coluna direita: estatísticas */}
@@ -489,30 +526,30 @@ function ExperimentPageContent() {
 						/>
 					</CollapsiblePanel>
 
-					{/* Histórico e checkpoints (FE-25): coluna na mesma borda das
-					    estatísticas — abrir um recolhe o outro (nunca sobrepõe).
-					    Sem aba própria: abre pelo ícone no header do workspace;
-					    no mobile vira bottom sheet. */}
-					<CollapsiblePanel
-						side="right"
-						open={showHistory}
-						isMobile={isMobile}
-						onOpen={openHistory}
-						onClose={closeHistory}
-						label="Histórico"
-						icon={<HistoryIcon style={{ fontSize: 18 }} />}
-						desktopWidth="26%"
-						desktopMinWidth={320}
-						mobileAnchor="bottom"
-						hideTrigger
-					>
-						<HistoryPanel
-							experimentId={experiment?.id}
-							files={experimentFiles}
-							canEdit={canEditExperiment}
+					{/* Histórico no mobile: bottom sheet exclusivo (desktop usa o
+					    overlay sobre a área central, acima). */}
+					{isMobile && (
+						<CollapsiblePanel
+							side="right"
+							open={showHistory}
+							isMobile={isMobile}
+							onOpen={openHistory}
 							onClose={closeHistory}
-						/>
-					</CollapsiblePanel>
+							label="Histórico"
+							icon={<HistoryIcon style={{ fontSize: 18 }} />}
+							desktopWidth="26%"
+							desktopMinWidth={320}
+							mobileAnchor="bottom"
+							hideTrigger
+						>
+							<HistoryPanel
+								experimentId={experiment?.id}
+								files={experimentFiles}
+								canEdit={canEditExperiment}
+								onClose={closeHistory}
+							/>
+						</CollapsiblePanel>
+					)}
 				</Box>
 			</Box>
 
