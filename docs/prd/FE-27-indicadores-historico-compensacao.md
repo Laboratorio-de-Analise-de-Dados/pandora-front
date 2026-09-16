@@ -23,9 +23,9 @@ escala/limites ("passadores") da `PlotToolbar`, que é logo abaixo.
 ### 1. `CompensationIndicator` — ícone ao lado do nome do arquivo
 
 Novo ícone na linha de navegação (`sourceNav` em
-`src/page/experiment/[id]/index.tsx`, entre o `SourceDropdown` e os
-botões anterior/próximo — ou no cluster da direita, o que ficar melhor no
-mobile). Três estados:
+`src/page/experiment/[id]/index.tsx`) — **logo após os botões
+anterior/próximo**, antes do cluster da direita: `SourceDropdown` →
+prev/next → compensação → histórico. Três estados:
 
 - **Sem matriz nenhuma**: ícone ausente ou esmaecido (decisão de design —
   esmaecido educa que a feature existe; ausente polui menos).
@@ -43,7 +43,8 @@ escolher o que remeta a "correção espectral" sem confundir com gate.
 
 Dois pontos de entrada, dois recortes — sem toggle dentro do painel:
 
-- **Junto do arquivo** (`sourceNav`, ao lado do nome): abre o
+- **Junto do arquivo** (`sourceNav`, logo após prev/next — mesma posição
+  do indicador de compensação): abre o
   `HistoryPanel` recortado — `GET .../history/?file=<file_data_id>`
   devolve só o que toca a amostra aberta + as ações experiment-wide
   (`file_data` `null`: compensação, restore etc. afetam todas). O painel
