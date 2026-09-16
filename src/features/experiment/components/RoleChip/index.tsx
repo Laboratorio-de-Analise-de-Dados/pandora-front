@@ -5,6 +5,7 @@ const ROLE_LABELS: Record<string, string> = {
 	dono: "Dono",
 	org_admin: "Admin",
 	admin: "Admin",
+	member: "Membro",
 	editor: "Editor",
 	viewer: "Visualizador",
 }

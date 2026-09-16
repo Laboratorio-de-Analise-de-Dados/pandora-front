@@ -26,6 +26,8 @@ interface RevisionRowProps {
 	revision: AnalysisRevision
 	/** Checkpoint fixado exatamente nesta revisão, se houver. */
 	checkpoint?: AnalysisCheckpoint
+	/** Nome da amostra tocada — só na visão experiment-wide (FE-27). */
+	fileLabel?: string
 	canEdit: boolean
 	onPin: (revisionId: number) => void
 	onRevert: (revision: AnalysisRevision) => void
@@ -41,6 +43,7 @@ interface RevisionRowProps {
 export default function RevisionRow({
 	revision,
 	checkpoint,
+	fileLabel,
 	canEdit,
 	onPin,
 	onRevert,
@@ -75,9 +78,14 @@ export default function RevisionRow({
 				</Typography>
 				<Box sx={{ flex: 1, minWidth: 0 }}>
 					<Typography variant="body2">{revision.summary}</Typography>
-					{revision.author && (
+					{(revision.author || fileLabel) && (
 						<Typography variant="caption" color="text.secondary">
-							por {revision.author}
+							{[
+								revision.author ? `por ${revision.author}` : null,
+								fileLabel ? `em ${fileLabel}` : null,
+							]
+								.filter(Boolean)
+								.join(" · ")}
 						</Typography>
 					)}
 					{checkpoint && (

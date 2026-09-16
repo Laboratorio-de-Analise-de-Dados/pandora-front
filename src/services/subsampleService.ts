@@ -37,6 +37,26 @@ export const renameSubsample = async (
 	return res.data
 }
 
+/**
+ * Marca/desmarca o subsample como controle de compensação (BE-22,
+ * ADR-0019): `null` limpa; `unstained` é o negativo; `single_stain`
+ * exige `control_channel` (canal fluorescente).
+ */
+export const updateSubsampleControl = async (
+	experimentId: string,
+	subsampleId: number,
+	payload: {
+		control_type: "unstained" | "single_stain" | null
+		control_channel?: string
+	},
+): Promise<Subsample> => {
+	const res = await CytometryApi.patch(
+		`/experiment/${experimentId}/subsamples/${subsampleId}/`,
+		payload,
+	)
+	return res.data
+}
+
 /** Inativa o subsample e desvincula as amostras (nada é apagado — ADR-0005). */
 export const archiveSubsample = async (
 	experimentId: string,

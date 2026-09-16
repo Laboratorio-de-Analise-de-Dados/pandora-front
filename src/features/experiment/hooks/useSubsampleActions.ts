@@ -4,6 +4,7 @@ import {
 	archiveSubsample,
 	createSubsample,
 	renameSubsample,
+	updateSubsampleControl,
 } from "../../../services/subsampleService"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
 import { extractErrorMessage } from "../../../utils/apiError"
@@ -59,9 +60,39 @@ export function useSubsampleActions() {
 		[experimentId, invalidateExperiment],
 	)
 
+	/**
+	 * Marca o subsample como controle de compensação (BE-22). Devolve a
+	 * mensagem de erro para o diálogo — o backend valida unstained único,
+	 * canal fluorescente e duplicidade de single-stain (400).
+	 */
+	const handleSetSubsampleControl = useCallback(
+		async (
+			subsampleId: number,
+			payload: {
+				control_type: "unstained" | "single_stain" | null
+				control_channel?: string
+			},
+		): Promise<string | null> => {
+			try {
+				await updateSubsampleControl(experimentId, subsampleId, payload)
+				toast.success(
+					payload.control_type
+						? "Subsample marcado como controle."
+						: "Marcação de controle removida.",
+				)
+				invalidateExperiment()
+				return null
+			} catch (error) {
+				return extractErrorMessage(error)
+			}
+		},
+		[experimentId, invalidateExperiment],
+	)
+
 	return {
 		handleCreateSubsample,
 		handleRenameSubsample,
 		handleArchiveSubsample,
+		handleSetSubsampleControl,
 	}
 }

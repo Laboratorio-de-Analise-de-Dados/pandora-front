@@ -27,6 +27,14 @@ export interface TreeInteractionsParams {
 	) => Promise<string | null>
 	onArchiveSubsample?: (subsampleId: number) => void
 	onMoveFile?: (fileDataIds: number[], subsampleId: number | null) => void
+	/** Marca o subsample como controle de compensação (BE-22). */
+	onSetSubsampleControl?: (
+		subsampleId: number,
+		payload: {
+			control_type: "unstained" | "single_stain" | null
+			control_channel?: string
+		},
+	) => Promise<string | null>
 }
 
 /**
@@ -47,6 +55,7 @@ export function useTreeInteractions({
 	onRenameSubsample,
 	onArchiveSubsample,
 	onMoveFile,
+	onSetSubsampleControl,
 }: TreeInteractionsParams) {
 	// Edição completa do gate pela árvore — mesmo diálogo do gráfico (FE-23).
 	const [editTarget, setEditTarget] = useState<Gate | null>(null)
@@ -88,6 +97,7 @@ export function useTreeInteractions({
 	const [subsampleFormTarget, setSubsampleFormTarget] =
 		useState<Subsample | null>(null)
 	const [archiveTarget, setArchiveTarget] = useState<Subsample | null>(null)
+	const [controlTarget, setControlTarget] = useState<Subsample | null>(null)
 
 	const handleFileMenuOpen = (
 		event: React.MouseEvent,
@@ -184,7 +194,7 @@ export function useTreeInteractions({
 		},
 		onFileMenuOpen: handleFileMenuOpen,
 		onSubsampleMenuOpen:
-			onRenameSubsample || onArchiveSubsample
+			onRenameSubsample || onArchiveSubsample || onSetSubsampleControl
 				? (event: React.MouseEvent, subsample: Subsample) => {
 						event.stopPropagation()
 						setSubsampleMenuAnchor(event.currentTarget as HTMLElement)
@@ -285,6 +295,10 @@ export function useTreeInteractions({
 				if (menuSubsample) setArchiveTarget(menuSubsample)
 				closeSubsampleMenu()
 			},
+			control: () => {
+				if (menuSubsample) setControlTarget(menuSubsample)
+				closeSubsampleMenu()
+			},
 		},
 		editDialog: {
 			gate: editTarget,
@@ -357,6 +371,16 @@ export function useTreeInteractions({
 				setArchiveTarget(null)
 			},
 			close: () => setArchiveTarget(null),
+		},
+		controlDialog: {
+			target: controlTarget,
+			submit: onSetSubsampleControl
+				? (payload: {
+						control_type: "unstained" | "single_stain" | null
+						control_channel?: string
+					}) => onSetSubsampleControl(controlTarget?.id ?? 0, payload)
+				: undefined,
+			close: () => setControlTarget(null),
 		},
 	}
 }

@@ -18,6 +18,7 @@ import { toast } from "react-toastify"
 import {
 	MdInfoOutline as InfoIcon,
 	MdMoreVert as MoreIcon,
+	MdHistory as HistoryIcon,
 } from "react-icons/md"
 import { ExperimentComponent } from "./style"
 import { Experiment } from "../../../types"
@@ -37,6 +38,7 @@ import EditExperimentDialog from "../../../features/experiment/components/EditEx
 import ExperimentDetailsDialog from "../../../features/experiment/components/ExperimentDetailsDialog"
 import ExperimentPreview from "../../../features/experiment/components/ExperimentPreview"
 import RoleChip from "../../../features/experiment/components/RoleChip"
+import ExperimentHistoryDrawer from "../../../features/history/components/ExperimentHistoryDrawer"
 
 interface ExperimentCardProps {
 	experiment: Experiment
@@ -57,6 +59,7 @@ export default function ExperimentCard({
 	const [restoring, setRestoring] = useState(false)
 	const [detailsOpen, setDetailsOpen] = useState(false)
 	const [editOpen, setEditOpen] = useState(false)
+	const [historyOpen, setHistoryOpen] = useState(false)
 	const [savingExperiment, setSavingExperiment] = useState(false)
 	const [editError, setEditError] = useState<string | null>(null)
 
@@ -212,10 +215,20 @@ export default function ExperimentCard({
 					experimentId={experiment.id}
 					enabled={!inactive && experiment.preview_available === true}
 				/>
-				{(statusChip || experiment.my_role) && (
+				{(statusChip || experiment.my_role || experiment.compensated) && (
 					<div className="status-row">
 						{statusChip}
 						{experiment.my_role && <RoleChip role={experiment.my_role} />}
+						{experiment.compensated && (
+							<Chip
+								label="Compensado"
+								size="small"
+								variant="outlined"
+								color="warning"
+								title="Amostra(s) trazem matriz de compensação nos headers"
+								sx={{ height: 20, fontSize: "0.65rem", fontWeight: 600 }}
+							/>
+						)}
 					</div>
 				)}
 				<h1>{experiment.title}</h1>
@@ -242,6 +255,15 @@ export default function ExperimentCard({
 				onClose={() => setMenuAnchor(null)}
 				onClick={(e) => e.stopPropagation()}
 			>
+				<MenuItem
+					onClick={() => {
+						setMenuAnchor(null)
+						setHistoryOpen(true)
+					}}
+				>
+					<HistoryIcon style={{ fontSize: 18, marginRight: 8 }} />
+					<ListItemText>Histórico do experimento</ListItemText>
+				</MenuItem>
 				<MenuItem onClick={() => openDialog("copy")}>
 					<ListItemText>Copiar para…</ListItemText>
 				</MenuItem>
@@ -295,6 +317,12 @@ export default function ExperimentCard({
 					onSave={handleSaveExperiment}
 				/>
 			)}
+			<ExperimentHistoryDrawer
+				experimentId={experiment.id}
+				canEdit={!!canEdit}
+				open={historyOpen}
+				onClose={() => setHistoryOpen(false)}
+			/>
 			<Dialog open={restoreOpen} onClose={() => setRestoreOpen(false)}>
 				<DialogTitle>Experimento desativado</DialogTitle>
 				<DialogContent>

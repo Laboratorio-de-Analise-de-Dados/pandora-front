@@ -10,6 +10,7 @@ import {
 import {
 	MdKeyboardArrowDown as ArrowDownIcon,
 	MdChevronRight as ChevronIcon,
+	MdOutlineBlurOn as CompensationIcon,
 } from "react-icons/md"
 import type { ExperimentFiles } from "../../../types"
 import type { SelectedSource } from "../../../types"
@@ -59,6 +60,13 @@ const SourceDropdown: React.FC<SourceDropdownProps> = ({
 	// selecionado aparece no breadcrumb ao lado, como no mockup (FE-26).
 	const fileName =
 		files.find((f) => f.id === source?.fileDataId)?.file_name ?? source?.name
+
+	// Marca amostras que trazem matriz de compensação embutida (FE-27).
+	const embeddedByFileId = React.useMemo(() => {
+		const set = new Set<number>()
+		for (const f of files) if (f.has_embedded_compensation) set.add(f.id)
+		return set
+	}, [files])
 
 	return (
 		<>
@@ -131,6 +139,19 @@ const SourceDropdown: React.FC<SourceDropdownProps> = ({
 								{item.type === "file" ? "📄 " : "🔲 "}
 								{item.name}
 							</Typography>
+							{item.type === "file" &&
+								embeddedByFileId.has(item.fileDataId) && (
+									<CompensationIcon
+										style={{
+											fontSize: 13,
+											flexShrink: 0,
+											marginLeft: 4,
+											opacity: 0.7,
+											color: "orange",
+											verticalAlign: "middle",
+										}}
+									/>
+								)}
 						</MenuItem>
 					)
 				})}

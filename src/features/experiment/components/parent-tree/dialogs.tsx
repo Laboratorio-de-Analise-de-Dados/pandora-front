@@ -229,6 +229,132 @@ export function MoveFileDialog({
 	)
 }
 
+type ControlType = "unstained" | "single_stain" | null
+
+/**
+ * Marca o subsample como controle de compensação (BE-22, ADR-0019):
+ * negativo (unstained) ou single-stain por canal fluorescente. As
+ * validações finas (unstained único, canal fluorescente, duplicidade)
+ * ficam no backend — o erro 400 aparece no campo.
+ */
+export function SubsampleControlDialog({
+	target,
+	channels,
+	onSubmit,
+	onClose,
+}: {
+	target: Subsample | null
+	/** Canais do experimento (`experiment.values`). */
+	channels: string[]
+	onSubmit: (payload: {
+		control_type: ControlType
+		control_channel?: string
+	}) => Promise<string | null>
+	onClose: () => void
+}) {
+	const [controlType, setControlType] = useState<
+		"" | "unstained" | "single_stain"
+	>("")
+	const [channel, setChannel] = useState("")
+	const [error, setError] = useState<string | null>(null)
+	const [saving, setSaving] = useState(false)
+
+	useEffect(() => {
+		if (target) {
+			setControlType(target.control_type ?? "")
+			setChannel(target.control_channel ?? "")
+			setError(null)
+		}
+	}, [target])
+
+	const handleSubmit = async () => {
+		if (!target || saving) return
+		if (controlType === "single_stain" && !channel) {
+			setError("Escolha o canal do controle single-stain.")
+			return
+		}
+		setSaving(true)
+		const submitError = await onSubmit({
+			control_type: controlType === "" ? null : controlType,
+			...(controlType === "single_stain" ? { control_channel: channel } : {}),
+		})
+		setSaving(false)
+		if (submitError) {
+			setError(submitError)
+			return
+		}
+		onClose()
+	}
+
+	return (
+		<Dialog open={!!target} onClose={onClose} fullWidth maxWidth="xs">
+			<DialogTitle>Controle de compensação</DialogTitle>
+			<DialogContent>
+				<Typography
+					variant="caption"
+					sx={{ color: "text.secondary", display: "block", mb: 1.5 }}
+				>
+					Marcar <strong>{target?.name}</strong> como controle permite calcular
+					a matriz de compensação a partir das amostras do grupo.
+				</Typography>
+				<FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+					<InputLabel>Tipo de controle</InputLabel>
+					<Select
+						value={controlType}
+						label="Tipo de controle"
+						onChange={(e) =>
+							setControlType(
+								e.target.value as "" | "unstained" | "single_stain",
+							)
+						}
+					>
+						<MenuItem value="">
+							<em>Não é controle</em>
+						</MenuItem>
+						<MenuItem value="unstained">Negativo (unstained)</MenuItem>
+						<MenuItem value="single_stain">Single-stain</MenuItem>
+					</Select>
+				</FormControl>
+				{controlType === "single_stain" && (
+					<FormControl fullWidth size="small" error={!!error && !channel}>
+						<InputLabel>Canal</InputLabel>
+						<Select
+							value={channel}
+							label="Canal"
+							onChange={(e) => setChannel(e.target.value)}
+						>
+							{channels.map((c) => (
+								<MenuItem key={c} value={c}>
+									{c}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+				)}
+				{error && (controlType !== "single_stain" || channel) && (
+					<Typography
+						variant="caption"
+						color="error"
+						sx={{ mt: 1, display: "block" }}
+					>
+						{error}
+					</Typography>
+				)}
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onClose}>Cancelar</Button>
+				<Button
+					onClick={() => void handleSubmit()}
+					variant="contained"
+					disabled={saving}
+				>
+					Salvar
+				</Button>
+			</DialogActions>
+		</Dialog>
+	)
+}
+
 // Keywords que sobem pro cabeçalho do diálogo (info de primeira vista).
 // Chaves como o backend persiste: readfcs.view() → minúsculas, sem "$".
 const SUMMARY_LABELS: Record<string, string> = {

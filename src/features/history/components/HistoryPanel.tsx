@@ -47,6 +47,13 @@ interface HistoryPanelProps {
 	experimentId: number | undefined
 	files: ExperimentFiles[]
 	canEdit: boolean
+	/**
+	 * Recorte por amostra (FE-27): quando setado, a timeline só traz o que
+	 * toca o arquivo (ações experiment-wide continuam aparecendo).
+	 */
+	fileDataId?: number | null
+	/** Nome da amostra do recorte — vai para o título do painel. */
+	fileName?: string
 	onClose: () => void
 }
 
@@ -67,9 +74,11 @@ export default function HistoryPanel({
 	experimentId,
 	files,
 	canEdit,
+	fileDataId,
+	fileName,
 	onClose,
 }: HistoryPanelProps) {
-	const history = useGroupedHistoryQuery(experimentId)
+	const history = useGroupedHistoryQuery(experimentId, fileDataId ?? undefined)
 	const checkpoints = useCheckpointsQuery(experimentId)
 	const {
 		pinMutation,
@@ -97,6 +106,13 @@ export default function HistoryPanel({
 			if (cp.revision != null) map.set(cp.revision, cp)
 		return map
 	}, [checkpoints.data])
+	// Modo experimento: cada linha diz qual amostra tocou (file_data da
+	// revisão). No recorte por arquivo o rótulo é redundante — omitido.
+	const fileNameById = useMemo(() => {
+		const map = new Map<number, string>()
+		for (const f of files) map.set(f.id, f.file_name)
+		return map
+	}, [files])
 
 	// Sessão aberta por padrão: só a mais recente. As demais abrem/fecham
 	// por toggle explícito — `toggledOpen` e `toggledClosed` se sobrepõem
@@ -246,9 +262,18 @@ export default function HistoryPanel({
 					gap: 1,
 				}}
 			>
-				<Typography variant="h6" sx={{ flex: 1 }}>
-					Histórico
-				</Typography>
+				<Box sx={{ flex: 1, minWidth: 0 }}>
+					<Typography variant="h6" noWrap>
+						{fileDataId && fileName
+							? `Histórico — ${fileName}`
+							: "Histórico do experimento"}
+					</Typography>
+					{fileDataId != null && (
+						<Typography variant="caption" color="text.secondary">
+							Só o que toca esta amostra (ações do experimento incluídas)
+						</Typography>
+					)}
+				</Box>
 				<IconButton onClick={onClose} size="small">
 					<CloseIcon />
 				</IconButton>
@@ -432,6 +457,12 @@ export default function HistoryPanel({
 										<RevisionRow
 											key={rev.id}
 											revision={rev}
+											fileLabel={
+												fileDataId == null && rev.file_data != null
+													? (fileNameById.get(rev.file_data) ??
+														`amostra #${rev.file_data}`)
+													: undefined
+											}
 											checkpoint={
 												session.end_revision_id === rev.id
 													? (session.checkpoint ??

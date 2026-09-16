@@ -11,9 +11,10 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                               | Área afetada                                                  | Branch                       | Sessão                      | Desde      |
-| ------------------------------------- | ------------------------------------------------------------- | ---------------------------- | --------------------------- | ---------- |
-| FE-26 tema dark-first + layout mockup | `src/theme/`, `src/page/experiment/[id]/`, components globais | `refactor/tema-pandora-dark` | sessão front (outro agente) | 2026-09-15 |
+| Feature                               | Área afetada                                                                                                                                                                                              | Branch                       | Sessão                       | Desde      |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------- | ---------- |
+| FE-26 tema dark-first + layout mockup | `src/theme/`, `src/page/experiment/[id]/`, components globais                                                                                                                                             | `refactor/tema-pandora-dark` | sessão front (outro agente)  | 2026-09-15 |
+| FE-27 indicadores de análise          | `src/features/compensation/` (novo), `src/services/compensationService.ts`, `sourceNav` em `src/page/experiment/[id]/index.tsx` (overlap com FE-26 — diff mínimo), `FileTreeItem`, `SourceDropdown`, card | `refactor/tema-pandora-dark` | sessão Devin (usuário pediu) | 2026-09-16 |
 
 ## Concluído nesta branch
 

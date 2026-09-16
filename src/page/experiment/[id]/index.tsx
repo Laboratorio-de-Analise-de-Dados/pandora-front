@@ -29,6 +29,12 @@ import SourceDropdown from "../../../features/experiment/components/SourceDropdo
 import CollapsiblePanel from "../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../features/stats/components/StatsPanel"
 import HistoryPanel from "../../../features/history/components/HistoryPanel"
+import {
+	CompensationIndicator,
+	CompensationPanel,
+	useCompensationsQuery,
+	useEmbeddedCompensationQuery,
+} from "../../../features/compensation"
 import ApplyGateDialog from "../../../features/gate/components/apply-gate-dialog"
 import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
 import DeleteGateDialog from "../../../features/gate/components/delete-gate-dialog"
@@ -97,6 +103,7 @@ function ExperimentPageContent() {
 		handleCreateSubsample,
 		handleRenameSubsample,
 		handleArchiveSubsample,
+		handleSetSubsampleControl,
 	} = useSubsampleActions()
 
 	const [editOpen, setEditOpen] = useState(false)
@@ -120,20 +127,44 @@ function ExperimentPageContent() {
 	const [showStats, setShowStats] = useState(() => !isMobile)
 	const [showTree, setShowTree] = useState(() => !isMobile)
 	const [showHistory, setShowHistory] = useState(false)
-	// Desktop: histórico é overlay sobre a área central — árvore e stats
-	// continuam abertas ao lado. No mobile os sheets seguem mutuamente
-	// exclusivos (um de cada vez).
-	const openHistory = () => {
+	const [showCompensation, setShowCompensation] = useState(false)
+	// Recorte do histórico (FE-27): o ícone junto do arquivo abre a timeline
+	// filtrada por `fileDataId`; ações experiment-wide continuam inclusas.
+	const [historyFileId, setHistoryFileId] = useState<number | undefined>(
+		undefined,
+	)
+
+	const compensations = useCompensationsQuery(experiment?.id)
+	const embeddedCompensation = useEmbeddedCompensationQuery(experiment?.id)
+	const appliedCompensation = compensations.data?.find((m) => m.is_applied)
+	const currentFile = experimentFiles.find((f) => f.id === source?.fileDataId)
+
+	// Desktop: histórico/compensação são overlays sobre a área central —
+	// árvore e stats continuam abertas ao lado. No mobile os sheets seguem
+	// mutuamente exclusivos (um de cada vez).
+	const openHistory = (fileId?: number) => {
 		if (isMobile) {
 			setShowStats(false)
 			setShowTree(false)
 		}
+		setShowCompensation(false)
+		setHistoryFileId(fileId)
 		setShowHistory(true)
 	}
 	const closeHistory = () => setShowHistory(false)
+	const openCompensation = () => {
+		if (isMobile) {
+			setShowStats(false)
+			setShowTree(false)
+		}
+		setShowHistory(false)
+		setShowCompensation(true)
+	}
+	const closeCompensation = () => setShowCompensation(false)
 	const openStats = () => {
 		if (isMobile) {
 			setShowHistory(false)
+			setShowCompensation(false)
 			setShowTree(false)
 		}
 		setShowStats(true)
@@ -142,6 +173,7 @@ function ExperimentPageContent() {
 		if (isMobile) {
 			setShowStats(false)
 			setShowHistory(false)
+			setShowCompensation(false)
 		}
 		setShowTree(true)
 	}
@@ -266,6 +298,10 @@ function ExperimentPageContent() {
 						canEditExperiment ? handleArchiveSubsample : undefined
 					}
 					onMoveFile={canEditExperiment ? handleMoveFileToSubsample : undefined}
+					onSetSubsampleControl={
+						canEditExperiment ? handleSetSubsampleControl : undefined
+					}
+					channels={values}
 				/>
 			</Box>
 			{/* Ação principal do sheet no mobile (FE-26): propagação do gate
@@ -324,6 +360,34 @@ function ExperimentPageContent() {
 						onClick={() => goToAdjacentFile(1)}
 					>
 						<NextIcon />
+					</IconButton>
+				</span>
+			</Tooltip>
+
+			{/* Cluster de análise (FE-27): compensação + histórico do arquivo
+			    atual, logo após a navegação entre amostras. */}
+			<CompensationIndicator
+				appliedName={appliedCompensation?.name ?? null}
+				currentFileHasEmbedded={currentFile?.has_embedded_compensation === true}
+				experimentHasEmbedded={
+					embeddedCompensation.data != null ||
+					experimentFiles.some((f) => f.has_embedded_compensation)
+				}
+				onClick={() =>
+					showCompensation ? closeCompensation() : openCompensation()
+				}
+			/>
+			<Tooltip title="Histórico desta amostra">
+				<span>
+					<IconButton
+						size="small"
+						disabled={!source}
+						onClick={() =>
+							showHistory ? closeHistory() : openHistory(source?.fileDataId)
+						}
+						sx={{ p: 0.5 }}
+					>
+						<HistoryIcon style={{ fontSize: 18 }} />
 					</IconButton>
 				</span>
 			</Tooltip>
@@ -462,7 +526,9 @@ function ExperimentPageContent() {
 										childGates={childGates}
 										historyOpen={showHistory}
 										onToggleHistory={() =>
-											showHistory ? closeHistory() : openHistory()
+											showHistory
+												? closeHistory()
+												: openHistory(source.fileDataId)
 										}
 									/>
 								</PlotStateProvider>
@@ -505,7 +571,44 @@ function ExperimentPageContent() {
 										experimentId={experiment?.id}
 										files={experimentFiles}
 										canEdit={canEditExperiment}
+										fileDataId={historyFileId}
+										fileName={
+											experimentFiles.find((f) => f.id === historyFileId)
+												?.file_name
+										}
 										onClose={closeHistory}
+									/>
+								</Paper>
+							</Collapse>
+						)}
+						{/* Compensação (FE-27): mesmo overlay do histórico. */}
+						{!isMobile && (
+							<Collapse
+								in={showCompensation}
+								unmountOnExit
+								sx={{
+									position: "absolute",
+									top: 0,
+									left: 0,
+									right: 0,
+									zIndex: 20,
+								}}
+							>
+								<Paper
+									sx={(theme) => ({
+										maxHeight: "min(560px, 72vh)",
+										overflowY: "auto",
+										bgcolor: theme.palette.background.paper,
+										border: `1px solid ${theme.palette.divider}`,
+										borderTop: "none",
+										borderRadius: "0 0 16px 16px",
+										boxShadow: theme.shadows[8],
+									})}
+								>
+									<CompensationPanel
+										experimentId={experiment?.id}
+										canEdit={canEditExperiment}
+										onClose={closeCompensation}
 									/>
 								</Paper>
 							</Collapse>
@@ -556,7 +659,34 @@ function ExperimentPageContent() {
 								experimentId={experiment?.id}
 								files={experimentFiles}
 								canEdit={canEditExperiment}
+								fileDataId={historyFileId}
+								fileName={
+									experimentFiles.find((f) => f.id === historyFileId)?.file_name
+								}
 								onClose={closeHistory}
+							/>
+						</CollapsiblePanel>
+					)}
+
+					{/* Compensação no mobile: bottom sheet exclusivo. */}
+					{isMobile && (
+						<CollapsiblePanel
+							side="right"
+							open={showCompensation}
+							isMobile={isMobile}
+							onOpen={openCompensation}
+							onClose={closeCompensation}
+							label="Compensação"
+							icon={<BoltIcon style={{ fontSize: 18 }} />}
+							desktopWidth="26%"
+							desktopMinWidth={320}
+							mobileAnchor="bottom"
+							hideTrigger
+						>
+							<CompensationPanel
+								experimentId={experiment?.id}
+								canEdit={canEditExperiment}
+								onClose={closeCompensation}
 							/>
 						</CollapsiblePanel>
 					)}

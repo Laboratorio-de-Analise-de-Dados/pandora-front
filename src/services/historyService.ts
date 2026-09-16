@@ -12,6 +12,8 @@ export interface AnalysisRevision {
 	action: string
 	scope: string | null
 	target: { type: string; id: number }
+	/** Amostra que a revisão toca; null = ação experiment-wide. */
+	file_data: number | null
 	/** Frase pronta ("renomeou P1 → CD4+ em 3 amostras"). */
 	summary: string
 	author: string | null
@@ -103,10 +105,17 @@ export interface RevisionStateResponse {
 export const fetchGroupedHistory = async (
 	experimentId: number,
 	cursor?: number,
+	fileId?: number,
 ): Promise<GroupedHistoryResponse> => {
 	const res = await CytometryApi.get(
 		`/analytics/experiment/${experimentId}/history/`,
-		{ params: { grouped: 1, ...(cursor ? { cursor } : {}) } },
+		{
+			params: {
+				grouped: 1,
+				...(cursor ? { cursor } : {}),
+				...(fileId ? { file: fileId } : {}),
+			},
+		},
 	)
 	return res.data
 }

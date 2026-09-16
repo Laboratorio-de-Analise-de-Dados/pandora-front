@@ -10,11 +10,14 @@ import type { RevisionStateResponse } from "../../../services/historyService"
  * Timeline em sessões (auto-checkpoints derivados no backend, ADR-0017).
  * Paginação por cursor: `next_cursor` busca a página anterior.
  */
-export function useGroupedHistoryQuery(experimentId: number | undefined) {
+export function useGroupedHistoryQuery(
+	experimentId: number | undefined,
+	fileId?: number,
+) {
 	return useInfiniteQuery({
-		queryKey: ["history", experimentId],
+		queryKey: ["history", experimentId, fileId ?? "experiment"],
 		queryFn: async ({ pageParam }) =>
-			fetchGroupedHistory(experimentId as number, pageParam),
+			fetchGroupedHistory(experimentId as number, pageParam, fileId),
 		initialPageParam: undefined as number | undefined,
 		getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
 		enabled: !!experimentId,

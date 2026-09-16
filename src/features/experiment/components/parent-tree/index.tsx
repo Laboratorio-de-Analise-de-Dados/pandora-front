@@ -7,6 +7,7 @@ import {
 	MdCreateNewFolder as NewSubsampleIcon,
 	MdSelectAll as SelectAllIcon,
 	MdInfoOutline as InfoIcon,
+	MdOutlineBlurOn as CompensationIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -45,6 +46,7 @@ import {
 	ArchiveSubsampleDialog,
 	FileMetadataDialog,
 	MoveFileDialog,
+	SubsampleControlDialog,
 	SubsampleFormDialog,
 } from "./dialogs"
 
@@ -61,6 +63,8 @@ export default function ParentTree({
 	onRenameSubsample,
 	onArchiveSubsample,
 	onMoveFile,
+	onSetSubsampleControl,
+	channels = [],
 	source,
 }: {
 	files: ExperimentFiles[]
@@ -83,6 +87,15 @@ export default function ParentTree({
 	) => Promise<string | null>
 	onArchiveSubsample?: (subsampleId: number) => void
 	onMoveFile?: (fileDataIds: number[], subsampleId: number | null) => void
+	onSetSubsampleControl?: (
+		subsampleId: number,
+		payload: {
+			control_type: "unstained" | "single_stain" | null
+			control_channel?: string
+		},
+	) => Promise<string | null>
+	/** Canais do experimento — alimenta o select do controle single-stain. */
+	channels?: string[]
 }) {
 	const {
 		handlers,
@@ -97,6 +110,7 @@ export default function ParentTree({
 		metadataDialog,
 		subsampleForm,
 		archiveDialog,
+		controlDialog,
 	} = useTreeInteractions({
 		files,
 		onSelect,
@@ -109,6 +123,7 @@ export default function ParentTree({
 		onRenameSubsample,
 		onArchiveSubsample,
 		onMoveFile,
+		onSetSubsampleControl,
 	})
 
 	const groups = useMemo(
@@ -356,6 +371,18 @@ export default function ParentTree({
 						</ListItemText>
 					</MuiMenuItem>
 				)}
+				{onSetSubsampleControl && (
+					<MuiMenuItem onClick={subsampleMenu.control} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<CompensationIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							{subsampleMenu.subsample?.control_type
+								? "Editar controle de compensação…"
+								: "Marcar como controle…"}
+						</ListItemText>
+					</MuiMenuItem>
+				)}
 				{onArchiveSubsample && (
 					<MuiMenuItem onClick={subsampleMenu.archive} dense>
 						<ListItemIcon sx={{ minWidth: 28 }}>
@@ -434,6 +461,15 @@ export default function ParentTree({
 				file={metadataDialog.file}
 				onClose={metadataDialog.close}
 			/>
+
+			{controlDialog.submit && (
+				<SubsampleControlDialog
+					target={controlDialog.target}
+					channels={channels}
+					onSubmit={controlDialog.submit}
+					onClose={controlDialog.close}
+				/>
+			)}
 
 			<Dialog
 				open={disableDialog.targets.length > 0}

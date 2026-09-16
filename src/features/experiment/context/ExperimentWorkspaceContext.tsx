@@ -93,10 +93,14 @@ export function useExperimentWorkspace(): ExperimentWorkspaceValue {
 
 export function ExperimentWorkspaceProvider({
 	children,
+	experimentId: experimentIdProp,
 }: {
 	children: React.ReactNode
+	/** Fora da rota do workspace (ex.: drawer no card da listagem). */
+	experimentId?: string
 }) {
-	const { id: experimentId = "" } = useParams<{ id: string }>()
+	const { id: routeId = "" } = useParams<{ id: string }>()
+	const experimentId = experimentIdProp ?? routeId
 
 	const { data: experiment, isLoading } = useExperimentQuery(experimentId)
 	const [showInactiveFiles, setShowInactiveFiles] = useState(false)

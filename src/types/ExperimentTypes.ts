@@ -18,6 +18,8 @@ export interface Experiment {
 	progress?: number | null
 	/** Se a API tem preview (histograma baixa-res) disponível para o card. */
 	preview_available?: boolean
+	/** BE-22: alguma amostra ativa traz matriz de compensação embutida. */
+	compensated?: boolean
 }
 
 export type Organization = {
@@ -38,6 +40,10 @@ export interface Subsample {
 	created_at: string
 	/** Só amostras ativas. */
 	files_count: number
+	/** BE-22/ADR-0019: subsample marcado como controle de compensação. */
+	control_type?: "unstained" | "single_stain" | null
+	/** Canal fluorescente coberto — obrigatório quando single_stain. */
+	control_channel?: string
 }
 
 export interface ExperimentFiles {
@@ -48,6 +54,8 @@ export interface ExperimentFiles {
 	deactivated_at: string | null
 	/** FK do subsample — a API serializa como id (null = "Sem subsample"). */
 	subsample?: number | null
+	/** BE-22: a amostra traz $SPILLOVER/$COMP nos headers FCS. */
+	has_embedded_compensation?: boolean
 }
 
 /** Nó selecionado na árvore/plot: uma amostra ou um gate dentro dela. */
