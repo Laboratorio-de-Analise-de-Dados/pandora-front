@@ -191,9 +191,9 @@ export default function CollapsiblePanel({
 					{children}
 				</Box>
 			)}
-			{/* Aba/marca-página: sempre visível; grudada na borda interna do
-			    painel quando aberto, servindo de botão pra fechar. */}
-			{!hideTrigger && (
+			{/* Aba/marca-página no desktop só aparece quando o painel está
+			    fechado — aberto, não há botão de esconder (FE-26). */}
+			{!hideTrigger && !open && (
 				<Box
 					sx={{
 						position: "absolute",

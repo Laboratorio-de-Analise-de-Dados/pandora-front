@@ -27,7 +27,7 @@ export default function TreeNode({
 	defaultExpanded?: boolean
 	/** Amostra desabilitada: esmaecida em cinza (text.disabled do tema). */
 	inactive?: boolean
-	/** Fonte carregada no plot: pill verde com borda esquerda (FE-26). */
+	/** Fonte carregada no plot: faixa verde translúcida full-width (FE-26). */
 	selected?: boolean
 }) {
 	const [expanded, setExpanded] = useState(defaultExpanded)
@@ -56,11 +56,9 @@ export default function TreeNode({
 					pr: 0.5,
 					py: 0.25,
 					cursor: "pointer",
-					borderRadius: 1.5,
 					userSelect: "none",
 					...(selected && {
 						backgroundColor: "rgba(16, 185, 129, 0.12)",
-						boxShadow: `inset 3px 0 0 ${theme.palette.primary.main}`,
 						color: theme.palette.text.primary,
 					}),
 					...(inactive && {
