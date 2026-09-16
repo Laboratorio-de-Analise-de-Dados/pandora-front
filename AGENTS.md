@@ -88,6 +88,15 @@ Antes de codar em área de decisão arquitetural, consulte `docs/adr/` (índice 
 - Cliente HTTP centralizado em `src/API/` (Axios, `CytometryApi`).
 - `tsconfig.tsbuildinfo` é gerado (incremental) — não edite.
 
+## Sessões paralelas
+
+Vários agentes podem trabalhar neste repo ao mesmo tempo. **Antes de
+codar, leia `docs/TRACKER.md`** — ele lista o que está em andamento, quem
+é o responsável e qual área de arquivos cada frente toca. Se a sua
+feature conflita com uma linha ativa, pegue outra ou alinhe antes. Ao
+assumir trabalho novo, registre sua linha no tracker no mesmo commit;
+ao concluir, atualize.
+
 ## Git
 
 - `main` é protegida — trabalhe em `feature/*` ou `devin/*`, nunca commit direto
