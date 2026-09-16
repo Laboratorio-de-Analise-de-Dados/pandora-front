@@ -149,6 +149,35 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 				},
 			},
 		},
+		MuiCssBaseline: {
+			styleOverrides: (theme) => ({
+				// Scrollbar fina e discreta em toda a app (FE-26): a barra
+				// nativa cinza-clara descasava dos painéis escuros.
+				"*": {
+					scrollbarWidth: "thin",
+					scrollbarColor:
+						theme.palette.mode === "dark"
+							? "#3F3F46 transparent"
+							: "#CFCFD4 transparent",
+				},
+				"*::-webkit-scrollbar": {
+					width: 8,
+					height: 8,
+				},
+				"*::-webkit-scrollbar-track": {
+					backgroundColor: "transparent",
+				},
+				"*::-webkit-scrollbar-thumb": {
+					backgroundColor:
+						theme.palette.mode === "dark" ? "#3F3F46" : "#CFCFD4",
+					borderRadius: 8,
+				},
+				"*::-webkit-scrollbar-thumb:hover": {
+					backgroundColor:
+						theme.palette.mode === "dark" ? "#52525B" : "#B5B5BC",
+				},
+			}),
+		},
 		MuiTab: {
 			styleOverrides: {
 				root: {
