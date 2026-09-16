@@ -4,10 +4,7 @@ import {
 	Button,
 	CircularProgress,
 	LinearProgress,
-	MenuItem,
-	Select,
 	Typography,
-	useMediaQuery,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -40,13 +37,9 @@ import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
 import GateEditDialog from "../../../gate/components/gate-edit-dialog"
 import ReshapeScopeDialog from "./components/ReshapeScopeDialog"
-import GateToolToggle from "./components/GateToolToggle"
-import {
-	PlotSettingsButton,
-	PlotSettingsPanel,
-} from "./components/PlotSettingsPanel"
+import { PlotSettingsPanel } from "./components/PlotSettingsPanel"
+import PlotToolbar from "./components/PlotToolbar"
 import GateContextMenu from "./components/GateContextMenu"
-import AxisSelect from "./components/AxisSelect"
 import PolygonEditOverlay from "./components/PolygonEditOverlay"
 
 // Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
@@ -62,6 +55,9 @@ interface ScatterPlotProps {
 	parentName?: string
 	siblingGateNames?: string[]
 	childGates?: Gate[]
+	/** Toggle do painel de histórico (ícone na barra do plot, FE-26). */
+	historyOpen?: boolean
+	onToggleHistory?: () => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -73,6 +69,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	parentName,
 	siblingGateNames = [],
 	childGates = [],
+	historyOpen,
+	onToggleHistory,
 }) => {
 	const plotState = usePlotContext()
 
@@ -113,7 +111,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}, [experimentFiles, fileDataId, subsamples])
 
 	const theme = useTheme()
-	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 	const [settingsOpen, setSettingsOpen] = useState(false)
 
 	// Gate edit dialog state
@@ -488,318 +485,281 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						width: "100%",
 					}}
 				>
+					{/* Coluna do plot: barra de controle + gráfico centrados
+					    (FE-26 — organização do mockup). */}
 					<Box
 						sx={{
 							display: "flex",
-							flexDirection: { xs: "column", md: "row" },
+							flexDirection: "column",
 							alignItems: "center",
-							justifyContent: "center",
-							gap: { xs: "0.5rem", md: "1rem" },
+							gap: "0.5rem",
+							minWidth: 0,
+							flexShrink: 1,
 							width: "100%",
 						}}
 					>
-						{/* Coluna do plot: barras de controle + gráfico ficam
-						    sempre centrados no gráfico, mesmo com o painel de
-						    configs aberto (FE-26 — organização do mockup). */}
+						{/* Barra superior: modo + eixos + tipo de gate +
+							    escalas/limites + settings e histórico (FE-26). */}
+						<PlotToolbar
+							values={values}
+							plotMode={plotMode}
+							onPlotModeChange={setPlotMode}
+							xAxis={xAxis}
+							yAxis={yAxis}
+							onSelectX={handleSelectX}
+							onSelectY={handleSelectY}
+							tool={tool}
+							onToolChange={setTool}
+							xScale={xScale}
+							yScale={yScale}
+							onXScaleChange={setXScale}
+							onYScaleChange={setYScale}
+							xMin={xMin}
+							xMax={xMax}
+							yMin={yMin}
+							yMax={yMax}
+							onXMinChange={setXMin}
+							onXMaxChange={setXMax}
+							onYMinChange={setYMin}
+							onYMaxChange={setYMax}
+							controlsEnabled={settingsAvailable}
+							settingsOpen={settingsOpen}
+							onToggleSettings={() => setSettingsOpen((prev) => !prev)}
+							historyOpen={historyOpen}
+							onToggleHistory={onToggleHistory}
+						/>
 						<Box
-							sx={{
-								display: "flex",
-								flexDirection: "column",
-								alignItems: "center",
-								gap: "0.5rem",
-								minWidth: 0,
+							ref={plotContainerRef}
+							onContextMenu={handleContextMenu}
+							sx={(theme) => ({
+								width: {
+									xs: "min(95vw, 480px)",
+									md: "min(70vh, 560px)",
+								},
+								maxWidth: "100%",
+								aspectRatio: "1 / 1",
 								flexShrink: 1,
-							}}
+								minWidth: 0,
+								position: "relative",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								// Separa o plot do canvas (FE-26): superfície com
+								// borda suave + raio — "poço" escuro no dark.
+								bgcolor: "background.paper",
+								border: `1px solid ${theme.palette.divider}`,
+								borderRadius: 3,
+								boxShadow: theme.shadows[2],
+								overflow: "hidden",
+							})}
 						>
-							{/* Barra superior: modo + canal X vs canal Y + configs */}
-							<Box
-								sx={{
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									flexWrap: "wrap",
-									gap: { xs: 0.5, sm: 1.5 },
-									width: "100%",
-								}}
-							>
-								<Select
-									value={plotMode}
-									onChange={(e) => setPlotMode(e.target.value as PlotMode)}
-									size="small"
-									variant="standard"
-									disableUnderline
-									sx={{ fontWeight: 600 }}
+							{isError && !data ? (
+								<Alert
+									severity={
+										densityError?.missingChannels.length ? "warning" : "error"
+									}
+									sx={{ maxWidth: 480 }}
 								>
-									<MenuItem value="heatmap">Heatmap</MenuItem>
-									<MenuItem value="scatter">Scatter</MenuItem>
-									<MenuItem value="histogram">Histograma</MenuItem>
-								</Select>
-								<AxisSelect
-									value={xAxis}
-									options={values}
-									onChange={handleSelectX}
-									size="small"
-								/>
-								{plotMode !== "histogram" && (
-									<>
-										<Typography variant="caption" color="text.secondary">
-											vs
-										</Typography>
-										<AxisSelect
-											value={yAxis}
-											options={values}
-											onChange={handleSelectY}
-											size="small"
-										/>
-									</>
-								)}
-								{settingsAvailable && (
-									<PlotSettingsButton
-										open={settingsOpen}
-										onToggle={() => setSettingsOpen((prev) => !prev)}
-									/>
-								)}
-							</Box>
-							<Box
-								ref={plotContainerRef}
-								onContextMenu={handleContextMenu}
-								sx={(theme) => ({
-									width: {
-										xs: "min(95vw, 480px)",
-										md: "min(70vh, 560px)",
-									},
-									maxWidth: "100%",
-									aspectRatio: "1 / 1",
-									flexShrink: 1,
-									minWidth: 0,
-									position: "relative",
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									// Separa o plot do canvas (FE-26): superfície com
-									// borda suave + raio — "poço" escuro no dark.
-									bgcolor: "background.paper",
-									border: `1px solid ${theme.palette.divider}`,
-									borderRadius: 3,
-									boxShadow: theme.shadows[2],
-									overflow: "hidden",
-								})}
-							>
-								{isError && !data ? (
-									<Alert
-										severity={
-											densityError?.missingChannels.length ? "warning" : "error"
-										}
-										sx={{ maxWidth: 480 }}
-									>
-										{densityError?.message ?? "Erro ao carregar dados."}
-									</Alert>
-								) : hasData ? (
-									<Plot
-										key={
-											tool === "edit" || reshapingGateId !== null
-												? "edit-mode"
-												: `draw-mode-${drawRevision}`
-										}
-										data={[...plotData, ...gateHoverTraces]}
-										useResizeHandler
-										style={{ width: "100%", height: "100%" }}
-										config={
-											tool === "edit" || reshapingGateId !== null
+									{densityError?.message ?? "Erro ao carregar dados."}
+								</Alert>
+							) : hasData ? (
+								<Plot
+									key={
+										tool === "edit" || reshapingGateId !== null
+											? "edit-mode"
+											: `draw-mode-${drawRevision}`
+									}
+									data={[...plotData, ...gateHoverTraces]}
+									useResizeHandler
+									style={{ width: "100%", height: "100%" }}
+									config={
+										tool === "edit" || reshapingGateId !== null
+											? {
+													scrollZoom: false,
+													displayModeBar: false,
+													edits: {
+														shapePosition: true,
+														annotationPosition: false,
+														annotationTail: false,
+														annotationText: false,
+														axisTitleText: false,
+														colorbarPosition: false,
+														colorbarTitleText: false,
+														legendPosition: false,
+														legendText: false,
+														titleText: false,
+													},
+												}
+											: { scrollZoom: false, displayModeBar: false }
+									}
+									layout={{
+										dragmode,
+										shapes: editableShapes as Plotly.Layout["shapes"],
+										...(plotMode === "histogram"
+											? { selectdirection: "h" as const }
+											: {}),
+										xaxis: {
+											title: {
+												text: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
+											},
+											...(xTicks
 												? {
-														scrollZoom: false,
-														displayModeBar: false,
-														edits: {
-															shapePosition: true,
-															annotationPosition: false,
-															annotationTail: false,
-															annotationText: false,
-															axisTitleText: false,
-															colorbarPosition: false,
-															colorbarTitleText: false,
-															legendPosition: false,
-															legendText: false,
-															titleText: false,
-														},
+														tickmode: "array" as const,
+														tickvals: xTicks.tickvals,
+														ticktext: xTicks.ticktext,
 													}
-												: { scrollZoom: false, displayModeBar: false }
-										}
-										layout={{
-											dragmode,
-											shapes: editableShapes as Plotly.Layout["shapes"],
-											...(plotMode === "histogram"
-												? { selectdirection: "h" as const }
 												: {}),
-											xaxis: {
-												title: {
-													text: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
-												},
-												...(xTicks
-													? {
-															tickmode: "array" as const,
-															tickvals: xTicks.tickvals,
-															ticktext: xTicks.ticktext,
-														}
-													: {}),
-												range: xAxisRange,
-												autorange: false,
-												fixedrange: true,
-												gridcolor: theme.palette.divider,
-												linecolor: theme.palette.divider,
-												zerolinecolor: theme.palette.divider,
+											range: xAxisRange,
+											autorange: false,
+											fixedrange: true,
+											gridcolor: theme.palette.divider,
+											linecolor: theme.palette.divider,
+											zerolinecolor: theme.palette.divider,
+										},
+										yaxis: {
+											title: {
+												text:
+													plotMode === "histogram"
+														? "Contagem"
+														: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
 											},
-											yaxis: {
-												title: {
-													text:
-														plotMode === "histogram"
-															? "Contagem"
-															: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
-												},
-												...(plotMode !== "histogram" && yTicks
-													? {
-															tickmode: "array" as const,
-															tickvals: yTicks.tickvals,
-															ticktext: yTicks.ticktext,
-														}
-													: {}),
-												...(plotMode !== "histogram"
-													? { range: yAxisRange, autorange: false }
-													: {}),
-												fixedrange: true,
-												gridcolor: theme.palette.divider,
-												linecolor: theme.palette.divider,
-												zerolinecolor: theme.palette.divider,
+											...(plotMode !== "histogram" && yTicks
+												? {
+														tickmode: "array" as const,
+														tickvals: yTicks.tickvals,
+														ticktext: yTicks.ticktext,
+													}
+												: {}),
+											...(plotMode !== "histogram"
+												? { range: yAxisRange, autorange: false }
+												: {}),
+											fixedrange: true,
+											gridcolor: theme.palette.divider,
+											linecolor: theme.palette.divider,
+											zerolinecolor: theme.palette.divider,
+										},
+										autosize: true,
+										hovermode: "closest",
+										hoverlabel: {
+											bgcolor: theme.palette.background.paper,
+											bordercolor: theme.palette.divider,
+											font: {
+												color: theme.palette.text.primary,
+												size: 12,
 											},
-											autosize: true,
-											hovermode: "closest",
-											hoverlabel: {
-												bgcolor: theme.palette.background.paper,
-												bordercolor: theme.palette.divider,
-												font: {
-													color: theme.palette.text.primary,
-													size: 12,
-												},
-											},
-											margin: { l: 60, r: 20, t: 20, b: 60 },
-											plot_bgcolor: theme.palette.background.default,
-											paper_bgcolor: theme.palette.background.default,
-											font: { color: theme.palette.text.secondary },
-											bargap: 0,
-										}}
-										onSelected={
-											handleSelectedArea as (
-												event: Readonly<Plotly.PlotSelectionEvent>,
-											) => void
-										}
-										onClick={handlePlotClickWrapper}
-										onRelayout={
-											handleRelayout as unknown as (
-												event: Readonly<Plotly.PlotRelayoutEvent>,
-											) => void
-										}
+										},
+										margin: { l: 60, r: 20, t: 20, b: 60 },
+										plot_bgcolor: theme.palette.background.default,
+										paper_bgcolor: theme.palette.background.default,
+										font: { color: theme.palette.text.secondary },
+										bargap: 0,
+									}}
+									onSelected={
+										handleSelectedArea as (
+											event: Readonly<Plotly.PlotSelectionEvent>,
+										) => void
+									}
+									onClick={handlePlotClickWrapper}
+									onRelayout={
+										handleRelayout as unknown as (
+											event: Readonly<Plotly.PlotRelayoutEvent>,
+										) => void
+									}
+								/>
+							) : isLoading ? null : (
+								<Typography>
+									{data && data.total_events === 0
+										? "O gate não contém eventos nesta amostra."
+										: "Sem dados para os eixos selecionados."}
+								</Typography>
+							)}
+							{isLoading && !hasData && (
+								<Box
+									sx={{
+										position: "absolute",
+										inset: 0,
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										zIndex: 20,
+									}}
+								>
+									<CircularProgress />
+								</Box>
+							)}
+							{(isLoading || isFetching) && (
+								<LinearProgress
+									sx={{
+										position: "absolute",
+										top: 0,
+										left: 0,
+										right: 0,
+										height: 3,
+										zIndex: 26,
+										borderTopLeftRadius: 4,
+										borderTopRightRadius: 4,
+									}}
+								/>
+							)}
+							{(tool === "edit" || reshapingGateId !== null) &&
+								editingPolyGate && (
+									<PolygonEditOverlay
+										editingPolyGate={editingPolyGate}
+										vertices={editingVertices}
+										verticesRef={editingVerticesRef}
+										effXScale={effXScale}
+										effYScale={effYScale}
+										containerRef={plotContainerRef}
+										dataToPixel={dataToPixel}
+										pixelToData={pixelToData}
+										onVerticesChange={setEditingVertices}
+										onCommit={savePolygonVertices}
 									/>
-								) : isLoading ? null : (
-									<Typography>
-										{data && data.total_events === 0
-											? "O gate não contém eventos nesta amostra."
-											: "Sem dados para os eixos selecionados."}
-									</Typography>
 								)}
-								{isLoading && !hasData && (
-									<Box
-										sx={{
-											position: "absolute",
-											inset: 0,
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "center",
-											zIndex: 20,
-										}}
+							{reshapingGateId !== null && (
+								<Box
+									sx={{
+										position: "absolute",
+										top: 12,
+										right: 12,
+										zIndex: 30,
+									}}
+								>
+									<Button
+										variant="contained"
+										size="small"
+										onClick={handleExitReshape}
 									>
-										<CircularProgress />
-									</Box>
-								)}
-								{(isLoading || isFetching) && (
-									<LinearProgress
-										sx={{
-											position: "absolute",
-											top: 0,
-											left: 0,
-											right: 0,
-											height: 3,
-											zIndex: 26,
-											borderTopLeftRadius: 4,
-											borderTopRightRadius: 4,
-										}}
-									/>
-								)}
-								{(tool === "edit" || reshapingGateId !== null) &&
-									editingPolyGate && (
-										<PolygonEditOverlay
-											editingPolyGate={editingPolyGate}
-											vertices={editingVertices}
-											verticesRef={editingVerticesRef}
-											effXScale={effXScale}
-											effYScale={effYScale}
-											containerRef={plotContainerRef}
-											dataToPixel={dataToPixel}
-											pixelToData={pixelToData}
-											onVerticesChange={setEditingVertices}
-											onCommit={savePolygonVertices}
-										/>
-									)}
-								{reshapingGateId !== null && (
-									<Box
-										sx={{
-											position: "absolute",
-											top: 12,
-											right: 12,
-											zIndex: 30,
-										}}
-									>
-										<Button
-											variant="contained"
-											size="small"
-											onClick={handleExitReshape}
-										>
-											Concluir
-										</Button>
-									</Box>
-								)}
-							</Box>
-							{/* Barra inferior do plot (FE-26): ferramentas de gate
-							    centradas no gráfico, como no mockup. */}
-							{tool !== "edit" && reshapingGateId === null && (
-								<GateToolToggle
-									value={tool}
-									onChange={setTool}
+										Concluir
+									</Button>
+								</Box>
+							)}
+							{/* Configurações do plot: card overlay no canto do
+								    gráfico, translúcido durante o ajuste das
+								    escalas — mesma dinâmica no desktop e mobile. */}
+							{settingsAvailable && (
+								<PlotSettingsPanel
+									open={settingsOpen}
+									onClose={() => setSettingsOpen(false)}
 									plotMode={plotMode}
+									xScale={xScale}
+									yScale={yScale}
+									cutoff={cutoff}
+									xMin={xMin}
+									xMax={xMax}
+									yMin={yMin}
+									yMax={yMax}
+									onXScaleChange={setXScale}
+									onYScaleChange={setYScale}
+									onCutoffChange={setCutoff}
+									onXMinChange={setXMin}
+									onXMaxChange={setXMax}
+									onYMinChange={setYMin}
+									onYMaxChange={setYMax}
+									onPlotModeChange={setPlotMode}
 								/>
 							)}
 						</Box>
-						{settingsAvailable && (
-							<PlotSettingsPanel
-								open={settingsOpen}
-								onClose={() => setSettingsOpen(false)}
-								variant={isMobile ? "drawer" : "inline"}
-								plotMode={plotMode}
-								xScale={xScale}
-								yScale={yScale}
-								cutoff={cutoff}
-								xMin={xMin}
-								xMax={xMax}
-								yMin={yMin}
-								yMax={yMax}
-								onXScaleChange={setXScale}
-								onYScaleChange={setYScale}
-								onCutoffChange={setCutoff}
-								onXMinChange={setXMin}
-								onXMaxChange={setXMax}
-								onYMinChange={setYMin}
-								onYMaxChange={setYMax}
-								onPlotModeChange={setPlotMode}
-							/>
-						)}
 					</Box>
 				</Box>
 			</Box>

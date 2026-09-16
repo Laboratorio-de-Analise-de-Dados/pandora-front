@@ -403,17 +403,6 @@ function ExperimentPageContent() {
 												</Button>
 											</Tooltip>
 										)}
-									<Tooltip title="Histórico e checkpoints">
-										<IconButton
-											size="small"
-											onClick={() =>
-												showHistory ? closeHistory() : openHistory()
-											}
-											sx={showHistory ? { color: "primary.main" } : undefined}
-										>
-											<HistoryIcon />
-										</IconButton>
-									</Tooltip>
 								</Box>
 							</Box>
 						)}
@@ -464,6 +453,10 @@ function ExperimentPageContent() {
 										}
 										siblingGateNames={siblingGateNames}
 										childGates={childGates}
+										historyOpen={showHistory}
+										onToggleHistory={() =>
+											showHistory ? closeHistory() : openHistory()
+										}
 									/>
 								</PlotStateProvider>
 							) : (
