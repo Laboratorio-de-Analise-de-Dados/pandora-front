@@ -82,12 +82,12 @@ interface HoverTrace {
 const asHoverTrace = (t: Plotly.Data): HoverTrace => t as unknown as HoverTrace
 
 describe("buildGateHoverTraces", () => {
-	it("retângulo vira trace de fill com hoveron fills", () => {
+	it("retângulo vira trace de fill com hoveron points+fills", () => {
 		const shapes = [makeShape({ x0: 1, x1: 5, y0: 2, y1: 8 })]
 		const traces = buildGateHoverTraces(shapes)
 		expect(traces).toHaveLength(1)
 		const t = asHoverTrace(traces[0])
-		expect(t.hoveron).toBe("fills")
+		expect(t.hoveron).toBe("points+fills")
 		expect(t.fill).toBe("toself")
 		expect(t.x).toEqual([1, 5, 5, 1])
 		expect(t.y).toEqual([2, 2, 8, 8])

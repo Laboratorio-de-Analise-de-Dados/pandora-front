@@ -50,7 +50,11 @@ const fillTrace = (
 	fill: "toself",
 	fillcolor: "rgba(0,0,0,0)",
 	line: { width: 0, color: "rgba(0,0,0,0)" },
-	hoveron: "fills",
+	// Peculiaridade do plotly: com hoveron === "fills" o supplyDefaults ignora
+	// o hovertemplate e o tooltip cai no nome do trace. "points+fills" aplica o
+	// template tanto na área quanto nos vértices do polígono. A union do
+	// Plotly.Data não declara a combinação (válida em runtime) — cast pontual.
+	hoveron: "points+fills" as unknown as "fills",
 	hovertemplate,
 	name: HOVER_TRACE_NAME,
 	showlegend: false,
@@ -59,8 +63,9 @@ const fillTrace = (
 /**
  * Converte os shapes dos gates em traces transparentes que só existem para o
  * hover: shapes do Plotly não emitem eventos, então cada gate vira um polígono
- * preenchido invisível com `hoveron: "fills"` (tooltip em qualquer ponto da
- * área) ou, no caso do quadrante, um marcador invisível no centro da cruz.
+ * preenchido invisível com `hoveron: "points+fills"` (tooltip em qualquer
+ * ponto da área) ou, no caso do quadrante, um marcador invisível no centro
+ * da cruz.
  */
 export const buildGateHoverTraces = (
 	shapes: GateShape[],
