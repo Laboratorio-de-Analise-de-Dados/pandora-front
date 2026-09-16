@@ -26,8 +26,9 @@
 | [FE-22](FE-22-density-erro-canais.md)                 | Erro real e pré-checagem de canais no plot            | Implementado em `fix/density-missing-channel` |
 | [FE-23](FE-23-editar-gate-pela-arvore.md)             | Editar gate (nome/cor/escopo) a partir da árvore      | Implementado em `fix/density-missing-channel` |
 | [FE-24](FE-24-detalhes-edicao-experimento-card.md)    | Detalhes e edição do experimento no card              | Implementado em `fix/density-missing-channel` |
-| [FE-25](FE-25-painel-historico-checkpoints.md)        | Painel de histórico e checkpoints de análise          | Não iniciado (depende de BE-20)               |
-| [FE-26](FE-26-tema-visual-pandora.md)                 | Refactor visual: tema dark-first verde/preto/branco   | Não iniciado (validação local antes de prod)  |
+| [FE-25](FE-25-painel-historico-checkpoints.md)        | Painel de histórico e checkpoints de análise          | Implementado em `fix/density-missing-channel` |
+| [FE-26](FE-26-tema-visual-pandora.md)                 | Refactor visual: tema dark-first verde/preto/branco   | Em andamento em `refactor/tema-pandora-dark`  |
+| [FE-27](FE-27-indicadores-historico-compensacao.md)   | Ícones de compensação + histórico ao lado do arquivo  | Não iniciado (backend BE-22 pronto)           |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
