@@ -150,15 +150,15 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 			},
 		},
 		MuiCssBaseline: {
-			styleOverrides: (theme) => ({
-				// Scrollbar fina e discreta em toda a app (FE-26): a barra
-				// nativa cinza-clara descasava dos painéis escuros.
+			// Scrollbar fina e discreta em toda a app (FE-26): a barra
+			// nativa cinza-clara descasava dos painéis escuros. Objeto
+			// estático fechando sobre `mode` — com styled-engine-sc a
+			// interpolação de função recebe {theme}, não o tema direto.
+			styleOverrides: {
 				"*": {
 					scrollbarWidth: "thin",
 					scrollbarColor:
-						theme.palette.mode === "dark"
-							? "#3F3F46 transparent"
-							: "#CFCFD4 transparent",
+						mode === "dark" ? "#3F3F46 transparent" : "#CFCFD4 transparent",
 				},
 				"*::-webkit-scrollbar": {
 					width: 8,
@@ -168,15 +168,13 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 					backgroundColor: "transparent",
 				},
 				"*::-webkit-scrollbar-thumb": {
-					backgroundColor:
-						theme.palette.mode === "dark" ? "#3F3F46" : "#CFCFD4",
+					backgroundColor: mode === "dark" ? "#3F3F46" : "#CFCFD4",
 					borderRadius: 8,
 				},
 				"*::-webkit-scrollbar-thumb:hover": {
-					backgroundColor:
-						theme.palette.mode === "dark" ? "#52525B" : "#B5B5BC",
+					backgroundColor: mode === "dark" ? "#52525B" : "#B5B5BC",
 				},
-			}),
+			},
 		},
 		MuiTab: {
 			styleOverrides: {
