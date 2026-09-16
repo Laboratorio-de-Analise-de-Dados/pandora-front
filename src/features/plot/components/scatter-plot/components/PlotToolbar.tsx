@@ -5,6 +5,7 @@ import {
 	MenuItem,
 	Popover,
 	Select,
+	Switch,
 	TextField,
 	Tooltip,
 	Typography,
@@ -14,7 +15,7 @@ import {
 	MdPentagon as PolygonIcon,
 	MdAddBox as QuadrantIcon,
 	MdHistory as HistoryIcon,
-	MdTune as LimitsIcon,
+	MdArrowDropDown as ChevronIcon,
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
@@ -65,7 +66,52 @@ interface AxisLimitsControlProps {
 	onMaxChange: (v: string) => void
 }
 
-/** Dropdown de limites do eixo: botão compacto abre popover com min/max. */
+/** Linha Min/Max com toggle auto↔manual — string vazia no estado = automático. */
+const BoundRow: React.FC<{
+	label: string
+	value: string
+	onChange: (v: string) => void
+}> = ({ label, value, onChange }) => {
+	const auto = value === ""
+	return (
+		<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+			<Typography
+				variant="caption"
+				fontWeight={600}
+				color="text.secondary"
+				sx={{ width: 30 }}
+			>
+				{label}
+			</Typography>
+			<TextField
+				type="number"
+				size="small"
+				value={value}
+				disabled={auto}
+				placeholder="auto"
+				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+					onChange(e.target.value)
+				}
+				sx={{
+					flex: 1,
+					"& .MuiInputBase-input": {
+						fontSize: "0.75rem",
+						padding: "4px 8px",
+					},
+				}}
+			/>
+			<Tooltip title={auto ? "Fixar valor manual" : "Voltar ao automático"}>
+				<Switch
+					size="small"
+					checked={!auto}
+					onChange={(_, manual) => onChange(manual ? "0" : "")}
+				/>
+			</Tooltip>
+		</Box>
+	)
+}
+
+/** Dropdown de limites do eixo — mesmo display dos selects (texto + chevron). */
 const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 	axis,
 	min,
@@ -80,28 +126,27 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 			: `${axis}: ${min || "…"}–${max || "…"}`
 	return (
 		<>
-			<Tooltip title={`Limites do eixo ${axis} (vazio = automático)`}>
+			<Tooltip title={`Limites do eixo ${axis}`}>
 				<Box
 					role="button"
+					aria-haspopup="true"
+					aria-expanded={Boolean(anchor)}
 					onClick={(e) => setAnchor(e.currentTarget)}
 					sx={(theme) => ({
 						display: "flex",
 						alignItems: "center",
-						gap: 0.25,
 						cursor: "pointer",
 						fontWeight: 600,
-						fontSize: "0.8rem",
 						color:
 							min === "" && max === ""
 								? theme.palette.text.secondary
 								: theme.palette.text.primary,
-						borderRadius: 1,
-						px: 0.5,
 						"&:hover": { color: theme.palette.primary.main },
+						"& svg": { fontSize: 20 },
 					})}
 				>
-					<LimitsIcon style={{ fontSize: 14 }} />
 					{label}
+					<ChevronIcon />
 				</Box>
 			</Tooltip>
 			<Popover
@@ -109,7 +154,7 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				open={Boolean(anchor)}
 				onClose={() => setAnchor(null)}
 				anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-				slotProps={{ paper: { sx: { p: 1.5, width: 220 } } }}
+				slotProps={{ paper: { sx: { p: 1.5, width: 240 } } }}
 			>
 				<Typography
 					variant="caption"
@@ -119,41 +164,9 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				>
 					Limites do eixo {axis}
 				</Typography>
-				<Box sx={{ display: "flex", gap: 1 }}>
-					<TextField
-						label="Min"
-						type="number"
-						size="small"
-						value={min}
-						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-							onMinChange(e.target.value)
-						}
-						sx={{
-							flex: 1,
-							"& .MuiInputBase-input": {
-								fontSize: "0.75rem",
-								padding: "4px 8px",
-							},
-							"& .MuiInputLabel-root": { fontSize: "0.7rem" },
-						}}
-					/>
-					<TextField
-						label="Max"
-						type="number"
-						size="small"
-						value={max}
-						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-							onMaxChange(e.target.value)
-						}
-						sx={{
-							flex: 1,
-							"& .MuiInputBase-input": {
-								fontSize: "0.75rem",
-								padding: "4px 8px",
-							},
-							"& .MuiInputLabel-root": { fontSize: "0.7rem" },
-						}}
-					/>
+				<Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+					<BoundRow label="Min" value={min} onChange={onMinChange} />
+					<BoundRow label="Max" value={max} onChange={onMaxChange} />
 				</Box>
 			</Popover>
 		</>
