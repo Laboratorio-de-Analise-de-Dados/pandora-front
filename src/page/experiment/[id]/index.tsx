@@ -51,6 +51,7 @@ import {
 	MdFlashOn as BoltIcon,
 } from "react-icons/md"
 import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../utils/experimentFile"
+import type { UpdateExperimentPayload } from "../../../services/experimentService"
 
 function ExperimentPageContent() {
 	const {
@@ -109,11 +110,7 @@ function ExperimentPageContent() {
 	const [editOpen, setEditOpen] = useState(false)
 	const [editError, setEditError] = useState<string | null>(null)
 
-	const handleSaveExperiment = async (payload: {
-		title: string
-		type: string
-		values: string[]
-	}) => {
+	const handleSaveExperiment = async (payload: UpdateExperimentPayload) => {
 		const error = await handleUpdateExperiment(payload)
 		if (error) {
 			setEditError(error)

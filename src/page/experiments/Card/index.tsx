@@ -122,21 +122,26 @@ export default function ExperimentCard({
 				/>
 			)
 		}
+		// "new" (BE-24) = criado sem arquivo — não está na fila de nada,
+		// está vazio esperando o usuário subir amostras.
+		if (experiment.status === "new") {
+			return (
+				<Chip
+					label="Sem amostras"
+					size="small"
+					variant="outlined"
+					sx={{ height: 22, fontSize: "0.7rem" }}
+				/>
+			)
+		}
 		if (
 			experiment.status === "processing" ||
-			experiment.status === "uploading" ||
-			experiment.status === "new"
+			experiment.status === "uploading"
 		) {
 			return (
 				<Chip
 					icon={<CircularProgress size={12} color="inherit" thickness={6} />}
-					label={
-						experiment.status === "new"
-							? "Na fila"
-							: experiment.status === "uploading"
-								? "Enviando"
-								: "Processando"
-					}
+					label={experiment.status === "uploading" ? "Enviando" : "Processando"}
 					size="small"
 					color="primary"
 					variant="outlined"

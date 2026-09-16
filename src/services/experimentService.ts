@@ -18,9 +18,26 @@ export const fetchExperiment = async (id: string): Promise<Experiment> => {
 export interface ExperimentInitPayload {
 	title: string
 	type: string
+	description?: string
 	totalChunks: number
 	fileName?: string
 	organizationId?: number | null
+}
+
+/** Criação sem arquivo (BE-24): o experimento nasce vazio e as amostras
+ * chegam depois via "adicionar arquivos" (fluxo /files/init). */
+export interface CreateExperimentPayload {
+	title: string
+	type: string
+	description?: string
+	organizationId?: number | null
+}
+
+export const createExperiment = async (
+	payload: CreateExperimentPayload,
+): Promise<Experiment> => {
+	const res = await CytometryApi.post("/experiment/", payload)
+	return res.data
 }
 
 export interface ExperimentInitResponse {
@@ -74,7 +91,9 @@ export const enableFileData = async (fileDataId: number): Promise<void> => {
 export interface UpdateExperimentPayload {
 	title?: string
 	type?: string
-	values?: string[]
+	description?: string
+	// `values` (canais) não é gravável: é derivado dos arquivos do
+	// experimento e re-computado a cada extração (BE-24).
 }
 
 export const updateExperiment = async (

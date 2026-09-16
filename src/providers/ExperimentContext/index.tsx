@@ -12,6 +12,7 @@ import { useAuth } from "../AuthContext"
 import {
 	completeExperimentFileUpload,
 	completeExperimentUpload,
+	createExperiment as createEmptyExperiment,
 	fetchExperiments,
 	initExperimentFileUpload,
 	initExperimentUpload,
@@ -34,6 +35,13 @@ interface ExperimentContextProps {
 		type: string,
 		file: File,
 		organizationId?: number | null,
+		description?: string,
+	) => Promise<void>
+	createExperimentEmpty: (
+		title: string,
+		type: string,
+		organizationId?: number | null,
+		description?: string,
 	) => Promise<void>
 	addExperimentFile: (
 		experimentId: number,
@@ -113,6 +121,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			type: string,
 			file: File,
 			organizationId?: number | null,
+			description?: string,
 		) => {
 			const totalChunks = Math.ceil(file.size / chunkSize)
 			const orgId =
@@ -123,6 +132,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			const initResponse = await initExperimentUpload({
 				title,
 				type,
+				description,
 				totalChunks,
 				fileName: file.name,
 				organizationId: orgId,
@@ -143,6 +153,32 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			localStorage.removeItem("currentUpload")
 		},
 		[listExperiments, sendAllChunks, chunkSize, user],
+	)
+
+	// Criação sem arquivo (BE-24): o experimento nasce vazio
+	// (`status="new"`/`file_status="pending"`) e as amostras entram depois
+	// via "adicionar arquivos" (`addExperimentFile`).
+	const createExperimentEmpty = useCallback(
+		async (
+			title: string,
+			type: string,
+			organizationId?: number | null,
+			description?: string,
+		) => {
+			const orgId =
+				organizationId === undefined
+					? (user?.memberships?.[0]?.organization?.id ?? null)
+					: organizationId
+
+			await createEmptyExperiment({
+				title,
+				type,
+				description,
+				organizationId: orgId,
+			})
+			await listExperiments()
+		},
+		[listExperiments, user],
 	)
 
 	// "Adicionar arquivos" num experimento existente (BE-12): mesmo protocolo
@@ -178,6 +214,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				experiments,
 				listExperiments,
 				createExperiment,
+				createExperimentEmpty,
 				addExperimentFile,
 				progress,
 			}}

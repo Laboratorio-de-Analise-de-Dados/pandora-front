@@ -4,20 +4,25 @@ import { FormControl, FormHelperText, Input, InputLabel } from "@mui/material"
 interface ExperimentFieldsProps {
 	title: string
 	type: string
+	description: string
 	onTitleChange: (title: string) => void
 	onTypeChange: (type: string) => void
+	onDescriptionChange: (description: string) => void
 	idPrefix?: string
 }
 
 /**
- * Campos comuns de experimento (título e tipo), compartilhados entre a criação
- * e a edição para não duplicar rótulos/validações de formulário.
+ * Campos comuns de experimento (título, tipo e descrição opcional),
+ * compartilhados entre a criação e a edição para não duplicar
+ * rótulos/validações de formulário.
  */
 const ExperimentFields: React.FC<ExperimentFieldsProps> = ({
 	title,
 	type,
+	description,
 	onTitleChange,
 	onTypeChange,
+	onDescriptionChange,
 	idPrefix = "experiment",
 }) => (
 	<>
@@ -48,6 +53,24 @@ const ExperimentFields: React.FC<ExperimentFieldsProps> = ({
 			/>
 			<FormHelperText id={`${idPrefix}-type-helper`}>
 				Field for type. Ex: 'Stem Cells'
+			</FormHelperText>
+		</FormControl>
+
+		<FormControl margin="normal" fullWidth>
+			<InputLabel htmlFor={`${idPrefix}-description-input`}>
+				Descrição
+			</InputLabel>
+			<Input
+				id={`${idPrefix}-description-input`}
+				aria-describedby={`${idPrefix}-description-helper`}
+				value={description}
+				onChange={(e) => onDescriptionChange(e.target.value)}
+				multiline
+				minRows={2}
+				maxRows={5}
+			/>
+			<FormHelperText id={`${idPrefix}-description-helper`}>
+				Opcional — contexto, objetivo ou observações do experimento
 			</FormHelperText>
 		</FormControl>
 	</>

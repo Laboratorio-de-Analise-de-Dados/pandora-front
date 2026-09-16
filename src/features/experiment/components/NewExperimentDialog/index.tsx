@@ -3,6 +3,7 @@ import { toast } from "react-toastify"
 import {
 	Box,
 	Button,
+	Chip,
 	Dialog,
 	DialogActions,
 	DialogContent,
@@ -43,11 +44,13 @@ export default function NewExperimentDialog({
 	const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
 	const [title, setTitle] = useState("")
 	const [experimentType, setExperimentType] = useState("")
+	const [description, setDescription] = useState("")
 	const [organizationId, setOrganizationId] = useState("")
 	const [file, setFile] = useState<File | null>(null)
 	const [uploading, setUploading] = useState(false)
 
-	const { createExperiment, progress } = useExperimentsContext()
+	const { createExperiment, createExperimentEmpty, progress } =
+		useExperimentsContext()
 	const { user } = useAuth()
 
 	useEffect(() => {
@@ -55,6 +58,7 @@ export default function NewExperimentDialog({
 			setSelectedFileName(null)
 			setTitle("")
 			setExperimentType("")
+			setDescription("")
 			setOrganizationId("")
 			setFile(null)
 			setUploading(false)
@@ -77,11 +81,15 @@ export default function NewExperimentDialog({
 	}
 
 	const onSave = async () => {
-		if (!file || !title || !experimentType) return
+		if (!title || !experimentType) return
 		try {
 			setUploading(true)
 			const orgId = organizationId === "" ? null : parseInt(organizationId, 10)
-			await createExperiment(title, experimentType, file, orgId)
+			if (file) {
+				await createExperiment(title, experimentType, file, orgId, description)
+			} else {
+				await createExperimentEmpty(title, experimentType, orgId, description)
+			}
 			onClose()
 		} catch (error) {
 			toast.error(extractErrorMessage(error) || "Erro ao criar experimento.")
@@ -99,7 +107,7 @@ export default function NewExperimentDialog({
 			: 0
 
 	const memberships = user?.memberships || []
-	const disabled = !selectedFileName || !title || !experimentType
+	const disabled = !title.trim() || !experimentType.trim()
 
 	return (
 		<Dialog
@@ -114,8 +122,10 @@ export default function NewExperimentDialog({
 				<ExperimentFields
 					title={title}
 					type={experimentType}
+					description={description}
 					onTitleChange={setTitle}
 					onTypeChange={setExperimentType}
+					onDescriptionChange={setDescription}
 					idPrefix="new-experiment"
 				/>
 
@@ -141,14 +151,15 @@ export default function NewExperimentDialog({
 					</FormHelperText>
 				</FormControl>
 
-				<FormControl margin="normal">
+				<FormControl margin="normal" fullWidth>
 					<Button
 						component="label"
 						variant="contained"
 						tabIndex={-1}
 						startIcon={<CloudUploadIcon />}
+						sx={{ alignSelf: "flex-start" }}
 					>
-						Upload file
+						{selectedFileName ? "Trocar arquivo" : "Upload file (opcional)"}
 						<input
 							type="file"
 							accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
@@ -157,12 +168,19 @@ export default function NewExperimentDialog({
 						/>
 					</Button>
 					<Typography variant="caption" marginTop={1}>
-						Formatos aceitos: .fcs ou .zip
+						Formatos aceitos: .fcs ou .zip — também dá para adicionar amostras
+						depois, dentro do experimento
 					</Typography>
 					{selectedFileName && (
-						<Typography variant="body2" marginTop={1}>
-							{selectedFileName}
-						</Typography>
+						<Chip
+							size="small"
+							label={selectedFileName}
+							onDelete={() => {
+								setFile(null)
+								setSelectedFileName(null)
+							}}
+							sx={{ mt: 1, alignSelf: "flex-start" }}
+						/>
 					)}
 				</FormControl>
 

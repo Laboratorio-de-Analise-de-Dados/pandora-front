@@ -2,6 +2,8 @@ export interface Experiment {
 	id: number
 	title: string
 	type: string
+	/** Contexto livre do experimento (opcional, BE-24). */
+	description?: string
 	values: string[]
 	active: boolean
 	/** Ciclo de vida do processamento (`new|uploading|processing|done|error`). */
