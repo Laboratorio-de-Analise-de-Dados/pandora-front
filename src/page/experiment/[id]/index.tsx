@@ -58,7 +58,7 @@ function ExperimentPageContent() {
 		selectedGate,
 		values,
 		plotInitialConfig,
-		setViewConfig,
+		saveSourceConfig,
 		goToAdjacentFile,
 		canGoPrevFile,
 		canGoNextFile,
@@ -440,7 +440,7 @@ function ExperimentPageContent() {
 									sourceType={source.type}
 									sourceId={source.id}
 									initialConfig={plotInitialConfig}
-									onPersist={setViewConfig}
+									onPersist={saveSourceConfig}
 								>
 									<ScatterPlot
 										values={values}

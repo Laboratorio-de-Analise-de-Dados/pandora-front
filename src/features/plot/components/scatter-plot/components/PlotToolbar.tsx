@@ -5,7 +5,7 @@ import {
 	MenuItem,
 	Popover,
 	Select,
-	Switch,
+	Slider,
 	TextField,
 	Tooltip,
 	Typography,
@@ -19,6 +19,15 @@ import {
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
+import {
+	BIEX_SLIDER_MIN,
+	BIEX_SLIDER_MAX,
+	LINEAR_SLIDER_MAX,
+	BIEX_SLIDER_MARKS,
+	LINEAR_SLIDER_MARKS,
+	rawToSlider,
+	sliderToRaw,
+} from "../../../utils/sliders"
 import AxisSelect from "./AxisSelect"
 import { PlotSettingsButton } from "./PlotSettingsPanel"
 
@@ -60,60 +69,21 @@ const SCALE_LABEL: Record<Scale, string> = {
 
 interface AxisLimitsControlProps {
 	axis: "X" | "Y"
+	scale: Scale
 	min: string
 	max: string
 	onMinChange: (v: string) => void
 	onMaxChange: (v: string) => void
 }
 
-/** Linha Min/Max com toggle auto↔manual — string vazia no estado = automático. */
-const BoundRow: React.FC<{
-	label: string
-	value: string
-	onChange: (v: string) => void
-}> = ({ label, value, onChange }) => {
-	const auto = value === ""
-	return (
-		<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-			<Typography
-				variant="caption"
-				fontWeight={600}
-				color="text.secondary"
-				sx={{ width: 30 }}
-			>
-				{label}
-			</Typography>
-			<TextField
-				type="number"
-				size="small"
-				value={value}
-				disabled={auto}
-				placeholder="auto"
-				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-					onChange(e.target.value)
-				}
-				sx={{
-					flex: 1,
-					"& .MuiInputBase-input": {
-						fontSize: "0.75rem",
-						padding: "4px 8px",
-					},
-				}}
-			/>
-			<Tooltip title={auto ? "Fixar valor manual" : "Voltar ao automático"}>
-				<Switch
-					size="small"
-					checked={!auto}
-					onChange={(_, manual) => onChange(manual ? "0" : "")}
-				/>
-			</Tooltip>
-		</Box>
-	)
-}
-
-/** Dropdown de limites do eixo — mesmo display dos selects (texto + chevron). */
+/**
+ * Dropdown de limites do eixo — mesmo display dos selects (texto + chevron).
+ * Dentro: slider de range (a "barra" do painel de config) + campos Min/Max;
+ * campo vazio = automático.
+ */
 const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 	axis,
+	scale,
 	min,
 	max,
 	onMinChange,
@@ -154,7 +124,7 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				open={Boolean(anchor)}
 				onClose={() => setAnchor(null)}
 				anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-				slotProps={{ paper: { sx: { p: 1.5, width: 240 } } }}
+				slotProps={{ paper: { sx: { p: 1.5, width: 260 } } }}
 			>
 				<Typography
 					variant="caption"
@@ -164,9 +134,81 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				>
 					Limites do eixo {axis}
 				</Typography>
-				<Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-					<BoundRow label="Min" value={min} onChange={onMinChange} />
-					<BoundRow label="Max" value={max} onChange={onMaxChange} />
+				<Slider
+					value={[
+						min !== ""
+							? rawToSlider(Number(min), scale)
+							: scale === "biex"
+								? BIEX_SLIDER_MIN
+								: 0,
+						max !== ""
+							? rawToSlider(Number(max), scale)
+							: scale === "biex"
+								? BIEX_SLIDER_MAX
+								: LINEAR_SLIDER_MAX,
+					]}
+					onChange={(_, val) => {
+						const [lo, hi] = val as number[]
+						onMinChange(String(sliderToRaw(lo, scale)))
+						onMaxChange(String(sliderToRaw(hi, scale)))
+					}}
+					min={scale === "biex" ? BIEX_SLIDER_MIN : 0}
+					max={scale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
+					step={scale === "biex" ? 0.01 : 500}
+					marks={scale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+					valueLabelDisplay="auto"
+					valueLabelFormat={(v) => {
+						const raw = sliderToRaw(v, scale)
+						return raw === 0 ? "0" : raw.toLocaleString()
+					}}
+					size="small"
+					sx={{
+						height: 4,
+						mx: 0.75,
+						mb: 1.5,
+						width: "auto",
+						display: "block",
+						"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
+						"& .MuiSlider-thumb": { width: 10, height: 10 },
+					}}
+				/>
+				<Box sx={{ display: "flex", gap: 1 }}>
+					<TextField
+						label="Min"
+						type="number"
+						size="small"
+						value={min}
+						placeholder="auto"
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+							onMinChange(e.target.value)
+						}
+						sx={{
+							flex: 1,
+							"& .MuiInputBase-input": {
+								fontSize: "0.75rem",
+								padding: "4px 8px",
+							},
+							"& .MuiInputLabel-root": { fontSize: "0.7rem" },
+						}}
+					/>
+					<TextField
+						label="Max"
+						type="number"
+						size="small"
+						value={max}
+						placeholder="auto"
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+							onMaxChange(e.target.value)
+						}
+						sx={{
+							flex: 1,
+							"& .MuiInputBase-input": {
+								fontSize: "0.75rem",
+								padding: "4px 8px",
+							},
+							"& .MuiInputLabel-root": { fontSize: "0.7rem" },
+						}}
+					/>
 				</Box>
 			</Popover>
 		</>
@@ -191,6 +233,8 @@ export interface PlotToolbarProps {
 	xMax: string
 	yMin: string
 	yMax: string
+	cutoff: number
+	onCutoffChange: (c: number) => void
 	onXMinChange: (v: string) => void
 	onXMaxChange: (v: string) => void
 	onYMinChange: (v: string) => void
@@ -226,6 +270,8 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	xMax,
 	yMin,
 	yMax,
+	cutoff,
+	onCutoffChange,
 	onXMinChange,
 	onXMaxChange,
 	onYMinChange,
@@ -361,6 +407,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					)}
 					<AxisLimitsControl
 						axis="X"
+						scale={xScale}
 						min={xMin}
 						max={xMax}
 						onMinChange={onXMinChange}
@@ -369,13 +416,61 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					{!histogram && (
 						<AxisLimitsControl
 							axis="Y"
+							scale={yScale}
 							min={yMin}
 							max={yMax}
 							onMinChange={onYMinChange}
 							onMaxChange={onYMaxChange}
 						/>
 					)}
-					<PlotSettingsButton open={settingsOpen} onToggle={onToggleSettings} />
+					{/* Cutoff de densidade só existe no heatmap — como as opções
+					    saíram do botão de config, ele vive na barra. */}
+					{plotMode === "heatmap" && (
+						<Tooltip title="Cutoff de densidade — bins com contagem ≤ cutoff ficam transparentes">
+							<Box
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									gap: 0.5,
+								}}
+							>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									fontWeight={600}
+								>
+									Corte
+								</Typography>
+								<TextField
+									type="number"
+									size="small"
+									variant="standard"
+									value={cutoff}
+									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+										onCutoffChange(Math.max(0, Number(e.target.value) || 0))
+									}
+									InputProps={{ disableUnderline: true }}
+									inputProps={{ min: 0, step: 1 }}
+									sx={{
+										width: 48,
+										"& .MuiInputBase-input": {
+											fontWeight: 600,
+											fontSize: "0.875rem",
+											p: 0,
+										},
+									}}
+								/>
+							</Box>
+						</Tooltip>
+					)}
+					{/* No desktop todas as opções já estão na barra — o botão de
+					    config (overlay) só faz sentido no mobile. */}
+					<Box sx={{ display: { xs: "inline-flex", md: "none" } }}>
+						<PlotSettingsButton
+							open={settingsOpen}
+							onToggle={onToggleSettings}
+						/>
+					</Box>
 					{onToggleHistory && (
 						<Tooltip title="Histórico e checkpoints">
 							<IconButton

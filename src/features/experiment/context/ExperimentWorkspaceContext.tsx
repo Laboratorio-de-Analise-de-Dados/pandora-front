@@ -22,6 +22,7 @@ import {
 	findGateByPathNames,
 } from "../../gate/utils"
 import { defaultScale } from "../../plot/utils/biex"
+import { resolvePlotInitialConfig } from "../../plot/utils/plotConfigMemory"
 import {
 	useExperimentQuery,
 	useExperimentFilesQuery,
@@ -45,7 +46,15 @@ interface ExperimentWorkspaceValue {
 	values: string[]
 	selectedGate: Gate | undefined
 	viewConfig: PlotViewConfig
-	setViewConfig: (config: PlotViewConfig) => void
+	/**
+	 * Persiste a config da fonte indicada: atualiza o carry-forward e grava a
+	 * memória por fonte (restaurada ao reabrir o mesmo arquivo/gate).
+	 */
+	saveSourceConfig: (
+		sourceType: "file" | "gate",
+		sourceId: number,
+		config: PlotViewConfig,
+	) => void
 	plotInitialConfig: PlotViewConfig
 	sourceLabel: string
 	goToAdjacentFile: (direction: 1 | -1) => void
@@ -131,6 +140,25 @@ export function ExperimentWorkspaceProvider({
 	const [viewConfig, setViewConfig] =
 		useState<PlotViewConfig>(DEFAULT_VIEW_CONFIG)
 
+	// Memória por fonte ("file-12", "gate-34"): a última config deixada em cada
+	// arquivo/gate nesta sessão. Reabrir uma fonte já visitada restaura essa
+	// config — sem ela, o plot_config salvo do gate sempre ganha e a tela
+	// "esquece" o que o usuário ajustou ao navegar entre arquivos.
+	const [savedConfigs, setSavedConfigs] = useState<
+		Record<string, PlotViewConfig>
+	>({})
+
+	const saveSourceConfig = useCallback(
+		(sourceType: "file" | "gate", sourceId: number, config: PlotViewConfig) => {
+			setViewConfig(config)
+			setSavedConfigs((prev) => ({
+				...prev,
+				[`${sourceType}-${sourceId}`]: config,
+			}))
+		},
+		[],
+	)
+
 	const selectedGate = useMemo(() => {
 		if (source?.type !== "gate") return undefined
 		for (const f of experimentFiles) {
@@ -215,13 +243,15 @@ export function ExperimentWorkspaceProvider({
 		return [fileName, ...(pathNames ?? [source.name])].join(" › ")
 	}, [experimentFiles, source])
 
-	const plotInitialConfig = useMemo<PlotViewConfig>(
-		() =>
-			keepCurrentViewConfig
-				? viewConfig
-				: { ...viewConfig, ...selectedGate?.plot_config },
-		[keepCurrentViewConfig, viewConfig, selectedGate],
-	)
+	const plotInitialConfig = useMemo<PlotViewConfig>(() => {
+		const key = source ? `${source.type}-${source.id}` : null
+		return resolvePlotInitialConfig({
+			keepCurrent: keepCurrentViewConfig,
+			viewConfig,
+			saved: key ? savedConfigs[key] : undefined,
+			gateConfig: selectedGate?.plot_config,
+		})
+	}, [keepCurrentViewConfig, viewConfig, savedConfigs, source, selectedGate])
 
 	const value = useMemo<ExperimentWorkspaceValue>(
 		() => ({
@@ -239,7 +269,7 @@ export function ExperimentWorkspaceProvider({
 			values,
 			selectedGate,
 			viewConfig,
-			setViewConfig,
+			saveSourceConfig,
 			plotInitialConfig,
 			sourceLabel,
 			goToAdjacentFile,
@@ -264,6 +294,7 @@ export function ExperimentWorkspaceProvider({
 			values,
 			selectedGate,
 			viewConfig,
+			saveSourceConfig,
 			plotInitialConfig,
 			sourceLabel,
 			goToAdjacentFile,

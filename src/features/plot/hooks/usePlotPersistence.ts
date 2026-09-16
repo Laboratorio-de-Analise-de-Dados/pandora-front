@@ -8,8 +8,15 @@ interface UsePlotPersistenceParams {
 	sourceType: "file" | "gate"
 	sourceId: number
 	config: PlotViewConfig
-	/** Atualiza o carry-forward em memória (config a herdar ao trocar de fonte). */
-	onPersist: (config: PlotViewConfig) => void
+	/**
+	 * Atualiza o carry-forward e a memória por fonte (a config a restaurar ao
+	 * reabrir este arquivo/gate na sessão).
+	 */
+	onPersist: (
+		sourceType: "file" | "gate",
+		sourceId: number,
+		config: PlotViewConfig,
+	) => void
 }
 
 /**
@@ -33,11 +40,11 @@ export function usePlotPersistence({
 	useEffect(() => {
 		if (isFirst.current) {
 			isFirst.current = false
-			onPersistRef.current(config)
+			onPersistRef.current(sourceType, sourceId, config)
 			return
 		}
 		const handle = setTimeout(() => {
-			onPersistRef.current(config)
+			onPersistRef.current(sourceType, sourceId, config)
 			if (sourceType === "gate") {
 				updateGate(sourceId, { plot_config: config }).catch(() => undefined)
 			}
