@@ -466,17 +466,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					width: "100%",
 				}}
 			>
-				{data && (
-					<Typography variant="caption" color="text.secondary">
-						{data.total_events.toLocaleString()} eventos
-						{plotMode === "scatter" && data.sampled_events
-							? ` · amostra de ${data.sampled_events.toLocaleString()}`
-							: plotMode === "histogram"
-								? " · histograma (100% dos dados)"
-								: " · heatmap (100% dos dados)"}
-					</Typography>
-				)}
-
 				<Box
 					sx={{
 						display: "flex",
@@ -530,6 +519,16 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							historyOpen={historyOpen}
 							onToggleHistory={onToggleHistory}
 						/>
+						{data && (
+							<Typography variant="caption" color="text.secondary">
+								{data.total_events.toLocaleString()} eventos
+								{plotMode === "scatter" && data.sampled_events
+									? ` · amostra de ${data.sampled_events.toLocaleString()}`
+									: plotMode === "histogram"
+										? " · histograma (100% dos dados)"
+										: " · heatmap (100% dos dados)"}
+							</Typography>
+						)}
 						<Box
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}

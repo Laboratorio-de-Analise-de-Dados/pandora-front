@@ -3,12 +3,14 @@ import {
 	Box,
 	IconButton,
 	MenuItem,
+	Collapse,
 	Popover,
 	Select,
 	Slider,
 	TextField,
 	Tooltip,
 	Typography,
+	useMediaQuery,
 } from "@mui/material"
 import {
 	MdCropFree as RectIcon,
@@ -16,6 +18,8 @@ import {
 	MdAddBox as QuadrantIcon,
 	MdHistory as HistoryIcon,
 	MdArrowDropDown as ChevronIcon,
+	MdExpandLess as ExpandLessIcon,
+	MdExpandMore as ExpandMoreIcon,
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
@@ -288,201 +292,233 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 		: GATE_TOOLS
 	const currentTool = GATE_TOOLS.find((t) => t.value === tool)
 
+	// Mobile: a barra fica limpa como o breadcrumb — modo + eixos sempre
+	// visíveis; gate/escalas/limites/corte/histórico expandem num Collapse
+	// abaixo (esconde/mostra) em vez de quebrar em várias linhas.
+	const isMobile = useMediaQuery((theme) => theme.breakpoints.down("md"))
+	const [controlsOpen, setControlsOpen] = useState(false)
+
+	const rowSx = {
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+		flexWrap: "wrap",
+		gap: { xs: 0.5, sm: 1.5 },
+		width: "100%",
+	} as const
+
+	const advancedControls = controlsEnabled ? (
+		<>
+			{/* Tipo de gate como select — mesmo display do modo de
+					    gráfico; tooltip em cada item ajuda a identificar. */}
+			<Select
+				value={tool}
+				onChange={(e) => onToolChange(e.target.value as GateTool)}
+				size="small"
+				variant="standard"
+				disableUnderline
+				renderValue={() => (
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							gap: 0.5,
+						}}
+					>
+						{currentTool?.icon}
+						{histogram
+							? (currentTool?.histLabel ?? currentTool?.label)
+							: currentTool?.label}
+					</Box>
+				)}
+				sx={{ fontWeight: 600 }}
+			>
+				{visibleTools.map((t) => (
+					<MenuItem key={t.value} value={t.value}>
+						<Tooltip title={t.tip} placement="right" arrow>
+							<Box
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									gap: 1,
+									width: "100%",
+								}}
+							>
+								{t.icon}
+								{histogram ? (t.histLabel ?? t.label) : t.label}
+							</Box>
+						</Tooltip>
+					</MenuItem>
+				))}
+			</Select>
+			{/* Escalas como selects (linear/biex); Y some no histograma. */}
+			<Tooltip title="Escala do eixo X">
+				<Select
+					value={xScale}
+					onChange={(e) => onXScaleChange(e.target.value as Scale)}
+					size="small"
+					variant="standard"
+					disableUnderline
+					renderValue={(v) => `X: ${SCALE_LABEL[v]}`}
+					sx={{ fontWeight: 600 }}
+				>
+					<MenuItem value="linear">Linear</MenuItem>
+					<MenuItem value="biex">Biex</MenuItem>
+				</Select>
+			</Tooltip>
+			{!histogram && (
+				<Tooltip title="Escala do eixo Y">
+					<Select
+						value={yScale}
+						onChange={(e) => onYScaleChange(e.target.value as Scale)}
+						size="small"
+						variant="standard"
+						disableUnderline
+						renderValue={(v) => `Y: ${SCALE_LABEL[v]}`}
+						sx={{ fontWeight: 600 }}
+					>
+						<MenuItem value="linear">Linear</MenuItem>
+						<MenuItem value="biex">Biex</MenuItem>
+					</Select>
+				</Tooltip>
+			)}
+			<AxisLimitsControl
+				axis="X"
+				scale={xScale}
+				min={xMin}
+				max={xMax}
+				onMinChange={onXMinChange}
+				onMaxChange={onXMaxChange}
+			/>
+			{!histogram && (
+				<AxisLimitsControl
+					axis="Y"
+					scale={yScale}
+					min={yMin}
+					max={yMax}
+					onMinChange={onYMinChange}
+					onMaxChange={onYMaxChange}
+				/>
+			)}
+			{/* Cutoff de densidade só existe no heatmap — como as opções
+					    saíram do botão de config, ele vive na barra. */}
+			{plotMode === "heatmap" && (
+				<Tooltip title="Cutoff de densidade — bins com contagem ≤ cutoff ficam transparentes">
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							gap: 0.5,
+						}}
+					>
+						<Typography
+							variant="caption"
+							color="text.secondary"
+							fontWeight={600}
+						>
+							Corte
+						</Typography>
+						<TextField
+							type="number"
+							size="small"
+							variant="standard"
+							value={cutoff}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								onCutoffChange(Math.max(0, Number(e.target.value) || 0))
+							}
+							InputProps={{ disableUnderline: true }}
+							inputProps={{ min: 0, step: 1 }}
+							sx={{
+								width: 48,
+								"& .MuiInputBase-input": {
+									fontWeight: 600,
+									fontSize: "0.875rem",
+									p: 0,
+								},
+							}}
+						/>
+					</Box>
+				</Tooltip>
+			)}
+			{/* No desktop todas as opções já estão na barra — o botão de
+					    config (overlay) só faz sentido no mobile. */}
+			<Box sx={{ display: { xs: "inline-flex", md: "none" } }}>
+				<PlotSettingsButton open={settingsOpen} onToggle={onToggleSettings} />
+			</Box>
+			{onToggleHistory && (
+				<Tooltip title="Histórico e checkpoints">
+					<IconButton
+						size="small"
+						onClick={onToggleHistory}
+						sx={historyOpen ? { color: "primary.main" } : undefined}
+					>
+						<HistoryIcon />
+					</IconButton>
+				</Tooltip>
+			)}
+		</>
+	) : null
+
 	return (
 		<Box
 			sx={{
 				display: "flex",
+				flexDirection: "column",
 				alignItems: "center",
-				justifyContent: "center",
-				flexWrap: "wrap",
-				gap: { xs: 0.5, sm: 1.5 },
 				width: "100%",
 			}}
 		>
-			<Select
-				value={plotMode}
-				onChange={(e) => onPlotModeChange(e.target.value as PlotMode)}
-				size="small"
-				variant="standard"
-				disableUnderline
-				sx={{ fontWeight: 600 }}
-			>
-				<MenuItem value="heatmap">Heatmap</MenuItem>
-				<MenuItem value="scatter">Scatter</MenuItem>
-				<MenuItem value="histogram">Histograma</MenuItem>
-			</Select>
-			<AxisSelect
-				value={xAxis}
-				options={values}
-				onChange={onSelectX}
-				size="small"
-			/>
-			{!histogram && (
-				<>
-					<Typography variant="caption" color="text.secondary">
-						vs
-					</Typography>
-					<AxisSelect
-						value={yAxis}
-						options={values}
-						onChange={onSelectY}
-						size="small"
-					/>
-				</>
-			)}
-			{controlsEnabled && (
-				<>
-					{/* Tipo de gate como select — mesmo display do modo de
-					    gráfico; tooltip em cada item ajuda a identificar. */}
-					<Select
-						value={tool}
-						onChange={(e) => onToolChange(e.target.value as GateTool)}
-						size="small"
-						variant="standard"
-						disableUnderline
-						renderValue={() => (
-							<Box
-								sx={{
-									display: "flex",
-									alignItems: "center",
-									gap: 0.5,
-								}}
-							>
-								{currentTool?.icon}
-								{histogram
-									? (currentTool?.histLabel ?? currentTool?.label)
-									: currentTool?.label}
-							</Box>
-						)}
-						sx={{ fontWeight: 600 }}
-					>
-						{visibleTools.map((t) => (
-							<MenuItem key={t.value} value={t.value}>
-								<Tooltip title={t.tip} placement="right" arrow>
-									<Box
-										sx={{
-											display: "flex",
-											alignItems: "center",
-											gap: 1,
-											width: "100%",
-										}}
-									>
-										{t.icon}
-										{histogram ? (t.histLabel ?? t.label) : t.label}
-									</Box>
-								</Tooltip>
-							</MenuItem>
-						))}
-					</Select>
-					{/* Escalas como selects (linear/biex); Y some no histograma. */}
-					<Tooltip title="Escala do eixo X">
-						<Select
-							value={xScale}
-							onChange={(e) => onXScaleChange(e.target.value as Scale)}
+			<Box sx={rowSx}>
+				<Select
+					value={plotMode}
+					onChange={(e) => onPlotModeChange(e.target.value as PlotMode)}
+					size="small"
+					variant="standard"
+					disableUnderline
+					sx={{ fontWeight: 600 }}
+				>
+					<MenuItem value="heatmap">Heatmap</MenuItem>
+					<MenuItem value="scatter">Scatter</MenuItem>
+					<MenuItem value="histogram">Histograma</MenuItem>
+				</Select>
+				<AxisSelect
+					value={xAxis}
+					options={values}
+					onChange={onSelectX}
+					size="small"
+				/>
+				{!histogram && (
+					<>
+						<Typography variant="caption" color="text.secondary">
+							vs
+						</Typography>
+						<AxisSelect
+							value={yAxis}
+							options={values}
+							onChange={onSelectY}
 							size="small"
-							variant="standard"
-							disableUnderline
-							renderValue={(v) => `X: ${SCALE_LABEL[v]}`}
-							sx={{ fontWeight: 600 }}
+						/>
+					</>
+				)}
+				{!isMobile && advancedControls}
+				{isMobile && controlsEnabled && (
+					<Tooltip
+						title={controlsOpen ? "Ocultar controles" : "Mais controles"}
+					>
+						<IconButton
+							size="small"
+							onClick={() => setControlsOpen((v) => !v)}
+							sx={controlsOpen ? { color: "primary.main" } : undefined}
 						>
-							<MenuItem value="linear">Linear</MenuItem>
-							<MenuItem value="biex">Biex</MenuItem>
-						</Select>
+							{controlsOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+						</IconButton>
 					</Tooltip>
-					{!histogram && (
-						<Tooltip title="Escala do eixo Y">
-							<Select
-								value={yScale}
-								onChange={(e) => onYScaleChange(e.target.value as Scale)}
-								size="small"
-								variant="standard"
-								disableUnderline
-								renderValue={(v) => `Y: ${SCALE_LABEL[v]}`}
-								sx={{ fontWeight: 600 }}
-							>
-								<MenuItem value="linear">Linear</MenuItem>
-								<MenuItem value="biex">Biex</MenuItem>
-							</Select>
-						</Tooltip>
-					)}
-					<AxisLimitsControl
-						axis="X"
-						scale={xScale}
-						min={xMin}
-						max={xMax}
-						onMinChange={onXMinChange}
-						onMaxChange={onXMaxChange}
-					/>
-					{!histogram && (
-						<AxisLimitsControl
-							axis="Y"
-							scale={yScale}
-							min={yMin}
-							max={yMax}
-							onMinChange={onYMinChange}
-							onMaxChange={onYMaxChange}
-						/>
-					)}
-					{/* Cutoff de densidade só existe no heatmap — como as opções
-					    saíram do botão de config, ele vive na barra. */}
-					{plotMode === "heatmap" && (
-						<Tooltip title="Cutoff de densidade — bins com contagem ≤ cutoff ficam transparentes">
-							<Box
-								sx={{
-									display: "flex",
-									alignItems: "center",
-									gap: 0.5,
-								}}
-							>
-								<Typography
-									variant="caption"
-									color="text.secondary"
-									fontWeight={600}
-								>
-									Corte
-								</Typography>
-								<TextField
-									type="number"
-									size="small"
-									variant="standard"
-									value={cutoff}
-									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-										onCutoffChange(Math.max(0, Number(e.target.value) || 0))
-									}
-									InputProps={{ disableUnderline: true }}
-									inputProps={{ min: 0, step: 1 }}
-									sx={{
-										width: 48,
-										"& .MuiInputBase-input": {
-											fontWeight: 600,
-											fontSize: "0.875rem",
-											p: 0,
-										},
-									}}
-								/>
-							</Box>
-						</Tooltip>
-					)}
-					{/* No desktop todas as opções já estão na barra — o botão de
-					    config (overlay) só faz sentido no mobile. */}
-					<Box sx={{ display: { xs: "inline-flex", md: "none" } }}>
-						<PlotSettingsButton
-							open={settingsOpen}
-							onToggle={onToggleSettings}
-						/>
-					</Box>
-					{onToggleHistory && (
-						<Tooltip title="Histórico e checkpoints">
-							<IconButton
-								size="small"
-								onClick={onToggleHistory}
-								sx={historyOpen ? { color: "primary.main" } : undefined}
-							>
-								<HistoryIcon />
-							</IconButton>
-						</Tooltip>
-					)}
-				</>
+				)}
+			</Box>
+			{isMobile && (
+				<Collapse in={controlsOpen} unmountOnExit sx={{ width: "100%" }}>
+					<Box sx={{ ...rowSx, pt: 0.5 }}>{advancedControls}</Box>
+				</Collapse>
 			)}
 		</Box>
 	)
