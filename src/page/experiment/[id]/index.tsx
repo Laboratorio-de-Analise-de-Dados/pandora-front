@@ -241,6 +241,24 @@ function ExperimentPageContent() {
 								<DownloadIcon fontSize="small" />
 							</IconButton>
 						</Tooltip>
+						{/* Histórico do experimento inteiro (timeline completa);
+						    o recorte por amostra fica no sourceNav (FE-27). */}
+						<Tooltip title="Histórico do experimento">
+							<IconButton
+								onClick={() =>
+									showHistory && historyFileId === undefined
+										? closeHistory()
+										: openHistory()
+								}
+								sx={
+									showHistory && historyFileId === undefined
+										? { color: "primary.main" }
+										: undefined
+								}
+							>
+								<HistoryIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
 						{canEditExperiment && (
 							<>
 								<Tooltip title="Editar experimento">
@@ -524,12 +542,6 @@ function ExperimentPageContent() {
 										}
 										siblingGateNames={siblingGateNames}
 										childGates={childGates}
-										historyOpen={showHistory}
-										onToggleHistory={() =>
-											showHistory
-												? closeHistory()
-												: openHistory(source.fileDataId)
-										}
 									/>
 								</PlotStateProvider>
 							) : (

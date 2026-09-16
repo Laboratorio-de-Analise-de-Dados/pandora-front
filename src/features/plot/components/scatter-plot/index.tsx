@@ -56,9 +56,6 @@ interface ScatterPlotProps {
 	parentName?: string
 	siblingGateNames?: string[]
 	childGates?: Gate[]
-	/** Toggle do painel de histórico (ícone na barra do plot, FE-26). */
-	historyOpen?: boolean
-	onToggleHistory?: () => void
 }
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -70,8 +67,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	parentName,
 	siblingGateNames = [],
 	childGates = [],
-	historyOpen,
-	onToggleHistory,
 }) => {
 	const plotState = usePlotContext()
 
@@ -528,8 +523,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								controlsEnabled={settingsAvailable}
 								settingsOpen={settingsOpen}
 								onToggleSettings={() => setSettingsOpen((prev) => !prev)}
-								historyOpen={historyOpen}
-								onToggleHistory={onToggleHistory}
 							/>
 						</Box>
 						{data && (

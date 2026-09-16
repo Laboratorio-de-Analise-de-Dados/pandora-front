@@ -14,7 +14,6 @@ import {
 	MdCropFree as RectIcon,
 	MdPentagon as PolygonIcon,
 	MdAddBox as QuadrantIcon,
-	MdHistory as HistoryIcon,
 	MdArrowDropDown as ChevronIcon,
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
@@ -243,8 +242,6 @@ export interface PlotToolbarProps {
 	controlsEnabled: boolean
 	settingsOpen: boolean
 	onToggleSettings: () => void
-	historyOpen?: boolean
-	onToggleHistory?: () => void
 }
 
 /**
@@ -279,8 +276,6 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	controlsEnabled,
 	settingsOpen,
 	onToggleSettings,
-	historyOpen,
-	onToggleHistory,
 }) => {
 	const histogram = plotMode === "histogram"
 	const visibleTools = histogram
@@ -422,21 +417,12 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				</Tooltip>
 			)}
 			{/* No desktop todas as opções já estão na barra — o botão de
-					    config (overlay) só faz sentido no mobile. */}
+					    config (overlay) só faz sentido no mobile. O histórico
+					    mora no workspace (por amostra no sourceNav; do
+					    experimento no header da árvore). */}
 			<Box sx={{ display: { xs: "inline-flex", md: "none" } }}>
 				<PlotSettingsButton open={settingsOpen} onToggle={onToggleSettings} />
 			</Box>
-			{onToggleHistory && (
-				<Tooltip title="Histórico e checkpoints">
-					<IconButton
-						size="small"
-						onClick={onToggleHistory}
-						sx={historyOpen ? { color: "primary.main" } : undefined}
-					>
-						<HistoryIcon />
-					</IconButton>
-				</Tooltip>
-			)}
 		</>
 	) : null
 
