@@ -284,6 +284,79 @@ function ExperimentPageContent() {
 		</>
 	)
 
+	// Seletor de amostra + navegação entre arquivos ("breadcrumb"). No
+	// desktop fica no topo da coluna central; no mobile vai para a base,
+	// junto dos controles, perto do polegar (FE-26).
+	const sourceNav = !isLoading ? (
+		<Box
+			sx={{
+				display: "flex",
+				alignItems: "center",
+				gap: { xs: 0.5, md: 1 },
+				width: "100%",
+				px: { xs: 1, md: 2 },
+				pt: { xs: 0.5, md: 1.5 },
+				pb: { xs: 1, md: 0.5 },
+				flexShrink: 0,
+			}}
+		>
+			<SourceDropdown
+				files={experimentFiles}
+				source={source}
+				onSelect={setSource}
+			/>
+			<Tooltip title="Arquivo anterior">
+				<span>
+					<IconButton
+						size="small"
+						disabled={!source || !canGoPrevFile}
+						onClick={() => goToAdjacentFile(-1)}
+					>
+						<PrevIcon />
+					</IconButton>
+				</span>
+			</Tooltip>
+			<Tooltip title="Próximo arquivo">
+				<span>
+					<IconButton
+						size="small"
+						disabled={!source || !canGoNextFile}
+						onClick={() => goToAdjacentFile(1)}
+					>
+						<NextIcon />
+					</IconButton>
+				</span>
+			</Tooltip>
+
+			<Box
+				sx={{
+					display: "flex",
+					alignItems: "center",
+					gap: 0.5,
+					ml: "auto",
+					flexShrink: 0,
+				}}
+			>
+				{/* Propagar Gate: botão verde no header (desktop);
+				    no mobile fica no rodapé do sheet da árvore. */}
+				{!isMobile && source?.type === "gate" && canEditExperiment && (
+					<Tooltip title="Aplicar este gate em outras amostras">
+						<Button
+							variant="contained"
+							size="small"
+							startIcon={<BoltIcon />}
+							onClick={() =>
+								handleApplyGate(source.id, selectedGate?.name ?? "")
+							}
+						>
+							Propagar Gate
+						</Button>
+					</Tooltip>
+				)}
+			</Box>
+		</Box>
+	) : null
+
 	return (
 		<Layout>
 			<Box
@@ -336,80 +409,11 @@ function ExperimentPageContent() {
 							position: "relative",
 						}}
 					>
-						{!isLoading && (
-							<Box
-								sx={{
-									display: "flex",
-									alignItems: "center",
-									gap: { xs: 0.5, md: 1 },
-									width: "100%",
-									px: { xs: 1, md: 2 },
-									pt: { xs: 1, md: 1.5 },
-									pb: 0.5,
-									flexShrink: 0,
-								}}
-							>
-								<SourceDropdown
-									files={experimentFiles}
-									source={source}
-									onSelect={setSource}
-								/>
-								<Tooltip title="Arquivo anterior">
-									<span>
-										<IconButton
-											size="small"
-											disabled={!source || !canGoPrevFile}
-											onClick={() => goToAdjacentFile(-1)}
-										>
-											<PrevIcon />
-										</IconButton>
-									</span>
-								</Tooltip>
-								<Tooltip title="Próximo arquivo">
-									<span>
-										<IconButton
-											size="small"
-											disabled={!source || !canGoNextFile}
-											onClick={() => goToAdjacentFile(1)}
-										>
-											<NextIcon />
-										</IconButton>
-									</span>
-								</Tooltip>
+						{!isMobile && sourceNav}
 
-								<Box
-									sx={{
-										display: "flex",
-										alignItems: "center",
-										gap: 0.5,
-										ml: "auto",
-										flexShrink: 0,
-									}}
-								>
-									{/* Propagar Gate: botão verde no header (desktop);
-									    no mobile fica no rodapé do sheet da árvore. */}
-									{!isMobile &&
-										source?.type === "gate" &&
-										canEditExperiment && (
-											<Tooltip title="Aplicar este gate em outras amostras">
-												<Button
-													variant="contained"
-													size="small"
-													startIcon={<BoltIcon />}
-													onClick={() =>
-														handleApplyGate(source.id, selectedGate?.name ?? "")
-													}
-												>
-													Propagar Gate
-												</Button>
-											</Tooltip>
-										)}
-								</Box>
-							</Box>
-						)}
-
-						{/* Área do plot: centralizada no espaço que sobra abaixo
-					    do header. */}
+						{/* Área do plot: no desktop centralizada no espaço restante;
+						    no mobile o gráfico ancora no topo (metade superior) e
+						    os controles/seletor ficam na metade inferior (FE-26). */}
 						<Box
 							sx={{
 								flex: 1,
@@ -418,9 +422,11 @@ function ExperimentPageContent() {
 								display: "flex",
 								flexDirection: "column",
 								alignItems: "center",
-								justifyContent: "center",
+								justifyContent: { xs: "flex-start", md: "center" },
 								gap: "1rem",
 								px: 1,
+								// Respiro para os gatilhos flutuantes de Gates/Stats.
+								pt: { xs: 12, md: 0 },
 								pb: { xs: 2, md: 3 },
 							}}
 						>
@@ -464,6 +470,10 @@ function ExperimentPageContent() {
 								<Typography>Select a file to load</Typography>
 							)}
 						</Box>
+
+						{/* No mobile o seletor de amostra vive na base da coluna —
+						    metade inferior junto dos controles do plot (FE-26). */}
+						{isMobile && sourceNav}
 
 						{/* Histórico e checkpoints (FE-25) no desktop: overlay que
 						    desce do topo da área central, com rolagem interna —

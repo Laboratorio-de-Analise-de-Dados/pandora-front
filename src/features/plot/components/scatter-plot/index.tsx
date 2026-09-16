@@ -5,6 +5,7 @@ import {
 	CircularProgress,
 	LinearProgress,
 	Typography,
+	useMediaQuery,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -111,6 +112,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}, [experimentFiles, fileDataId, subsamples])
 
 	const theme = useTheme()
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 	const [settingsOpen, setSettingsOpen] = useState(false)
 
 	// Gate edit dialog state
@@ -487,40 +489,55 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							width: "100%",
 						}}
 					>
-						{/* Barra superior: modo + eixos + tipo de gate +
-							    escalas/limites + settings e histórico (FE-26). */}
-						<PlotToolbar
-							values={values}
-							plotMode={plotMode}
-							onPlotModeChange={setPlotMode}
-							xAxis={xAxis}
-							yAxis={yAxis}
-							onSelectX={handleSelectX}
-							onSelectY={handleSelectY}
-							tool={tool}
-							onToolChange={setTool}
-							xScale={xScale}
-							yScale={yScale}
-							onXScaleChange={setXScale}
-							onYScaleChange={setYScale}
-							xMin={xMin}
-							xMax={xMax}
-							yMin={yMin}
-							yMax={yMax}
-							cutoff={cutoff}
-							onCutoffChange={setCutoff}
-							onXMinChange={setXMin}
-							onXMaxChange={setXMax}
-							onYMinChange={setYMin}
-							onYMaxChange={setYMax}
-							controlsEnabled={settingsAvailable}
-							settingsOpen={settingsOpen}
-							onToggleSettings={() => setSettingsOpen((prev) => !prev)}
-							historyOpen={historyOpen}
-							onToggleHistory={onToggleHistory}
-						/>
+						{/* Barra de controle: modo + eixos + tipo de gate +
+							    escalas/limites + settings e histórico (FE-26).
+							    No desktop fica acima do plot; no mobile vai para
+							    a metade inferior da tela (abaixo do gráfico). */}
+						<Box
+							sx={{
+								order: { xs: 3, md: 1 },
+								width: "100%",
+								display: "flex",
+								justifyContent: "center",
+							}}
+						>
+							<PlotToolbar
+								values={values}
+								plotMode={plotMode}
+								onPlotModeChange={setPlotMode}
+								xAxis={xAxis}
+								yAxis={yAxis}
+								onSelectX={handleSelectX}
+								onSelectY={handleSelectY}
+								tool={tool}
+								onToolChange={setTool}
+								xScale={xScale}
+								yScale={yScale}
+								onXScaleChange={setXScale}
+								onYScaleChange={setYScale}
+								xMin={xMin}
+								xMax={xMax}
+								yMin={yMin}
+								yMax={yMax}
+								cutoff={cutoff}
+								onCutoffChange={setCutoff}
+								onXMinChange={setXMin}
+								onXMaxChange={setXMax}
+								onYMinChange={setYMin}
+								onYMaxChange={setYMax}
+								controlsEnabled={settingsAvailable}
+								settingsOpen={settingsOpen}
+								onToggleSettings={() => setSettingsOpen((prev) => !prev)}
+								historyOpen={historyOpen}
+								onToggleHistory={onToggleHistory}
+							/>
+						</Box>
 						{data && (
-							<Typography variant="caption" color="text.secondary">
+							<Typography
+								variant="caption"
+								color="text.secondary"
+								sx={{ order: 2 }}
+							>
 								{data.total_events.toLocaleString()} eventos
 								{plotMode === "scatter" && data.sampled_events
 									? ` · amostra de ${data.sampled_events.toLocaleString()}`
@@ -533,8 +550,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
 							sx={(theme) => ({
+								// Mobile: o plot ocupa a metade superior da tela
+								// (quase full-width, limitado pela altura); desktop
+								// mantém o poço centrado no canvas (FE-26).
+								order: { xs: 1, md: 3 },
 								width: {
-									xs: "min(95vw, 480px)",
+									xs: "min(96vw, 52vh)",
 									md: "min(70vh, 560px)",
 								},
 								maxWidth: "100%",

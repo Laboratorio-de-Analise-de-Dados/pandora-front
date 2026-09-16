@@ -3,14 +3,12 @@ import {
 	Box,
 	IconButton,
 	MenuItem,
-	Collapse,
 	Popover,
 	Select,
 	Slider,
 	TextField,
 	Tooltip,
 	Typography,
-	useMediaQuery,
 } from "@mui/material"
 import {
 	MdCropFree as RectIcon,
@@ -18,8 +16,6 @@ import {
 	MdAddBox as QuadrantIcon,
 	MdHistory as HistoryIcon,
 	MdArrowDropDown as ChevronIcon,
-	MdExpandLess as ExpandLessIcon,
-	MdExpandMore as ExpandMoreIcon,
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
@@ -292,21 +288,6 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 		: GATE_TOOLS
 	const currentTool = GATE_TOOLS.find((t) => t.value === tool)
 
-	// Mobile: a barra fica limpa como o breadcrumb — modo + eixos sempre
-	// visíveis; gate/escalas/limites/corte/histórico expandem num Collapse
-	// abaixo (esconde/mostra) em vez de quebrar em várias linhas.
-	const isMobile = useMediaQuery((theme) => theme.breakpoints.down("md"))
-	const [controlsOpen, setControlsOpen] = useState(false)
-
-	const rowSx = {
-		display: "flex",
-		alignItems: "center",
-		justifyContent: "center",
-		flexWrap: "wrap",
-		gap: { xs: 0.5, sm: 1.5 },
-		width: "100%",
-	} as const
-
 	const advancedControls = controlsEnabled ? (
 		<>
 			{/* Tipo de gate como select — mesmo display do modo de
@@ -463,63 +444,45 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 		<Box
 			sx={{
 				display: "flex",
-				flexDirection: "column",
 				alignItems: "center",
+				justifyContent: "center",
+				flexWrap: "wrap",
+				gap: { xs: 0.75, sm: 1.5 },
 				width: "100%",
 			}}
 		>
-			<Box sx={rowSx}>
-				<Select
-					value={plotMode}
-					onChange={(e) => onPlotModeChange(e.target.value as PlotMode)}
-					size="small"
-					variant="standard"
-					disableUnderline
-					sx={{ fontWeight: 600 }}
-				>
-					<MenuItem value="heatmap">Heatmap</MenuItem>
-					<MenuItem value="scatter">Scatter</MenuItem>
-					<MenuItem value="histogram">Histograma</MenuItem>
-				</Select>
-				<AxisSelect
-					value={xAxis}
-					options={values}
-					onChange={onSelectX}
-					size="small"
-				/>
-				{!histogram && (
-					<>
-						<Typography variant="caption" color="text.secondary">
-							vs
-						</Typography>
-						<AxisSelect
-							value={yAxis}
-							options={values}
-							onChange={onSelectY}
-							size="small"
-						/>
-					</>
-				)}
-				{!isMobile && advancedControls}
-				{isMobile && controlsEnabled && (
-					<Tooltip
-						title={controlsOpen ? "Ocultar controles" : "Mais controles"}
-					>
-						<IconButton
-							size="small"
-							onClick={() => setControlsOpen((v) => !v)}
-							sx={controlsOpen ? { color: "primary.main" } : undefined}
-						>
-							{controlsOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-						</IconButton>
-					</Tooltip>
-				)}
-			</Box>
-			{isMobile && (
-				<Collapse in={controlsOpen} unmountOnExit sx={{ width: "100%" }}>
-					<Box sx={{ ...rowSx, pt: 0.5 }}>{advancedControls}</Box>
-				</Collapse>
+			<Select
+				value={plotMode}
+				onChange={(e) => onPlotModeChange(e.target.value as PlotMode)}
+				size="small"
+				variant="standard"
+				disableUnderline
+				sx={{ fontWeight: 600 }}
+			>
+				<MenuItem value="heatmap">Heatmap</MenuItem>
+				<MenuItem value="scatter">Scatter</MenuItem>
+				<MenuItem value="histogram">Histograma</MenuItem>
+			</Select>
+			<AxisSelect
+				value={xAxis}
+				options={values}
+				onChange={onSelectX}
+				size="small"
+			/>
+			{!histogram && (
+				<>
+					<Typography variant="caption" color="text.secondary">
+						vs
+					</Typography>
+					<AxisSelect
+						value={yAxis}
+						options={values}
+						onChange={onSelectY}
+						size="small"
+					/>
+				</>
 			)}
+			{advancedControls}
 		</Box>
 	)
 }
