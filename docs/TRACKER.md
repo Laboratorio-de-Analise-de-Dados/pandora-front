@@ -13,7 +13,7 @@ serviços) ou alinhe com o responsável.
 
 | Feature                               | Área afetada                                                  | Branch                       | Sessão                      | Desde      |
 | ------------------------------------- | ------------------------------------------------------------- | ---------------------------- | --------------------------- | ---------- |
-| FE-26 tema dark-first + layout mockup | `src/theme/`, `src/page/experiment/[id]/`, components globais | `refactor/tema-pandora-dark` | sessão front (outro agente) | 2026-09-15 |
+| — | — | — | — | — |
 
 ## Concluído nesta branch
 

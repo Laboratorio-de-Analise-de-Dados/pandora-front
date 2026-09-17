@@ -2,7 +2,7 @@
 
 **Repo:** pandora-front · **Tipo:** refactor visual · **Base:** `main`
 **Branch sugerida:** `refactor/tema-pandora-dark`
-**Status:** em andamento — base implementada em `refactor/tema-pandora-dark`
+**Status:** implementado — mergeado na `main` via PR #56
 (tokens, plot, árvore, cards, dialogs, bottom nav); em validação visual local
 antes de prod.
 
