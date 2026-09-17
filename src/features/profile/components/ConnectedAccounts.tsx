@@ -28,6 +28,7 @@ import { MdOutlinePerson as PersonIcon } from "react-icons/md"
 import { useAuth } from "../../../providers/AuthContext"
 import { useAuthProviders } from "../../../hooks/useAuthProviders"
 import {
+	confirmMerge,
 	startProviderLink,
 	unlinkSocialAccount,
 	type SocialAccount,
@@ -40,8 +41,10 @@ import {
 } from "../hooks/useSocialAccounts"
 import {
 	linkFeedbackFromParams,
+	mergeNoticeFromParams,
 	providerLabel,
 	type LinkFeedback,
+	type MergeNotice,
 } from "../utils/providerLink"
 
 const PROVIDER_ICONS: Record<SocialProvider, React.ReactNode> = {
@@ -108,20 +111,32 @@ export default function ConnectedAccounts() {
 	const [feedback, setFeedback] = useState<LinkFeedback | null>(null)
 	const [linking, setLinking] = useState<SocialProvider | null>(null)
 	const [target, setTarget] = useState<SocialAccount | null>(null)
+	const [mergeNotice, setMergeNotice] = useState<MergeNotice | null>(null)
+	const [merging, setMerging] = useState(false)
 	const [needsCredential, setNeedsCredential] = useState(false)
 	const [dialogError, setDialogError] = useState("")
 	const [email, setEmail] = useState("")
 	const [password, setPassword] = useState("")
 	const [wantsReset, setWantsReset] = useState(false)
 
-	// Feedback do redirect do backend (?linked= / ?link_error=) — executa
-	// uma vez no mount e limpa os params da URL.
+	// Feedback do redirect do backend (?linked= / ?link_error= /
+	// ?merge_notice=) — executa uma vez no mount e limpa os params da URL.
 	useEffect(() => {
+		const merge = mergeNoticeFromParams(searchParams)
+		if (merge) {
+			setMergeNotice(merge)
+		}
 		const fb = linkFeedbackFromParams(searchParams)
-		if (!fb) return
-		setFeedback(fb)
+		if (fb) {
+			setFeedback(fb)
+		}
+		if (!merge && !fb) return
 		searchParams.delete("linked")
 		searchParams.delete("link_error")
+		searchParams.delete("merge_notice")
+		searchParams.delete("provider")
+		searchParams.delete("email")
+		searchParams.delete("token")
 		setSearchParams(searchParams, { replace: true })
 		queryClient.invalidateQueries({ queryKey: SOCIAL_ACCOUNTS_QUERY_KEY })
 		refreshUser()
@@ -176,6 +191,30 @@ export default function ConnectedAccounts() {
 		setEmail("")
 		setPassword("")
 		setWantsReset(false)
+	}
+
+	const confirmMergeNow = async () => {
+		if (!mergeNotice) return
+		setMerging(true)
+		try {
+			await confirmMerge(mergeNotice.token)
+			setMergeNotice(null)
+			setFeedback({
+				severity: "success",
+				message: `Conta ${mergeNotice.email} fundida na sua.`,
+			})
+			queryClient.invalidateQueries({ queryKey: SOCIAL_ACCOUNTS_QUERY_KEY })
+			refreshUser()
+		} catch {
+			setMergeNotice(null)
+			setFeedback({
+				severity: "error",
+				message:
+					"Não foi possível fundir as contas — a confirmação pode ter expirado. Refaça a conexão.",
+			})
+		} finally {
+			setMerging(false)
+		}
 	}
 
 	const confirmUnlink = () => {
@@ -332,6 +371,46 @@ export default function ConnectedAccounts() {
 						onClick={confirmUnlink}
 					>
 						{unlink.isPending ? "Desconectando…" : "Desconectar"}
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			<Dialog
+				open={Boolean(mergeNotice)}
+				onClose={() => setMergeNotice(null)}
+				fullWidth
+			>
+				<DialogTitle>Fundir contas</DialogTitle>
+				<DialogContent
+					sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+				>
+					<Typography variant="body2">
+						A identidade {providerLabel(mergeNotice?.provider ?? "")} que você
+						conectou já pertence a outra conta Pandora
+						{mergeNotice?.email ? (
+							<>
+								{" "}
+								(<strong>{mergeNotice.email}</strong>)
+							</>
+						) : (
+							""
+						)}
+						. Ao fundir, todos os dados dela (experimentos, organizações,
+						histórico) passam para a sua conta atual e a outra é desativada.
+						Essa ação não pode ser desfeita.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setMergeNotice(null)} disabled={merging}>
+						Cancelar
+					</Button>
+					<Button
+						variant="contained"
+						color="error"
+						onClick={confirmMergeNow}
+						disabled={merging}
+					>
+						{merging ? "Fundindo…" : "Fundir contas"}
 					</Button>
 				</DialogActions>
 			</Dialog>

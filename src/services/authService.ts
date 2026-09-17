@@ -107,3 +107,7 @@ export const confirmProviderLink = async (
 	)
 	return res.data
 }
+
+export const confirmMerge = async (token: string): Promise<void> => {
+	await CytometryApi.post("/accounts/merge/confirm/", { token })
+}
