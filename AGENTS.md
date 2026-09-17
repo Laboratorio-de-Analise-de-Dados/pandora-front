@@ -27,9 +27,10 @@ React 18 + TypeScript (strict) + Vite + MUI 7 + Plotly + TanStack Query 5.
 ## Verificação obrigatória antes de concluir uma tarefa
 
 O CI (`/.github/workflows/ci.yml`) roda `typecheck` + `test` em push/PR para
-`main`. Build/deploy é por tag `v*` em `release.yml` (ADR-0022 do back);
-`rollback.yml` restaura uma tag via workflow_dispatch. Ainda assim, verifique
-local antes de concluir:
+`main`. Build/deploy dispara ao **publicar uma Release** na UI do GitHub
+(a tag `v*` é criada no publish; tag avulsa não deploya) — `release.yml`
+(ADR-0022 do back); `rollback.yml` restaura uma tag via workflow_dispatch.
+Ainda assim, verifique local antes de concluir:
 
 1. `pnpm typecheck` — sem erros
 2. `pnpm test` — testes passando (existem poucos; adicione se criar lógica nova)
@@ -106,7 +107,7 @@ ao concluir, atualize.
   `git checkout main && git pull` → `git checkout -b <tipo>/<slug>`.
   Não deixe mudanças soltas na `main`.
 - Commits semânticos em PT-BR: `feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`
-- Push para `main` roda só CI (typecheck + testes); build/deploy é por tag `v*` — produção agora é release versionada
+- Push para `main` roda só CI (typecheck + testes); build/deploy dispara ao publicar uma Release — produção é release versionada
 - Adicione arquivos específicos ao commit; **não** use `git add .`
 
 ## Não faça

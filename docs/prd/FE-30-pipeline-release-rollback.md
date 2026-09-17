@@ -21,11 +21,15 @@ contrato com a API).
 
 - **`ci.yml`** passa a rodar `pnpm typecheck` + `pnpm test` em push/PR
   para `main` — antes o CI só buildava a imagem.
-- **`release.yml`** dispara em tag `v*`: builda `pandora-front:vX.Y.Z`,
-  deploya após aprovação do environment `production`, espera o nginx
-  responder 200 e, se falhar, redeploya a tag anterior gravada em
-  `/opt/pandora/frontend/.deployed_version`. `latest` só é publicado no
-  Docker Hub depois do deploy saudável.
+- **`release.yml`** dispara ao **publicar uma GitHub Release** na UI
+  (Releases → Draft new release → "Create new tag `v*`" → "Generate
+  release notes" → Publish): a tag é criada no publish — tag avulsa via
+  `git tag` não deploya. As notas são geradas das PRs mergeadas no range,
+  categorizadas por `.github/release.yml`. O workflow builda
+  `pandora-front:vX.Y.Z`, deploya após aprovação do environment
+  `production`, espera o nginx responder 200 e, se falhar, redeploya a
+  tag anterior gravada em `/opt/pandora/frontend/.deployed_version`.
+  `latest` só é publicado no Docker Hub depois do deploy saudável.
 - **`rollback.yml`**: `workflow_dispatch` recebendo uma tag → redeploya.
   Cobre "deploy passou mas a UI veio errada".
 
@@ -38,7 +42,7 @@ antes — coordenação manual registrada na descrição da release.
 ## Critérios de aceite
 
 - [x] `ci.yml` verde em PR para `main` (typecheck + test).
-- [x] Tag `v*` gera imagem `vX.Y.Z` no Hub; `latest` imóvel até deploy ok.
+- [x] Release publicada gera imagem `vX.Y.Z` no Hub; `latest` imóvel até deploy ok.
 - [x] Deploy falho (nginx não responde) reverte para `.deployed_version`.
 - [x] `rollback.yml` restaura tag arbitrária com portão de produção.
 
