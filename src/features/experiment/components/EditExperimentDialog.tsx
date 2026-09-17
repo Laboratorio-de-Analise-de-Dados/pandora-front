@@ -36,10 +36,18 @@ const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({
 	onSave,
 }) => {
 	const { user } = useAuth()
-	// BE-28: tipo novo no vocabulário só para admin ou dono — membro
-	// editando experimento alheio escolhe entre os existentes.
+	// BE-28: tipo novo no vocabulário só para admin (super ou org_admin
+	// da org do experimento) ou dono — membro comum editando experimento
+	// alheio escolhe entre os existentes.
 	const canCreateType = Boolean(
-		user && (user.is_super_admin || experiment.created_by === user.id),
+		user &&
+		(user.is_super_admin ||
+			experiment.created_by === user.id ||
+			user.memberships.some(
+				(m) =>
+					m.organization.id === experiment.organization?.id &&
+					m.role === "org_admin",
+			)),
 	)
 	const [title, setTitle] = useState(experiment.title)
 	const [type, setType] = useState(experiment.type)

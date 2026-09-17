@@ -19,9 +19,9 @@ interface ExperimentFieldsProps {
 	onTitleChange: (title: string) => void
 	onTypeChange: (type: string) => void
 	onDescriptionChange: (description: string) => void
-	/** BE-28: criar tipo novo exige admin ou dono do experimento — quando
-	 * false, o autocomplete não oferece a opção `Criar "X"` (default true:
-	 * na criação o usuário é sempre o dono). */
+	/** BE-28: criar tipo novo exige admin (super ou org_admin da org do
+	 * experimento) ou dono — quando false, o autocomplete não oferece a
+	 * opção `Criar "X"` (default true: na criação o usuário é o dono). */
 	canCreateType?: boolean
 	idPrefix?: string
 }
