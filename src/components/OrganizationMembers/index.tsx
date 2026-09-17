@@ -9,9 +9,6 @@ import {
 	DialogContent,
 	DialogContentText,
 	DialogTitle,
-	List,
-	ListItem,
-	ListItemText,
 	MenuItem,
 	Select,
 	Typography,
@@ -30,6 +27,19 @@ const roleLabel: Record<string, string> = {
 	org_admin: "Administrador",
 	member: "Membro",
 }
+
+// Grade tabular compartilhada entre cabeçalho e linhas (só sm+; no xs a
+// linha empilha em coluna única — mobile-first).
+const rowGrid = {
+	xs: "1fr",
+	sm: "minmax(160px,1.2fr) minmax(200px,1.4fr) minmax(140px,170px) 96px",
+} as const
+
+const headerCellSx = {
+	color: "text.secondary",
+	textTransform: "uppercase",
+	letterSpacing: "0.05em",
+} as const
 
 export default function OrganizationMembers({
 	members,
@@ -50,48 +60,46 @@ export default function OrganizationMembers({
 
 	return (
 		<>
-			<List dense sx={{ mt: 1 }}>
-				{/* Cabeçalho da tabela de membros (mockup FE-26). */}
-				<ListItem
+			<Box sx={{ mt: 2 }}>
+				<Box
 					sx={{
-						justifyContent: "space-between",
-						px: 0,
-						py: 0.5,
+						display: { xs: "none", sm: "grid" },
+						gridTemplateColumns: rowGrid,
+						gap: 2,
+						px: 1.5,
+						pb: 1,
 					}}
 				>
-					<Typography
-						variant="caption"
-						sx={{
-							color: "text.secondary",
-							textTransform: "uppercase",
-							letterSpacing: "0.05em",
-						}}
-					>
+					<Typography variant="caption" sx={headerCellSx}>
 						Membro
 					</Typography>
+					<Typography variant="caption" sx={headerCellSx}>
+						E-mail
+					</Typography>
+					<Typography variant="caption" sx={headerCellSx}>
+						Papel
+					</Typography>
 					<Typography
 						variant="caption"
-						sx={{
-							color: "text.secondary",
-							textTransform: "uppercase",
-							letterSpacing: "0.05em",
-						}}
+						sx={{ ...headerCellSx, textAlign: "right" }}
 					>
-						Role
+						Ações
 					</Typography>
-				</ListItem>
+				</Box>
 				{members.map((member) => {
 					const isYou = member.user.id === currentUserId
 					return (
-						<ListItem
+						<Box
 							key={member.id}
-							divider
 							sx={{
-								flexDirection: { xs: "column", sm: "row" },
-								alignItems: { xs: "flex-start", sm: "center" },
-								justifyContent: "space-between",
-								gap: 1,
-								px: 0,
+								display: "grid",
+								gridTemplateColumns: rowGrid,
+								alignItems: "center",
+								gap: { xs: 1, sm: 2 },
+								px: 1.5,
+								py: 1.5,
+								borderTop: "1px solid",
+								borderColor: "divider",
 							}}
 						>
 							<Box
@@ -99,8 +107,6 @@ export default function OrganizationMembers({
 									display: "flex",
 									alignItems: "center",
 									gap: 1,
-									flex: "1 1 auto",
-									pr: { sm: 2 },
 									minWidth: 0,
 								}}
 							>
@@ -115,58 +121,54 @@ export default function OrganizationMembers({
 								>
 									{member.user.username.charAt(0).toUpperCase()}
 								</Avatar>
-								<ListItemText
-									sx={{ my: 0, minWidth: 0 }}
-									primary={`${member.user.username}${isYou ? " (Você)" : ""}`}
-									secondary={member.user.email}
-									primaryTypographyProps={{ noWrap: true }}
-									secondaryTypographyProps={{ noWrap: true }}
-								/>
+								<Typography variant="body2" noWrap>
+									{member.user.username}
+									{isYou ? " (Você)" : ""}
+								</Typography>
 							</Box>
+							<Typography
+								variant="body2"
+								color="text.secondary"
+								noWrap
+								sx={{ minWidth: 0 }}
+							>
+								{member.user.email}
+							</Typography>
 							{canManage ? (
-								<Box
-									sx={{
-										display: "flex",
-										gap: 1,
-										flexWrap: "wrap",
-										alignItems: "center",
-										justifyContent: { sm: "flex-end" },
-										flex: { sm: "0 0 auto" },
-										width: { xs: "100%", sm: "auto" },
-									}}
+								<Select
+									size="small"
+									value={member.role.name}
+									onChange={(e) =>
+										onChangeRole(member.id, e.target.value as RoleName)
+									}
+									sx={{ width: "100%" }}
 								>
-									<Select
-										size="small"
-										value={member.role.name}
-										onChange={(e) =>
-											onChangeRole(member.id, e.target.value as RoleName)
-										}
-										sx={{ minWidth: { xs: "100%", sm: 160 } }}
-									>
-										<MenuItem value="member">Membro</MenuItem>
-										<MenuItem value="org_admin">Administrador</MenuItem>
-									</Select>
-									<Button
-										variant="outlined"
-										color="error"
-										size="small"
-										onClick={() => setPending(member)}
-									>
-										{isYou ? "Sair" : "Remover"}
-									</Button>
-								</Box>
+									<MenuItem value="member">Membro</MenuItem>
+									<MenuItem value="org_admin">Administrador</MenuItem>
+								</Select>
 							) : (
 								<Chip
 									label={roleLabel[member.role.name] || member.role.name}
 									size="small"
 									variant="outlined"
-									sx={{ height: 22, fontSize: "0.7rem" }}
+									sx={{ height: 22, fontSize: "0.7rem", justifySelf: "start" }}
 								/>
 							)}
-						</ListItem>
+							{canManage && (
+								<Button
+									variant="outlined"
+									color="error"
+									size="small"
+									onClick={() => setPending(member)}
+									sx={{ justifySelf: { sm: "end" } }}
+								>
+									{isYou ? "Sair" : "Remover"}
+								</Button>
+							)}
+						</Box>
 					)
 				})}
-			</List>
+			</Box>
 
 			<Dialog
 				open={Boolean(pending)}

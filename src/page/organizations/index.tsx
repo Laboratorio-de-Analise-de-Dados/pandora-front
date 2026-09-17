@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Badge, Box, Paper, Tab, Tabs, Typography } from "@mui/material"
+import { Badge, Box, Tab, Tabs, Typography } from "@mui/material"
 import { toast } from "react-toastify"
 import { useAuth } from "../../providers/AuthContext"
 import { useInvites } from "../../hooks/useInvites"
@@ -139,7 +139,7 @@ export default function OrganizationsPage() {
 		<Box
 			sx={{
 				p: { xs: 2, sm: 3, md: 4 },
-				maxWidth: { xs: "100%", md: 1200 },
+				maxWidth: { xs: "100%", md: 1200, xl: 1400 },
 				mx: "auto",
 			}}
 		>
@@ -154,23 +154,24 @@ export default function OrganizationsPage() {
 				textColor="primary"
 				indicatorColor="primary"
 			>
-				<Tab label="Minhas Organizações" />
+				<Tab label={`Minhas Organizações (${organizations.length})`} />
 				<Tab
 					label={
 						<Badge
 							badgeContent={receivedInvites.length}
 							color="primary"
 							max={9}
+							showZero
 							sx={{ "& .MuiBadge-badge": { right: -14, top: 4 } }}
 						>
 							Convites Recebidos
 						</Badge>
 					}
 				/>
-				<Tab label="Criar Nova" />
+				<Tab label="+ Criar Nova" />
 			</Tabs>
 
-			<Paper sx={{ p: { xs: 2, md: 3 }, minHeight: 360 }}>
+			<Box>
 				{tab === 0 && (
 					<OrgsTab
 						organizations={organizations}
@@ -195,7 +196,7 @@ export default function OrganizationsPage() {
 					/>
 				)}
 				{tab === 2 && <CreateOrgTab onSubmit={handleCreateOrg} />}
-			</Paper>
+			</Box>
 
 			<InviteModal
 				open={inviteOpen}
