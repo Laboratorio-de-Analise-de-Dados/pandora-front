@@ -87,7 +87,7 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 			variant="caption"
 			fontWeight="bold"
 			color="text.secondary"
-			sx={{ mb: 1, display: "block" }}
+			sx={{ mb: 1, display: "block", textAlign: "center" }}
 		>
 			Eixo {axis}
 		</Typography>
@@ -229,7 +229,16 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				open={Boolean(anchor)}
 				onClose={() => setAnchor(null)}
 				anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-				slotProps={{ paper: { sx: { p: 1.5, width: 260 } } }}
+				slotProps={{
+					paper: {
+						sx: {
+							p: 2,
+							width: 280,
+							border: "1px solid",
+							borderColor: "divider",
+						},
+					},
+				}}
 			>
 				<AxisLimitSection
 					axis={axis}
