@@ -39,10 +39,9 @@ Estrutura canônica — borda por fora, coluna com padding por dentro:
 	}}
 >
 	<Box
+		// padding nos 4 lados — nada colado na borda
 		sx={{ display: "flex", flexDirection: "column", gap: 1.5, px: 1.5, py: 1 }}
 	>
-		{" "}
-		// padding nos 4 lados
 		<Typography
 			variant="caption"
 			fontWeight="bold"
