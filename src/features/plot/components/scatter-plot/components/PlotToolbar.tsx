@@ -1,7 +1,9 @@
 import React, { useState } from "react"
 import {
 	Box,
-	IconButton,
+	Button,
+	FormControl,
+	InputLabel,
 	MenuItem,
 	Popover,
 	Select,
@@ -61,11 +63,6 @@ const GATE_TOOLS: GateToolOption[] = [
 	},
 ]
 
-const SCALE_LABEL: Record<Scale, string> = {
-	linear: "Linear",
-	biex: "Biex",
-}
-
 interface AxisLimitsControlProps {
 	axis: "X" | "Y"
 	scale: Scale
@@ -90,33 +87,30 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 }) => {
 	const [anchor, setAnchor] = useState<HTMLElement | null>(null)
 	const label =
-		min === "" && max === ""
-			? `${axis}: auto`
-			: `${axis}: ${min || "…"}–${max || "…"}`
+		min === "" && max === "" ? "auto" : `${min || "…"}–${max || "…"}`
 	return (
 		<>
 			<Tooltip title={`Limites do eixo ${axis}`}>
-				<Box
-					role="button"
+				<Button
+					variant="outlined"
+					size="small"
 					aria-haspopup="true"
 					aria-expanded={Boolean(anchor)}
 					onClick={(e) => setAnchor(e.currentTarget)}
+					endIcon={<ChevronIcon />}
 					sx={(theme) => ({
-						display: "flex",
-						alignItems: "center",
-						cursor: "pointer",
+						textTransform: "none",
 						fontWeight: 600,
 						color:
 							min === "" && max === ""
 								? theme.palette.text.secondary
 								: theme.palette.text.primary,
-						"&:hover": { color: theme.palette.primary.main },
-						"& svg": { fontSize: 20 },
+						borderColor: theme.palette.divider,
+						"&:hover": { borderColor: theme.palette.text.secondary },
 					})}
 				>
-					{label}
-					<ChevronIcon />
-				</Box>
+					{`Limites ${axis}: ${label}`}
+				</Button>
 			</Tooltip>
 			<Popover
 				anchorEl={anchor}
@@ -285,78 +279,78 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 
 	const advancedControls = controlsEnabled ? (
 		<>
-			{/* Tipo de gate como select — mesmo display do modo de
-					    gráfico; tooltip em cada item ajuda a identificar. */}
-			<Select
-				value={tool}
-				onChange={(e) => onToolChange(e.target.value as GateTool)}
-				size="small"
-				variant="standard"
-				disableUnderline
-				renderValue={() => (
-					<Box
-						sx={{
-							display: "flex",
-							alignItems: "center",
-							gap: 0.5,
-						}}
-					>
-						{currentTool?.icon}
-						{histogram
-							? (currentTool?.histLabel ?? currentTool?.label)
-							: currentTool?.label}
-					</Box>
-				)}
-				sx={{ fontWeight: 600 }}
-			>
-				{visibleTools.map((t) => (
-					<MenuItem key={t.value} value={t.value}>
-						<Tooltip title={t.tip} placement="right" arrow>
-							<Box
-								sx={{
-									display: "flex",
-									alignItems: "center",
-									gap: 1,
-									width: "100%",
-								}}
-							>
-								{t.icon}
-								{histogram ? (t.histLabel ?? t.label) : t.label}
-							</Box>
-						</Tooltip>
-					</MenuItem>
-				))}
-			</Select>
-			{/* Escalas como selects (linear/biex); Y some no histograma. */}
-			<Tooltip title="Escala do eixo X">
+			{/* Tipo de gate — mesmo display outlined dos selects de eixo;
+					    tooltip em cada item ajuda a identificar. */}
+			<FormControl size="small" variant="outlined">
+				<InputLabel id="gate-tool-label">Gate</InputLabel>
 				<Select
+					labelId="gate-tool-label"
+					label="Gate"
+					value={tool}
+					onChange={(e) => onToolChange(e.target.value as GateTool)}
+					renderValue={() => (
+						<Box
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								gap: 0.5,
+							}}
+						>
+							{currentTool?.icon}
+							{histogram
+								? (currentTool?.histLabel ?? currentTool?.label)
+								: currentTool?.label}
+						</Box>
+					)}
+					sx={{ fontWeight: 600 }}
+				>
+					{visibleTools.map((t) => (
+						<MenuItem key={t.value} value={t.value}>
+							<Tooltip title={t.tip} placement="right" arrow>
+								<Box
+									sx={{
+										display: "flex",
+										alignItems: "center",
+										gap: 1,
+										width: "100%",
+									}}
+								>
+									{t.icon}
+									{histogram ? (t.histLabel ?? t.label) : t.label}
+								</Box>
+							</Tooltip>
+						</MenuItem>
+					))}
+				</Select>
+			</FormControl>
+			{/* Escalas como selects outlined (linear/biex); Y some no histograma. */}
+			<FormControl size="small" variant="outlined">
+				<InputLabel id="x-scale-label">Escala X</InputLabel>
+				<Select
+					labelId="x-scale-label"
+					label="Escala X"
 					value={xScale}
 					onChange={(e) => onXScaleChange(e.target.value as Scale)}
-					size="small"
-					variant="standard"
-					disableUnderline
-					renderValue={(v) => `X: ${SCALE_LABEL[v]}`}
 					sx={{ fontWeight: 600 }}
 				>
 					<MenuItem value="linear">Linear</MenuItem>
 					<MenuItem value="biex">Biex</MenuItem>
 				</Select>
-			</Tooltip>
+			</FormControl>
 			{!histogram && (
-				<Tooltip title="Escala do eixo Y">
+				<FormControl size="small" variant="outlined">
+					<InputLabel id="y-scale-label">Escala Y</InputLabel>
 					<Select
+						labelId="y-scale-label"
+						label="Escala Y"
 						value={yScale}
 						onChange={(e) => onYScaleChange(e.target.value as Scale)}
-						size="small"
-						variant="standard"
-						disableUnderline
-						renderValue={(v) => `Y: ${SCALE_LABEL[v]}`}
 						sx={{ fontWeight: 600 }}
 					>
 						<MenuItem value="linear">Linear</MenuItem>
 						<MenuItem value="biex">Biex</MenuItem>
 					</Select>
-				</Tooltip>
+				</FormControl>
 			)}
 			<AxisLimitsControl
 				axis="X"
@@ -380,40 +374,24 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					    saíram do botão de config, ele vive na barra. */}
 			{plotMode === "heatmap" && (
 				<Tooltip title="Cutoff de densidade — bins com contagem ≤ cutoff ficam transparentes">
-					<Box
+					<TextField
+						label="Corte"
+						type="number"
+						size="small"
+						variant="outlined"
+						value={cutoff}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+							onCutoffChange(Math.max(0, Number(e.target.value) || 0))
+						}
+						inputProps={{ min: 0, step: 1 }}
 						sx={{
-							display: "flex",
-							alignItems: "center",
-							gap: 0.5,
+							width: 92,
+							"& .MuiInputBase-input": {
+								fontWeight: 600,
+								fontSize: "0.875rem",
+							},
 						}}
-					>
-						<Typography
-							variant="caption"
-							color="text.secondary"
-							fontWeight={600}
-						>
-							Corte
-						</Typography>
-						<TextField
-							type="number"
-							size="small"
-							variant="standard"
-							value={cutoff}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-								onCutoffChange(Math.max(0, Number(e.target.value) || 0))
-							}
-							InputProps={{ disableUnderline: true }}
-							inputProps={{ min: 0, step: 1 }}
-							sx={{
-								width: 48,
-								"& .MuiInputBase-input": {
-									fontWeight: 600,
-									fontSize: "0.875rem",
-									p: 0,
-								},
-							}}
-						/>
-					</Box>
+					/>
 				</Tooltip>
 			)}
 			{/* No desktop todas as opções já estão na barra — o botão de
@@ -437,18 +415,20 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				width: "100%",
 			}}
 		>
-			<Select
-				value={plotMode}
-				onChange={(e) => onPlotModeChange(e.target.value as PlotMode)}
-				size="small"
-				variant="standard"
-				disableUnderline
-				sx={{ fontWeight: 600 }}
-			>
-				<MenuItem value="heatmap">Heatmap</MenuItem>
-				<MenuItem value="scatter">Scatter</MenuItem>
-				<MenuItem value="histogram">Histograma</MenuItem>
-			</Select>
+			<FormControl size="small" variant="outlined">
+				<InputLabel id="plot-mode-label">Modo</InputLabel>
+				<Select
+					labelId="plot-mode-label"
+					label="Modo"
+					value={plotMode}
+					onChange={(e) => onPlotModeChange(e.target.value as PlotMode)}
+					sx={{ fontWeight: 600 }}
+				>
+					<MenuItem value="heatmap">Heatmap</MenuItem>
+					<MenuItem value="scatter">Scatter</MenuItem>
+					<MenuItem value="histogram">Histograma</MenuItem>
+				</Select>
+			</FormControl>
 			<AxisSelect
 				label="X"
 				value={xAxis}
