@@ -63,6 +63,100 @@ const GATE_TOOLS: GateToolOption[] = [
 	},
 ]
 
+interface AxisLimitSectionProps {
+	axis: "X" | "Y"
+	scale: Scale
+	min: string
+	max: string
+	onMinChange: (v: string) => void
+	onMaxChange: (v: string) => void
+}
+
+/** Seção de um eixo dentro do popover de limites: slider de range +
+ * campos Min/Max (vazio = automático). */
+const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
+	axis,
+	scale,
+	min,
+	max,
+	onMinChange,
+	onMaxChange,
+}) => (
+	<Box>
+		<Typography
+			variant="caption"
+			fontWeight="bold"
+			color="text.secondary"
+			sx={{ mb: 1, display: "block" }}
+		>
+			Eixo {axis}
+		</Typography>
+		<Slider
+			value={[
+				min !== ""
+					? rawToSlider(Number(min), scale)
+					: scale === "biex"
+						? BIEX_SLIDER_MIN
+						: 0,
+				max !== ""
+					? rawToSlider(Number(max), scale)
+					: scale === "biex"
+						? BIEX_SLIDER_MAX
+						: LINEAR_SLIDER_MAX,
+			]}
+			onChange={(_, val) => {
+				const [lo, hi] = val as number[]
+				onMinChange(String(sliderToRaw(lo, scale)))
+				onMaxChange(String(sliderToRaw(hi, scale)))
+			}}
+			min={scale === "biex" ? BIEX_SLIDER_MIN : 0}
+			max={scale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
+			step={scale === "biex" ? 0.01 : 500}
+			marks={scale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+			valueLabelDisplay="auto"
+			valueLabelFormat={(v) => {
+				const raw = sliderToRaw(v, scale)
+				return raw === 0 ? "0" : raw.toLocaleString()
+			}}
+			size="small"
+			sx={{
+				height: 4,
+				mx: 1,
+				mt: 1,
+				mb: 3,
+				width: "auto",
+				display: "block",
+				"& .MuiSlider-markLabel": { fontSize: "0.62rem" },
+				"& .MuiSlider-thumb": { width: 12, height: 12 },
+			}}
+		/>
+		<Box sx={{ display: "flex", gap: 1.5 }}>
+			<TextField
+				label="Min"
+				type="number"
+				size="small"
+				value={min}
+				placeholder="auto"
+				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+					onMinChange(e.target.value)
+				}
+				sx={{ flex: 1 }}
+			/>
+			<TextField
+				label="Max"
+				type="number"
+				size="small"
+				value={max}
+				placeholder="auto"
+				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+					onMaxChange(e.target.value)
+				}
+				sx={{ flex: 1 }}
+			/>
+		</Box>
+	</Box>
+)
+
 interface AxisLimitsControlProps {
 	axis: "X" | "Y"
 	scale: Scale
@@ -73,8 +167,8 @@ interface AxisLimitsControlProps {
 }
 
 /**
- * Dropdown de limites do eixo — mesmo display dos selects (texto + chevron).
- * Dentro: slider de range (a "barra" do painel de config) + campos Min/Max;
+ * Campo de limites do eixo — mesmo display outlined dos selects (label na
+ * borda, chevron no fim). O popover mostra o slider de range + Min/Max;
  * campo vazio = automático.
  */
 const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
@@ -122,92 +216,16 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				open={Boolean(anchor)}
 				onClose={() => setAnchor(null)}
 				anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-				slotProps={{ paper: { sx: { p: 1.5, width: 260 } } }}
+				slotProps={{ paper: { sx: { p: 2.5, width: 340 } } }}
 			>
-				<Typography
-					variant="caption"
-					fontWeight="bold"
-					color="text.secondary"
-					sx={{ mb: 1, display: "block" }}
-				>
-					Limites do eixo {axis}
-				</Typography>
-				<Slider
-					value={[
-						min !== ""
-							? rawToSlider(Number(min), scale)
-							: scale === "biex"
-								? BIEX_SLIDER_MIN
-								: 0,
-						max !== ""
-							? rawToSlider(Number(max), scale)
-							: scale === "biex"
-								? BIEX_SLIDER_MAX
-								: LINEAR_SLIDER_MAX,
-					]}
-					onChange={(_, val) => {
-						const [lo, hi] = val as number[]
-						onMinChange(String(sliderToRaw(lo, scale)))
-						onMaxChange(String(sliderToRaw(hi, scale)))
-					}}
-					min={scale === "biex" ? BIEX_SLIDER_MIN : 0}
-					max={scale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-					step={scale === "biex" ? 0.01 : 500}
-					marks={scale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
-					valueLabelDisplay="auto"
-					valueLabelFormat={(v) => {
-						const raw = sliderToRaw(v, scale)
-						return raw === 0 ? "0" : raw.toLocaleString()
-					}}
-					size="small"
-					sx={{
-						height: 4,
-						mx: 0.75,
-						mb: 1.5,
-						width: "auto",
-						display: "block",
-						"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
-						"& .MuiSlider-thumb": { width: 10, height: 10 },
-					}}
+				<AxisLimitSection
+					axis={axis}
+					scale={scale}
+					min={min}
+					max={max}
+					onMinChange={onMinChange}
+					onMaxChange={onMaxChange}
 				/>
-				<Box sx={{ display: "flex", gap: 1 }}>
-					<TextField
-						label="Min"
-						type="number"
-						size="small"
-						value={min}
-						placeholder="auto"
-						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-							onMinChange(e.target.value)
-						}
-						sx={{
-							flex: 1,
-							"& .MuiInputBase-input": {
-								fontSize: "0.75rem",
-								padding: "4px 8px",
-							},
-							"& .MuiInputLabel-root": { fontSize: "0.7rem" },
-						}}
-					/>
-					<TextField
-						label="Max"
-						type="number"
-						size="small"
-						value={max}
-						placeholder="auto"
-						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-							onMaxChange(e.target.value)
-						}
-						sx={{
-							flex: 1,
-							"& .MuiInputBase-input": {
-								fontSize: "0.75rem",
-								padding: "4px 8px",
-							},
-							"& .MuiInputLabel-root": { fontSize: "0.7rem" },
-						}}
-					/>
-				</Box>
 			</Popover>
 		</>
 	)
