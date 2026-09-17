@@ -10,6 +10,7 @@ import {
 } from "../../../services/experimentService"
 import type { UpdateExperimentPayload } from "../../../services/experimentService"
 import { useAuth } from "../../../providers/AuthContext"
+import { useConfirm } from "../../../components/ConfirmDialog"
 import { useExperimentsContext } from "../../../providers/ExperimentContext"
 import { sha256File } from "../../../utils/fileHash"
 import {
@@ -27,6 +28,7 @@ export function useExperimentMetaActions() {
 	const { user } = useAuth()
 	const { addExperimentFile } = useExperimentsContext()
 	const queryClient = useQueryClient()
+	const confirm = useConfirm()
 
 	const [addingFile, setAddingFile] = useState(false)
 	const [savingExperiment, setSavingExperiment] = useState(false)
@@ -68,10 +70,14 @@ export function useExperimentMetaActions() {
 
 	const handleDelete = useCallback(async () => {
 		if (!experiment) return
-		const confirmed = window.confirm(
-			"Desativar este experimento? Ele sai das listagens, mas os dados " +
-				"são preservados e ele pode ser reativado depois.",
-		)
+		const confirmed = await confirm({
+			title: "Desativar experimento",
+			description:
+				"Ele sai das listagens, mas os dados são preservados e ele " +
+				"pode ser reativado depois.",
+			confirmLabel: "Desativar",
+			severity: "danger",
+		})
 		if (!confirmed) return
 		try {
 			await deleteExperiment(experiment.id)
@@ -82,7 +88,7 @@ export function useExperimentMetaActions() {
 				error instanceof Error ? error.message : String(error)
 			toast.error(`Erro ao desativar o experimento: ${errorMessage}`)
 		}
-	}, [experiment, navigate])
+	}, [experiment, navigate, confirm])
 
 	// BE-12: anexa um ZIP ou .fcs ao experimento. A dedup é escopada a este
 	// experimento — o check-hash pergunta antes de subir e o servidor ainda
@@ -99,10 +105,14 @@ export function useExperimentMetaActions() {
 				if (hash) {
 					const check = await checkFileHash(hash, experiment.id)
 					if (check.exists) {
-						const proceed = window.confirm(
-							`"${check.file_name ?? file.name}" já está neste experimento. ` +
-								"Enviar mesmo assim? Amostras duplicadas serão ignoradas.",
-						)
+						const proceed = await confirm({
+							title: "Arquivo duplicado",
+							description:
+								`"${check.file_name ?? file.name}" já está neste ` +
+								"experimento. Enviar mesmo assim? Amostras duplicadas " +
+								"serão ignoradas.",
+							confirmLabel: "Enviar mesmo assim",
+						})
 						if (!proceed) return
 					}
 				}
@@ -132,7 +142,7 @@ export function useExperimentMetaActions() {
 				setAddingFile(false)
 			}
 		},
-		[experiment, addExperimentFile, invalidateExperiment],
+		[experiment, addExperimentFile, invalidateExperiment, confirm],
 	)
 
 	const handleDownload = useCallback(async () => {

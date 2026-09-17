@@ -1,5 +1,6 @@
 import { ExperimentProvider } from "./ExperimentContext"
 import { AuthProvider } from "./AuthContext"
+import { ConfirmDialogProvider } from "../components/ConfirmDialog"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import React, { ReactNode } from "react"
 
@@ -24,7 +25,9 @@ const Providers: React.FC<ProvidersProps> = ({ children }) => {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
-				<ExperimentProvider>{children}</ExperimentProvider>
+				<ExperimentProvider>
+					<ConfirmDialogProvider>{children}</ConfirmDialogProvider>
+				</ExperimentProvider>
 			</AuthProvider>
 		</QueryClientProvider>
 	)
