@@ -56,3 +56,54 @@ export const fetchAuthProviders = async (): Promise<AuthProvidersConfig> => {
 	const res = await CytometryApi.get("/accounts/auth/providers/")
 	return res.data
 }
+
+export type SocialProvider = "google" | "microsoft"
+
+export interface SocialAccount {
+	id: number
+	provider: SocialProvider
+	email: string
+	linked_at: string
+}
+
+export const fetchSocialAccounts = async (): Promise<SocialAccount[]> => {
+	const res = await CytometryApi.get("/accounts/users/me/social-accounts/")
+	return res.data
+}
+
+export const startProviderLink = async (
+	provider: SocialProvider,
+): Promise<string> => {
+	const res = await CytometryApi.get(`/accounts/auth/${provider}/link/`)
+	return res.data.authorize_url
+}
+
+export interface UnlinkPayload {
+	email?: string
+	password?: string
+	request_password_reset?: boolean
+}
+
+export const unlinkSocialAccount = async (
+	id: number,
+	payload: UnlinkPayload = {},
+): Promise<void> => {
+	await CytometryApi.post(`/accounts/social-accounts/${id}/unlink/`, payload)
+}
+
+export interface ConfirmLinkResponse extends LoginResponse {
+	user_id: number
+	username: string
+	email: string
+}
+
+export const confirmProviderLink = async (
+	provider: SocialProvider,
+	token: string,
+): Promise<ConfirmLinkResponse> => {
+	const res = await CytometryApi.post(
+		`/accounts/auth/${provider}/confirm-link/`,
+		{ token },
+	)
+	return res.data
+}

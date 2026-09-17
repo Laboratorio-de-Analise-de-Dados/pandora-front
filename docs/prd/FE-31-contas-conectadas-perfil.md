@@ -1,8 +1,8 @@
 # FE-31 — Contas conectadas no perfil + aviso de vínculo no login SSO
 
 **Repo:** pandora-front · **Tipo:** feature · **Base:** `main`
-**Branch sugerida:** `feat/connected-accounts`
-**Status:** não iniciado.
+**Branch:** `feat/connected-accounts`
+**Status:** implementado.
 **Backend:** `pandora-backend/docs/prd/BE-29` · **ADR cruzado:** `pandora-backend/docs/adr/0025`
 
 ## Problema
