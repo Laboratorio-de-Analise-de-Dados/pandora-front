@@ -1,7 +1,15 @@
-import { Box, Checkbox, Chip, IconButton, Typography } from "@mui/material"
+import {
+	Box,
+	Checkbox,
+	Chip,
+	IconButton,
+	Tooltip,
+	Typography,
+} from "@mui/material"
 import {
 	MdInfoOutline as InfoIcon,
 	MdMoreVert as MoreVertIcon,
+	MdOutlineBlurOn as CompensationIcon,
 } from "react-icons/md"
 import type { ExperimentFiles } from "../../../../types"
 import TreeNode from "./TreeNode"
@@ -21,10 +29,16 @@ export default function FileTreeItem({
 	const inactive = file.active === false
 	const canManage = handlers.onDisableFile || handlers.onEnableFile
 	const selecting = !!handlers.onToggleFile
+	const sel = handlers.selectedSource
+	const selected =
+		sel?.type === "file"
+			? sel.id === file.id
+			: sel?.type === "gate" && sel.fileDataId === file.id
 	return (
 		<TreeNode
 			depth={depth}
 			inactive={inactive}
+			selected={!selecting && selected}
 			onSelect={
 				selecting
 					? () => handlers.onToggleFile?.(file.id)
@@ -57,6 +71,17 @@ export default function FileTreeItem({
 					>
 						📄{file.file_name}
 					</Typography>
+					{file.has_embedded_compensation && (
+						<Tooltip
+							title="Traz matriz de compensação ($SPILLOVER) nos headers"
+							arrow
+						>
+							<CompensationIcon
+								style={{ fontSize: 13, flexShrink: 0, opacity: 0.7 }}
+								color="orange"
+							/>
+						</Tooltip>
+					)}
 					{inactive && (
 						<Chip
 							label="Desabilitada"

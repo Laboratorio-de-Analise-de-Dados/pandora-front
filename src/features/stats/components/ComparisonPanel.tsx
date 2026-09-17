@@ -213,25 +213,21 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 	)
 
 	return (
-		<Box
-			sx={{
-				mt: 1,
-				border: "1px solid",
-				borderColor: "divider",
-				borderRadius: 1,
-				overflow: "hidden",
-			}}
-		>
+		<Box sx={{ mt: 1 }}>
 			<Box
 				sx={{
 					display: "flex",
 					alignItems: "center",
 					gap: 0.5,
-					px: 1,
+					px: 0.5,
 					py: 0.5,
-					bgcolor: "action.hover",
+					borderRadius: 2,
 					cursor: "pointer",
-					"&:hover": { bgcolor: "action.selected" },
+					color: "text.secondary",
+					"&:hover": {
+						bgcolor: "action.hover",
+						color: "text.primary",
+					},
 				}}
 				onClick={() => setExpanded((p) => !p)}
 			>
@@ -264,7 +260,12 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 								onClick={() => handleExportClick("xlsx")}
 								sx={{ p: 0.25 }}
 							>
-								<ExportIcon style={{ fontSize: 14, color: "#1976d2" }} />
+								<ExportIcon
+									style={{
+										fontSize: 14,
+										color: "var(--mui-palette-primary-main, #10B981)",
+									}}
+								/>
 							</IconButton>
 						</Tooltip>
 					</Box>
@@ -272,7 +273,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 			</Box>
 
 			<Collapse in={expanded}>
-				<Box sx={{ p: 1 }}>
+				<Box sx={{ px: 0.5, pt: 0.5 }}>
 					<Box
 						sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}
 					>

@@ -47,17 +47,28 @@ export const buildAnalysisRows = (
 	for (const p of populations) {
 		const sm = p.analysis?.summary_metrics
 		const cs = p.analysis?.channel_statistics
+		// BE-18: gate não-avaliável na amostra não exporta stat — "—" em tudo.
+		const notEvaluable = p.analysis?.applicable === false
 		const row: string[] = [
 			p.fileName,
 			p.strategy,
 			p.name,
-			String(sm?.count ?? ""),
-			sm ? (sm.percent_of_parent_population * 100).toFixed(2) : "",
-			sm ? (sm.percent_of_total_population * 100).toFixed(2) : "",
+			notEvaluable ? "—" : String(sm?.count ?? ""),
+			notEvaluable
+				? "—"
+				: sm
+					? (sm.percent_of_parent_population * 100).toFixed(2)
+					: "",
+			notEvaluable
+				? "—"
+				: sm
+					? (sm.percent_of_total_population * 100).toFixed(2)
+					: "",
 		]
 		for (const ch of displayChannels) {
 			const stat = cs?.[ch]
-			for (const m of metricCols) row.push(stat ? String(stat[m.key]) : "")
+			for (const m of metricCols)
+				row.push(notEvaluable ? "—" : stat ? String(stat[m.key]) : "")
 		}
 		rows.push(row)
 	}

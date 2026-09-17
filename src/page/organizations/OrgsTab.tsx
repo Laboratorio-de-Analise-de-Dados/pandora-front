@@ -1,4 +1,5 @@
 import { Box, Button, Paper, Typography } from "@mui/material"
+import { MdAdd as AddIcon } from "react-icons/md"
 import type { Organization, RoleName } from "../../services/organizationService"
 import OrganizationMembers from "../../components/OrganizationMembers"
 import type { AuthUser } from "../../providers/AuthContext"
@@ -51,12 +52,13 @@ export default function OrgsTab({
 						</Box>
 						{isOrgAdmin(org.id) && (
 							<Button
-								variant="outlined"
+								variant="contained"
 								size="small"
+								startIcon={<AddIcon />}
 								onClick={() => onInvite(org)}
-								sx={{ mt: { xs: 1, sm: 0 } }}
+								sx={{ mt: { xs: 1, sm: 0 }, whiteSpace: "nowrap" }}
 							>
-								Convidar
+								Convidar Membro
 							</Button>
 						)}
 					</Box>

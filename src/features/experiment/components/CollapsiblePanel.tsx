@@ -34,6 +34,8 @@ export interface CollapsiblePanelProps {
 	desktopMinWidth?: number
 	/** Borda de onde o drawer sobe no mobile. Default = `side`. */
 	mobileAnchor?: "left" | "right" | "bottom"
+	/** Distância do gatilho flutuante ao topo no mobile (default 8). */
+	mobileTriggerTop?: number
 	/** Padding interno (o conteúdo que já se auto-espaça usa 0). */
 	contentPadding?: number | string
 	/**
@@ -41,6 +43,12 @@ export interface CollapsiblePanelProps {
 	 * Útil quando o controle de abrir/fechar vem de fora (ex.: Tabs).
 	 */
 	hideTrigger?: boolean
+	/**
+	 * Desktop apenas: `true` = painel flutua sobre o conteúdo (overlay
+	 * absoluto, ex.: histórico sobre as stats); `false`/omitido = coluna
+	 * fixa no flex row do workspace, como no mockup (árvore e stats).
+	 */
+	overlay?: boolean
 	/** `sx` aplicado ao papel do Drawer (mobile) ou ao Box do desktop. */
 	paperSx?: SxProps<Theme>
 	children: ReactNode
@@ -63,8 +71,10 @@ export default function CollapsiblePanel({
 	desktopWidth,
 	desktopMinWidth,
 	mobileAnchor,
+	mobileTriggerTop = 8,
 	contentPadding = 0,
 	hideTrigger = false,
+	overlay = false,
 	paperSx,
 	children,
 }: CollapsiblePanelProps) {
@@ -74,7 +84,14 @@ export default function CollapsiblePanel({
 			<>
 				{/* Marca-página no cantinho superior abre o drawer */}
 				{!hideTrigger && (
-					<Box sx={{ position: "absolute", top: 8, [side]: 8, zIndex: 21 }}>
+					<Box
+						sx={{
+							position: "absolute",
+							top: mobileTriggerTop,
+							[side]: 8,
+							zIndex: 21,
+						}}
+					>
 						<Tooltip title={`Mostrar ${label}`} placement="bottom">
 							<Box
 								role="button"
@@ -114,7 +131,7 @@ export default function CollapsiblePanel({
 											height: "80vh",
 											borderTopLeftRadius: 16,
 											borderTopRightRadius: 16,
-											bgcolor: theme.palette.background.default,
+											bgcolor: theme.palette.background.paper,
 											overflowY: "auto",
 											...resolveSx(theme, paperSx),
 										}
@@ -122,7 +139,7 @@ export default function CollapsiblePanel({
 											width: "80%",
 											maxWidth: 340,
 											p: contentPadding,
-											bgcolor: theme.palette.background.default,
+											bgcolor: theme.palette.background.paper,
 											display: "flex",
 											flexDirection: "column",
 											minHeight: 0,
@@ -151,17 +168,18 @@ export default function CollapsiblePanel({
 			{open && (
 				<Box
 					sx={(theme: Theme) => ({
-						position: "absolute",
-						top: 0,
-						[side]: 0,
-						zIndex: 20,
+						...(overlay
+							? { position: "absolute" as const, top: 0, [side]: 0, zIndex: 20 }
+							: { position: "relative" as const, flexShrink: 0 }),
 						width: desktopWidth,
 						minWidth: desktopMinWidth,
 						height: "100%",
 						[side === "left" ? "borderRight" : "borderLeft"]:
 							`1px solid ${theme.palette.divider}`,
-						bgcolor: theme.palette.background.default,
-						boxShadow: theme.shadows[8],
+						// Superfície elevada sobre o canvas (FE-26): #161616 sobre
+						// #0D0D0D — o painel se separa por tom, não por outline duro.
+						bgcolor: theme.palette.background.paper,
+						boxShadow: overlay ? theme.shadows[8] : "none",
 						overflowY: "auto",
 						display: "flex",
 						flexDirection: "column",
@@ -173,9 +191,9 @@ export default function CollapsiblePanel({
 					{children}
 				</Box>
 			)}
-			{/* Aba/marca-página: sempre visível; grudada na borda interna do
-			    painel quando aberto, servindo de botão pra fechar. */}
-			{!hideTrigger && (
+			{/* Aba/marca-página no desktop só aparece quando o painel está
+			    fechado — aberto, não há botão de esconder (FE-26). */}
+			{!hideTrigger && !open && (
 				<Box
 					sx={{
 						position: "absolute",

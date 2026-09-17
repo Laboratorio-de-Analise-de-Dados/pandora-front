@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import {
+	Alert,
 	Box,
 	Chip,
 	Collapse,
@@ -479,26 +480,33 @@ export default function StatsPanel({
 				onSelect={setStatsSource}
 			/>
 
-			{/* Collapsable stats section */}
-			<Box
-				sx={{
-					mt: 0.5,
-					border: "1px solid",
-					borderColor: "divider",
-					borderRadius: 1,
-					overflow: "hidden",
-				}}
-			>
+			{/* BE-18: gate não-avaliável nesta amostra — sem métricas, explicar. */}
+			{analysisData?.applicable === false && (
+				<Alert severity="warning" sx={{ mt: 0.5 }}>
+					{analysisData.blocked_by_gate &&
+					analysisData.blocked_by_gate.id !== currentGate?.id
+						? `Gate não avaliável nesta amostra: o gate "${analysisData.blocked_by_gate.name}" usa canal(is) ausente(s) (${analysisData.missing_channels?.join(", ")}).`
+						: `Gate não avaliável nesta amostra: canal(is) ausente(s) (${analysisData.missing_channels?.join(", ")}).`}
+				</Alert>
+			)}
+
+			{/* Seção de detalhes colapsável: header em texto plano, sem caixa
+			    com borda — o painel já é a superfície (FE-26). */}
+			<Box sx={{ mt: 0.5 }}>
 				<Box
 					sx={{
 						display: "flex",
 						alignItems: "center",
 						gap: 0.5,
-						px: 1,
+						px: 0.5,
 						py: 0.5,
-						bgcolor: "action.hover",
+						borderRadius: 2,
 						cursor: "pointer",
-						"&:hover": { bgcolor: "action.selected" },
+						color: "text.secondary",
+						"&:hover": {
+							bgcolor: "action.hover",
+							color: "text.primary",
+						},
 					}}
 					onClick={() => setStatsExpanded((p) => !p)}
 				>
@@ -530,14 +538,19 @@ export default function StatsPanel({
 								onClick={() => handleExport("current", "xlsx")}
 								sx={{ p: 0.25 }}
 							>
-								<ExportIcon style={{ fontSize: 14, color: "#1976d2" }} />
+								<ExportIcon
+									style={{
+										fontSize: 14,
+										color: "var(--mui-palette-primary-main, #10B981)",
+									}}
+								/>
 							</IconButton>
 						</Tooltip>
 					</Box>
 				</Box>
 
 				<Collapse in={statsExpanded}>
-					<Box sx={{ p: 1 }}>
+					<Box sx={{ px: 0.5, pt: 0.5 }}>
 						{summary && <StatsSummaryCard summary={summary} />}
 
 						{channelStats && (

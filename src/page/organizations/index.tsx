@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Box, Paper, Tab, Tabs, Typography } from "@mui/material"
+import { Badge, Box, Paper, Tab, Tabs, Typography } from "@mui/material"
 import { toast } from "react-toastify"
 import { useAuth } from "../../providers/AuthContext"
 import { useInvites } from "../../hooks/useInvites"
@@ -32,7 +32,7 @@ export default function OrganizationsPage() {
 		accept,
 		decline,
 		refresh: refreshReceived,
-	} = useInvites(Boolean(user) && tab === 2)
+	} = useInvites(Boolean(user) && tab === 1)
 
 	const {
 		invites: sentInvites,
@@ -40,7 +40,7 @@ export default function OrganizationsPage() {
 		resend,
 		cancel,
 		refresh: refreshSent,
-	} = useSentInvites(Boolean(user) && tab === 2)
+	} = useSentInvites(Boolean(user) && tab === 1)
 
 	const handleCreateOrg = async (name: string, orgType: string) => {
 		await createOrg(name, orgType)
@@ -147,10 +147,27 @@ export default function OrganizationsPage() {
 				Organizações
 			</Typography>
 
-			<Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
-				<Tab label="Meus grupos" />
-				<Tab label="Criar grupo" />
-				<Tab label="Convites" />
+			<Tabs
+				value={tab}
+				onChange={(_, v) => setTab(v)}
+				sx={{ mb: 3 }}
+				textColor="primary"
+				indicatorColor="primary"
+			>
+				<Tab label="Minhas Organizações" />
+				<Tab
+					label={
+						<Badge
+							badgeContent={receivedInvites.length}
+							color="primary"
+							max={9}
+							sx={{ "& .MuiBadge-badge": { right: -14, top: 4 } }}
+						>
+							Convites Recebidos
+						</Badge>
+					}
+				/>
+				<Tab label="Criar Nova" />
 			</Tabs>
 
 			<Paper sx={{ p: { xs: 2, md: 3 }, minHeight: 360 }}>
@@ -164,8 +181,7 @@ export default function OrganizationsPage() {
 						onRemoveMember={handleRemoveMember}
 					/>
 				)}
-				{tab === 1 && <CreateOrgTab onSubmit={handleCreateOrg} />}
-				{tab === 2 && (
+				{tab === 1 && (
 					<InvitesTab
 						receivedInvites={receivedInvites}
 						receivedLoading={receivedLoading}
@@ -178,6 +194,7 @@ export default function OrganizationsPage() {
 						onCancel={handleCancel}
 					/>
 				)}
+				{tab === 2 && <CreateOrgTab onSubmit={handleCreateOrg} />}
 			</Paper>
 
 			<InviteModal

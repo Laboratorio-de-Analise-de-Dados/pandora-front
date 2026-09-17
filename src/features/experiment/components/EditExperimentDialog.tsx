@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from "react"
 import {
 	Alert,
-	Autocomplete,
+	Box,
 	Button,
 	Chip,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
-	TextField,
+	FormControl,
+	FormHelperText,
+	InputLabel,
+	Typography,
 } from "@mui/material"
 import type { Experiment } from "../../../types"
+import type { UpdateExperimentPayload } from "../../../services/experimentService"
 import ExperimentFields from "./ExperimentFields"
 
 interface EditExperimentDialogProps {
@@ -19,7 +23,7 @@ interface EditExperimentDialogProps {
 	saving: boolean
 	error: string | null
 	onClose: () => void
-	onSave: (payload: { title: string; type: string; values: string[] }) => void
+	onSave: (payload: UpdateExperimentPayload) => void
 }
 
 const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({
@@ -32,14 +36,16 @@ const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({
 }) => {
 	const [title, setTitle] = useState(experiment.title)
 	const [type, setType] = useState(experiment.type)
-	const [values, setValues] = useState<string[]>(experiment.values ?? [])
+	const [description, setDescription] = useState(experiment.description ?? "")
 
 	useEffect(() => {
 		if (!open) return
 		setTitle(experiment.title)
 		setType(experiment.type)
-		setValues(experiment.values ?? [])
+		setDescription(experiment.description ?? "")
 	}, [open, experiment])
+
+	const values = experiment.values ?? []
 
 	return (
 		<Dialog
@@ -59,36 +65,43 @@ const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({
 				<ExperimentFields
 					title={title}
 					type={type}
+					description={description}
 					onTitleChange={setTitle}
 					onTypeChange={setType}
+					onDescriptionChange={setDescription}
 					idPrefix="edit-experiment"
 				/>
-				<Autocomplete
-					multiple
-					freeSolo
-					options={[]}
-					value={values}
-					onChange={(_, next) => setValues(next as string[])}
-					renderTags={(tagValues, getTagProps) =>
-						tagValues.map((value, index) => (
-							<Chip
-								size="small"
-								label={value}
-								{...getTagProps({ index })}
-								key={`${value}-${index}`}
-							/>
-						))
-					}
-					renderInput={(params) => (
-						<TextField
-							{...params}
-							variant="standard"
-							label="Marcadores / values"
-							helperText="Enter para adicionar cada marcador"
-						/>
-					)}
-					sx={{ mt: 2 }}
-				/>
+				{/* Canais são derivados dos arquivos do experimento e re-computados
+					a cada extração — exibidos somente leitura (BE-24). */}
+				<FormControl margin="normal" fullWidth>
+					<InputLabel shrink htmlFor="edit-experiment-values">
+						Marcadores / values
+					</InputLabel>
+					<Box
+						id="edit-experiment-values"
+						sx={{
+							display: "flex",
+							flexWrap: "wrap",
+							gap: 0.5,
+							mt: 3,
+							minHeight: 32,
+							alignItems: "center",
+						}}
+					>
+						{values.length > 0 ? (
+							values.map((value) => (
+								<Chip size="small" label={value} key={value} />
+							))
+						) : (
+							<Typography variant="body2" color="text.secondary">
+								Nenhum canal ainda — suba um arquivo para extrair
+							</Typography>
+						)}
+					</Box>
+					<FormHelperText>
+						Derivados dos arquivos do experimento — não editável
+					</FormHelperText>
+				</FormControl>
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={onClose}>Cancelar</Button>
@@ -96,7 +109,11 @@ const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({
 					variant="contained"
 					disabled={saving || !title.trim() || !type.trim()}
 					onClick={() =>
-						onSave({ title: title.trim(), type: type.trim(), values })
+						onSave({
+							title: title.trim(),
+							type: type.trim(),
+							description: description.trim(),
+						})
 					}
 				>
 					{saving ? "Salvando..." : "Salvar"}

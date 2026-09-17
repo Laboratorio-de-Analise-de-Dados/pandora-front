@@ -17,6 +17,7 @@ export default function TreeNode({
 	onSelect,
 	defaultExpanded = true,
 	inactive = false,
+	selected = false,
 }: {
 	label: ReactNode
 	children?: ReactNode
@@ -24,8 +25,10 @@ export default function TreeNode({
 	/** Seleção do nó (plot). Nós agrupadores não recebem onSelect. */
 	onSelect?: () => void
 	defaultExpanded?: boolean
-	/** Amostra desabilitada: tinta vermelha suave + contorno no item. */
+	/** Amostra desabilitada: esmaecida em cinza (text.disabled do tema). */
 	inactive?: boolean
+	/** Fonte carregada no plot: faixa verde translúcida full-width (FE-26). */
+	selected?: boolean
 }) {
 	const [expanded, setExpanded] = useState(defaultExpanded)
 	const expandable = Boolean(children)
@@ -53,16 +56,21 @@ export default function TreeNode({
 					pr: 0.5,
 					py: 0.25,
 					cursor: "pointer",
-					borderRadius: 1,
 					userSelect: "none",
+					...(selected && {
+						backgroundColor: "rgba(16, 185, 129, 0.12)",
+						color: theme.palette.text.primary,
+					}),
 					...(inactive && {
-						backgroundColor: `${theme.palette.error.main}12`,
-						boxShadow: `inset 0 0 0 1px ${theme.palette.error.main}45`,
+						color: theme.palette.text.disabled,
+						backgroundColor: theme.palette.action.disabledBackground,
 					}),
 					"&:hover": {
 						backgroundColor: inactive
-							? `${theme.palette.error.main}20`
-							: "action.hover",
+							? theme.palette.action.disabledBackground
+							: selected
+								? "rgba(16, 185, 129, 0.18)"
+								: "action.hover",
 					},
 					"&:focus-visible": {
 						outline: "2px solid",

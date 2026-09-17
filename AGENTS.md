@@ -58,6 +58,9 @@ Definido pelo `.prettierrc` e observado no código existente:
 - **Mobile-first sempre** (ADR-0002): a app roda majoritariamente em desktop,
   mas todo layout novo é desenhado de `xs` para cima — breakpoints do MUI
   (`sx`, props responsivas), sem largura fixa que estoure em tela pequena
+- **Datas sempre no fuso do browser**: a API emite ISO-8601 em UTC — parseie
+  com `new Date(iso)` e formate com getters/`toLocale*` locais. Nunca fixe
+  `timeZone` nem exiba a string UTC crua.
 - Funções puras em `utils/` (testáveis); estado/side-effects em custom hooks
 - Testes colocados ao lado do código: `foo.ts` → `foo.test.ts`
 
@@ -84,6 +87,15 @@ Antes de codar em área de decisão arquitetural, consulte `docs/adr/` (índice 
 - Build sai em `build/` (não `dist/`); dev e preview usam porta **3000**.
 - Cliente HTTP centralizado em `src/API/` (Axios, `CytometryApi`).
 - `tsconfig.tsbuildinfo` é gerado (incremental) — não edite.
+
+## Sessões paralelas
+
+Vários agentes podem trabalhar neste repo ao mesmo tempo. **Antes de
+codar, leia `docs/TRACKER.md`** — ele lista o que está em andamento, quem
+é o responsável e qual área de arquivos cada frente toca. Se a sua
+feature conflita com uma linha ativa, pegue outra ou alinhe antes. Ao
+assumir trabalho novo, registre sua linha no tracker no mesmo commit;
+ao concluir, atualize.
 
 ## Git
 

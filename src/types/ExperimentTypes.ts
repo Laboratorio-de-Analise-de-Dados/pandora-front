@@ -2,12 +2,26 @@ export interface Experiment {
 	id: number
 	title: string
 	type: string
+	/** Contexto livre do experimento (opcional, BE-24). */
+	description?: string
 	values: string[]
 	active: boolean
+	/** Ciclo de vida do processamento (`new|uploading|processing|done|error`). */
+	status?: string
 	organization: Organization | null
 	created_by: number
 	/** Username do criador (ListExperimentSerializer); ausente se o back ainda não expõe. */
 	created_by_name?: string | null
+	// Campos do BE-21 (metadados visuais da listagem) — opcionais; o card
+	// renderiza sem eles até o back expor.
+	/** Papel do usuário logado no experimento ("dono"/"editor"/"viewer"). */
+	my_role?: string | null
+	/** Progresso 0–100 durante upload/processamento; null quando n/a. */
+	progress?: number | null
+	/** Se a API tem preview (histograma baixa-res) disponível para o card. */
+	preview_available?: boolean
+	/** BE-22: alguma amostra ativa traz matriz de compensação embutida. */
+	compensated?: boolean
 }
 
 export type Organization = {
@@ -28,6 +42,10 @@ export interface Subsample {
 	created_at: string
 	/** Só amostras ativas. */
 	files_count: number
+	/** BE-22/ADR-0019: subsample marcado como controle de compensação. */
+	control_type?: "unstained" | "single_stain" | null
+	/** Canal fluorescente coberto — obrigatório quando single_stain. */
+	control_channel?: string
 }
 
 export interface ExperimentFiles {
@@ -38,6 +56,8 @@ export interface ExperimentFiles {
 	deactivated_at: string | null
 	/** FK do subsample — a API serializa como id (null = "Sem subsample"). */
 	subsample?: number | null
+	/** BE-22: a amostra traz $SPILLOVER/$COMP nos headers FCS. */
+	has_embedded_compensation?: boolean
 }
 
 /** Nó selecionado na árvore/plot: uma amostra ou um gate dentro dela. */
@@ -115,6 +135,14 @@ export interface SummaryMetrics {
 export interface AnalysisResultData {
 	summary_metrics?: SummaryMetrics
 	channel_statistics?: Record<string, ChannelStat>
+	/**
+	 * ADR-0016 (backend): `false` quando o gate referencia canal ausente na
+	 * amostra — a linhagem abaixo dele fica cortada e sem métricas.
+	 */
+	applicable?: boolean
+	reason?: string
+	missing_channels?: string[]
+	blocked_by_gate?: { id: number; name: string }
 }
 
 /**

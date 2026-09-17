@@ -18,9 +18,26 @@ export const fetchExperiment = async (id: string): Promise<Experiment> => {
 export interface ExperimentInitPayload {
 	title: string
 	type: string
+	description?: string
 	totalChunks: number
 	fileName?: string
 	organizationId?: number | null
+}
+
+/** Criação sem arquivo (BE-24): o experimento nasce vazio e as amostras
+ * chegam depois via "adicionar arquivos" (fluxo /files/init). */
+export interface CreateExperimentPayload {
+	title: string
+	type: string
+	description?: string
+	organizationId?: number | null
+}
+
+export const createExperiment = async (
+	payload: CreateExperimentPayload,
+): Promise<Experiment> => {
+	const res = await CytometryApi.post("/experiment/", payload)
+	return res.data
 }
 
 export interface ExperimentInitResponse {
@@ -74,7 +91,9 @@ export const enableFileData = async (fileDataId: number): Promise<void> => {
 export interface UpdateExperimentPayload {
 	title?: string
 	type?: string
-	values?: string[]
+	description?: string
+	// `values` (canais) não é gravável: é derivado dos arquivos do
+	// experimento e re-computado a cada extração (BE-24).
 }
 
 export const updateExperiment = async (
@@ -217,4 +236,24 @@ export const fetchFileHeaders = async (
 ): Promise<FileHeadersResponse> => {
 	const res = await CytometryApi.get(`/experiment/file/${fileDataId}/headers`)
 	return res.data
+}
+
+/** Histograma 2D de baixa resolução da 1ª amostra ativa (BE-21). */
+export interface ExperimentPreviewResponse {
+	file_data_id: number
+	histogram: (number | null)[][]
+	x_edges: number[]
+	y_edges: number[]
+	x_label: string
+	y_label: string
+}
+
+/** `null` quando o back ainda não tem dado pronto (204). */
+export const fetchExperimentPreview = async (
+	experimentId: number,
+): Promise<ExperimentPreviewResponse | null> => {
+	const res = await CytometryApi.get<ExperimentPreviewResponse>(
+		`/experiment/${experimentId}/preview`,
+	)
+	return res.status === 204 || !res.data ? null : res.data
 }

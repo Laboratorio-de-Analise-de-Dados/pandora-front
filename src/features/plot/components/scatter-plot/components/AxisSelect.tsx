@@ -11,34 +11,27 @@ interface AxisSelectProps {
 	value: string
 	options: string[]
 	onChange: (value: string) => void
-	/** Eixo Y aparece girado 90° à esquerda do gráfico no desktop. */
-	rotated?: boolean
-	fullWidth?: boolean
 	size?: "small" | "medium"
-	label?: string
+	/** Rótulo flutuante na borda do input (ex.: "X", "Y"). */
+	label: string
 }
 
+/** Seletor de canal na barra do plot — outlined com o label do eixo na borda. */
 const AxisSelect: React.FC<AxisSelectProps> = ({
 	value,
 	options,
 	onChange,
-	rotated = false,
-	fullWidth = false,
-	size = "medium",
+	size = "small",
 	label,
-}) => {
-	const selectId = label
-		? `axis-select-${label.replace(/\s+/g, "-")}`
-		: undefined
-	const select = (
+}) => (
+	<FormControl size={size} variant="outlined">
+		<InputLabel id={`axis-select-${label}`}>{label}</InputLabel>
 		<Select
+			labelId={`axis-select-${label}`}
 			value={value}
-			onChange={(e: SelectChangeEvent<string>) => onChange(e.target.value)}
-			fullWidth={fullWidth}
-			size={size}
-			labelId={selectId}
 			label={label}
-			sx={rotated ? { transform: "rotate(-90deg)" } : undefined}
+			onChange={(e: SelectChangeEvent<string>) => onChange(e.target.value)}
+			sx={{ fontWeight: 600 }}
 		>
 			{options.map((option, index) => (
 				<MenuItem key={index} value={option}>
@@ -46,16 +39,7 @@ const AxisSelect: React.FC<AxisSelectProps> = ({
 				</MenuItem>
 			))}
 		</Select>
-	)
-
-	if (!label) return select
-
-	return (
-		<FormControl fullWidth={fullWidth} size={size}>
-			<InputLabel id={selectId}>{label}</InputLabel>
-			{select}
-		</FormControl>
-	)
-}
+	</FormControl>
+)
 
 export default AxisSelect

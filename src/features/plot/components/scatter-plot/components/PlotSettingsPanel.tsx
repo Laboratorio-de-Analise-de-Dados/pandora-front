@@ -6,7 +6,6 @@ import {
 import {
 	Box,
 	Divider,
-	Drawer,
 	IconButton,
 	Paper,
 	Slider,
@@ -52,11 +51,9 @@ interface PlotSettingsControls {
 interface PlotSettingsPanelProps extends PlotSettingsControls {
 	open: boolean
 	onClose: () => void
-	/** `drawer` no mobile; `inline` no desktop, ocupando espaço ao lado do plot. */
-	variant: "inline" | "drawer"
 }
 
-/** Botão que abre/fecha as configurações, ancorado ao canto do gráfico. */
+/** Botão que abre/fecha as configurações, na barra superior do gráfico. */
 export const PlotSettingsButton: React.FC<{
 	open: boolean
 	onToggle: () => void
@@ -65,19 +62,21 @@ export const PlotSettingsButton: React.FC<{
 		<IconButton
 			onClick={onToggle}
 			size="small"
-			sx={{
-				position: "absolute",
-				top: 8,
-				left: 8,
-				zIndex: 25,
-				backgroundColor: "rgba(255, 255, 255, 0.85)",
+			sx={(theme) => ({
+				backgroundColor:
+					theme.palette.mode === "dark"
+						? "rgba(22, 22, 22, 0.85)"
+						: "rgba(255, 255, 255, 0.85)",
 				border: "1px solid",
 				borderColor: "divider",
 				"&:hover": {
-					backgroundColor: "rgba(255, 255, 255, 0.9)",
-					boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+					backgroundColor:
+						theme.palette.mode === "dark"
+							? "rgba(38, 38, 38, 0.9)"
+							: "rgba(255, 255, 255, 0.9)",
+					boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
 				},
-			}}
+			})}
 		>
 			<SettingsIcon fontSize="small" />
 		</IconButton>
@@ -85,7 +84,10 @@ export const PlotSettingsButton: React.FC<{
 )
 
 const PlotSettingsContent: React.FC<
-	PlotSettingsControls & { onClose: () => void }
+	PlotSettingsControls & {
+		onClose: () => void
+		setIsAdjusting: (v: boolean) => void
+	}
 > = ({
 	plotMode,
 	xScale,
@@ -104,9 +106,8 @@ const PlotSettingsContent: React.FC<
 	onYMaxChange,
 	onPlotModeChange,
 	onClose,
+	setIsAdjusting,
 }) => {
-	const [isAdjusting, setIsAdjusting] = useState(false)
-
 	return (
 		<>
 			{/* Header */}
@@ -201,7 +202,7 @@ const PlotSettingsContent: React.FC<
 			<Divider sx={{ my: 2 }} />
 
 			{/* Eixo X */}
-			<Box sx={{ mb: 2, opacity: isAdjusting ? 0.75 : 1 }}>
+			<Box sx={{ mb: 2 }}>
 				<Typography
 					variant="caption"
 					fontWeight="bold"
@@ -290,7 +291,7 @@ const PlotSettingsContent: React.FC<
 			{plotMode !== "histogram" && (
 				<>
 					<Divider sx={{ my: 2 }} />
-					<Box sx={{ mb: 2, opacity: isAdjusting ? 0.75 : 1 }}>
+					<Box sx={{ mb: 2 }}>
 						<Typography
 							variant="caption"
 							fontWeight="bold"
@@ -419,47 +420,46 @@ const PlotSettingsContent: React.FC<
 }
 
 /**
- * Painel de configurações do gráfico. No desktop é renderizado ao lado do plot
- * (o gráfico reduz em vez de ser coberto); no mobile abre como `Drawer`.
+ * Painel de configurações do gráfico: card flutuante (overlay) no canto
+ * superior direito do plot — mesmo comportamento no desktop e no mobile.
+ * Enquanto o usuário arrasta os sliders de escala/limite, o painel fica
+ * translúcido para não tampar o gráfico.
  */
 export const PlotSettingsPanel: React.FC<PlotSettingsPanelProps> = ({
 	open,
 	onClose,
-	variant,
 	...controls
 }) => {
-	if (variant === "drawer") {
-		return (
-			<Drawer
-				anchor="bottom"
-				open={open}
-				onClose={onClose}
-				PaperProps={{
-					sx: { maxHeight: "90vh", overflowY: "auto", padding: 1.5 },
-				}}
-			>
-				<PlotSettingsContent {...controls} onClose={onClose} />
-			</Drawer>
-		)
-	}
+	const [isAdjusting, setIsAdjusting] = useState(false)
 
 	if (!open) return null
 
 	return (
 		<Paper
-			sx={{
-				width: 260,
-				flexShrink: 0,
-				alignSelf: "flex-start",
-				maxHeight: "min(70vh, 560px)",
+			sx={(theme) => ({
+				position: "absolute",
+				top: 12,
+				right: 12,
+				zIndex: 30,
+				width: "min(260px, 80vw)",
+				maxHeight: "calc(100% - 24px)",
 				overflowY: "auto",
 				padding: 1.5,
-				borderRadius: 2,
+				borderRadius: 3,
 				border: "1px solid",
 				borderColor: "divider",
-			}}
+				boxShadow: theme.shadows[8],
+				// Overlay transparente durante o ajuste: o plot fica visível
+				// atrás do card enquanto o slider mexe o range.
+				opacity: isAdjusting ? 0.15 : 1,
+				transition: "opacity 150ms ease",
+			})}
 		>
-			<PlotSettingsContent {...controls} onClose={onClose} />
+			<PlotSettingsContent
+				{...controls}
+				onClose={onClose}
+				setIsAdjusting={setIsAdjusting}
+			/>
 		</Paper>
 	)
 }

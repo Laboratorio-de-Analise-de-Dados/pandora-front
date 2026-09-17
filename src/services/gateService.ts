@@ -39,11 +39,20 @@ export interface ApplyGateConflict {
 	name: string
 }
 
+/** Amostra de destino sem os canais que algum gate aplicado referencia (BE-18). */
+export interface NonEvaluableTarget {
+	file_data_id: number
+	file_name: string
+	missing_channels: string[]
+	gate_ids: number[]
+}
+
 export interface ApplyGatesResult {
 	created: number
 	skipped: number
 	replaced: number
 	conflicts: ApplyGateConflict[]
+	non_evaluable?: NonEvaluableTarget[]
 }
 
 export interface DeleteGatesBatchPayload {

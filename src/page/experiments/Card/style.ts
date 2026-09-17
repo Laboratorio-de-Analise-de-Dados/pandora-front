@@ -4,34 +4,33 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	justify-content: flex-start; /* Alinha o conteúdo interno ao topo */
-	align-items: flex-start; /* Alinha o conteúdo interno à esquerda (ou início do flex-direction) */
+	justify-content: flex-start;
+	align-items: flex-start;
 
-	width: 10rem;
-	min-height: 8rem; /* Adiciona uma altura mínima para evitar colapsar se o conteúdo for pequeno */
-	max-width: 100%; /* Garante que não ultrapasse o contêiner em telas pequenas */
+	flex: 1 1 15rem;
+	max-width: 24rem;
+	min-height: 8rem;
 
 	padding: 1rem;
-	border-radius: 15px;
+	border-radius: 16px;
 
-	/* Usando a cor do tema, como discutimos anteriormente */
-	border: 0.2rem solid ${(props) => props.theme.palette.primary.main};
-	background-color: ${(props) => props.theme.palette.background.paper}; /* Cor de fundo para o card */
-	color: ${(props) => props.theme.palette.text.primary}; /* Cor do texto padrão do card */
+	/* FE-26: separação por elevação + borda discreta; verde só no hover */
+	border: 1px solid ${(props) => props.theme.palette.divider};
+	background-color: ${(props) => props.theme.palette.background.paper};
+	color: ${(props) => props.theme.palette.text.primary};
 
-	/* Para garantir que o card se comporte como um bloco e não seja afetado por "texto acima" */
-	box-sizing: border-box; /* Garante que padding e border sejam incluídos no width/height */
+	box-sizing: border-box;
 
-	/* Adiciona alguma margem para separar os cards uns dos outros, se estiverem em uma lista */
-	margin: 0.5rem;
-
-	/* Efeitos visuais para interação (opcional) */
 	cursor: pointer;
-	transition: all 0.2s ease-in-out; /* Transição suave para hover */
+	transition:
+		border-color 180ms ease,
+		box-shadow 180ms ease,
+		transform 180ms ease;
 
 	&:hover {
-		transform: translateY(-3px); /* Leve levantamento ao passar o mouse */
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
+		transform: translateY(-2px);
+		border-color: rgba(16, 185, 129, 0.45);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 	}
 
 	${(props) =>
@@ -50,21 +49,26 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 			}
 		`}
 
-	/* Estilos para o título dentro do card */
 	h1 {
-		font-size: 1.2rem; /* Tamanho da fonte ajustado para o card */
-		margin-top: 0; /* Remove margem superior padrão do h1 */
-		margin-bottom: 0.5rem; /* Margem inferior para separar do próximo item */
-		white-space: nowrap; /* Evita quebras de linha no título */
-		overflow: hidden; /* Esconde o texto que transborda */
-		text-overflow: ellipsis; /* Adiciona "..." se o texto for muito longo */
-		width: 100%; /* Garante que o h1 ocupe a largura do card */
+		font-size: 1.05rem;
+		margin-top: 0;
+		margin-bottom: 0.35rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		width: 100%;
 	}
 
-	/* Estilos para o div de tipo dentro do card */
 	div {
 		font-size: 0.9rem;
-		color: ${(props) => props.theme.palette.text.secondary}; /* Cor mais suave para o tipo */
+		color: ${(props) => props.theme.palette.text.secondary};
+	}
+
+	.status-row {
+		margin: 0 0 0.35rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.inactive-badge {
@@ -76,7 +80,7 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 	}
 
 	.card-footer {
-		margin-top: auto; /* Empurra o rodapé para a base do card */
+		margin-top: auto;
 		padding-top: 0.5rem;
 		display: flex;
 		justify-content: space-between;

@@ -5,13 +5,18 @@ import type {
 	SelectedSource,
 	Subsample,
 } from "../../../types"
+import type { GateScope } from "../../../services/gateService"
 import type { TreeHandlers } from "../components/parent-tree/types"
 
 export interface TreeInteractionsParams {
 	files: ExperimentFiles[]
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number, gateName: string) => void
-	onRenameGate?: (gateId: number, newName: string) => void
+	/** Edição completa do gate (nome + cor + escopo, FE-23). */
+	onEditGate?: (
+		gateId: number,
+		payload: { name: string; color: string; scope: GateScope },
+	) => Promise<string | null>
 	onApplyGate?: (gateId: number, gateName: string) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void
@@ -22,6 +27,14 @@ export interface TreeInteractionsParams {
 	) => Promise<string | null>
 	onArchiveSubsample?: (subsampleId: number) => void
 	onMoveFile?: (fileDataIds: number[], subsampleId: number | null) => void
+	/** Marca o subsample como controle de compensação (BE-22). */
+	onSetSubsampleControl?: (
+		subsampleId: number,
+		payload: {
+			control_type: "unstained" | "single_stain" | null
+			control_channel?: string
+		},
+	) => Promise<string | null>
 }
 
 /**
@@ -34,7 +47,7 @@ export function useTreeInteractions({
 	files,
 	onSelect,
 	onDeleteGate,
-	onRenameGate,
+	onEditGate,
 	onApplyGate,
 	onDisableFile,
 	onEnableFile,
@@ -42,12 +55,15 @@ export function useTreeInteractions({
 	onRenameSubsample,
 	onArchiveSubsample,
 	onMoveFile,
+	onSetSubsampleControl,
 }: TreeInteractionsParams) {
-	const [renameTarget, setRenameTarget] = useState<{
-		id: number
-		name: string
-	} | null>(null)
-	const [renameValue, setRenameValue] = useState("")
+	// Edição completa do gate pela árvore — mesmo diálogo do gráfico (FE-23).
+	const [editTarget, setEditTarget] = useState<Gate | null>(null)
+	const [editName, setEditName] = useState("")
+	const [editColor, setEditColor] = useState("#0078FF")
+	const [editScope, setEditScope] = useState<GateScope>("file")
+	const [editError, setEditError] = useState<string | null>(null)
+	const [editSaving, setEditSaving] = useState(false)
 
 	// Hamburger menu state
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
@@ -81,6 +97,7 @@ export function useTreeInteractions({
 	const [subsampleFormTarget, setSubsampleFormTarget] =
 		useState<Subsample | null>(null)
 	const [archiveTarget, setArchiveTarget] = useState<Subsample | null>(null)
+	const [controlTarget, setControlTarget] = useState<Subsample | null>(null)
 
 	const handleFileMenuOpen = (
 		event: React.MouseEvent,
@@ -149,15 +166,18 @@ export function useTreeInteractions({
 		setContextGate(null)
 	}
 
-	const openRename = (gate: Gate) => {
-		setRenameTarget({ id: gate.id, name: gate.name })
-		setRenameValue(gate.name)
+	const openEdit = (gate: Gate) => {
+		setEditTarget(gate)
+		setEditName(gate.name)
+		setEditColor(gate.color ?? "#0078FF")
+		setEditScope("file")
+		setEditError(null)
 	}
 
 	const handlers: TreeHandlers = {
 		onSelect,
 		onDeleteGate,
-		onRenameGate,
+		onEditGate,
 		onApplyGate,
 		onDisableFile,
 		onEnableFile,
@@ -174,7 +194,7 @@ export function useTreeInteractions({
 		},
 		onFileMenuOpen: handleFileMenuOpen,
 		onSubsampleMenuOpen:
-			onRenameSubsample || onArchiveSubsample
+			onRenameSubsample || onArchiveSubsample || onSetSubsampleControl
 				? (event: React.MouseEvent, subsample: Subsample) => {
 						event.stopPropagation()
 						setSubsampleMenuAnchor(event.currentTarget as HTMLElement)
@@ -215,8 +235,8 @@ export function useTreeInteractions({
 				if (menuGate && onApplyGate) onApplyGate(menuGate.id, menuGate.name)
 				closeMenu()
 			},
-			rename: () => {
-				if (menuGate) openRename(menuGate)
+			edit: () => {
+				if (menuGate) openEdit(menuGate)
 				closeMenu()
 			},
 			remove: () => {
@@ -233,8 +253,8 @@ export function useTreeInteractions({
 					onApplyGate(contextGate.id, contextGate.name)
 				closeContextMenu()
 			},
-			rename: () => {
-				if (contextGate) openRename(contextGate)
+			edit: () => {
+				if (contextGate) openEdit(contextGate)
 				closeContextMenu()
 			},
 			remove: () => {
@@ -275,21 +295,40 @@ export function useTreeInteractions({
 				if (menuSubsample) setArchiveTarget(menuSubsample)
 				closeSubsampleMenu()
 			},
-		},
-		renameDialog: {
-			target: renameTarget,
-			value: renameValue,
-			setValue: setRenameValue,
-			confirm: () => {
-				if (renameTarget && onRenameGate && renameValue.trim()) {
-					onRenameGate(renameTarget.id, renameValue.trim())
-				}
-				setRenameTarget(null)
-				setRenameValue("")
+			control: () => {
+				if (menuSubsample) setControlTarget(menuSubsample)
+				closeSubsampleMenu()
 			},
-			cancel: () => {
-				setRenameTarget(null)
-				setRenameValue("")
+		},
+		editDialog: {
+			gate: editTarget,
+			name: editName,
+			color: editColor,
+			scope: editScope,
+			error: editError,
+			saving: editSaving,
+			setName: setEditName,
+			setColor: setEditColor,
+			setScope: setEditScope,
+			confirm: async () => {
+				if (!editTarget || !onEditGate || !editName.trim()) return
+				setEditSaving(true)
+				const error = await onEditGate(editTarget.id, {
+					name: editName.trim(),
+					color: editColor,
+					scope: editScope,
+				})
+				setEditSaving(false)
+				// Conflito de nome/erro mantém o diálogo aberto com a mensagem.
+				if (error) {
+					setEditError(error)
+					return
+				}
+				setEditTarget(null)
+			},
+			close: () => {
+				setEditTarget(null)
+				setEditError(null)
 			},
 		},
 		disableDialog: {
@@ -332,6 +371,16 @@ export function useTreeInteractions({
 				setArchiveTarget(null)
 			},
 			close: () => setArchiveTarget(null),
+		},
+		controlDialog: {
+			target: controlTarget,
+			submit: onSetSubsampleControl
+				? (payload: {
+						control_type: "unstained" | "single_stain" | null
+						control_channel?: string
+					}) => onSetSubsampleControl(controlTarget?.id ?? 0, payload)
+				: undefined,
+			close: () => setControlTarget(null),
 		},
 	}
 }

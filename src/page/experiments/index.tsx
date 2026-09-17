@@ -2,19 +2,20 @@ import {
 	Box,
 	Typography,
 	Button,
+	Checkbox,
 	FormControl,
 	FormControlLabel,
-	InputLabel,
 	MenuItem,
 	Select,
-	Switch,
 } from "@mui/material"
+import { MdAdd as AddIcon } from "react-icons/md"
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import Layout from "../../components/Layout"
 import { useExperimentsContext } from "../../providers/ExperimentContext"
 import { useAuth } from "../../providers/AuthContext"
 import ExperimentsContainer from "./Container"
+import NewExperimentDialog from "../../features/experiment/components/NewExperimentDialog"
 
 export type EventData = {
 	id: number
@@ -27,6 +28,7 @@ export default function ExperimentsPage() {
 	const { user } = useAuth()
 	const { experiments, listExperiments } = useExperimentsContext()
 	const [showInactive, setShowInactive] = useState(false)
+	const [newOpen, setNewOpen] = useState(false)
 	const orgIdParam = searchParams.get("orgId")
 	const orgId = orgIdParam ? parseInt(orgIdParam, 10) : null
 
@@ -49,8 +51,8 @@ export default function ExperimentsPage() {
 		orgId === 0
 			? "Meus experimentos pessoais"
 			: org
-				? `Experiments — ${org.name}`
-				: "Experiments"
+				? `Experimentos — ${org.name}`
+				: "Experimentos"
 
 	const handleOrgChange = (value: string) => {
 		const params = new URLSearchParams(searchParams)
@@ -106,61 +108,70 @@ export default function ExperimentsPage() {
 							gap: 2,
 						}}
 					>
-						<FormControl
-							sx={{ minWidth: { xs: "100%", sm: 220 }, flex: 1 }}
-							size="small"
+						<Box
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								gap: 1,
+							}}
 						>
-							<InputLabel id="org-select-label">Ver experimentos de</InputLabel>
-							<Select
-								labelId="org-select-label"
-								value={orgId === null ? "" : String(orgId)}
-								label="Ver experimentos de"
-								onChange={(e) => handleOrgChange(e.target.value)}
+							<Typography variant="body2" color="text.secondary">
+								Filtro:
+							</Typography>
+							<FormControl
+								sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}
+								size="small"
 							>
-								<MenuItem value="">
-									<em>Todos</em>
-								</MenuItem>
-								{orgOptions.map((o) => (
-									<MenuItem key={o.id} value={o.id}>
-										{o.name}
-									</MenuItem>
-								))}
-							</Select>
-						</FormControl>
-						<FormControlLabel
-							control={
-								<Switch
-									size="small"
-									checked={showInactive}
-									onChange={(e) => setShowInactive(e.target.checked)}
-								/>
-							}
-							label="Mostrar desativados"
-							sx={{ whiteSpace: "nowrap" }}
-						/>
+								<Select
+									value={orgId === null ? "" : String(orgId)}
+									onChange={(e) => handleOrgChange(e.target.value)}
+									displayEmpty
+								>
+									<MenuItem value="">Todos os Laboratórios</MenuItem>
+									{orgOptions.map((o) => (
+										<MenuItem key={o.id} value={o.id}>
+											{o.name}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						</Box>
 						<Button
-							variant="outlined"
+							variant="contained"
 							size="small"
-							onClick={() => navigate("/")}
+							startIcon={<AddIcon />}
+							onClick={() => setNewOpen(true)}
 							sx={{ whiteSpace: "nowrap" }}
 						>
-							Voltar para home
+							Novo Experimento
 						</Button>
 					</Box>
 				</Box>
 
-				<Box>
-					<Typography sx={{ fontSize: { xs: "1.25rem", md: "1.5rem" }, mb: 1 }}>
-						Escolha um experimento:
-					</Typography>
-					<Box>
-						<ExperimentsContainer
-							experiments={filteredExperiments}
-							onChanged={() => listExperiments(showInactive)}
+				<FormControlLabel
+					control={
+						<Checkbox
+							size="small"
+							checked={showInactive}
+							onChange={(e) => setShowInactive(e.target.checked)}
 						/>
-					</Box>
+					}
+					label={
+						<Typography variant="body2" color="text.secondary">
+							Mostrar inativados
+						</Typography>
+					}
+					sx={{ alignSelf: "flex-end", mb: 1 }}
+				/>
+
+				<Box>
+					<ExperimentsContainer
+						experiments={filteredExperiments}
+						onChanged={() => listExperiments(showInactive)}
+					/>
 				</Box>
 			</Box>
+			<NewExperimentDialog open={newOpen} onClose={() => setNewOpen(false)} />
 		</Layout>
 	)
 }

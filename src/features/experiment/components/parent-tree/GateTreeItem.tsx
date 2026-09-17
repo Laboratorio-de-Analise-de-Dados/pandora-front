@@ -1,5 +1,9 @@
 import { Box, Chip, IconButton, Tooltip, Typography } from "@mui/material"
-import { MdLink as LinkIcon, MdMoreVert as MoreVertIcon } from "react-icons/md"
+import {
+	MdLink as LinkIcon,
+	MdMoreVert as MoreVertIcon,
+	MdWarningAmber as WarningIcon,
+} from "react-icons/md"
 import type { Gate } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
 import { gateAxesLabel, gateAuthorLabel } from "../../../gate/utils"
@@ -21,14 +25,28 @@ export default function GateTreeItem({
 	gateIndex: number
 	handlers: TreeHandlers
 }) {
-	const metrics = gate.analysis_result?.analysis_result?.summary_metrics
+	const analysis = gate.analysis_result?.analysis_result
+	const metrics = analysis?.summary_metrics
+	// BE-18/ADR-0016: gate não-avaliável nesta amostra (canal ausente) — ou
+	// bloqueado diretamente, ou cortado por um ancestral.
+	const notEvaluable = analysis?.applicable === false
+	const blockedBy = analysis?.blocked_by_gate
+	const missingList = analysis?.missing_channels?.join(", ")
+	const warningTip =
+		blockedBy && blockedBy.id !== gate.id
+			? `Não avaliável nesta amostra: o gate "${blockedBy.name}" usa canal(is) ausente(s) (${missingList}).`
+			: `Não avaliável nesta amostra: canal(is) ausente(s) (${missingList}).`
 	const authorLabel = gateAuthorLabel(gate)
 	const authorName = gate.created_by_name?.trim() || null
 	const hasActions =
-		handlers.onApplyGate || handlers.onRenameGate || handlers.onDeleteGate
+		handlers.onApplyGate || handlers.onEditGate || handlers.onDeleteGate
+	const selected =
+		handlers.selectedSource?.type === "gate" &&
+		handlers.selectedSource.id === gate.id
 	return (
 		<TreeNode
 			depth={depth}
+			selected={selected}
 			onSelect={() =>
 				handlers.onSelect({
 					type: "gate",
@@ -92,6 +110,18 @@ export default function GateTreeItem({
 									}}
 								/>
 							)}
+							{notEvaluable && (
+								<Tooltip title={warningTip} arrow>
+									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
+										<WarningIcon
+											style={{
+												fontSize: 15,
+												color: "var(--mui-palette-warning-main, #FBBF24)",
+											}}
+										/>
+									</Box>
+								</Tooltip>
+							)}
 							{gate.copied_from_id && (
 								<Tooltip
 									title={`Copiado de gate #${gate.copied_from_id}`}
@@ -99,7 +129,10 @@ export default function GateTreeItem({
 								>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
 										<LinkIcon
-											style={{ fontSize: 14, color: "rgba(0,120,255,0.7)" }}
+											style={{
+												fontSize: 14,
+												color: "var(--mui-palette-info-main, #34D399)",
+											}}
 										/>
 									</Box>
 								</Tooltip>

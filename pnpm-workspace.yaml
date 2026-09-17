@@ -1,6 +1,8 @@
 allowBuilds:
   esbuild: true
   es5-ext: true
+overrides:
+  maplibre-gl: ">=6.4.1"
 peerDependencyRules:
   allowedVersions:
     "@mui/material": "7"

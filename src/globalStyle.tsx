@@ -1,58 +1,90 @@
 import { createTheme, ThemeOptions } from "@mui/material/styles"
 
-// Cores da Pandora: preta e branca com olhos verdes
+// Identidade visual Pandora (FE-26): dark-first verde/preto/branco.
+// A paleta do gato (preto/branco/olhos verdes) vira: canvas quase preto,
+// surfaces cinza-escuras separadas por elevação, verde emerald como marca.
+const PANDORA = {
+	primary: "#10B981", // Verde Pandora (emerald)
+	primaryHover: "#059669",
+	accent: "#34D399", // Verde neon — seleção, gate ativo, highlights
+	canvas: "#0D0D0D",
+	surface: "#161616",
+	surfaceAlt: "#1A1A1A",
+	divider: "#262626",
+	textPrimary: "#FFFFFF",
+	textSecondary: "#A1A1AA",
+	textDisabled: "#52525B",
+	warning: "#FBBF24",
+	error: "#F87171",
+} as const
+
 const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 	palette: {
 		mode,
 		...(mode === "light"
 			? {
 					background: {
-						default: "#F4F4F4", // branco suave
+						default: "#F4F4F4",
 						paper: "#FFFFFF",
 					},
 					primary: {
-						main: "#2ECC71", // verde esmeralda (olhos)
+						main: PANDORA.primary,
+						dark: PANDORA.primaryHover,
 						contrastText: "#FFFFFF",
 					},
 					secondary: {
-						main: "#2C2C2C", // preto/cinza escuro (pelagem)
+						main: "#2C2C2C",
 						contrastText: "#FFFFFF",
 					},
 					error: {
-						main: "#E74C3C",
+						main: "#DC2626",
+					},
+					warning: {
+						main: "#D97706",
 					},
 					text: {
 						primary: "#1A1A1A",
 						secondary: "#5C5C5C",
 					},
 					info: {
-						main: "#27AE60", // tom de verde complementar
+						main: PANDORA.primaryHover,
 					},
+					divider: "#E4E4E7",
 				}
 			: {
 					background: {
-						default: "#121212", // dark black
-						paper: "#1F1F1F",
+						default: PANDORA.canvas,
+						paper: PANDORA.surface,
 					},
 					primary: {
-						main: "#2ECC71",
+						main: PANDORA.primary,
+						dark: PANDORA.primaryHover,
 						contrastText: "#FFFFFF",
 					},
 					secondary: {
-						main: "#EAEAEA", // branco (invertido no dark)
-						contrastText: "#121212",
+						// Barra superior/rodapé: canvas escuro, não cinza claro.
+						main: PANDORA.canvas,
+						contrastText: PANDORA.textPrimary,
 					},
 					error: {
-						main: "#FF6B6B",
+						main: PANDORA.error,
+					},
+					warning: {
+						main: PANDORA.warning,
 					},
 					text: {
-						primary: "#EEEEEE",
-						secondary: "#A0A0A0",
+						primary: PANDORA.textPrimary,
+						secondary: PANDORA.textSecondary,
+						disabled: PANDORA.textDisabled,
 					},
 					info: {
-						main: "#58D68D",
+						main: PANDORA.accent,
 					},
+					divider: PANDORA.divider,
 				}),
+	},
+	shape: {
+		borderRadius: 12,
 	},
 	typography: {
 		fontFamily: "Inter, Roboto, Helvetica Neue, sans-serif",
@@ -64,9 +96,112 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 		MuiButton: {
 			styleOverrides: {
 				root: {
-					borderRadius: 8,
+					borderRadius: 10,
 					textTransform: "none",
 				},
+			},
+		},
+		MuiCard: {
+			styleOverrides: {
+				root: ({ theme }) => ({
+					borderRadius: 16,
+					backgroundImage: "none",
+					// Borda sutil nos dois modos: no light é o que separa o card do
+					// fundo; no dark complementa a elevação.
+					border: `1px solid ${theme.palette.divider}`,
+					transition: "box-shadow 180ms ease, border-color 180ms ease",
+					"&:hover": {
+						borderColor: "rgba(16, 185, 129, 0.45)",
+						boxShadow:
+							theme.palette.mode === "dark"
+								? "0 8px 24px rgba(0, 0, 0, 0.45)"
+								: "0 8px 24px rgba(0, 0, 0, 0.10)",
+					},
+					...(theme.palette.mode === "dark" && {
+						backgroundColor: PANDORA.surface,
+					}),
+				}),
+			},
+		},
+		MuiPaper: {
+			styleOverrides: {
+				root: {
+					backgroundImage: "none",
+				},
+			},
+		},
+		MuiDialog: {
+			styleOverrides: {
+				paper: ({ theme }) => ({
+					borderRadius: 16,
+					border: `1px solid ${theme.palette.divider}`,
+					...(theme.palette.mode === "dark" && {
+						backgroundColor: PANDORA.surface,
+					}),
+				}),
+			},
+		},
+		MuiChip: {
+			styleOverrides: {
+				root: {
+					borderRadius: 999,
+					fontWeight: 600,
+				},
+			},
+		},
+		MuiCssBaseline: {
+			// Scrollbar fina e discreta em toda a app (FE-26): a barra
+			// nativa cinza-clara descasava dos painéis escuros. Objeto
+			// estático fechando sobre `mode` — com styled-engine-sc a
+			// interpolação de função recebe {theme}, não o tema direto.
+			styleOverrides: {
+				"*": {
+					scrollbarWidth: "thin",
+					scrollbarColor:
+						mode === "dark" ? "#3F3F46 transparent" : "#CFCFD4 transparent",
+				},
+				"*::-webkit-scrollbar": {
+					width: 8,
+					height: 8,
+				},
+				"*::-webkit-scrollbar-track": {
+					backgroundColor: "transparent",
+				},
+				"*::-webkit-scrollbar-thumb": {
+					backgroundColor: mode === "dark" ? "#3F3F46" : "#CFCFD4",
+					borderRadius: 8,
+				},
+				"*::-webkit-scrollbar-thumb:hover": {
+					backgroundColor: mode === "dark" ? "#52525B" : "#B5B5BC",
+				},
+			},
+		},
+		MuiTab: {
+			styleOverrides: {
+				root: {
+					textTransform: "none",
+				},
+			},
+		},
+		MuiTooltip: {
+			styleOverrides: {
+				tooltip: ({ theme }) => ({
+					borderRadius: 8,
+					...(theme.palette.mode === "dark" && {
+						backgroundColor: PANDORA.surfaceAlt,
+						border: `1px solid ${PANDORA.divider}`,
+						color: PANDORA.textPrimary,
+					}),
+				}),
+			},
+		},
+		MuiDrawer: {
+			styleOverrides: {
+				paper: ({ theme }) => ({
+					...(theme.palette.mode === "dark" && {
+						backgroundColor: PANDORA.surface,
+					}),
+				}),
 			},
 		},
 	},

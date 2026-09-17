@@ -3,21 +3,23 @@ import {
 	Alert,
 	Box,
 	Button,
+	Checkbox,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
+	FormControl,
 	FormControlLabel,
-	FormLabel,
-	Radio,
-	RadioGroup,
+	InputLabel,
+	MenuItem,
+	Select,
 	TextField,
 	Typography,
 } from "@mui/material"
-import ColorPicker from "../../../../gate/components/color-picker"
-import type { GateScope } from "../../../../../services/gateService"
-import type { Gate } from "../../../../../types"
-import { fmtPct } from "../../../../../utils/format"
+import ColorPicker from "../color-picker"
+import type { GateScope } from "../../../../services/gateService"
+import type { Gate } from "../../../../types"
+import { fmtPct } from "../../../../utils/format"
 
 interface GateEditDialogProps {
 	open: boolean
@@ -25,6 +27,11 @@ interface GateEditDialogProps {
 	name: string
 	color: string
 	scope: GateScope
+	/**
+	 * Tamanho da família de cópias (incluindo este gate). O controle de
+	 * replicação só aparece quando > 1 — sem cópias, escopo é ruído (FE-23).
+	 */
+	familySize?: number
 	/** Nome do subsample da amostra atual; habilita a opção de escopo. */
 	subsampleName?: string
 	error: string | null
@@ -36,12 +43,18 @@ interface GateEditDialogProps {
 	onClose: () => void
 }
 
+/**
+ * Edição completa do gate (nome + cor + escopo), compartilhada pelo menu de
+ * contexto do gráfico e pelo menu da árvore (FE-23/ADR-0013). A replicação é
+ * opt-in: desmarcada, a mudança vale só para a amostra (`scope="file"`).
+ */
 const GateEditDialog: React.FC<GateEditDialogProps> = ({
 	open,
 	gate,
 	name,
 	color,
 	scope,
+	familySize = 0,
 	subsampleName,
 	error,
 	saving,
@@ -52,6 +65,9 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 	onClose,
 }) => {
 	const summary = gate?.analysis_result?.analysis_result?.summary_metrics
+	const replicate = scope !== "file"
+	const scopeTarget =
+		scope === "file" ? (subsampleName ? "subsample" : "experiment") : scope
 
 	return (
 		<Dialog
@@ -88,33 +104,52 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 						autoFocus
 					/>
 				</Box>
-				<Box sx={{ mt: 2 }}>
-					<FormLabel sx={{ fontSize: "0.8rem" }}>
-						Aplicar nome e cor em
-					</FormLabel>
-					<RadioGroup
-						value={scope}
-						onChange={(_, value: string) => onScopeChange(value as GateScope)}
-					>
+				{familySize > 1 && (
+					<Box sx={{ mt: 2 }}>
 						<FormControlLabel
-							value="file"
-							control={<Radio size="small" />}
-							label="Apenas nesta amostra"
+							control={
+								<Checkbox
+									size="small"
+									checked={replicate}
+									onChange={(e) =>
+										onScopeChange(
+											e.target.checked
+												? subsampleName
+													? "subsample"
+													: "experiment"
+												: "file",
+										)
+									}
+								/>
+							}
+							label={
+								<Typography variant="body2">
+									Replicar nome e cor para as outras {familySize - 1} amostra(s)
+								</Typography>
+							}
 						/>
-						{subsampleName && (
-							<FormControlLabel
-								value="subsample"
-								control={<Radio size="small" />}
-								label={`Nas amostras deste subsample (${subsampleName})`}
-							/>
+						{replicate && (
+							<FormControl fullWidth size="small" sx={{ mt: 0.5, pl: 3.5 }}>
+								<InputLabel id="gate-scope-label">Aplicar em</InputLabel>
+								<Select
+									labelId="gate-scope-label"
+									label="Aplicar em"
+									value={scopeTarget}
+									onChange={(e) => onScopeChange(e.target.value as GateScope)}
+								>
+									{subsampleName && (
+										<MenuItem value="subsample">
+											Neste subsample ({subsampleName})
+										</MenuItem>
+									)}
+									<MenuItem value="experiment">
+										Todas as amostras do experimento
+									</MenuItem>
+								</Select>
+							</FormControl>
 						)}
-						<FormControlLabel
-							value="experiment"
-							control={<Radio size="small" />}
-							label="Em todas as amostras do experimento"
-						/>
-					</RadioGroup>
-				</Box>
+					</Box>
+				)}
 				{summary && (
 					<Box
 						sx={{ mt: 2, p: 1.5, bgcolor: "background.paper", borderRadius: 1 }}
@@ -153,7 +188,7 @@ const GateEditDialog: React.FC<GateEditDialogProps> = ({
 					onClick={onSave}
 					variant="contained"
 					color="primary"
-					disabled={saving}
+					disabled={saving || !name.trim()}
 				>
 					Salvar
 				</Button>

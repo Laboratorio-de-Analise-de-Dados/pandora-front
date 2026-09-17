@@ -1,4 +1,4 @@
-import { Box, Checkbox, IconButton, Typography } from "@mui/material"
+import { Box, Checkbox, Chip, IconButton, Typography } from "@mui/material"
 import {
 	MdFolder as FolderIcon,
 	MdMoreVert as MoreVertIcon,
@@ -60,6 +60,20 @@ export default function SubsampleGroupItem({
 						{group.files.length}{" "}
 						{group.files.length === 1 ? "amostra" : "amostras"}
 					</Typography>
+					{group.subsample?.control_type && (
+						<Chip
+							label={
+								group.subsample.control_type === "unstained"
+									? "negativo"
+									: `controle ${group.subsample.control_channel}`
+							}
+							size="small"
+							color="warning"
+							variant="outlined"
+							title="Controle de compensação (BE-22)"
+							sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
+						/>
+					)}
 					{group.subsample && handlers.onSubsampleMenuOpen && (
 						<IconButton
 							size="small"

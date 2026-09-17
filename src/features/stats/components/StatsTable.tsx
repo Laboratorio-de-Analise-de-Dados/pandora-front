@@ -61,7 +61,17 @@ const StatsTable: React.FC<StatsTableProps> = ({
 				{displayChannels.map((ch) => {
 					const stat = channelStats[ch]
 					return (
-						<TableRow key={ch} hover>
+						<TableRow
+							key={ch}
+							hover
+							sx={(theme) => ({
+								// Linhas zebradas (FE-26): surface/surface-alt nos dois modos.
+								"&:nth-of-type(even) td": {
+									bgcolor:
+										theme.palette.mode === "dark" ? "#1A1A1A" : "#FAFAFA",
+								},
+							})}
+						>
 							<TableCell
 								sx={{
 									py: 0.25,

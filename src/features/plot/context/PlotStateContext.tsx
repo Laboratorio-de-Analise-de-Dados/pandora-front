@@ -21,7 +21,11 @@ interface PlotStateProviderProps {
 	initialConfig?: Partial<PlotViewConfig>
 	sourceType: "file" | "gate"
 	sourceId: number
-	onPersist: (config: PlotViewConfig) => void
+	onPersist: (
+		sourceType: "file" | "gate",
+		sourceId: number,
+		config: PlotViewConfig,
+	) => void
 }
 
 export function PlotStateProvider({

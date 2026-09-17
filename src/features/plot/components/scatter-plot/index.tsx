@@ -1,4 +1,5 @@
 import {
+	Alert,
 	Box,
 	Button,
 	CircularProgress,
@@ -26,21 +27,20 @@ import { getCopyFamilyIds } from "../../../gate/utils"
 import { COFACTOR } from "../../utils/biex"
 import { buildTicks } from "../../utils/ticks"
 import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
+import { buildGateHoverTraces } from "../../utils/gateHoverTraces"
 import { buildAxisRange } from "../../utils/plotAxes"
+import { extractErrorMessage } from "../../../../utils/apiError"
 
+import type { PlotMode } from "../../hooks/usePlotState"
 import { usePlotCoordinates } from "./hooks/usePlotCoordinates"
 import { useGateHitTest } from "./hooks/useGateHitTest"
 import { useGateShapeEditing } from "./hooks/useGateShapeEditing"
 
-import GateEditDialog from "./components/GateEditDialog"
+import GateEditDialog from "../../../gate/components/gate-edit-dialog"
 import ReshapeScopeDialog from "./components/ReshapeScopeDialog"
-import GateToolToggle from "./components/GateToolToggle"
-import {
-	PlotSettingsButton,
-	PlotSettingsPanel,
-} from "./components/PlotSettingsPanel"
+import { PlotSettingsPanel } from "./components/PlotSettingsPanel"
+import PlotToolbar from "./components/PlotToolbar"
 import GateContextMenu from "./components/GateContextMenu"
-import AxisSelect from "./components/AxisSelect"
 import PolygonEditOverlay from "./components/PolygonEditOverlay"
 
 // Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
@@ -147,20 +147,38 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const dXMax = useDebouncedValue(xMax, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMin = useDebouncedValue(yMin, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMax = useDebouncedValue(yMax, RANGE_REFETCH_DEBOUNCE_MS)
-	const { data, isLoading, isFetching, isError, refetch } = useDensityQuery({
-		sourceType,
-		sourceId,
-		xAxis,
-		yAxis,
-		plotMode,
-		xScale,
-		yScale,
-		cutoff,
-		xMin: dXMin,
-		xMax: dXMax,
-		yMin: dYMin,
-		yMax: dYMax,
-	})
+	const { data, isLoading, isFetching, isError, error, refetch } =
+		useDensityQuery({
+			sourceType,
+			sourceId,
+			xAxis,
+			yAxis,
+			plotMode,
+			xScale,
+			yScale,
+			cutoff,
+			xMin: dXMin,
+			xMax: dXMax,
+			yMin: dYMin,
+			yMax: dYMax,
+		})
+
+	// BE-18: erro de canal ausente vem com `missing_channels` no payload — vira
+	// aviso explicável; o resto segue como erro genérico com o detail real.
+	const densityError = useMemo(() => {
+		if (!isError) return null
+		const resp = (
+			error as {
+				response?: {
+					data?: { detail?: string; missing_channels?: string[] }
+				}
+			}
+		)?.response?.data
+		return {
+			message: extractErrorMessage(error),
+			missingChannels: resp?.missing_channels ?? [],
+		}
+	}, [isError, error])
 
 	const loadFile = useCallback(() => {
 		refetch()
@@ -347,8 +365,23 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	// Build Plotly trace data
-	const plotData = buildPlotData(plotMode, data)
+	const plotData = buildPlotData(plotMode, data, theme.palette.mode)
 	const hasData = hasPlotData(plotMode, data)
+
+	// Traces transparentes só para hover: passar o mouse sobre a área de um
+	// gate mostra um tooltip com as estatísticas dele (count/%pai/%total).
+	// Desligado nas ferramentas quad/edit — nelas o clique usa
+	// event.points[0] e um trace de fill poderia virar o ponto clicado.
+	const histogramMaxY = data?.counts?.length
+		? Math.max(...data.counts) * 1.05
+		: 1
+	const gateHoverTraces = useMemo(
+		() =>
+			tool === "quad" || tool === "edit" || reshapingGateId !== null
+				? []
+				: buildGateHoverTraces(gateShapes, histogramMaxY),
+		[gateShapes, histogramMaxY, tool, reshapingGateId],
+	)
 
 	// Axis ranges and ticks
 	const xAxisRange = buildAxisRange(xMin, xMax, effXScale, effCof)
@@ -430,17 +463,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 					width: "100%",
 				}}
 			>
-				{data && (
-					<Typography variant="caption" color="text.secondary">
-						{data.total_events.toLocaleString()} eventos
-						{plotMode === "scatter" && data.sampled_events
-							? ` · amostra de ${data.sampled_events.toLocaleString()}`
-							: plotMode === "histogram"
-								? " · histograma (100% dos dados)"
-								: " · heatmap (100% dos dados)"}
-					</Typography>
-				)}
-
 				<Box
 					sx={{
 						display: "flex",
@@ -449,39 +471,86 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						width: "100%",
 					}}
 				>
+					{/* Coluna do plot: barra de controle + gráfico centrados
+					    (FE-26 — organização do mockup). */}
 					<Box
 						sx={{
 							display: "flex",
-							flexDirection: { xs: "column", md: "row" },
+							flexDirection: "column",
 							alignItems: "center",
-							justifyContent: "center",
-							gap: { xs: "0.5rem", md: "1rem" },
+							gap: "0.5rem",
+							minWidth: 0,
+							flexShrink: 1,
 							width: "100%",
 						}}
 					>
-						{plotMode !== "histogram" && (
-							<Box
-								sx={{
-									width: { xs: "min(95vw, 480px)", md: "auto" },
-									maxWidth: "100%",
-								}}
+						{/* Barra de controle: modo + eixos + tipo de gate +
+							    escalas/limites + settings e histórico (FE-26).
+							    No desktop fica acima do plot; no mobile vai para
+							    a metade inferior da tela (abaixo do gráfico). */}
+						<Box
+							sx={{
+								order: { xs: 3, md: 1 },
+								width: "100%",
+								display: "flex",
+								justifyContent: "center",
+							}}
+						>
+							<PlotToolbar
+								values={values}
+								plotMode={plotMode}
+								onPlotModeChange={setPlotMode}
+								xAxis={xAxis}
+								yAxis={yAxis}
+								onSelectX={handleSelectX}
+								onSelectY={handleSelectY}
+								tool={tool}
+								onToolChange={setTool}
+								xScale={xScale}
+								yScale={yScale}
+								onXScaleChange={setXScale}
+								onYScaleChange={setYScale}
+								xMin={xMin}
+								xMax={xMax}
+								yMin={yMin}
+								yMax={yMax}
+								cutoff={cutoff}
+								onCutoffChange={setCutoff}
+								onXMinChange={setXMin}
+								onXMaxChange={setXMax}
+								onYMinChange={setYMin}
+								onYMaxChange={setYMax}
+								controlsEnabled={settingsAvailable}
+								settingsOpen={settingsOpen}
+								onToggleSettings={() => setSettingsOpen((prev) => !prev)}
+							/>
+						</Box>
+						{data && (
+							<Typography
+								variant="caption"
+								color="text.secondary"
+								sx={{ order: 2 }}
 							>
-								<AxisSelect
-									value={yAxis}
-									options={values}
-									onChange={handleSelectY}
-									rotated={!isMobile}
-									fullWidth={isMobile}
-									size={isMobile ? "small" : "medium"}
-									label={isMobile ? "Eixo Y" : undefined}
-								/>
-							</Box>
+								{data.total_events.toLocaleString()} eventos
+								{plotMode === "scatter" && data.sampled_events
+									? ` · amostra de ${data.sampled_events.toLocaleString()}`
+									: plotMode === "histogram"
+										? " · histograma (100% dos dados)"
+										: " · heatmap (100% dos dados)"}
+							</Typography>
 						)}
 						<Box
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
-							sx={{
-								width: { xs: "min(95vw, 480px)", md: "min(70vh, 560px)" },
+							sx={(theme) => ({
+								// Mobile: o plot ocupa a metade superior da tela
+								// (quase full-width, limitado pela altura); desktop
+								// mantém o poço centrado no canvas (FE-26).
+								order: { xs: 1, md: 3 },
+								width: {
+									xs: "min(96vw, 52vh)",
+									md: "min(70vh, 560px)",
+								},
 								maxWidth: "100%",
 								aspectRatio: "1 / 1",
 								flexShrink: 1,
@@ -490,26 +559,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								display: "flex",
 								alignItems: "center",
 								justifyContent: "center",
-							}}
+								// Separa o plot do canvas (FE-26): superfície com
+								// borda suave + raio — "poço" escuro no dark.
+								bgcolor: "background.paper",
+								border: `1px solid ${theme.palette.divider}`,
+								borderRadius: 3,
+								boxShadow: theme.shadows[2],
+								overflow: "hidden",
+							})}
 						>
-							{/* Configurações do gráfico, ancorado ao canto superior esquerdo */}
-							{settingsAvailable && (
-								<PlotSettingsButton
-									open={settingsOpen}
-									onToggle={() => setSettingsOpen((prev) => !prev)}
-								/>
-							)}
-
-							{/* Seletor de tipo de gate, ancorado ao canto superior direito */}
-							{tool !== "edit" && reshapingGateId === null && (
-								<GateToolToggle
-									value={tool}
-									onChange={setTool}
-									plotMode={plotMode}
-								/>
-							)}
 							{isError && !data ? (
-								<Typography color="error">Erro ao carregar dados.</Typography>
+								<Alert
+									severity={
+										densityError?.missingChannels.length ? "warning" : "error"
+									}
+									sx={{ maxWidth: 480 }}
+								>
+									{densityError?.message ?? "Erro ao carregar dados."}
+								</Alert>
 							) : hasData ? (
 								<Plot
 									key={
@@ -517,7 +584,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											? "edit-mode"
 											: `draw-mode-${drawRevision}`
 									}
-									data={plotData}
+									data={[...plotData, ...gateHoverTraces]}
 									useResizeHandler
 									style={{ width: "100%", height: "100%" }}
 									config={
@@ -560,6 +627,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
+											gridcolor: theme.palette.divider,
+											linecolor: theme.palette.divider,
+											zerolinecolor: theme.palette.divider,
 										},
 										yaxis: {
 											title: {
@@ -579,11 +649,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
+											gridcolor: theme.palette.divider,
+											linecolor: theme.palette.divider,
+											zerolinecolor: theme.palette.divider,
 										},
 										autosize: true,
+										hovermode: "closest",
+										hoverlabel: {
+											bgcolor: theme.palette.background.paper,
+											bordercolor: theme.palette.divider,
+											font: {
+												color: theme.palette.text.primary,
+												size: 12,
+											},
+										},
 										margin: { l: 60, r: 20, t: 20, b: 60 },
-										plot_bgcolor: "#FFFFFF",
-										paper_bgcolor: "#FFFFFF",
+										plot_bgcolor: theme.palette.background.default,
+										paper_bgcolor: theme.palette.background.default,
+										font: { color: theme.palette.text.secondary },
 										bargap: 0,
 									}}
 									onSelected={
@@ -599,7 +682,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									}
 								/>
 							) : isLoading ? null : (
-								<Typography>Sem dados para os eixos selecionados.</Typography>
+								<Typography>
+									{data && data.total_events === 0
+										? "O gate não contém eventos nesta amostra."
+										: "Sem dados para os eixos selecionados."}
+								</Typography>
 							)}
 							{isLoading && !hasData && (
 								<Box
@@ -646,7 +733,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								)}
 							{reshapingGateId !== null && (
 								<Box
-									sx={{ position: "absolute", top: 8, right: 8, zIndex: 30 }}
+									sx={{
+										position: "absolute",
+										top: 12,
+										right: 12,
+										zIndex: 30,
+									}}
 								>
 									<Button
 										variant="contained"
@@ -657,47 +749,32 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									</Button>
 								</Box>
 							)}
+							{/* Configurações do plot: card overlay no canto do
+								    gráfico, translúcido durante o ajuste das
+								    escalas — mesma dinâmica no desktop e mobile. */}
+							{settingsAvailable && (
+								<PlotSettingsPanel
+									open={settingsOpen}
+									onClose={() => setSettingsOpen(false)}
+									plotMode={plotMode}
+									xScale={xScale}
+									yScale={yScale}
+									cutoff={cutoff}
+									xMin={xMin}
+									xMax={xMax}
+									yMin={yMin}
+									yMax={yMax}
+									onXScaleChange={setXScale}
+									onYScaleChange={setYScale}
+									onCutoffChange={setCutoff}
+									onXMinChange={setXMin}
+									onXMaxChange={setXMax}
+									onYMinChange={setYMin}
+									onYMaxChange={setYMax}
+									onPlotModeChange={setPlotMode}
+								/>
+							)}
 						</Box>
-						{settingsAvailable && (
-							<PlotSettingsPanel
-								open={settingsOpen}
-								onClose={() => setSettingsOpen(false)}
-								variant={isMobile ? "drawer" : "inline"}
-								plotMode={plotMode}
-								xScale={xScale}
-								yScale={yScale}
-								cutoff={cutoff}
-								xMin={xMin}
-								xMax={xMax}
-								yMin={yMin}
-								yMax={yMax}
-								onXScaleChange={setXScale}
-								onYScaleChange={setYScale}
-								onCutoffChange={setCutoff}
-								onXMinChange={setXMin}
-								onXMaxChange={setXMax}
-								onYMinChange={setYMin}
-								onYMaxChange={setYMax}
-								onPlotModeChange={setPlotMode}
-							/>
-						)}
-					</Box>
-					<Box
-						sx={{
-							display: "flex",
-							justifyContent: "center",
-							width: { xs: "min(95vw, 480px)", md: "min(70vh, 560px)" },
-							maxWidth: "100%",
-						}}
-					>
-						<AxisSelect
-							value={xAxis}
-							options={values}
-							onChange={handleSelectX}
-							fullWidth={isMobile}
-							size={isMobile ? "small" : "medium"}
-							label={isMobile ? "Eixo X" : undefined}
-						/>
 					</Box>
 				</Box>
 			</Box>
@@ -708,6 +785,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				name={editGateName}
 				color={editGateColor}
 				scope={editGateScope}
+				familySize={selectedGate ? familySizeOf(selectedGate.id) : 0}
 				subsampleName={currentSubsampleName}
 				error={editGateError}
 				saving={savingGate}
