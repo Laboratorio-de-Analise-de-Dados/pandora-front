@@ -121,9 +121,11 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 			size="small"
 			sx={{
 				height: 4,
-				mx: 1,
-				mt: 1,
-				mb: 3,
+				// Margem lateral generosa: as etiquetas das marcas das pontas
+				// são centradas no mark e vazariam da trilha sem isso.
+				mx: 3,
+				mt: 1.5,
+				mb: 3.5,
 				width: "auto",
 				display: "block",
 				"& .MuiSlider-markLabel": { fontSize: "0.62rem" },
@@ -216,7 +218,7 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				open={Boolean(anchor)}
 				onClose={() => setAnchor(null)}
 				anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-				slotProps={{ paper: { sx: { p: 2.5, width: 340 } } }}
+				slotProps={{ paper: { sx: { px: 3, py: 2.5, width: 340 } } }}
 			>
 				<AxisLimitSection
 					axis={axis}
