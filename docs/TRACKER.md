@@ -11,9 +11,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                               | Área afetada                                                  | Branch                       | Sessão                      | Desde      |
-| ------------------------------------- | ------------------------------------------------------------- | ---------------------------- | --------------------------- | ---------- |
-| — | — | — | — | — |
+| Feature                             | Área afetada                                          | Branch                 | Sessão | Desde      |
+| ----------------------------------- | ----------------------------------------------------- | ---------------------- | ------ | ---------- |
+| Footer: LIMC-IA + versão da release | `src/components/footer/`, `Dockerfile`, `release.yml` | feature/footer-version | devin  | 2026-09-16 |
 
 ## Concluído nesta branch
 
