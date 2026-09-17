@@ -1,8 +1,8 @@
 import React, { useState } from "react"
 import {
 	Box,
-	Button,
 	FormControl,
+	InputAdornment,
 	InputLabel,
 	MenuItem,
 	Popover,
@@ -87,30 +87,35 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 }) => {
 	const [anchor, setAnchor] = useState<HTMLElement | null>(null)
 	const label =
-		min === "" && max === "" ? "auto" : `${min || "…"}–${max || "…"}`
+		min === "" && max === "" ? "auto" : `${min || "…"} – ${max || "…"}`
 	return (
 		<>
 			<Tooltip title={`Limites do eixo ${axis}`}>
-				<Button
-					variant="outlined"
+				<TextField
+					label={`Limites ${axis}`}
 					size="small"
+					variant="outlined"
+					value={label}
+					onClick={(e) => setAnchor(e.currentTarget)}
 					aria-haspopup="true"
 					aria-expanded={Boolean(anchor)}
-					onClick={(e) => setAnchor(e.currentTarget)}
-					endIcon={<ChevronIcon />}
-					sx={(theme) => ({
-						textTransform: "none",
-						fontWeight: 600,
-						color:
-							min === "" && max === ""
-								? theme.palette.text.secondary
-								: theme.palette.text.primary,
-						borderColor: theme.palette.divider,
-						"&:hover": { borderColor: theme.palette.text.secondary },
-					})}
-				>
-					{`Limites ${axis}: ${label}`}
-				</Button>
+					InputProps={{
+						readOnly: true,
+						endAdornment: (
+							<InputAdornment position="end">
+								<ChevronIcon />
+							</InputAdornment>
+						),
+					}}
+					sx={{
+						width: 160,
+						cursor: "pointer",
+						"& .MuiInputBase-input": {
+							cursor: "pointer",
+							fontWeight: 600,
+						},
+					}}
+				/>
 			</Tooltip>
 			<Popover
 				anchorEl={anchor}
