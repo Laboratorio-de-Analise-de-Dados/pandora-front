@@ -109,7 +109,7 @@ jobs:
             echo "🩺 Health check (nginx)..."
             ok=""
             for i in $(seq 1 15); do
-              if docker exec pandora_frontend wget -q -O /dev/null http://localhost/ 2>/dev/null; then
+              if docker exec pandora_frontend wget -q -O /dev/null http://127.0.0.1/ 2>/dev/null; then
                 ok=1; break
               fi
               sleep 2
