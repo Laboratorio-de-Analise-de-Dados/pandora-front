@@ -24,6 +24,13 @@ export interface Experiment {
 	compensated?: boolean
 }
 
+/** Entrada do vocabulário de tipos de experimento (BE-28). `name` é o
+ * casing canônico; o dedup no backend é case/whitespace-insensitive. */
+export interface ExperimentType {
+	id: number
+	name: string
+}
+
 export type Organization = {
 	id: number
 	name: string
