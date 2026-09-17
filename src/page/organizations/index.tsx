@@ -140,7 +140,6 @@ export default function OrganizationsPage() {
 			sx={{
 				p: { xs: 2, sm: 3, md: 4 },
 				maxWidth: { xs: "100%", xl: 1400 },
-				mx: "auto",
 			}}
 		>
 			<Typography variant="h4" mb={3}>
