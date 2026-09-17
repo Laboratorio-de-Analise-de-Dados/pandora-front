@@ -63,7 +63,9 @@ const Header = () => {
 
 	return (
 		<AppBar position="static" color="secondary" elevation={0}>
-			<Toolbar variant="dense">
+			{/* Toolbar regular (~64px): a versão dense (~48px) deixava o
+				header fino demais frente às páginas de largura total. */}
+			<Toolbar>
 				<Box
 					sx={{
 						display: "flex",
@@ -85,7 +87,7 @@ const Header = () => {
 							component="img"
 							src="/pandora-icon.png"
 							alt="Pandora"
-							sx={{ height: 28, width: 28, borderRadius: "50%" }}
+							sx={{ height: 34, width: 34, borderRadius: "50%" }}
 						/>
 						<Typography variant="h6" sx={{ color: "#FFFFFF" }}>
 							Pandora
