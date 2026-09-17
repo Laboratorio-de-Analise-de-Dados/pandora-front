@@ -6,6 +6,19 @@ description: Convenções visuais do Pandora — toolbar, selects, popovers e pa
 Convenções de UI do workspace do Pandora, consolidadas a partir de revisões
 de design. Aplicar em qualquer controle, popover ou painel novo.
 
+## Layout de páginas (desktop)
+
+- **Conteúdo ancorado no topo-esquerdo em largura total** — a `Box` raiz da
+  página precisa de `flex: 1`: ela é flex-item do `Layout` (row) e sem
+  isso encolhe para a largura do conteúdo, deixando a página "concentrada
+  no canto". Não usar `mx: "auto"` centralizado.
+- `maxWidth` só quando a leitura pede (ex.: perfil com 2 cards → 1200px);
+  listas/tabelas ocupam a largura toda (tela de Experimentos é a
+  referência).
+- Entre abas de uma mesma página, manter `minHeight` na área de conteúdo
+  (~360px) para não "encolher e puxar" ao trocar — e `scrollbar-gutter:
+stable` global já reserva o espaço da barra de rolagem.
+
 ## Controles em barra (toolbar do plot e afins)
 
 - **Tudo `outlined` com `size="small"` e label na borda** — `FormControl` +
