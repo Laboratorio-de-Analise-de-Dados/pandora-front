@@ -24,8 +24,6 @@ import {
 	BIEX_SLIDER_MIN,
 	BIEX_SLIDER_MAX,
 	LINEAR_SLIDER_MAX,
-	BIEX_SLIDER_MARKS,
-	LINEAR_SLIDER_MARKS,
 	rawToSlider,
 	sliderToRaw,
 } from "../../../utils/sliders"
@@ -112,7 +110,6 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 			min={scale === "biex" ? BIEX_SLIDER_MIN : 0}
 			max={scale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
 			step={scale === "biex" ? 0.01 : 500}
-			marks={scale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
 			valueLabelDisplay="auto"
 			valueLabelFormat={(v) => {
 				const raw = sliderToRaw(v, scale)
@@ -121,14 +118,11 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 			size="small"
 			sx={{
 				height: 4,
-				// Margem lateral generosa: as etiquetas das marcas das pontas
-				// são centradas no mark e vazariam da trilha sem isso.
-				mx: 3,
-				mt: 1.5,
-				mb: 3.5,
+				mx: 0.5,
+				mt: 0.5,
+				mb: 2.5,
 				width: "auto",
 				display: "block",
-				"& .MuiSlider-markLabel": { fontSize: "0.62rem" },
 				"& .MuiSlider-thumb": { width: 12, height: 12 },
 			}}
 		/>
