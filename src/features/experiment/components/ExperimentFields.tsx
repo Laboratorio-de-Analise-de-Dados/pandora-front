@@ -19,6 +19,10 @@ interface ExperimentFieldsProps {
 	onTitleChange: (title: string) => void
 	onTypeChange: (type: string) => void
 	onDescriptionChange: (description: string) => void
+	/** BE-28: criar tipo novo exige admin ou dono do experimento — quando
+	 * false, o autocomplete não oferece a opção `Criar "X"` (default true:
+	 * na criação o usuário é sempre o dono). */
+	canCreateType?: boolean
 	idPrefix?: string
 }
 
@@ -53,6 +57,7 @@ const ExperimentFields: React.FC<ExperimentFieldsProps> = ({
 	onTitleChange,
 	onTypeChange,
 	onDescriptionChange,
+	canCreateType = true,
 	idPrefix = "experiment",
 }) => {
 	const { data: experimentTypes = [], isLoading } = useExperimentTypes()
@@ -97,7 +102,7 @@ const ExperimentFields: React.FC<ExperimentFieldsProps> = ({
 					const alreadyExists = options.some(
 						(option) => normalizeTypeName(option) === normalizeTypeName(input),
 					)
-					if (input !== "" && !alreadyExists) {
+					if (input !== "" && !alreadyExists && canCreateType) {
 						filtered.push(`${CREATE_PREFIX}${input}"`)
 					}
 					return filtered
@@ -130,7 +135,11 @@ const ExperimentFields: React.FC<ExperimentFieldsProps> = ({
 						variant="standard"
 						margin="normal"
 						label="Experiment Type"
-						helperText="Escolha um tipo existente ou digite um novo para criar"
+						helperText={
+							canCreateType
+								? "Escolha um tipo existente ou digite um novo para criar"
+								: "Escolha um tipo existente — criar tipos exige ser dono do experimento ou admin"
+						}
 						id={`${idPrefix}-type-input`}
 					/>
 				)}

@@ -15,6 +15,7 @@ import {
 } from "@mui/material"
 import type { Experiment } from "../../../types"
 import type { UpdateExperimentPayload } from "../../../services/experimentService"
+import { useAuth } from "../../../providers/AuthContext"
 import ExperimentFields from "./ExperimentFields"
 
 interface EditExperimentDialogProps {
@@ -34,6 +35,12 @@ const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({
 	onClose,
 	onSave,
 }) => {
+	const { user } = useAuth()
+	// BE-28: tipo novo no vocabulário só para admin ou dono — membro
+	// editando experimento alheio escolhe entre os existentes.
+	const canCreateType = Boolean(
+		user && (user.is_super_admin || experiment.created_by === user.id),
+	)
 	const [title, setTitle] = useState(experiment.title)
 	const [type, setType] = useState(experiment.type)
 	const [description, setDescription] = useState(experiment.description ?? "")
@@ -69,6 +76,7 @@ const EditExperimentDialog: React.FC<EditExperimentDialogProps> = ({
 					onTitleChange={setTitle}
 					onTypeChange={setType}
 					onDescriptionChange={setDescription}
+					canCreateType={canCreateType}
 					idPrefix="edit-experiment"
 				/>
 				{/* Canais são derivados dos arquivos do experimento e re-computados
