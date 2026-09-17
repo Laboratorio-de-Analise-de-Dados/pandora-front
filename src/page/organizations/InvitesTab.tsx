@@ -3,10 +3,7 @@ import {
 	Button,
 	Chip,
 	CircularProgress,
-	Divider,
-	List,
-	ListItem,
-	ListItemText,
+	Paper,
 	Typography,
 } from "@mui/material"
 import type { Invite } from "../../services/inviteService"
@@ -23,6 +20,23 @@ interface InvitesTabProps {
 	onCancel: (invite: Invite) => void
 }
 
+const sectionTitleSx = {
+	color: "text.secondary",
+	textTransform: "uppercase",
+	letterSpacing: "0.05em",
+} as const
+
+const inviteRowSx = {
+	display: "flex",
+	flexDirection: { xs: "column", sm: "row" },
+	alignItems: { xs: "flex-start", sm: "center" },
+	justifyContent: "space-between",
+	gap: 1,
+	py: 1.5,
+	borderTop: "1px solid",
+	borderColor: "divider",
+} as const
+
 export default function InvitesTab({
 	receivedInvites,
 	receivedLoading,
@@ -35,41 +49,58 @@ export default function InvitesTab({
 	onCancel,
 }: InvitesTabProps) {
 	return (
-		<Box>
-			<Typography variant="h6" gutterBottom>
-				Convites recebidos
-			</Typography>
-			{receivedLoading ? (
-				<Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
-					<CircularProgress size={20} />
-					<Typography variant="body2" color="text.secondary">
-						Carregando...
-					</Typography>
-				</Box>
-			) : receivedInvites.length === 0 ? (
-				<Typography color="text.secondary" mb={3}>
-					Nenhum convite pendente.
+		<Box
+			sx={{
+				display: "grid",
+				gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+				gap: 3,
+				alignItems: "start",
+			}}
+		>
+			<Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
+				<Typography variant="caption" sx={sectionTitleSx}>
+					Convites recebidos
 				</Typography>
-			) : (
-				<List dense sx={{ mb: 4 }}>
-					{receivedInvites.map((invite) => {
+				{receivedLoading ? (
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							gap: 1,
+							mt: 2,
+						}}
+					>
+						<CircularProgress size={20} />
+						<Typography variant="body2" color="text.secondary">
+							Carregando...
+						</Typography>
+					</Box>
+				) : receivedInvites.length === 0 ? (
+					<Typography variant="body2" color="text.secondary" mt={2}>
+						Nenhum convite pendente.
+					</Typography>
+				) : (
+					receivedInvites.map((invite) => {
 						const emailMatch =
 							userEmail?.toLowerCase() === invite.email.toLowerCase()
 						return (
-							<ListItem
-								key={invite.id}
-								divider
-								sx={{
-									flexDirection: { xs: "column", sm: "row" },
-									alignItems: { xs: "flex-start", sm: "center" },
-									gap: 1,
-								}}
-							>
-								<ListItemText
-									primary={`Convite para ${invite.organization.name}`}
-									secondary={`${invite.email} — ${invite.role.name}`}
-								/>
-								<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+							<Box key={invite.id} sx={inviteRowSx}>
+								<Box sx={{ minWidth: 0 }}>
+									<Typography variant="body2" fontWeight={600} noWrap>
+										{invite.organization.name}
+									</Typography>
+									<Typography variant="body2" color="text.secondary" noWrap>
+										{invite.email} — {invite.role.name}
+									</Typography>
+								</Box>
+								<Box
+									sx={{
+										display: "flex",
+										gap: 1,
+										flexWrap: "wrap",
+										flexShrink: 0,
+									}}
+								>
 									{!emailMatch && (
 										<Chip label="Outro email" size="small" color="warning" />
 									)}
@@ -90,45 +121,53 @@ export default function InvitesTab({
 										Recusar
 									</Button>
 								</Box>
-							</ListItem>
+							</Box>
 						)
-					})}
-				</List>
-			)}
+					})
+				)}
+			</Paper>
 
-			<Divider sx={{ my: 2 }} />
-
-			<Typography variant="h6" gutterBottom>
-				Convites enviados
-			</Typography>
-			{sentLoading ? (
-				<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-					<CircularProgress size={20} />
-					<Typography variant="body2" color="text.secondary">
-						Carregando...
-					</Typography>
-				</Box>
-			) : sentInvites.length === 0 ? (
-				<Typography color="text.secondary">
-					Nenhum convite pendente enviado.
+			<Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
+				<Typography variant="caption" sx={sectionTitleSx}>
+					Convites enviados
 				</Typography>
-			) : (
-				<List dense>
-					{sentInvites.map((invite) => (
-						<ListItem
-							key={invite.id}
-							divider
-							sx={{
-								flexDirection: { xs: "column", sm: "row" },
-								alignItems: { xs: "flex-start", sm: "center" },
-								gap: 1,
-							}}
-						>
-							<ListItemText
-								primary={`${invite.organization.name}`}
-								secondary={`${invite.email} — ${invite.role.name}`}
-							/>
-							<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+				{sentLoading ? (
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							gap: 1,
+							mt: 2,
+						}}
+					>
+						<CircularProgress size={20} />
+						<Typography variant="body2" color="text.secondary">
+							Carregando...
+						</Typography>
+					</Box>
+				) : sentInvites.length === 0 ? (
+					<Typography variant="body2" color="text.secondary" mt={2}>
+						Nenhum convite pendente enviado.
+					</Typography>
+				) : (
+					sentInvites.map((invite) => (
+						<Box key={invite.id} sx={inviteRowSx}>
+							<Box sx={{ minWidth: 0 }}>
+								<Typography variant="body2" fontWeight={600} noWrap>
+									{invite.organization.name}
+								</Typography>
+								<Typography variant="body2" color="text.secondary" noWrap>
+									{invite.email} — {invite.role.name}
+								</Typography>
+							</Box>
+							<Box
+								sx={{
+									display: "flex",
+									gap: 1,
+									flexWrap: "wrap",
+									flexShrink: 0,
+								}}
+							>
 								<Button
 									variant="outlined"
 									size="small"
@@ -145,10 +184,10 @@ export default function InvitesTab({
 									Cancelar
 								</Button>
 							</Box>
-						</ListItem>
-					))}
-				</List>
-			)}
+						</Box>
+					))
+				)}
+			</Paper>
 		</Box>
 	)
 }
