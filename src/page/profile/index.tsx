@@ -8,18 +8,10 @@ import {
 	Divider,
 	Typography,
 } from "@mui/material"
-import type { ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
-import {
-	FaGoogle as GoogleIcon,
-	FaMicrosoft as MicrosoftIcon,
-} from "react-icons/fa"
-import {
-	MdLockOutline as LockIcon,
-	MdOutlinePerson as PersonIcon,
-} from "react-icons/md"
+import { MdLockOutline as LockIcon } from "react-icons/md"
 import { useAuth } from "../../providers/AuthContext"
-import { useAuthProviders } from "../../hooks/useAuthProviders"
+import { ConnectedAccounts } from "../../features/profile"
 import Layout from "../../components/Layout"
 
 const providerOptions: Record<
@@ -48,73 +40,9 @@ const getInitials = (username: string) => {
 const getRoleName = (role: unknown) =>
 	typeof role === "string" ? role : (role as { name?: string })?.name
 
-interface ProviderRowProps {
-	icon: ReactNode
-	name: string
-	description: string
-	connected: boolean
-	onConnect?: () => void
-}
-
-function ProviderRow({
-	icon,
-	name,
-	description,
-	connected,
-	onConnect,
-}: ProviderRowProps) {
-	return (
-		<Box
-			sx={{
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "space-between",
-				gap: 2,
-				p: 1.5,
-				border: "1px solid",
-				borderColor: "divider",
-				borderRadius: 2,
-			}}
-		>
-			<Box
-				sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}
-			>
-				<Box
-					sx={{
-						display: "flex",
-						fontSize: 20,
-						color: connected ? "primary.main" : "text.secondary",
-					}}
-				>
-					{icon}
-				</Box>
-				<Box sx={{ minWidth: 0 }}>
-					<Typography variant="body2" fontWeight={600}>
-						{name}
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						{description}
-					</Typography>
-				</Box>
-			</Box>
-			{connected ? (
-				<Chip label="Ativa" color="primary" size="small" />
-			) : onConnect ? (
-				<Button variant="outlined" size="small" onClick={onConnect}>
-					Conectar
-				</Button>
-			) : (
-				<Chip label="Inativa" variant="outlined" size="small" />
-			)}
-		</Box>
-	)
-}
-
 export default function ProfilePage() {
 	const { user } = useAuth()
-	const { providers } = useAuthProviders()
 	const navigate = useNavigate()
-	const apiUrl = import.meta.env.VITE_API_URL || ""
 
 	const currentProvider = user?.auth_provider || "local"
 	const memberships = user?.memberships ?? []
@@ -245,76 +173,7 @@ export default function ProfilePage() {
 						</CardContent>
 					</Card>
 
-					<Card>
-						<CardContent
-							sx={{
-								p: 3,
-								display: "flex",
-								flexDirection: "column",
-								gap: 2,
-								"&:last-child": { pb: 3 },
-							}}
-						>
-							<Typography
-								variant="caption"
-								fontWeight="bold"
-								color="text.secondary"
-							>
-								SEGURANÇA E CONEXÕES
-							</Typography>
-
-							<Box
-								sx={{
-									display: "flex",
-									flexDirection: "column",
-									gap: 1.5,
-								}}
-							>
-								<ProviderRow
-									icon={<PersonIcon />}
-									name="Conta local"
-									description="Login com usuário e senha"
-									connected={currentProvider === "local"}
-								/>
-								{providers.google && (
-									<ProviderRow
-										icon={<GoogleIcon />}
-										name="Google"
-										description="Entrar com sua conta Google"
-										connected={currentProvider === "google"}
-										onConnect={
-											currentProvider === "google"
-												? undefined
-												: () => {
-														window.location.href = `${apiUrl}/accounts/auth/google/`
-													}
-										}
-									/>
-								)}
-								{providers.microsoft && (
-									<ProviderRow
-										icon={<MicrosoftIcon />}
-										name="Microsoft"
-										description="Entrar com sua conta Microsoft"
-										connected={currentProvider === "microsoft"}
-										onConnect={
-											currentProvider === "microsoft"
-												? undefined
-												: () => {
-														window.location.href = `${apiUrl}/accounts/auth/microsoft/`
-													}
-										}
-									/>
-								)}
-							</Box>
-
-							{!providers.google && !providers.microsoft && (
-								<Typography variant="body2" color="text.secondary">
-									Nenhum provedor SSO configurado no momento.
-								</Typography>
-							)}
-						</CardContent>
-					</Card>
+					<ConnectedAccounts />
 				</Box>
 			</Box>
 		</Layout>

@@ -11,9 +11,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature | Área afetada | Branch | Sessão | Desde |
-| ------- | ------------ | ------ | ------ | ----- |
-| —       | —            | —      | —      | —     |
+| Feature                 | Área afetada                                                                                        | Branch                    | Sessão | Desde   |
+| ----------------------- | --------------------------------------------------------------------------------------------------- | ------------------------- | ------ | ------- |
+| FE-31 contas conectadas | `src/page/profile`, `src/page/auth-callback`, `src/features/profile`, `src/services/authService.ts` | `feat/connected-accounts` | devin  | 2026-09 |
 
 ## Concluído nesta branch
 
