@@ -5,16 +5,20 @@ import {
 	Checkbox,
 	FormControl,
 	FormControlLabel,
+	InputAdornment,
+	InputLabel,
 	MenuItem,
 	Select,
+	TextField,
 } from "@mui/material"
-import { MdAdd as AddIcon } from "react-icons/md"
+import { MdAdd as AddIcon, MdSearch as SearchIcon } from "react-icons/md"
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import Layout from "../../components/Layout"
 import { useExperimentsContext } from "../../providers/ExperimentContext"
 import { useAuth } from "../../providers/AuthContext"
 import ExperimentsContainer from "./Container"
+import { filterExperiments } from "./filterExperiments"
 import NewExperimentDialog from "../../features/experiment/components/NewExperimentDialog"
 
 export type EventData = {
@@ -28,6 +32,7 @@ export default function ExperimentsPage() {
 	const { user } = useAuth()
 	const { experiments, listExperiments } = useExperimentsContext()
 	const [showInactive, setShowInactive] = useState(false)
+	const [search, setSearch] = useState("")
 	const [newOpen, setNewOpen] = useState(false)
 	const orgIdParam = searchParams.get("orgId")
 	const orgId = orgIdParam ? parseInt(orgIdParam, 10) : null
@@ -36,13 +41,10 @@ export default function ExperimentsPage() {
 		listExperiments(showInactive)
 	}, [listExperiments, showInactive])
 
-	const filteredExperiments = useMemo(() => {
-		if (orgId === null) return experiments
-		if (orgId === 0) return experiments.filter((e) => !e.organization)
-		return experiments.filter(
-			(e) => e.organization && e.organization.id === orgId,
-		)
-	}, [experiments, orgId])
+	const filteredExperiments = useMemo(
+		() => filterExperiments(experiments, orgId, search),
+		[experiments, orgId, search],
+	)
 
 	const org = user?.memberships?.find(
 		(m) => m.organization.id === orgId,
@@ -108,34 +110,24 @@ export default function ExperimentsPage() {
 							gap: 2,
 						}}
 					>
-						<Box
-							sx={{
-								display: "flex",
-								alignItems: "center",
-								gap: 1,
-							}}
+						<FormControl
+							sx={{ minWidth: { xs: "100%", sm: 220 } }}
+							size="small"
 						>
-							<Typography variant="body2" color="text.secondary">
-								Filtro:
-							</Typography>
-							<FormControl
-								sx={{ minWidth: { xs: "100%", sm: 200 }, flex: 1 }}
-								size="small"
+							<InputLabel>Laboratório</InputLabel>
+							<Select
+								value={orgId === null ? "" : String(orgId)}
+								onChange={(e) => handleOrgChange(e.target.value)}
+								label="Laboratório"
 							>
-								<Select
-									value={orgId === null ? "" : String(orgId)}
-									onChange={(e) => handleOrgChange(e.target.value)}
-									displayEmpty
-								>
-									<MenuItem value="">Todos os Laboratórios</MenuItem>
-									{orgOptions.map((o) => (
-										<MenuItem key={o.id} value={o.id}>
-											{o.name}
-										</MenuItem>
-									))}
-								</Select>
-							</FormControl>
-						</Box>
+								<MenuItem value="">Todos os Laboratórios</MenuItem>
+								{orgOptions.map((o) => (
+									<MenuItem key={o.id} value={o.id}>
+										{o.name}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
 						<Button
 							variant="contained"
 							size="small"
@@ -148,21 +140,46 @@ export default function ExperimentsPage() {
 					</Box>
 				</Box>
 
-				<FormControlLabel
-					control={
-						<Checkbox
-							size="small"
-							checked={showInactive}
-							onChange={(e) => setShowInactive(e.target.checked)}
-						/>
-					}
-					label={
-						<Typography variant="body2" color="text.secondary">
-							Mostrar inativados
-						</Typography>
-					}
-					sx={{ alignSelf: "flex-end", mb: 1 }}
-				/>
+				<Box
+					sx={{
+						display: "flex",
+						flexDirection: { xs: "column", sm: "row" },
+						alignItems: { sm: "center" },
+						justifyContent: "space-between",
+						gap: 2,
+						mb: 2,
+					}}
+				>
+					<TextField
+						size="small"
+						label="Buscar"
+						placeholder="por nome do experimento…"
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						sx={{ flex: 1, maxWidth: { sm: 420 } }}
+						InputProps={{
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon />
+								</InputAdornment>
+							),
+						}}
+					/>
+					<FormControlLabel
+						control={
+							<Checkbox
+								size="small"
+								checked={showInactive}
+								onChange={(e) => setShowInactive(e.target.checked)}
+							/>
+						}
+						label={
+							<Typography variant="body2" color="text.secondary">
+								Mostrar inativados
+							</Typography>
+						}
+					/>
+				</Box>
 
 				<Box>
 					<ExperimentsContainer

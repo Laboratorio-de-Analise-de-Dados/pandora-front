@@ -199,7 +199,14 @@ export default function ExperimentCard({
 						e.stopPropagation()
 						setDetailsOpen(true)
 					}}
-					sx={{ position: "absolute", top: 4, right: inactive ? 4 : 36 }}
+					// zIndex: o preview (canvas) ganha transform no hover e
+					// criaria stacking context por cima dos botões.
+					sx={{
+						position: "absolute",
+						top: 4,
+						right: inactive ? 4 : 36,
+						zIndex: 1,
+					}}
 				>
 					<InfoIcon />
 				</IconButton>
@@ -211,7 +218,7 @@ export default function ExperimentCard({
 							e.stopPropagation()
 							setMenuAnchor(e.currentTarget)
 						}}
-						sx={{ position: "absolute", top: 4, right: 4 }}
+						sx={{ position: "absolute", top: 4, right: 4, zIndex: 1 }}
 					>
 						<MoreIcon />
 					</IconButton>
@@ -220,24 +227,28 @@ export default function ExperimentCard({
 					experimentId={experiment.id}
 					enabled={!inactive && experiment.preview_available === true}
 				/>
-				{(statusChip || experiment.my_role || experiment.compensated) && (
-					<div className="status-row">
-						{statusChip}
-						{experiment.my_role && <RoleChip role={experiment.my_role} />}
-						{experiment.compensated && (
-							<Chip
-								label="Compensado"
-								size="small"
-								variant="outlined"
-								color="warning"
-								title="Amostra(s) trazem matriz de compensação nos headers"
-								sx={{ height: 20, fontSize: "0.65rem", fontWeight: 600 }}
-							/>
-						)}
-					</div>
-				)}
+				<div className="status-row">
+					{statusChip}
+					{experiment.my_role && <RoleChip role={experiment.my_role} />}
+					<Chip
+						label={experiment.organization?.name ?? "Pessoal"}
+						size="small"
+						variant="outlined"
+						sx={{ height: 20, fontSize: "0.65rem", fontWeight: 600 }}
+					/>
+					{experiment.compensated && (
+						<Chip
+							label="Compensado"
+							size="small"
+							variant="outlined"
+							color="warning"
+							title="Amostra(s) trazem matriz de compensação nos headers"
+							sx={{ height: 20, fontSize: "0.65rem", fontWeight: 600 }}
+						/>
+					)}
+				</div>
 				<h1>{experiment.title}</h1>
-				<div>Type: {experiment.type}</div>
+				<div className="meta">Tipo: {experiment.type}</div>
 				{typeof experiment.progress === "number" && (
 					<LinearProgress
 						variant="determinate"
@@ -248,9 +259,8 @@ export default function ExperimentCard({
 				)}
 				{inactive && <div className="inactive-badge">Desativado</div>}
 				<div className="card-footer">
-					<span className="creator">{experiment.created_by_name ?? "—"}</span>
-					<span className="org">
-						{experiment.organization?.name ?? "Pessoal"}
+					<span className="creator">
+						Criado por {experiment.created_by_name ?? "—"}
 					</span>
 				</div>
 			</ExperimentComponent>
