@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { checkpointLabel, formatSessionLabel, formatTime } from "./datetime"
+import {
+	checkpointLabel,
+	formatRelativeTime,
+	formatSessionLabel,
+	formatTime,
+} from "./datetime"
 
 describe("formatTime", () => {
 	it("formata horário curto com zero à esquerda", () => {
@@ -27,6 +32,27 @@ describe("formatSessionLabel", () => {
 		const yesterday = new Date(Date.now() - 86400000)
 		const iso = yesterday.toISOString()
 		expect(formatSessionLabel(iso, iso)).toContain("Ontem")
+	})
+})
+
+describe("formatRelativeTime", () => {
+	it("diz 'Agora mesmo' para menos de 1 minuto", () => {
+		expect(formatRelativeTime(new Date().toISOString())).toBe("Agora mesmo")
+	})
+
+	it("usa minutos até 1 hora", () => {
+		const iso = new Date(Date.now() - 25 * 60000).toISOString()
+		expect(formatRelativeTime(iso)).toBe("Há 25 min")
+	})
+
+	it("usa horas até 1 dia", () => {
+		const iso = new Date(Date.now() - 3 * 3600000).toISOString()
+		expect(formatRelativeTime(iso)).toBe("Há 3 h")
+	})
+
+	it("cai para data + hora após 1 dia", () => {
+		const iso = new Date(Date.now() - 2 * 86400000).toISOString()
+		expect(formatRelativeTime(iso)).toMatch(/^\d{2}\/\w{3} · \d{2}:\d{2}$/)
 	})
 })
 

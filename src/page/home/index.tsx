@@ -17,7 +17,10 @@ import {
 import Layout from "../../components/Layout"
 import { fetchOrganizations } from "../../services/organizationService"
 import { fetchExperiments } from "../../services/experimentService"
+import { fetchGroupedHistory } from "../../services/historyService"
+import { formatRelativeTime } from "../../features/history/utils/datetime"
 import { orgTypeLabel, pluralPt } from "../../utils/organization"
+import type { Experiment } from "../../types/ExperimentTypes"
 
 interface ContextCardProps {
 	section: string
@@ -103,6 +106,25 @@ export default function HomePage() {
 		queryFn: () => fetchExperiments(),
 	})
 	const loading = orgsLoading || expsLoading
+
+	// Sem `updated_at` no serializer, o maior id é a melhor proxy do
+	// experimento mais recente — o feed mostra o histórico dele.
+	const latestExperiment = experiments.reduce<Experiment | null>(
+		(acc, e) => (acc === null || e.id > acc.id ? e : acc),
+		null,
+	)
+	const { data: history } = useQuery({
+		queryKey: ["history", "latest", latestExperiment?.id],
+		queryFn: () => fetchGroupedHistory(latestExperiment!.id),
+		enabled: latestExperiment !== null,
+	})
+	const recentActivity = (history?.sessions ?? [])
+		.flatMap((s) => s.revisions)
+		.sort(
+			(a, b) =>
+				new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+		)
+		.slice(0, 4)
 
 	const activeCount = (orgId: number | null) =>
 		experiments.filter((e) =>
@@ -205,6 +227,76 @@ export default function HomePage() {
 						</>
 					)}
 				</Box>
+
+				{recentActivity.length > 0 && latestExperiment && (
+					<Card sx={{ mt: 4 }}>
+						<CardContent sx={{ p: 3, "&:last-child": { pb: 3 } }}>
+							<Typography
+								variant="caption"
+								fontWeight="bold"
+								color="text.secondary"
+							>
+								ATIVIDADE RECENTE — {latestExperiment.title}
+							</Typography>
+							<Box
+								sx={{
+									mt: 0.5,
+									display: "flex",
+									flexDirection: "column",
+								}}
+							>
+								{recentActivity.map((rev) => (
+									<Box
+										key={rev.id}
+										onClick={() =>
+											navigate(`/experiments/${latestExperiment.id}`)
+										}
+										sx={{
+											display: "flex",
+											alignItems: "baseline",
+											gap: 1.5,
+											py: 1.25,
+											borderBottom: "1px solid",
+											borderColor: "divider",
+											cursor: "pointer",
+											"&:last-child": { borderBottom: "none" },
+											"&:hover": {
+												"& .activity-text": {
+													color: "primary.main",
+												},
+											},
+										}}
+									>
+										<Box
+											sx={{
+												width: 7,
+												height: 7,
+												borderRadius: "50%",
+												bgcolor: "primary.main",
+												flexShrink: 0,
+												alignSelf: "center",
+											}}
+										/>
+										<Typography
+											className="activity-text"
+											variant="body2"
+											sx={{ flex: 1, transition: "color 150ms ease" }}
+										>
+											{rev.author ?? "Alguém"} {rev.summary}
+										</Typography>
+										<Typography
+											variant="caption"
+											color="text.secondary"
+											sx={{ whiteSpace: "nowrap" }}
+										>
+											{formatRelativeTime(rev.created_at)}
+										</Typography>
+									</Box>
+								))}
+							</Box>
+						</CardContent>
+					</Card>
+				)}
 			</Box>
 		</Layout>
 	)
