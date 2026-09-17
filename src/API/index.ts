@@ -1,6 +1,8 @@
 import axios from "axios"
 
-const pandoraUrl = import.meta.env.VITE_API_URL || "http://localhost:8085"
+export const API_BASE_URL =
+	import.meta.env.VITE_API_URL || "http://localhost:8085"
+const pandoraUrl = API_BASE_URL
 
 const CytometryApi = axios.create({ baseURL: pandoraUrl })
 

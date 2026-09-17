@@ -10,6 +10,7 @@ import {
 } from "@mui/material"
 
 import { useAuth } from "../../providers/AuthContext"
+import { API_BASE_URL } from "../../API"
 import { useAuthProviders } from "../../hooks/useAuthProviders"
 import { acceptInvite } from "../../services/inviteService"
 
@@ -23,7 +24,7 @@ export default function LoginPage() {
 	const inviteToken = searchParams.get("invite")
 	const { providers } = useAuthProviders()
 
-	const apiUrl = import.meta.env.VITE_API_URL || ""
+	const apiUrl = API_BASE_URL
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
