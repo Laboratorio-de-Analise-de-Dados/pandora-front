@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Badge, Box, Tab, Tabs, Typography } from "@mui/material"
+import { Box, Tab, Tabs, Typography } from "@mui/material"
 import { toast } from "react-toastify"
 import { useAuth } from "../../providers/AuthContext"
 import { useInvites } from "../../hooks/useInvites"
@@ -139,7 +139,7 @@ export default function OrganizationsPage() {
 		<Box
 			sx={{
 				p: { xs: 2, sm: 3, md: 4 },
-				maxWidth: { xs: "100%", md: 1200, xl: 1400 },
+				maxWidth: { xs: "100%", xl: 1400 },
 				mx: "auto",
 			}}
 		>
@@ -155,19 +155,7 @@ export default function OrganizationsPage() {
 				indicatorColor="primary"
 			>
 				<Tab label={`Minhas Organizações (${organizations.length})`} />
-				<Tab
-					label={
-						<Badge
-							badgeContent={receivedInvites.length}
-							color="primary"
-							max={9}
-							showZero
-							sx={{ "& .MuiBadge-badge": { right: -14, top: 4 } }}
-						>
-							Convites Recebidos
-						</Badge>
-					}
-				/>
+				<Tab label={`Convites Recebidos (${receivedInvites.length})`} />
 				<Tab label="+ Criar Nova" />
 			</Tabs>
 
