@@ -1,5 +1,10 @@
 import CytometryApi from "../API"
-import type { AnalysisResultData, Experiment, ExperimentFiles } from "../types"
+import type {
+	AnalysisResultData,
+	Experiment,
+	ExperimentFiles,
+	ExperimentType,
+} from "../types"
 
 export const fetchExperiments = async (
 	includeInactive = false,
@@ -12,6 +17,14 @@ export const fetchExperiments = async (
 
 export const fetchExperiment = async (id: string): Promise<Experiment> => {
 	const res = await CytometryApi.get(`/experiment/${id}`)
+	return res.data
+}
+
+/** Vocabulário de tipos (BE-28). Tipos novos não precisam de POST aqui —
+ * o backend cria a entrada automaticamente quando um experimento usa um
+ * `type` ainda não catalogado. */
+export const fetchExperimentTypes = async (): Promise<ExperimentType[]> => {
+	const res = await CytometryApi.get("/experiment/types/")
 	return res.data
 }
 

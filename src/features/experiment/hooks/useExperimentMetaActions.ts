@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import {
 	checkFileHash,
@@ -17,6 +18,7 @@ import {
 } from "../../../utils/experimentFile"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
 import { extractErrorMessage } from "../../../utils/apiError"
+import { EXPERIMENT_TYPES_QUERY_KEY } from "./useExperimentTypes"
 
 /** Metadados do experimento: editar, desativar, baixar e anexar arquivos. */
 export function useExperimentMetaActions() {
@@ -24,6 +26,7 @@ export function useExperimentMetaActions() {
 	const { experiment, invalidateExperiment } = useExperimentWorkspace()
 	const { user } = useAuth()
 	const { addExperimentFile } = useExperimentsContext()
+	const queryClient = useQueryClient()
 
 	const [addingFile, setAddingFile] = useState(false)
 	const [savingExperiment, setSavingExperiment] = useState(false)
@@ -49,6 +52,10 @@ export function useExperimentMetaActions() {
 				await updateExperiment(experiment.id, payload)
 				toast.success("Experimento atualizado!")
 				invalidateExperiment()
+				// PATCH de `type` pode ter criado entrada nova no vocabulário (BE-28).
+				queryClient.invalidateQueries({
+					queryKey: EXPERIMENT_TYPES_QUERY_KEY,
+				})
 				return null
 			} catch (error) {
 				return extractErrorMessage(error)
@@ -56,7 +63,7 @@ export function useExperimentMetaActions() {
 				setSavingExperiment(false)
 			}
 		},
-		[experiment, invalidateExperiment],
+		[experiment, invalidateExperiment, queryClient],
 	)
 
 	const handleDelete = useCallback(async () => {

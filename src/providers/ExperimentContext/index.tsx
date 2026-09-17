@@ -7,8 +7,10 @@ import React, {
 	useEffect,
 	useCallback,
 } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import type { Experiment } from "../../types"
 import { useAuth } from "../AuthContext"
+import { EXPERIMENT_TYPES_QUERY_KEY } from "../../features/experiment/hooks/useExperimentTypes"
 import {
 	completeExperimentFileUpload,
 	completeExperimentUpload,
@@ -72,6 +74,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	children,
 }) => {
 	const { user } = useAuth()
+	const queryClient = useQueryClient()
 	const [experiments, setExperiments] = useState<Experiment[]>([])
 	const [progress, setProgress] = useState<ChunkProgress[]>([])
 	const listExperiments = useCallback(async function nts(
@@ -150,9 +153,11 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 
 			await completeExperimentUpload(fileId, file.name)
 			await listExperiments()
+			// Um `type` inédito vira entrada do vocabulário no save (BE-28).
+			queryClient.invalidateQueries({ queryKey: EXPERIMENT_TYPES_QUERY_KEY })
 			localStorage.removeItem("currentUpload")
 		},
-		[listExperiments, sendAllChunks, chunkSize, user],
+		[listExperiments, sendAllChunks, chunkSize, user, queryClient],
 	)
 
 	// Criação sem arquivo (BE-24): o experimento nasce vazio
@@ -177,8 +182,9 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				organizationId: orgId,
 			})
 			await listExperiments()
+			queryClient.invalidateQueries({ queryKey: EXPERIMENT_TYPES_QUERY_KEY })
 		},
-		[listExperiments, user],
+		[listExperiments, user, queryClient],
 	)
 
 	// "Adicionar arquivos" num experimento existente (BE-12): mesmo protocolo
