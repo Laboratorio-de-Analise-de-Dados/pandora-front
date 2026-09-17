@@ -10,7 +10,9 @@ RUN npm install -g pnpm && pnpm install --frozen-lockfile
 COPY . .
 
 ARG VITE_API_URL
+ARG VITE_APP_VERSION
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_APP_VERSION=$VITE_APP_VERSION
 RUN pnpm build
 
 # Etapa final: Nginx servindo os arquivos

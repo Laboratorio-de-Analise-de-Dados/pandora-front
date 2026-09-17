@@ -10,6 +10,10 @@ const Footer = () => {
 	// aparecer "vazando" abaixo da tela (mesma regra do BottomNav).
 	if (/^\/experiments\/\d+/.test(location.pathname)) return null
 
+	// Versão injetada no build pela pipeline de release (VITE_APP_VERSION);
+	// em dev local a variável não existe e o rodapé omite o trecho.
+	const version = import.meta.env.VITE_APP_VERSION
+
 	return (
 		<Box
 			component="footer"
@@ -23,7 +27,8 @@ const Footer = () => {
 			}}
 		>
 			<Typography variant="body2">
-				Desenvolvido pelo Datalab - Instituto Carlos Chagas, Fiocruz Paraná
+				Desenvolvido pelo LIMC-IA - Instituto Carlos Chagas, Fiocruz Paraná
+				{version ? ` · ${version}` : ""}
 			</Typography>
 		</Box>
 	)

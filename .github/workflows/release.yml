@@ -48,7 +48,7 @@ jobs:
       - name: Checkout na tag (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
         run: |
-          git fetch --depth 1 origin "tag ${{ steps.meta.outputs.image_tag }}"
+          git fetch --depth 1 origin tag "${{ steps.meta.outputs.image_tag }}"
           git checkout "${{ steps.meta.outputs.image_tag }}"
 
       - name: Login no Docker Hub
@@ -59,6 +59,7 @@ jobs:
           IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
           docker build \
             --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
+            --build-arg VITE_APP_VERSION="${{ steps.meta.outputs.image_tag }}" \
             -t "$IMAGE_NAME:${{ steps.meta.outputs.image_tag }}" .
           docker push "$IMAGE_NAME:${{ steps.meta.outputs.image_tag }}"
 
