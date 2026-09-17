@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import {
 	Box,
+	Button,
 	FormControl,
 	InputAdornment,
 	InputLabel,
@@ -81,14 +82,29 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 	onMaxChange,
 }) => (
 	<Box>
-		<Typography
-			variant="caption"
-			fontWeight="bold"
-			color="text.secondary"
-			sx={{ mb: 1, display: "block" }}
+		<Box
+			sx={{
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "space-between",
+				mb: 1,
+			}}
 		>
-			Eixo {axis}
-		</Typography>
+			<Typography variant="caption" fontWeight="bold" color="text.secondary">
+				Eixo {axis}
+			</Typography>
+			<Button
+				size="small"
+				onClick={() => {
+					onMinChange("")
+					onMaxChange("")
+				}}
+				disabled={min === "" && max === ""}
+				sx={{ textTransform: "none", minWidth: 0, py: 0 }}
+			>
+				Automático
+			</Button>
+		</Box>
 		<Slider
 			value={[
 				min !== ""
@@ -150,6 +166,13 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 				sx={{ flex: 1 }}
 			/>
 		</Box>
+		<Typography
+			variant="caption"
+			color="text.secondary"
+			sx={{ mt: 1, display: "block" }}
+		>
+			Campo vazio = ajuste automático aos dados
+		</Typography>
 	</Box>
 )
 
