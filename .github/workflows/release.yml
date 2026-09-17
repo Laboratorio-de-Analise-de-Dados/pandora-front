@@ -1,0 +1,142 @@
+name: 🏗️🚀 Release Pandora Frontend
+
+# Pipeline de release (ADR-0022 do back, PRD FE-30):
+#
+#   Releases -> Publish (cria a tag na UI)  ->  [build imagem vX.Y.Z]  ->  [deploy]
+#
+#   - build : publica a imagem no Docker Hub com a tag da versão.
+#             `latest` NÃO é publicado aqui — só após deploy saudável.
+#   - deploy: portão manual do environment `production` (Approve) e,
+#     uma vez aprovado: sobe a nova versão, espera o nginx responder 200
+#     e, se falhar, redeploya a tag anterior (gravada em
+#     .deployed_version no servidor). Sucesso -> grava a versão e
+#     publica `latest` no Hub.
+#
+# Secrets/vars: DOCKER_USER, DOCKER_TOKEN, SERVER_HOST, SERVER_USER,
+# SERVER_SSH_KEY, VITE_API_URL (var).
+# Gatilho: publicar uma Release na UI (Releases -> Draft new release ->
+# "Create new tag" -> Generate release notes -> Publish). A tag é criada
+# no publish e dispara este workflow. Tag avulsa via `git tag` NÃO deploya.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag a buildar/publicar (ex.: v1.2.0)"
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Calcula a tag da imagem
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            tag="${{ github.event.release.tag_name }}"
+          else
+            tag="${{ inputs.tag }}"
+          fi
+          echo "image_tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout na tag (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: git checkout "${{ steps.meta.outputs.image_tag }}"
+
+      - name: Login no Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+
+      - name: Build e push da imagem versionada
+        run: |
+          IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
+          docker build \
+            --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
+            -t "$IMAGE_NAME:${{ steps.meta.outputs.image_tag }}" .
+          docker push "$IMAGE_NAME:${{ steps.meta.outputs.image_tag }}"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production # portão manual: Required reviewers
+    steps:
+      - name: Checkout (só pra pegar o docker-compose.prod.yml)
+        uses: actions/checkout@v4
+
+      - name: Copia o compose pro servidor
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "/opt/pandora/frontend"
+
+      - name: Deploy (up -> health check -> rollback automático)
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DOCKER_USER,DOCKER_TOKEN,IMAGE_TAG
+          script: |
+            cd /opt/pandora/frontend
+            COMPOSE="docker compose -f docker-compose.prod.yml"
+            PREV_TAG=$(cat .deployed_version 2>/dev/null || echo "")
+
+            echo "🌐 Garantindo a rede pandora_net..."
+            docker network inspect pandora_net >/dev/null 2>&1 || docker network create pandora_net
+
+            echo "🔑 Login no Docker Hub..."
+            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+
+            echo "📥 Baixando imagem $IMAGE_TAG..."
+            export DOCKER_USER IMAGE_TAG
+            $COMPOSE pull frontend
+
+            echo "🚀 Subindo nova versão..."
+            $COMPOSE up -d frontend
+
+            echo "🩺 Health check (nginx)..."
+            ok=""
+            for i in $(seq 1 15); do
+              if docker exec pandora_frontend wget -q -O /dev/null http://localhost/ 2>/dev/null; then
+                ok=1; break
+              fi
+              sleep 2
+            done
+
+            if [ -z "$ok" ]; then
+              echo "❌ Health check falhou."
+              if [ -n "$PREV_TAG" ]; then
+                echo "↩️  Rollback automático para $PREV_TAG..."
+                export IMAGE_TAG="$PREV_TAG"
+                $COMPOSE pull frontend
+                $COMPOSE up -d frontend
+                echo "Rollback concluído — versão anterior restaurada."
+              else
+                echo "⚠️  Sem .deployed_version — rollback manual necessário (rollback.yml)."
+              fi
+              exit 1
+            fi
+
+            echo "$IMAGE_TAG" > .deployed_version
+            echo "🧹 Limpando imagens antigas..."
+            docker image prune -f
+            echo "✅ Deploy de $IMAGE_TAG concluído (anterior: ${PREV_TAG:-nenhuma})."
+
+      - name: Publica latest só após deploy saudável
+        run: |
+          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+          IMAGE_NAME=${{ secrets.DOCKER_USER }}/pandora-front
+          docker buildx imagetools create \
+            -t "$IMAGE_NAME:latest" "$IMAGE_NAME:${{ needs.build.outputs.image_tag }}"
