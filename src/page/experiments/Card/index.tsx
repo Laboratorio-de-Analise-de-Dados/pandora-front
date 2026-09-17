@@ -199,7 +199,14 @@ export default function ExperimentCard({
 						e.stopPropagation()
 						setDetailsOpen(true)
 					}}
-					sx={{ position: "absolute", top: 4, right: inactive ? 4 : 36 }}
+					// zIndex: o preview (canvas) ganha transform no hover e
+					// criaria stacking context por cima dos botões.
+					sx={{
+						position: "absolute",
+						top: 4,
+						right: inactive ? 4 : 36,
+						zIndex: 1,
+					}}
 				>
 					<InfoIcon />
 				</IconButton>
@@ -211,7 +218,7 @@ export default function ExperimentCard({
 							e.stopPropagation()
 							setMenuAnchor(e.currentTarget)
 						}}
-						sx={{ position: "absolute", top: 4, right: 4 }}
+						sx={{ position: "absolute", top: 4, right: 4, zIndex: 1 }}
 					>
 						<MoreIcon />
 					</IconButton>
