@@ -1,4 +1,4 @@
-import { Box, IconButton, Tooltip } from "@mui/material"
+import { Box, IconButton, Tooltip, Typography } from "@mui/material"
 import { useLocation, useNavigate } from "react-router-dom"
 import {
 	MdHome as HomeIcon,
@@ -9,14 +9,14 @@ import {
 import { useAuth } from "../../providers/AuthContext"
 
 const ITEMS = [
-	{ label: "Home", path: "/", icon: <HomeIcon size={20} /> },
+	{ label: "Home", path: "/", icon: <HomeIcon size={24} /> },
 	{
 		label: "Experimentos",
 		path: "/experiments",
-		icon: <ExperimentsIcon size={20} />,
+		icon: <ExperimentsIcon size={24} />,
 	},
-	{ label: "Grupos", path: "/organizations", icon: <OrgsIcon size={20} /> },
-	{ label: "Perfil", path: "/profile", icon: <ProfileIcon size={20} /> },
+	{ label: "Grupos", path: "/organizations", icon: <OrgsIcon size={24} /> },
+	{ label: "Perfil", path: "/profile", icon: <ProfileIcon size={24} /> },
 ]
 
 /**
@@ -43,8 +43,8 @@ export default function SideRail() {
 				display: { xs: "none", md: "flex" },
 				flexDirection: "column",
 				alignItems: "center",
-				gap: 0.5,
-				width: 56,
+				gap: 1,
+				width: 68,
 				flexShrink: 0,
 				position: "sticky",
 				top: 0,
@@ -86,10 +86,21 @@ export default function SideRail() {
 							<IconButton
 								onClick={() => navigate(item.path)}
 								sx={{
+									flexDirection: "column",
+									gap: 0.25,
+									borderRadius: 2,
+									py: 1,
+									width: "100%",
 									color: active ? "primary.main" : "text.secondary",
 								}}
 							>
 								{item.icon}
+								<Typography
+									component="span"
+									sx={{ fontSize: "0.6rem", lineHeight: 1 }}
+								>
+									{item.label}
+								</Typography>
 							</IconButton>
 						</Box>
 					</Tooltip>
