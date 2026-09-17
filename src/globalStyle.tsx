@@ -155,6 +155,12 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 			// estático fechando sobre `mode` — com styled-engine-sc a
 			// interpolação de função recebe {theme}, não o tema direto.
 			styleOverrides: {
+				// Reserva o espaço da scrollbar sempre que ela puder existir —
+				// evita o deslocamento horizontal ao trocar de aba/página
+				// quando o conteúdo passa a (ou deixa de) rolar.
+				html: {
+					scrollbarGutter: "stable",
+				},
 				"*": {
 					scrollbarWidth: "thin",
 					scrollbarColor:

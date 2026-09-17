@@ -159,7 +159,9 @@ export default function OrganizationsPage() {
 				<Tab label="+ Criar Nova" />
 			</Tabs>
 
-			<Box>
+			{/* minHeight estabiliza a área entre abas — evita o "encolhe e
+				puxa" quando o conteúdo muda de tamanho. */}
+			<Box sx={{ minHeight: 360 }}>
 				{tab === 0 && (
 					<OrgsTab
 						organizations={organizations}
