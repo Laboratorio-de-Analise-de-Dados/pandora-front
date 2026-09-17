@@ -123,9 +123,14 @@ export default function ProfilePage() {
 		<Layout>
 			<Box
 				sx={{
+					// flex:1 — a Box é flex-item do Layout (row); sem isso ela
+					// encolhe para a largura do conteúdo. Convenção desktop:
+					// conteúdo ancorado no topo-esquerdo (mesmo padrão da tela
+					// de Experimentos). Teto de 1200px mantém os dois cards
+					// legíveis em ultrawide.
+					flex: 1,
 					p: { xs: 2, sm: 3, md: 4 },
 					maxWidth: { xs: "100%", lg: 1200 },
-					mx: "auto",
 				}}
 			>
 				<Typography variant="h4" mb={3}>
