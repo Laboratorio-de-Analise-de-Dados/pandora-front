@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Badge, Box, Paper, Tab, Tabs, Typography } from "@mui/material"
+import { Box, Tab, Tabs, Typography } from "@mui/material"
 import { toast } from "react-toastify"
 import { useAuth } from "../../providers/AuthContext"
 import { useInvites } from "../../hooks/useInvites"
@@ -138,9 +138,12 @@ export default function OrganizationsPage() {
 	return (
 		<Box
 			sx={{
+				// flex:1 — a Box é flex-item do Layout (row); sem isso ela
+				// encolhe para a largura do conteúdo em vez de ocupar a tela.
+				// Convenção desktop: conteúdo ancorado no topo-esquerdo ocupando
+				// toda a largura (mesmo padrão da tela de Experimentos).
+				flex: 1,
 				p: { xs: 2, sm: 3, md: 4 },
-				maxWidth: { xs: "100%", md: 1200 },
-				mx: "auto",
 			}}
 		>
 			<Typography variant="h4" mb={3}>
@@ -154,23 +157,14 @@ export default function OrganizationsPage() {
 				textColor="primary"
 				indicatorColor="primary"
 			>
-				<Tab label="Minhas Organizações" />
-				<Tab
-					label={
-						<Badge
-							badgeContent={receivedInvites.length}
-							color="primary"
-							max={9}
-							sx={{ "& .MuiBadge-badge": { right: -14, top: 4 } }}
-						>
-							Convites Recebidos
-						</Badge>
-					}
-				/>
-				<Tab label="Criar Nova" />
+				<Tab label={`Minhas Organizações (${organizations.length})`} />
+				<Tab label={`Convites Recebidos (${receivedInvites.length})`} />
+				<Tab label="+ Criar Nova" />
 			</Tabs>
 
-			<Paper sx={{ p: { xs: 2, md: 3 }, minHeight: 360 }}>
+			{/* minHeight estabiliza a área entre abas — evita o "encolhe e
+				puxa" quando o conteúdo muda de tamanho. */}
+			<Box sx={{ minHeight: 360 }}>
 				{tab === 0 && (
 					<OrgsTab
 						organizations={organizations}
@@ -195,7 +189,7 @@ export default function OrganizationsPage() {
 					/>
 				)}
 				{tab === 2 && <CreateOrgTab onSubmit={handleCreateOrg} />}
-			</Paper>
+			</Box>
 
 			<InviteModal
 				open={inviteOpen}

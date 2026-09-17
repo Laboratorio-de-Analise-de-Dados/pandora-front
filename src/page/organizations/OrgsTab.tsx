@@ -1,4 +1,4 @@
-import { Box, Button, Paper, Typography } from "@mui/material"
+import { Box, Button, Divider, Paper, Typography } from "@mui/material"
 import { MdAdd as AddIcon } from "react-icons/md"
 import type { Organization, RoleName } from "../../services/organizationService"
 import OrganizationMembers from "../../components/OrganizationMembers"
@@ -17,6 +17,11 @@ interface OrgsTabProps {
 	onRemoveMember: (orgId: number, membershipId: number) => Promise<void>
 }
 
+const orgTypeLabel: Record<string, string> = {
+	lab: "Laboratório",
+	cliente: "Cliente",
+}
+
 export default function OrgsTab({
 	organizations,
 	user,
@@ -31,7 +36,7 @@ export default function OrgsTab({
 				<Paper
 					key={org.id}
 					variant="outlined"
-					sx={{ p: { xs: 1.5, md: 2 }, mb: 2 }}
+					sx={{ p: { xs: 2, md: 3 }, mb: 2 }}
 				>
 					<Box
 						sx={{
@@ -43,11 +48,12 @@ export default function OrgsTab({
 						}}
 					>
 						<Box>
-							<Typography variant="subtitle1" fontWeight={500}>
+							<Typography variant="h6" fontWeight={600}>
 								{org.name}
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								{org.org_type} — {org.members?.length || 0} membros
+								{orgTypeLabel[org.org_type] ?? org.org_type} ({org.org_type}) •{" "}
+								{org.members?.length || 0} membros vinculados
 							</Typography>
 						</Box>
 						{isOrgAdmin(org.id) && (
@@ -62,6 +68,7 @@ export default function OrgsTab({
 							</Button>
 						)}
 					</Box>
+					<Divider sx={{ mt: 2 }} />
 					<OrganizationMembers
 						members={org.members || []}
 						canManage={Boolean(isOrgAdmin(org.id))}
