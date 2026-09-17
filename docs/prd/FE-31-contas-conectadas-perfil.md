@@ -82,3 +82,9 @@ X. Continuar vincula este login <provider> a ela." com dois botões:
 - Fluxo de merge de contas (UI do BE-30)
 - Histórico de eventos de auth exibido na UI (fase 2)
 - Avatar/foto do provider
+- **Google SSO em produção — fase 2 (decisão 2026-09)**: a UI já trata o
+  provider de forma simétrica (botão no login conforme `providers.google`,
+  linha nas contas conectadas, `link_notice`/`merge_notice`). A ativação
+  depende só de credenciais no backend — ver seção "Ativação do Google"
+  no PRD BE-29. Até lá só o Microsoft fica exposto; ativar antes da
+  virada para v1 em prod.
