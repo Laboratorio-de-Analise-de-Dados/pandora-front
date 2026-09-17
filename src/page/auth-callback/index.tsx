@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import {
 	Alert,
@@ -39,30 +39,46 @@ export default function AuthCallbackPage() {
 	const linkToken = searchParams.get("token") ?? ""
 	const linkEmail = searchParams.get("email") ?? ""
 
-	useEffect(() => {
-		if (linkNotice) return
+	// Lidos como primitivos: o URLSearchParams do useSearchParams é um
+	// objeto novo a cada render — na lista de deps ele refazia o effect
+	// em loop, disparava navigate() em rajada e o Chrome travava a
+	// navegação ("Throttling navigation"), deixando a tela em
+	// "Conectando..." para sempre.
+	const access = searchParams.get("access")
+	const refresh = searchParams.get("refresh")
+	const username = searchParams.get("username")
+	const email = searchParams.get("email")
+	const userId = searchParams.get("user_id")
+	const handled = useRef(false)
 
-		const access = searchParams.get("access")
-		const refresh = searchParams.get("refresh")
-		const username = searchParams.get("username")
-		const email = searchParams.get("email")
-		const userId = searchParams.get("user_id")
+	useEffect(() => {
+		if (linkNotice || handled.current) return
+		handled.current = true
 
 		if (!access || !refresh) {
 			setError("Token ausente na URL de callback.")
 			return
 		}
 
-		if (storeToken) {
-			storeToken(access, refresh, {
-				id: userId ? parseInt(userId, 10) : 0,
-				username: username || "",
-				email: email || "",
-			})
-		}
-
+		storeToken(access, refresh, {
+			id: userId ? parseInt(userId, 10) : 0,
+			username: username || "",
+			email: email || "",
+		})
+		// Completa o perfil (memberships etc.) — o payload da URL é parcial.
+		refreshUser()
 		navigate("/", { replace: true })
-	}, [navigate, searchParams, storeToken, linkNotice])
+	}, [
+		linkNotice,
+		access,
+		refresh,
+		username,
+		email,
+		userId,
+		storeToken,
+		refreshUser,
+		navigate,
+	])
 
 	const confirmLink = async () => {
 		setConfirming(true)
