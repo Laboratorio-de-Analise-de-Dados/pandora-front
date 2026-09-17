@@ -450,6 +450,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				<MenuItem value="histogram">Histograma</MenuItem>
 			</Select>
 			<AxisSelect
+				label="X"
 				value={xAxis}
 				options={values}
 				onChange={onSelectX}
@@ -461,6 +462,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 						vs
 					</Typography>
 					<AxisSelect
+						label="Y"
 						value={yAxis}
 						options={values}
 						onChange={onSelectY}
