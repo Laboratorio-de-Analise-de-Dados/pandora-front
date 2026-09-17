@@ -36,6 +36,13 @@ Ainda assim, verifique local antes de concluir:
 2. `pnpm test` — testes passando (existem poucos; adicione se criar lógica nova)
 3. `pnpm build` — se a mudança afetar imports, config ou build
 
+**Produção não é ambiente de teste** — a verificação local + o CI são o
+portão: feature só entra numa Release depois de verificada e revisada. Em
+produção roda só o smoke check do deploy (subiu, health, versão no ar) —
+nunca validação de feature. Mudança em `release.yml`/`rollback.yml` é
+código não testado até ser exercitada: valide com `workflow_dispatch`
+numa tag já publicada antes de confiar nela num deploy real.
+
 Pre-commit (husky): `lint-staged` aplica `prettier --write` nos arquivos
 staged + `pnpm typecheck`; `commit-msg` valida conventional commits
 (commitlint). Não há eslint configurado — `.prettierrc` é a referência de
