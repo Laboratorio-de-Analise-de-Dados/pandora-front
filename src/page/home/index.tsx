@@ -136,8 +136,10 @@ export default function HomePage() {
 			<Box
 				sx={{
 					p: { xs: 2, sm: 3, md: 4 },
-					maxWidth: { xs: "100%", xl: 1400 },
-					mx: "auto",
+					// flex:1 — a Box é flex-item do Layout (row); sem isso ela
+					// encolhe para a largura do conteúdo. Convenção desktop:
+					// conteúdo ancorado no topo-esquerdo em largura total.
+					flex: 1,
 				}}
 			>
 				<Box
