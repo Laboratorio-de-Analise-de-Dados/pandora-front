@@ -20,6 +20,7 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 	color: ${(props) => props.theme.palette.text.primary};
 
 	box-sizing: border-box;
+	overflow: hidden;
 
 	cursor: pointer;
 	transition:
@@ -29,8 +30,16 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 
 	&:hover {
 		transform: translateY(-2px);
-		border-color: rgba(16, 185, 129, 0.45);
+		border-color: ${(props) => props.theme.palette.primary.main};
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+	}
+
+	canvas {
+		transition: transform 300ms ease;
+	}
+
+	&:hover canvas {
+		transform: scale(1.05);
 	}
 
 	${(props) =>
@@ -51,6 +60,7 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 
 	h1 {
 		font-size: 1.05rem;
+		font-weight: 600;
 		margin-top: 0;
 		margin-bottom: 0.35rem;
 		white-space: nowrap;
@@ -62,6 +72,10 @@ export const ExperimentComponent = styled.li<{ $inactive?: boolean }>`
 	div {
 		font-size: 0.9rem;
 		color: ${(props) => props.theme.palette.text.secondary};
+	}
+
+	.meta {
+		font-size: 0.8rem;
 	}
 
 	.status-row {
