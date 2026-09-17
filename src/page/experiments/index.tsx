@@ -18,6 +18,7 @@ import Layout from "../../components/Layout"
 import { useExperimentsContext } from "../../providers/ExperimentContext"
 import { useAuth } from "../../providers/AuthContext"
 import ExperimentsContainer from "./Container"
+import { filterExperiments } from "./filterExperiments"
 import NewExperimentDialog from "../../features/experiment/components/NewExperimentDialog"
 
 export type EventData = {
@@ -40,15 +41,10 @@ export default function ExperimentsPage() {
 		listExperiments(showInactive)
 	}, [listExperiments, showInactive])
 
-	const filteredExperiments = useMemo(() => {
-		let list = experiments
-		if (orgId === 0) list = list.filter((e) => !e.organization)
-		else if (orgId !== null)
-			list = list.filter((e) => e.organization && e.organization.id === orgId)
-		const term = search.trim().toLowerCase()
-		if (term) list = list.filter((e) => e.title.toLowerCase().includes(term))
-		return list
-	}, [experiments, orgId, search])
+	const filteredExperiments = useMemo(
+		() => filterExperiments(experiments, orgId, search),
+		[experiments, orgId, search],
+	)
 
 	const org = user?.memberships?.find(
 		(m) => m.organization.id === orgId,
