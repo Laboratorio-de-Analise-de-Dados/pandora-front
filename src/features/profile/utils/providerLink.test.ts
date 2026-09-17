@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { linkFeedbackFromParams, providerLabel } from "./providerLink"
+import {
+	linkFeedbackFromParams,
+	mergeNoticeFromParams,
+	providerLabel,
+} from "./providerLink"
 
 describe("providerLabel", () => {
 	it("mapeia providers conhecidos", () => {
@@ -42,5 +46,29 @@ describe("linkFeedbackFromParams", () => {
 
 	it("sem params retorna null", () => {
 		expect(linkFeedbackFromParams(new URLSearchParams())).toBeNull()
+	})
+})
+
+describe("mergeNoticeFromParams", () => {
+	it("extrai provider, email e token do aviso", () => {
+		const params = new URLSearchParams(
+			"merge_notice=1&provider=microsoft&email=abs%40x.com&token=tok123",
+		)
+		expect(mergeNoticeFromParams(params)).toEqual({
+			provider: "microsoft",
+			email: "abs@x.com",
+			token: "tok123",
+		})
+	})
+
+	it("sem merge_notice retorna null", () => {
+		expect(
+			mergeNoticeFromParams(new URLSearchParams("linked=google")),
+		).toBeNull()
+	})
+
+	it("merge_notice sem token retorna null", () => {
+		const params = new URLSearchParams("merge_notice=1&provider=google")
+		expect(mergeNoticeFromParams(params)).toBeNull()
 	})
 })

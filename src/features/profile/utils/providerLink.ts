@@ -12,6 +12,27 @@ export interface LinkFeedback {
 	message: string
 }
 
+export interface MergeNotice {
+	provider: string
+	email: string
+	token: string
+}
+
+/** Lê o aviso de merge que o backend devolve quando a identidade do IdP
+ * já pertence a outra conta (?merge_notice=1&provider=&email=&token=). */
+export function mergeNoticeFromParams(
+	params: URLSearchParams,
+): MergeNotice | null {
+	if (params.get("merge_notice") !== "1") return null
+	const token = params.get("token")
+	if (!token) return null
+	return {
+		provider: params.get("provider") ?? "",
+		email: params.get("email") ?? "",
+		token,
+	}
+}
+
 /** Traduz os query params que o backend devolve no redirect pós-link
  * (?linked=<provider> ou ?link_error=<motivo>) em mensagem de snackbar. */
 export function linkFeedbackFromParams(
