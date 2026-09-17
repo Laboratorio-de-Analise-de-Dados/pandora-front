@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Box, Tab, Tabs, Typography } from "@mui/material"
 import { toast } from "react-toastify"
 import { useAuth } from "../../providers/AuthContext"
@@ -22,7 +23,12 @@ export default function OrganizationsPage() {
 		changeRole,
 		remove: removeMembership,
 	} = useOrganizations()
-	const [tab, setTab] = useState(0)
+	const [searchParams] = useSearchParams()
+	// ?tab=create abre direto na aba de criação (usado pelo "Criar
+	// Laboratório" da Home).
+	const [tab, setTab] = useState(() =>
+		searchParams.get("tab") === "create" ? 2 : 0,
+	)
 	const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
 	const [inviteOpen, setInviteOpen] = useState(false)
 
