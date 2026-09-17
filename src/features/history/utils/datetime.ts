@@ -55,6 +55,21 @@ export const formatSessionLabel = (started: string, ended: string): string => {
 }
 
 /**
+ * Rótulo relativo curto: "Agora mesmo", "Há 25 min", "Há 3 h" ou
+ * "15/Set · 09:00" quando passa de um dia. Usa o fuso do browser.
+ */
+export const formatRelativeTime = (iso: string): string => {
+	const diffMin = Math.floor(
+		(new Date().getTime() - new Date(iso).getTime()) / 60000,
+	)
+	if (diffMin < 1) return "Agora mesmo"
+	if (diffMin < 60) return `Há ${diffMin} min`
+	const diffH = Math.floor(diffMin / 60)
+	if (diffH < 24) return `Há ${diffH} h`
+	return `${formatDay(iso)} · ${formatTime(iso)}`
+}
+
+/**
  * Rótulo de checkpoint sem mensagem — espelha o fallback do backend
  * ("Checkpoint <data/hora>") para o pin sem nome.
  */
