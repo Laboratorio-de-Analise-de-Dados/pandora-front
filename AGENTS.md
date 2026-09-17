@@ -119,6 +119,9 @@ ao concluir, atualize.
 
 ## Não faça
 
+- Não declare tarefa concluída sem rodar a verificação — "não testei" vale
+  como "não está pronto", e produção/release nunca é onde a feature é
+  testada. Bug que chegou a produção vira teste novo + correção.
 - Não commite `.env` ou credenciais
 - Não adicione dependências sem necessidade clara — se for o caso, proponha antes
 - Não faça force-push na `main` nem altere histórico
