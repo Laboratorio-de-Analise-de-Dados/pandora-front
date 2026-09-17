@@ -20,12 +20,6 @@ interface InvitesTabProps {
 	onCancel: (invite: Invite) => void
 }
 
-const sectionTitleSx = {
-	color: "text.secondary",
-	textTransform: "uppercase",
-	letterSpacing: "0.05em",
-} as const
-
 const inviteRowSx = {
 	display: "flex",
 	flexDirection: { xs: "column", sm: "row" },
@@ -58,7 +52,7 @@ export default function InvitesTab({
 			}}
 		>
 			<Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
-				<Typography variant="caption" sx={sectionTitleSx}>
+				<Typography variant="h6" fontWeight={600}>
 					Convites recebidos
 				</Typography>
 				{receivedLoading ? (
@@ -128,7 +122,7 @@ export default function InvitesTab({
 			</Paper>
 
 			<Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
-				<Typography variant="caption" sx={sectionTitleSx}>
+				<Typography variant="h6" fontWeight={600}>
 					Convites enviados
 				</Typography>
 				{sentLoading ? (
