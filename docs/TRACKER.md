@@ -11,17 +11,17 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                 | Área afetada                                                                                        | Branch                    | Sessão | Desde   |
-| ----------------------- | --------------------------------------------------------------------------------------------------- | ------------------------- | ------ | ------- |
-| FE-31 contas conectadas | `src/page/profile`, `src/page/auth-callback`, `src/features/profile`, `src/services/authService.ts` | `feat/connected-accounts` | devin  | 2026-09 |
+| Feature | Área afetada | Branch | Sessão | Desde |
+| ------- | ------------ | ------ | ------ | ----- |
 
 ## Concluído nesta branch
 
-| Feature                                    | Observação                                                                                                                                                    |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FE-25 painel de histórico/checkpoints      | `src/features/history/` — consome BE-20                                                                                                                       |
-| BE-21 client (thumbnail, papel, progresso) | `ExperimentPreview`, `RoleChip`, `LinearProgress` nos cards                                                                                                   |
-| FE-27 indicadores de análise               | `src/features/compensation/` + cluster na sourceNav, histórico por amostra (`?file=`), drawer de histórico no card, badge "Compensado", marcação de controles |
+| Feature                                    | Observação                                                                                                                                                                       |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FE-25 painel de histórico/checkpoints      | `src/features/history/` — consome BE-20                                                                                                                                          |
+| BE-21 client (thumbnail, papel, progresso) | `ExperimentPreview`, `RoleChip`, `LinearProgress` nos cards                                                                                                                      |
+| FE-27 indicadores de análise               | `src/features/compensation/` + cluster na sourceNav, histórico por amostra (`?file=`), drawer de histórico no card, badge "Compensado", marcação de controles                    |
+| FE-31 contas conectadas                    | Perfil "Contas conectadas" (link/unlink real), interstitial `link_notice` no auth-callback, dialog de merge (`merge_notice` → `POST /accounts/merge/confirm/`) — PRs #72/#73/#74 |
 
 ## Livres para pegar
 
