@@ -31,6 +31,7 @@
 | [FE-27](FE-27-indicadores-historico-compensacao.md)   | Ícones de compensação + histórico ao lado do arquivo  | Implementado em `refactor/tema-pandora-dark`  |
 | [FE-28](FE-28-derivar-analise-entre-experimentos.md)  | Derivar análise de outro experimento (BE-19)          | Não iniciado — backend pronto                 |
 | [FE-29](FE-29-branches-de-analise.md)                 | Branches de análise: seletor, fork e merge (BE-23)    | Não iniciado — backend pronto                 |
+| [FE-30](FE-30-pipeline-release-rollback.md)           | Pipeline de release por tag com rollback (ADR-0022)   | Implementado em `ci/release-pipeline`         |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
