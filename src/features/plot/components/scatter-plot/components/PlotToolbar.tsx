@@ -1,7 +1,6 @@
 import React, { useState } from "react"
 import {
 	Box,
-	Button,
 	FormControl,
 	InputAdornment,
 	InputLabel,
@@ -25,6 +24,8 @@ import {
 	BIEX_SLIDER_MIN,
 	BIEX_SLIDER_MAX,
 	LINEAR_SLIDER_MAX,
+	BIEX_SLIDER_MARKS,
+	LINEAR_SLIDER_MARKS,
 	rawToSlider,
 	sliderToRaw,
 } from "../../../utils/sliders"
@@ -82,29 +83,14 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 	onMaxChange,
 }) => (
 	<Box>
-		<Box
-			sx={{
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "space-between",
-				mb: 1,
-			}}
+		<Typography
+			variant="caption"
+			fontWeight="bold"
+			color="text.secondary"
+			sx={{ mb: 1, display: "block" }}
 		>
-			<Typography variant="caption" fontWeight="bold" color="text.secondary">
-				Eixo {axis}
-			</Typography>
-			<Button
-				size="small"
-				onClick={() => {
-					onMinChange("")
-					onMaxChange("")
-				}}
-				disabled={min === "" && max === ""}
-				sx={{ textTransform: "none", minWidth: 0, py: 0 }}
-			>
-				Automático
-			</Button>
-		</Box>
+			Eixo {axis}
+		</Typography>
 		<Slider
 			value={[
 				min !== ""
@@ -126,6 +112,7 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 			min={scale === "biex" ? BIEX_SLIDER_MIN : 0}
 			max={scale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
 			step={scale === "biex" ? 0.01 : 500}
+			marks={scale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
 			valueLabelDisplay="auto"
 			valueLabelFormat={(v) => {
 				const raw = sliderToRaw(v, scale)
@@ -134,15 +121,15 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 			size="small"
 			sx={{
 				height: 4,
-				mx: 0.5,
-				mt: 0.5,
-				mb: 2.5,
+				mx: 0.75,
+				mb: 1.5,
 				width: "auto",
 				display: "block",
-				"& .MuiSlider-thumb": { width: 12, height: 12 },
+				"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
+				"& .MuiSlider-thumb": { width: 10, height: 10 },
 			}}
 		/>
-		<Box sx={{ display: "flex", gap: 1.5 }}>
+		<Box sx={{ display: "flex", gap: 1 }}>
 			<TextField
 				label="Min"
 				type="number"
@@ -152,7 +139,14 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 					onMinChange(e.target.value)
 				}
-				sx={{ flex: 1 }}
+				sx={{
+					flex: 1,
+					"& .MuiInputBase-input": {
+						fontSize: "0.75rem",
+						padding: "4px 8px",
+					},
+					"& .MuiInputLabel-root": { fontSize: "0.7rem" },
+				}}
 			/>
 			<TextField
 				label="Max"
@@ -163,16 +157,16 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 					onMaxChange(e.target.value)
 				}
-				sx={{ flex: 1 }}
+				sx={{
+					flex: 1,
+					"& .MuiInputBase-input": {
+						fontSize: "0.75rem",
+						padding: "4px 8px",
+					},
+					"& .MuiInputLabel-root": { fontSize: "0.7rem" },
+				}}
 			/>
 		</Box>
-		<Typography
-			variant="caption"
-			color="text.secondary"
-			sx={{ mt: 1, display: "block" }}
-		>
-			Campo vazio = ajuste automático aos dados
-		</Typography>
 	</Box>
 )
 
@@ -235,7 +229,7 @@ const AxisLimitsControl: React.FC<AxisLimitsControlProps> = ({
 				open={Boolean(anchor)}
 				onClose={() => setAnchor(null)}
 				anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-				slotProps={{ paper: { sx: { px: 3, py: 2.5, width: 340 } } }}
+				slotProps={{ paper: { sx: { p: 1.5, width: 260 } } }}
 			>
 				<AxisLimitSection
 					axis={axis}
