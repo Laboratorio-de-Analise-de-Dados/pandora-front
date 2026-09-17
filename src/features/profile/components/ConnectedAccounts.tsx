@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
@@ -227,7 +227,12 @@ export default function ConnectedAccounts() {
 		unlink.mutate({ id: target.id, payload })
 	}
 
-	const linkedByProvider = new Map(accounts.map((a) => [a.provider, a]))
+	const linkedByProvider = new Map<SocialProvider, SocialAccount[]>()
+	for (const a of accounts) {
+		const list = linkedByProvider.get(a.provider) ?? []
+		list.push(a)
+		linkedByProvider.set(a.provider, list)
+	}
 	const availableProviders = (
 		["google", "microsoft"] as SocialProvider[]
 	).filter((p) => providers[p])
@@ -268,26 +273,36 @@ export default function ConnectedAccounts() {
 						</Box>
 					) : (
 						availableProviders.map((provider) => {
-							const linked = linkedByProvider.get(provider)
+							const linked = linkedByProvider.get(provider) ?? []
 							return (
-								<ProviderRow
-									key={provider}
-									icon={PROVIDER_ICONS[provider]}
-									name={providerLabel(provider)}
-									description={
-										linked ? linked.email : PROVIDER_DESCRIPTIONS[provider]
-									}
-									action={
-										linked ? (
-											<Button
-												variant="outlined"
-												size="small"
-												color="error"
-												onClick={() => setTarget(linked)}
-											>
-												Desconectar
-											</Button>
-										) : (
+								<Fragment key={provider}>
+									{linked.map((account) => (
+										<ProviderRow
+											key={account.id}
+											icon={PROVIDER_ICONS[provider]}
+											name={providerLabel(provider)}
+											description={account.email}
+											action={
+												<Button
+													variant="outlined"
+													size="small"
+													color="error"
+													onClick={() => setTarget(account)}
+												>
+													Desconectar
+												</Button>
+											}
+										/>
+									))}
+									<ProviderRow
+										icon={PROVIDER_ICONS[provider]}
+										name={providerLabel(provider)}
+										description={
+											linked.length
+												? "Conectar outra conta"
+												: PROVIDER_DESCRIPTIONS[provider]
+										}
+										action={
 											<Button
 												variant="outlined"
 												size="small"
@@ -296,9 +311,9 @@ export default function ConnectedAccounts() {
 											>
 												{linking === provider ? "Redirecionando…" : "Conectar"}
 											</Button>
-										)
-									}
-								/>
+										}
+									/>
+								</Fragment>
 							)
 						})
 					)}
