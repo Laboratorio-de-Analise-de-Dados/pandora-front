@@ -82,12 +82,19 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 	onMinChange,
 	onMaxChange,
 }) => (
-	<Box>
+	<Box
+		sx={{
+			display: "flex",
+			flexDirection: "column",
+			gap: 1.5,
+			px: 1.5,
+		}}
+	>
 		<Typography
 			variant="caption"
 			fontWeight="bold"
 			color="text.secondary"
-			sx={{ mb: 1, display: "block", textAlign: "center" }}
+			sx={{ textAlign: "center" }}
 		>
 			Eixo {axis}
 		</Typography>
@@ -121,15 +128,15 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 			size="small"
 			sx={{
 				height: 4,
-				mx: 0.75,
-				mb: 1.5,
+				mx: 1,
+				mb: 2,
 				width: "auto",
 				display: "block",
 				"& .MuiSlider-markLabel": { fontSize: "0.55rem" },
 				"& .MuiSlider-thumb": { width: 10, height: 10 },
 			}}
 		/>
-		<Box sx={{ display: "flex", gap: 1 }}>
+		<Box sx={{ display: "flex", gap: 1.5, justifyContent: "center" }}>
 			<TextField
 				label="Min"
 				type="number"
@@ -140,10 +147,10 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 					onMinChange(e.target.value)
 				}
 				sx={{
-					flex: 1,
+					width: 100,
 					"& .MuiInputBase-input": {
 						fontSize: "0.75rem",
-						padding: "4px 8px",
+						padding: "6px 8px",
 					},
 					"& .MuiInputLabel-root": { fontSize: "0.7rem" },
 				}}
@@ -158,10 +165,10 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 					onMaxChange(e.target.value)
 				}
 				sx={{
-					flex: 1,
+					width: 100,
 					"& .MuiInputBase-input": {
 						fontSize: "0.75rem",
-						padding: "4px 8px",
+						padding: "6px 8px",
 					},
 					"& .MuiInputLabel-root": { fontSize: "0.7rem" },
 				}}
