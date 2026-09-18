@@ -5,10 +5,6 @@ import {
 	Chip,
 	CircularProgress,
 	Collapse,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
 	Divider,
 	IconButton,
 	List,
@@ -30,6 +26,8 @@ import {
 	useCompensationsQuery,
 	useEmbeddedCompensationQuery,
 } from "../hooks/useCompensation"
+import { AppDialog } from "../../../components/AppDialog"
+import { useConfirm } from "../../../components/ConfirmDialog"
 import type { CompensationMatrix } from "../../../services/compensationService"
 import { formatTime } from "../../history/utils/datetime"
 
@@ -137,15 +135,13 @@ export default function CompensationPanel({
 		discardMutation,
 	} = useCompensationActions(experimentId)
 
+	const confirm = useConfirm()
 	const [showEmbeddedMatrix, setShowEmbeddedMatrix] = useState(false)
 	const [previewMatrix, setPreviewMatrix] = useState<number | null>(null)
 	const [renameTarget, setRenameTarget] = useState<CompensationMatrix | null>(
 		null,
 	)
 	const [renameValue, setRenameValue] = useState("")
-	const [discardTarget, setDiscardTarget] = useState<CompensationMatrix | null>(
-		null,
-	)
 
 	const applied = (matrices.data ?? []).find((m) => m.is_applied)
 	const busy =
@@ -333,7 +329,23 @@ export default function CompensationPanel({
 											<Tooltip title="Descartar">
 												<IconButton
 													size="small"
-													onClick={() => setDiscardTarget(m)}
+													onClick={() => {
+														void confirm({
+															title: "Descartar matriz",
+															description: (
+																<>
+																	<strong>{m.name}</strong> sai da lista (soft
+																	delete).
+																	{m.is_applied &&
+																		" Como está aplicada, a compensação é removida junto — tudo fica registrado no histórico."}
+																</>
+															),
+															confirmLabel: "Descartar",
+															severity: "danger",
+														}).then((ok) => {
+															if (ok) discardMutation.mutate(m.id)
+														})
+													}}
 												>
 													<DiscardIcon fontSize="small" />
 												</IconButton>
@@ -387,74 +399,31 @@ export default function CompensationPanel({
 			</Box>
 
 			{/* Renomear */}
-			<Dialog
+			<AppDialog
 				open={renameTarget != null}
+				title="Renomear matriz"
 				onClose={() => setRenameTarget(null)}
-				fullWidth
-				maxWidth="xs"
+				onConfirm={() => {
+					if (!renameTarget) return
+					renameMutation.mutate(
+						{ matrixId: renameTarget.id, name: renameValue.trim() },
+						{ onSuccess: () => setRenameTarget(null) },
+					)
+				}}
+				confirmLabel="Salvar"
+				confirmDisabled={!renameValue.trim()}
+				loading={renameMutation.isPending}
 			>
-				<DialogTitle>Renomear matriz</DialogTitle>
-				<DialogContent>
-					<TextField
-						autoFocus
-						fullWidth
-						size="small"
-						label="Nome"
-						value={renameValue}
-						onChange={(e) => setRenameValue(e.target.value)}
-						sx={{ mt: 1 }}
-					/>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setRenameTarget(null)}>Cancelar</Button>
-					<Button
-						variant="contained"
-						disabled={!renameValue.trim() || renameMutation.isPending}
-						onClick={() => {
-							if (!renameTarget) return
-							renameMutation.mutate(
-								{ matrixId: renameTarget.id, name: renameValue.trim() },
-								{ onSuccess: () => setRenameTarget(null) },
-							)
-						}}
-					>
-						Salvar
-					</Button>
-				</DialogActions>
-			</Dialog>
-
-			{/* Descartar */}
-			<Dialog
-				open={discardTarget != null}
-				onClose={() => setDiscardTarget(null)}
-				fullWidth
-				maxWidth="xs"
-			>
-				<DialogTitle>Descartar matriz</DialogTitle>
-				<DialogContent>
-					<Typography variant="body2">
-						<strong>{discardTarget?.name}</strong> sai da lista (soft delete).
-						{discardTarget?.is_applied &&
-							" Como está aplicada, a compensação é removida junto — tudo fica registrado no histórico."}
-					</Typography>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setDiscardTarget(null)}>Cancelar</Button>
-					<Button
-						variant="contained"
-						color="error"
-						disabled={discardMutation.isPending}
-						onClick={() => {
-							if (!discardTarget) return
-							discardMutation.mutate(discardTarget.id, {
-								onSuccess: () => setDiscardTarget(null),
-							})
-						}}
-					>
-						Descartar
-					</Button>
-				</DialogActions>
-			</Dialog>
+				<TextField
+					autoFocus
+					fullWidth
+					size="small"
+					label="Nome"
+					value={renameValue}
+					onChange={(e) => setRenameValue(e.target.value)}
+					sx={{ mt: 1 }}
+				/>
+			</AppDialog>
 		</Box>
 	)
 }
