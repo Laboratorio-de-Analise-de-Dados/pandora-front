@@ -106,6 +106,7 @@ export const fetchGroupedHistory = async (
 	experimentId: number,
 	cursor?: number,
 	fileId?: number,
+	branchId?: number | null,
 ): Promise<GroupedHistoryResponse> => {
 	const res = await CytometryApi.get(
 		`/analytics/experiment/${experimentId}/history/`,
@@ -114,6 +115,9 @@ export const fetchGroupedHistory = async (
 				grouped: 1,
 				...(cursor ? { cursor } : {}),
 				...(fileId ? { file: fileId } : {}),
+				// FE-29: `?branch=` filtra a timeline pela linha de análise
+				// (ações experiment-wide continuam inclusas).
+				...(branchId ? { branch: branchId } : {}),
 			},
 		},
 	)

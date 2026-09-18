@@ -88,9 +88,15 @@ export const completeExperimentUpload = async (
 export const fetchExperimentFiles = async (
 	id: string,
 	includeInactive = false,
+	branchId?: number | null,
 ): Promise<ExperimentFiles[]> => {
 	const res = await CytometryApi.get(`/experiment/list/data/${id}`, {
-		params: includeInactive ? { include_inactive: "true" } : undefined,
+		params: {
+			...(includeInactive ? { include_inactive: "true" } : {}),
+			// FE-29: `?branch=` devolve a árvore de gates daquela linha
+			// (fork materializado); ausente = main.
+			...(branchId ? { branch: branchId } : {}),
+		},
 	})
 	return res.data
 }
