@@ -18,14 +18,14 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                         | Área afetada                                                           | Branch                       | Sessão | Desde      |
-| ------------------------------- | ---------------------------------------------------------------------- | ---------------------------- | ------ | ---------- |
-| FE-38 buscar amostras na árvore | `src/features/experiment/components/parent-tree/`, `utils/treeFilter*` | `feat/fe-38-buscar-amostras` | devin  | 2026-09-18 |
+| Feature | Área afetada | Branch | Sessão | Desde |
+| ------- | ------------ | ------ | ------ | ----- |
 
 ## Concluído nesta branch
 
 | Feature                                    | Observação                                                                                                                                                                       |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FE-38 buscar amostras na árvore            | Campo de busca no `ParentTree` (nome, tag, subsample; sem acento/case) + `utils/treeFilter*` — PR #99                                                                            |
 | FE-25 painel de histórico/checkpoints      | `src/features/history/` — consome BE-20                                                                                                                                          |
 | BE-21 client (thumbnail, papel, progresso) | `ExperimentPreview`, `RoleChip`, `LinearProgress` nos cards                                                                                                                      |
 | FE-27 indicadores de análise               | `src/features/compensation/` + cluster na sourceNav, histórico por amostra (`?file=`), drawer de histórico no card, badge "Compensado", marcação de controles                    |
