@@ -650,9 +650,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
-											gridcolor: "rgba(0,0,0,0.08)",
-											linecolor: "rgba(0,0,0,0.25)",
-											zerolinecolor: "rgba(0,0,0,0.25)",
+											gridcolor: "rgba(0,0,0,0.14)",
+											linecolor: "rgba(0,0,0,0.5)",
+											zerolinecolor: "rgba(0,0,0,0.5)",
 										},
 										yaxis: {
 											title: {
@@ -672,9 +672,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
-											gridcolor: "rgba(0,0,0,0.08)",
-											linecolor: "rgba(0,0,0,0.25)",
-											zerolinecolor: "rgba(0,0,0,0.25)",
+											gridcolor: "rgba(0,0,0,0.14)",
+											linecolor: "rgba(0,0,0,0.5)",
+											zerolinecolor: "rgba(0,0,0,0.5)",
 										},
 										autosize: true,
 										hovermode: "closest",
@@ -692,7 +692,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										// reduz o brilho no dark mode.
 										plot_bgcolor: PLOT_BG,
 										paper_bgcolor: PLOT_BG,
-										font: { color: "rgba(0,0,0,0.6)" },
+										font: { color: "rgba(0,0,0,0.78)" },
 										bargap: 0,
 									}}
 									onSelected={
