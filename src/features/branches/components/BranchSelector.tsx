@@ -103,7 +103,7 @@ export default function BranchSelector({
 		setMenuAnchor(null)
 		if (!current || current.is_main) return
 		const ok = await confirm({
-			title: `Arquivar branch "${current.name}"?`,
+			title: `Arquivar a linha "${current.name}"?`,
 			description:
 				"A linha sai do seletor e deixa de receber edições. O histórico dela permanece.",
 			confirmLabel: "Arquivar",
@@ -117,11 +117,11 @@ export default function BranchSelector({
 	return (
 		<>
 			<FormControl size="small" sx={{ minWidth: 130 }}>
-				<InputLabel id="branch-select-label">Branch</InputLabel>
+				<InputLabel id="branch-select-label">Linha de análise</InputLabel>
 				<Select
 					labelId="branch-select-label"
 					value={String(current?.id ?? "")}
-					label="Branch"
+					label="Linha de análise"
 					onChange={(e) => handleSelect(e.target.value)}
 				>
 					{sorted.map((b) => (
@@ -130,7 +130,7 @@ export default function BranchSelector({
 								<BranchIcon style={{ fontSize: 15 }} />
 							</ListItemIcon>
 							<ListItemText
-								primary={b.name}
+								primary={b.is_main ? "Principal" : b.name}
 								secondary={`${b.gates_count} gates`}
 							/>
 						</MenuItem>
@@ -138,7 +138,7 @@ export default function BranchSelector({
 				</Select>
 			</FormControl>
 			{canEdit && (
-				<Tooltip title="Gerenciar branches">
+				<Tooltip title="Gerenciar linhas de análise">
 					<IconButton
 						size="small"
 						onClick={(e) => setMenuAnchor(e.currentTarget)}
@@ -156,7 +156,10 @@ export default function BranchSelector({
 					<ListItemIcon>
 						<AddIcon style={{ fontSize: 18 }} />
 					</ListItemIcon>
-					<ListItemText>Nova branch a partir de "{current?.name}"</ListItemText>
+					<ListItemText>
+						Nova linha a partir de "
+						{current?.is_main ? "Principal" : current?.name}"
+					</ListItemText>
 				</MenuItem>
 				<MenuItem
 					disabled={isMain}
@@ -179,7 +182,7 @@ export default function BranchSelector({
 					<ListItemIcon>
 						<MergeIcon style={{ fontSize: 18 }} />
 					</ListItemIcon>
-					<ListItemText>Comparar/mergear na base</ListItemText>
+					<ListItemText>Comparar e juntar na origem</ListItemText>
 				</MenuItem>
 				<MenuItem disabled={isMain} onClick={handleArchive}>
 					<ListItemIcon>
@@ -195,7 +198,7 @@ export default function BranchSelector({
 				title={
 					nameDialog?.mode === "rename"
 						? `Renomear "${nameDialog.branch.name}"`
-						: `Nova branch a partir de "${current?.name}"`
+						: `Nova linha a partir de "${current?.is_main ? "Principal" : current?.name}"`
 				}
 				onConfirm={handleSaveName}
 				confirmLabel={nameDialog?.mode === "rename" ? "Renomear" : "Criar"}
@@ -203,7 +206,7 @@ export default function BranchSelector({
 				loading={savingName}
 			>
 				<TextField
-					label="Nome da branch"
+					label="Nome da linha"
 					value={nameValue}
 					onChange={(e) => setNameValue(e.target.value)}
 					fullWidth
@@ -218,8 +221,8 @@ export default function BranchSelector({
 						color="text.secondary"
 						sx={{ mt: 1, display: "block" }}
 					>
-						Fork materializado: a árvore de gates atual é copiada para a nova
-						linha — edições nela não alteram esta branch.
+						A árvore de gates atual é copiada para a nova linha — edições lá não
+						alteram esta.
 					</Typography>
 				)}
 			</AppDialog>

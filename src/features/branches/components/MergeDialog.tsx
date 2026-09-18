@@ -21,6 +21,7 @@ import {
 	MdEdit as EditIcon,
 } from "react-icons/md"
 import { AppDialog } from "../../../components/AppDialog"
+import { useBranchesQuery } from "../hooks/useBranches"
 import { fetchBranchDiff, mergeBranch } from "../../../services/branches"
 import type {
 	AnalysisBranch,
@@ -39,9 +40,9 @@ interface MergeDialogProps {
 }
 
 const CHANGE_LABEL = {
-	create: "criar na base",
-	update: "atualizar na base",
-	delete: "excluir da base",
+	create: "Criar",
+	update: "Atualizar",
+	delete: "Excluir",
 } as const
 
 const CHANGE_ICON = {
@@ -79,8 +80,8 @@ function ConflictCard({
 						{ value: "theirs", label: `Excluir de "${targetName}"` },
 					]
 				: [
-						{ value: "mine", label: `Manter "${targetName}"` },
-						{ value: "theirs", label: `Usar "${sourceName}"` },
+						{ value: "mine", label: `Manter a versão de "${targetName}"` },
+						{ value: "theirs", label: `Usar a versão de "${sourceName}"` },
 						{ value: "both", label: "Manter as duas (cópia renomeada)" },
 					]
 
@@ -109,7 +110,7 @@ function ConflictCard({
 								display="block"
 								color="text.secondary"
 							>
-								base: {fmt(vals.base)} · {targetName}: {fmt(vals.target)} ·{" "}
+								original: {fmt(vals.base)} · {targetName}: {fmt(vals.target)} ·{" "}
 								{sourceName}: {fmt(vals.source)}
 							</Typography>
 						</Box>
@@ -158,6 +159,12 @@ export default function MergeDialog({
 		queryFn: () => fetchBranchDiff(branch.id),
 		enabled: open,
 	})
+	const { data: branches } = useBranchesQuery(experimentId)
+
+	// Nome de exibição: a main aparece como "Principal" para quem não
+	// conhece o vocabulário interno.
+	const displayName = (id: number, name: string) =>
+		branches?.find((b) => b.id === id)?.is_main ? "Principal" : name
 
 	const conflicts = diff.data?.conflicts ?? []
 	const changes = diff.data?.changes ?? []
@@ -170,7 +177,7 @@ export default function MergeDialog({
 		try {
 			const result = await mergeBranch(branch.id, resolutions)
 			toast.success(
-				`Merge de "${branch.name}" concluído — ${result.applied.length} mudança(s) aplicadas na base.`,
+				`Linha "${branch.name}" juntada — ${result.applied.length} mudança(s) aplicadas.`,
 			)
 			queryClient.invalidateQueries({
 				queryKey: ["experiment-files", String(experimentId)],
@@ -179,7 +186,7 @@ export default function MergeDialog({
 			queryClient.invalidateQueries({ queryKey: ["branches", experimentId] })
 			onMerged()
 		} catch (err) {
-			setError(extractErrorMessage(err) || "Não foi possível concluir o merge.")
+			setError(extractErrorMessage(err) || "Não foi possível juntar as linhas.")
 			diff.refetch()
 		} finally {
 			setMerging(false)
@@ -190,11 +197,11 @@ export default function MergeDialog({
 		<AppDialog
 			open={open}
 			onClose={onClose}
-			title={`Mergear "${branch.name}" na base`}
+			title={`Juntar "${branch.name}" na linha de origem`}
 			maxWidth="sm"
 			loading={merging}
 			onConfirm={diff.data && !empty ? handleMerge : undefined}
-			confirmLabel="Mergear na base"
+			confirmLabel="Juntar"
 			confirmDisabled={diff.isLoading || unresolved.length > 0 || merging}
 		>
 			<Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
@@ -206,12 +213,13 @@ export default function MergeDialog({
 				{diff.isError && (
 					<Alert severity="error">
 						{extractErrorMessage(diff.error) ||
-							"Não foi possível carregar o diff."}
+							"Não foi possível carregar a comparação."}
 					</Alert>
 				)}
 				{empty && (
 					<Alert severity="info">
-						Nenhuma diferença entre "{branch.name}" e a base — nada a mergear.
+						Nenhuma diferença entre "{branch.name}" e a linha de origem — nada a
+						juntar.
 					</Alert>
 				)}
 				{diff.data && !empty && (
@@ -223,7 +231,7 @@ export default function MergeDialog({
 									fontWeight="bold"
 									color="text.secondary"
 								>
-									Mudanças aplicáveis ({changes.length})
+									Mudanças que serão aplicadas ({changes.length})
 								</Typography>
 								<List dense disablePadding>
 									{changes.map((c, i) => (
@@ -233,7 +241,7 @@ export default function MergeDialog({
 											</ListItemIcon>
 											<ListItemText
 												primary={c.name}
-												secondary={`${CHANGE_LABEL[c.type]}${c.file_name ? ` · ${c.file_name}` : ""}`}
+												secondary={`${CHANGE_LABEL[c.type]} em "${displayName(diff.data.target.id, diff.data.target.name)}"${c.file_name ? ` · ${c.file_name}` : ""}`}
 												primaryTypographyProps={{ variant: "body2" }}
 											/>
 										</ListItem>
@@ -249,15 +257,20 @@ export default function MergeDialog({
 									fontWeight="bold"
 									color="text.secondary"
 								>
-									Conflitos — resolva cada um ({unresolved.length} sem
-									resolução)
+									Diferenças para decidir ({unresolved.length} pendentes)
 								</Typography>
 								{conflicts.map((c) => (
 									<ConflictCard
 										key={c.key}
 										conflict={c}
-										targetName={diff.data.target.name}
-										sourceName={diff.data.source.name}
+										targetName={displayName(
+											diff.data.target.id,
+											diff.data.target.name,
+										)}
+										sourceName={displayName(
+											diff.data.source.id,
+											diff.data.source.name,
+										)}
 										value={resolutions[c.key]}
 										onChange={(r) =>
 											setResolutions((prev) => ({

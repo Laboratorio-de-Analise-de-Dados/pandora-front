@@ -50,7 +50,8 @@ export function useBranchActions(experimentId: number | undefined) {
 				return branch
 			} catch (error) {
 				toast.error(
-					extractErrorMessage(error) || "Não foi possível criar a branch.",
+					extractErrorMessage(error) ||
+						"Não foi possível criar a linha de análise.",
 				)
 				return null
 			}
