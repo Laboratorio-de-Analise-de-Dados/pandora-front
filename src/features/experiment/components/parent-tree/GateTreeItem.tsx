@@ -171,7 +171,7 @@ export default function GateTreeItem({
 						)}
 					</Box>
 					{hasActions && (
-						<Tooltip title="Opções do gate" arrow>
+						<Tooltip title="Opções do gate" arrow placement="right">
 							<IconButton
 								size="small"
 								onClick={(e) => {

@@ -91,7 +91,7 @@ export default function FileTreeItem({
 					)}
 					<Box sx={{ ml: "auto", display: "flex", flexShrink: 0 }}>
 						{handlers.onFileInfo && (
-							<Tooltip title="Metadados do arquivo" arrow>
+							<Tooltip title="Metadados do arquivo" arrow placement="right">
 								<IconButton
 									size="small"
 									onClick={(e) => {
@@ -105,7 +105,7 @@ export default function FileTreeItem({
 							</Tooltip>
 						)}
 						{canManage && (
-							<Tooltip title="Opções da amostra" arrow>
+							<Tooltip title="Opções da amostra" arrow placement="right">
 								<IconButton
 									size="small"
 									onClick={(e) => {

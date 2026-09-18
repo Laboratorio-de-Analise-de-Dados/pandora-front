@@ -83,7 +83,7 @@ export default function SubsampleGroupItem({
 						</Tooltip>
 					)}
 					{group.subsample && handlers.onSubsampleMenuOpen && (
-						<Tooltip title="Opções do subsample" arrow>
+						<Tooltip title="Opções do subsample" arrow placement="right">
 							<IconButton
 								size="small"
 								onClick={(e) => {
