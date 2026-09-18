@@ -11,8 +11,10 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature | Área afetada | Branch | Sessão | Desde |
-| ------- | ------------ | ------ | ------ | ----- |
+| Feature                   | Área afetada                                                                                                            | Branch                   | Sessão      | Desde   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------ | ----------- | ------- |
+| FE-28 derivar análise     | `src/features/experiment/components/DeriveAnalysisDialog.tsx`, `services/experimentService.ts`, `page/experiments/Card` | `feat/derivar-analise`   | esta sessão | 2026-09 |
+| FE-29 branches de análise | `src/features/branches/`, `services/branches.ts`, workspace `page/experiment/[id]`                                      | `feat/analysis-branches` | esta sessão | 2026-09 |
 
 ## Concluído nesta branch
 
