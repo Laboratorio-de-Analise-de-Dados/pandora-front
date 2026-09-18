@@ -22,6 +22,7 @@ import {
 import { useEffect, useState } from "react"
 import type { ExperimentFiles, Subsample } from "../../../../types"
 import { fetchFileHeaders } from "../../../../services/experimentService"
+import { AppDialog } from "../../../../components/AppDialog"
 import TagChip from "../../../tags/components/TagChip"
 
 /**
@@ -288,71 +289,63 @@ export function SubsampleControlDialog({
 	}
 
 	return (
-		<Dialog open={!!target} onClose={onClose} fullWidth maxWidth="xs">
-			<DialogTitle>Controle de compensação</DialogTitle>
-			<DialogContent>
-				<Typography
-					variant="caption"
-					sx={{ color: "text.secondary", display: "block", mb: 1.5 }}
+		<AppDialog
+			open={!!target}
+			title="Controle de compensação"
+			onClose={onClose}
+			onConfirm={() => void handleSubmit()}
+			confirmLabel="Salvar"
+			loading={saving}
+		>
+			<Typography
+				variant="caption"
+				sx={{ color: "text.secondary", display: "block", mb: 1.5 }}
+			>
+				Marcar <strong>{target?.name}</strong> como controle permite calcular a
+				matriz de compensação a partir das amostras do grupo.
+			</Typography>
+			<FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+				<InputLabel>Tipo de controle</InputLabel>
+				<Select
+					value={controlType}
+					label="Tipo de controle"
+					onChange={(e) =>
+						setControlType(e.target.value as "" | "unstained" | "single_stain")
+					}
 				>
-					Marcar <strong>{target?.name}</strong> como controle permite calcular
-					a matriz de compensação a partir das amostras do grupo.
-				</Typography>
-				<FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
-					<InputLabel>Tipo de controle</InputLabel>
+					<MenuItem value="">
+						<em>Não é controle</em>
+					</MenuItem>
+					<MenuItem value="unstained">Negativo (unstained)</MenuItem>
+					<MenuItem value="single_stain">Single-stain</MenuItem>
+				</Select>
+			</FormControl>
+			{controlType === "single_stain" && (
+				<FormControl fullWidth size="small" error={!!error && !channel}>
+					<InputLabel>Canal</InputLabel>
 					<Select
-						value={controlType}
-						label="Tipo de controle"
-						onChange={(e) =>
-							setControlType(
-								e.target.value as "" | "unstained" | "single_stain",
-							)
-						}
+						value={channel}
+						label="Canal"
+						onChange={(e) => setChannel(e.target.value)}
 					>
-						<MenuItem value="">
-							<em>Não é controle</em>
-						</MenuItem>
-						<MenuItem value="unstained">Negativo (unstained)</MenuItem>
-						<MenuItem value="single_stain">Single-stain</MenuItem>
+						{channels.map((c) => (
+							<MenuItem key={c} value={c}>
+								{c}
+							</MenuItem>
+						))}
 					</Select>
 				</FormControl>
-				{controlType === "single_stain" && (
-					<FormControl fullWidth size="small" error={!!error && !channel}>
-						<InputLabel>Canal</InputLabel>
-						<Select
-							value={channel}
-							label="Canal"
-							onChange={(e) => setChannel(e.target.value)}
-						>
-							{channels.map((c) => (
-								<MenuItem key={c} value={c}>
-									{c}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				)}
-				{error && (controlType !== "single_stain" || channel) && (
-					<Typography
-						variant="caption"
-						color="error"
-						sx={{ mt: 1, display: "block" }}
-					>
-						{error}
-					</Typography>
-				)}
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Cancelar</Button>
-				<Button
-					onClick={() => void handleSubmit()}
-					variant="contained"
-					disabled={saving}
+			)}
+			{error && (controlType !== "single_stain" || channel) && (
+				<Typography
+					variant="caption"
+					color="error"
+					sx={{ mt: 1, display: "block" }}
 				>
-					Salvar
-				</Button>
-			</DialogActions>
-		</Dialog>
+					{error}
+				</Typography>
+			)}
+		</AppDialog>
 	)
 }
 
