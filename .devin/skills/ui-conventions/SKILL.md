@@ -1,10 +1,43 @@
 ---
 name: ui-conventions
-description: Convenções visuais do Pandora — toolbar, selects, popovers e painéis do workspace (tema dark, mobile-first)
+description: Visão de UX e convenções visuais do Pandora — princípios para citometristas, toolbar, selects, popovers e painéis do workspace (tema dark, mobile-first)
 ---
 
 Convenções de UI do workspace do Pandora, consolidadas a partir de revisões
 de design. Aplicar em qualquer controle, popover ou painel novo.
+
+## Princípios de experiência (visão do produto)
+
+O Pandora serve citometristas, não desenvolvedores. A meta é que a análise
+pareça agradável e segura — não uma ferramenta que intimida. Toda feature
+nova deve passar por este filtro antes das convenções táticas abaixo:
+
+1. **Falar a língua do laboratório, nunca a da ferramenta.** Texto visível
+   usa vocabulário de citometria ("linha de análise", "geometria",
+   "controle", "poço") — nunca jargão técnico ("branch", "merge", "diff",
+   chave crua como `gate_coordinates`). O termo técnico pode viver no
+   código e na API; na interface vira domínio.
+2. **Nada parece irreversível.** Ação que altera ou remove dados tem
+   confirmação explicando a consequência em frase simples — e, sempre que
+   possível, um desfazer visível (histórico/reversão é feature de UX, não
+   só auditoria). Quem sabe que pode desfazer explora sem medo.
+3. **Sugerir em vez de perguntar.** Defaults sensatos e pré-preenchimento
+   por heurística (ex.: sugestão de controle por nome de arquivo/poço).
+   Formulário em branco é último recurso — a pessoa revisa uma proposta,
+   não preenche um cadastro.
+4. **Revelação progressiva.** A tela mostra o essencial para a decisão
+   atual; detalhe avançado fica a um clique (popover, tooltip, seção
+   secundária). Valor técnico vira resumo legível: coordenadas de gate →
+   "polígono em SSC-A × FSC-A", nunca JSON.
+5. **Erro explica, não acusa.** Mensagem de erro diz o que aconteceu e o
+   que o usuário pode fazer — nunca stacktrace, código HTTP cru ou
+   "falha" seca. Sucesso confirma em frase de domínio.
+6. **O visual ensina.** Cor e forma carregam significado consistente
+   (estado de compensação, tipo de controle, seleção). Tooltip contextual
+   explica o conceito no ponto de uso — antes de o usuário precisar de
+   manual.
+7. **Um lugar para cada coisa.** Cada ação mora num contexto só; o mesmo
+   controle duplicado em dois lugares confunde (ver anti-padrões).
 
 ## Layout de páginas (desktop)
 
