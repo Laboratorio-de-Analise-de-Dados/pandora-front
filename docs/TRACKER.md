@@ -1,5 +1,12 @@
 # Tracker de trabalho em andamento (multi-sessão)
 
+> **Status de features NÃO vive aqui** — pipeline (backlog/fazendo/
+> entregue/produção), prioridade e checklists de progresso estão no
+> Trello, board **"Pandora — Implementações"**
+> (https://trello.com/b/dXb21KpL). Cada card linka seu PRD/ADR na
+> descrição. Este arquivo é só **coordenação entre sessões paralelas**
+> (quem está tocando qual área de arquivos agora).
+
 Vários agentes/sessões podem trabalhar neste repo em paralelo. **Antes de
 começar uma feature, leia este arquivo**: se a área já tem dono, escolha
 outra que não conflite (conflito = mesmos arquivos, componentes ou
@@ -27,11 +34,10 @@ serviços) ou alinhe com o responsável.
 
 ## Livres para pegar
 
-| Feature                             | Observação                                                                                                                                                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Google SSO — ativação (fase 2)      | UI já pronta (botão via `providers.google`); falta só credencial no backend. Decisão 2026-09: ativar antes da virada para v1 em prod — ver PRD BE-29 no backend                                              |
-| "Buscar amostras" na árvore         | Follow-up registrado no FE-26                                                                                                                                                                                |
-| FE-29 branches — retomada           | **Pós-v1.** Código completo arquivado em `archive/fe-29-branches` (seletor, merge, vocabulário de domínio); backend `?branch=` segue na API. Antes de reabrir, repensar a UX de versionamento sem jargão git |
-| FE-34/35 identificação de controles | PRDs prontos (lista + mapa de placa) — depende do BE-26; frente à parte junto do Juvia                                                                                                                       |
-| FE-36 análise de dados — fase 1     | Figuras persistidas (dep. BE-33 no backend): galeria + gráficos de stats/distribuições + grupos por figura + export PNG/SVG carimbado com revisão. ANOVA é fase 2. Ver PRD                                   |
-| FE-37 templates de análise          | Herda-e-revisa por tipo de ensaio (CBA etc.): template guarda estrutura + papéis de canal; aplicar remapeia canais e revisa posições com controles. Depende de backend novo. Ver PRD                         |
+| Feature                         | Observação                                                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Google SSO — ativação (fase 2)  | UI já pronta (botão via `providers.google`); falta só credencial no backend. Decisão 2026-09: ativar antes da virada para v1 em prod — ver PRD BE-29 no backend                                              |
+| FE-29 branches — retomada       | **Pós-v1.** Código completo arquivado em `archive/fe-29-branches` (seletor, merge, vocabulário de domínio); backend `?branch=` segue na API. Antes de reabrir, repensar a UX de versionamento sem jargão git |
+| FE-35 mapa de placa 96 poços    | FE-34 (UI de tags) já em produção (v0.7.0); falta o mapa de placa — acompanhado no card "FE-34/35" do Trello                                                                                                 |
+| FE-36 análise de dados — fase 1 | Figuras persistidas (dep. BE-33 no backend): galeria + gráficos de stats/distribuições + grupos por figura + export PNG/SVG carimbado com revisão. ANOVA é fase 2. Ver PRD                                   |
+| FE-37 templates de análise      | Herda-e-revisa por tipo de ensaio (CBA etc.): template guarda estrutura + papéis de canal; aplicar remapeia canais e revisa posições com controles. Depende de backend novo. Ver PRD                         |
