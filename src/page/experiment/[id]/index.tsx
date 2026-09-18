@@ -26,7 +26,6 @@ import { PlotStateProvider } from "../../../features/plot/context/PlotStateConte
 import ScatterPlot from "../../../features/plot/components/scatter-plot"
 import ParentTree from "../../../features/experiment/components/parent-tree"
 import SourceDropdown from "../../../features/experiment/components/SourceDropdown"
-import BranchSelector from "../../../features/branches/components/BranchSelector"
 import CollapsiblePanel from "../../../features/experiment/components/CollapsiblePanel"
 import StatsPanel from "../../../features/stats/components/StatsPanel"
 import HistoryPanel from "../../../features/history/components/HistoryPanel"
@@ -75,7 +74,6 @@ function ExperimentPageContent() {
 		showInactiveFiles,
 		setShowInactiveFiles,
 		branchId,
-		setBranchId,
 	} = useExperimentWorkspace()
 
 	const {
@@ -359,14 +357,9 @@ function ExperimentPageContent() {
 				source={source}
 				onSelect={setSource}
 			/>
-			{/* FE-29: linha de análise ativa — troca refaz árvore/histórico
-			    com `?branch=`; ações de gerência ficam no menu ao lado. */}
-			<BranchSelector
-				experimentId={experiment?.id}
-				branchId={branchId}
-				onChange={setBranchId}
-				canEdit={!!canEditExperiment}
-			/>
+			{/* FE-29 (arquivado até o conceito evoluir): o seletor de linha de
+			    análise fica fora da UI; o `?branch=` continua funcional para
+			    testes — features/branches/ permanece no repo. */}
 			<Tooltip title="Arquivo anterior">
 				<span>
 					<IconButton

@@ -105,11 +105,12 @@ export function ExperimentWorkspaceProvider({
 	const { id: routeId = "" } = useParams<{ id: string }>()
 	const experimentId = experimentIdProp ?? routeId
 
-	// FE-29: a branch ativa mora na URL (`?branch=<id>`) — link
-	// compartilhável aponta para a mesma linha de análise.
-	const [searchParams, setSearchParams] = useSearchParams()
-	const branchParam = searchParams.get("branch")
-	const branchId = branchParam ? Number(branchParam) : null
+	// FE-29 (arquivado até o conceito evoluir): `?branch=` fica desarmado
+	// enquanto o seletor está fora da UI — um link com o param filtraria
+	// dados sem indicação visual da linha ativa. Reintroduzir a leitura
+	// do param junto do seletor.
+	const [, setSearchParams] = useSearchParams()
+	const branchId: number | null = null
 
 	const { data: experiment, isLoading } = useExperimentQuery(experimentId)
 	const [showInactiveFiles, setShowInactiveFiles] = useState(false)
