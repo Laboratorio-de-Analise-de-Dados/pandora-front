@@ -5,7 +5,7 @@ import React, {
 	useMemo,
 	useState,
 } from "react"
-import { useParams, useSearchParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import type {
 	Experiment,
 	ExperimentFiles,
@@ -62,9 +62,6 @@ interface ExperimentWorkspaceValue {
 	canGoNextFile: boolean
 	showInactiveFiles: boolean
 	setShowInactiveFiles: (show: boolean) => void
-	/** FE-29: branch ativa da análise (`?branch=` na URL). `null` = main. */
-	branchId: number | null
-	setBranchId: (id: number | null) => void
 }
 
 const DEFAULT_VIEW_CONFIG: PlotViewConfig = {
@@ -105,18 +102,11 @@ export function ExperimentWorkspaceProvider({
 	const { id: routeId = "" } = useParams<{ id: string }>()
 	const experimentId = experimentIdProp ?? routeId
 
-	// FE-29: a branch ativa mora na URL (`?branch=<id>`) — link
-	// compartilhável aponta para a mesma linha de análise.
-	const [searchParams, setSearchParams] = useSearchParams()
-	const branchParam = searchParams.get("branch")
-	const branchId = branchParam ? Number(branchParam) : null
-
 	const { data: experiment, isLoading } = useExperimentQuery(experimentId)
 	const [showInactiveFiles, setShowInactiveFiles] = useState(false)
 	const { data: experimentFiles = [] } = useExperimentFilesQuery(
 		experimentId,
 		showInactiveFiles,
-		branchId,
 	)
 	const { data: subsamples = [] } = useSubsamplesQuery(
 		experimentId,
@@ -135,36 +125,6 @@ export function ExperimentWorkspaceProvider({
 		setKeepCurrentViewConfig(false)
 		setSourceState(next)
 	}, [])
-
-	// Gates são materializados por branch (ids diferentes em cada linha):
-	// ao trocar de branch, um gate selecionado deixa de existir — a fonte
-	// cai para a raiz da mesma amostra. Arquivos não mudam de id.
-	const setBranchId = useCallback(
-		(next: number | null) => {
-			setSearchParams(
-				(prev) => {
-					const params = new URLSearchParams(prev)
-					if (next == null) {
-						params.delete("branch")
-					} else {
-						params.set("branch", String(next))
-					}
-					return params
-				},
-				{ replace: true },
-			)
-			setSourceState((current) => {
-				if (current?.type !== "gate") return current
-				return {
-					type: "file",
-					id: current.fileDataId,
-					name: current.name,
-					fileDataId: current.fileDataId,
-				}
-			})
-		},
-		[setSearchParams],
-	)
 
 	const { data: fileStats } = useFileStatsQuery(source?.type, source?.id)
 
@@ -321,12 +281,8 @@ export function ExperimentWorkspaceProvider({
 			canGoNextFile,
 			showInactiveFiles,
 			setShowInactiveFiles,
-			branchId,
-			setBranchId,
 		}),
 		[
-			branchId,
-			setBranchId,
 			showInactiveFiles,
 			experimentId,
 			experiment,
