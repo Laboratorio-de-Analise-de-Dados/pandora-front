@@ -650,7 +650,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
-											gridcolor: "rgba(0,0,0,0.14)",
+											gridcolor: "rgba(0,0,0,0.2)",
 											linecolor: "rgba(0,0,0,0.5)",
 											zerolinecolor: "rgba(0,0,0,0.5)",
 										},
@@ -672,7 +672,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
-											gridcolor: "rgba(0,0,0,0.14)",
+											gridcolor: "rgba(0,0,0,0.2)",
 											linecolor: "rgba(0,0,0,0.5)",
 											zerolinecolor: "rgba(0,0,0,0.5)",
 										},
