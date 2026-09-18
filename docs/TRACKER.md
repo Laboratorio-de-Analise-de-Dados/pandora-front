@@ -18,8 +18,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature | Área afetada | Branch | Sessão | Desde |
-| ------- | ------------ | ------ | ------ | ----- |
+| Feature                         | Área afetada                                                           | Branch                       | Sessão | Desde      |
+| ------------------------------- | ---------------------------------------------------------------------- | ---------------------------- | ------ | ---------- |
+| FE-38 buscar amostras na árvore | `src/features/experiment/components/parent-tree/`, `utils/treeFilter*` | `feat/fe-38-buscar-amostras` | devin  | 2026-09-18 |
 
 ## Concluído nesta branch
 

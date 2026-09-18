@@ -39,6 +39,7 @@
 | [FE-35](FE-35-mapa-de-placa-controles.md)              | Mapa de placa 96 poços para taguear controles por poço (BE-26, FE-34)                                                                             | Não iniciado — depende do backend                     |
 | [FE-36](FE-36-analise-de-dados-graficos-exportacao.md) | Figuras de análise persistidas (dep. BE-33): galeria + gráficos comparativos + grupos por figura + export PNG/SVG com procedência; ANOVA é fase 2 | Não iniciado — fase 1 no v1                           |
 | [FE-37](FE-37-templates-de-analise.md)                 | Templates de análise por tipo de ensaio: herda estrutura, remapeia canais, revisa com controles                                                   | Não iniciado — depende de backend novo                |
+| [FE-38](FE-38-buscar-amostras-arvore.md)               | Buscar amostras na árvore do workspace (nome, tag, subsample) — follow-up FE-26                                                                   | Em andamento em `feat/fe-38-buscar-amostras`          |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de
