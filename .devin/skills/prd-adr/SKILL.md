@@ -66,8 +66,9 @@ O problema concreto, com o comportamento observado hoje.
 3. Consultar `../pandora-docs/prd/FE-11-subsamples.md` como referência de tom e nível de
    detalhe.
 4. Adicionar linha na tabela de `../pandora-docs/prd/README.md`.
-5. **PRD commita no repo `pandora-docs`** (repo separado — branch própria
-   lá; o código continua no PR deste repo, que referencia o PRD por nome).
+5. **PRD commita direto na `main` do `pandora-docs`** (repo de docs é
+   trunk puro, sem branch/PR); o código continua no PR deste repo, que
+   referencia o PRD por nome.
 
 ## ADR — procedimento
 
