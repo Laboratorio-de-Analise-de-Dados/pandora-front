@@ -45,9 +45,10 @@ construída sobre o `AppDialog`:
 
 ### 2. Hook `useConfirm` via provider (padrão assíncrono)
 
-Implementado como `ConfirmDialogProvider` (montado em `Providers`) +
-`useConfirm()` — ponte entre o mundo síncrono do `window.confirm` e o
-declarativo do MUI:
+Implementado como `ConfirmDialogProvider` (montado em `App.tsx`,
+**dentro** do `ThemeModeProvider` — fora dele o dialog renderiza no
+tema claro default do MUI) + `useConfirm()` — ponte entre o mundo
+síncrono do `window.confirm` e o declarativo do MUI:
 
 - `confirm({ title, description, severity? }): Promise<boolean>` —
   abre o dialog e resolve `true`/`false` na escolha.
@@ -84,7 +85,8 @@ fluxo (confirmou → segue; cancelou → aborta).
   render do `Dialog`
 - `src/components/ConfirmDialog/ConfirmDialog.test.tsx` (novo) —
   resolve true/false, Esc resolve false
-- `src/providers/index.tsx` — monta o `ConfirmDialogProvider`
+- `src/App.tsx` — monta o `ConfirmDialogProvider` dentro do
+  `ThemeModeProvider`
 - `src/features/experiment/hooks/useExperimentMetaActions.ts` — troca
   os 2 `window.confirm` pelo hook
 
