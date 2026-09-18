@@ -205,12 +205,13 @@ const quadShapes = (gate: Gate, swapped = false): GateShape[] => [
 describe("buildGateLabelTraces", () => {
 	const RANGE = [0, 10]
 
-	it("posiciona o texto no centro da região de cada quadrante", () => {
+	it("posiciona o texto no canto da região de cada quadrante", () => {
+		// Cruz em (4,7), range [0,10]²: canto = 75% do caminho cruz→borda.
 		const expected: Record<string, [number, number]> = {
-			Q1: [7, 8.5], // X+ Y+ → direita/cima
-			Q2: [2, 8.5], // X- Y+ → esquerda/cima
-			Q3: [2, 3.5], // X- Y- → esquerda/baixo
-			Q4: [7, 3.5], // X+ Y- → direita/baixo
+			Q1: [8.5, 9.25], // X+ Y+ → canto superior-direito
+			Q2: [1, 9.25], // X- Y+ → canto superior-esquerdo
+			Q3: [1, 1.75], // X- Y- → canto inferior-esquerdo
+			Q4: [8.5, 1.75], // X+ Y- → canto inferior-direito
 		}
 		for (const [q, [ex, ey]] of Object.entries(expected)) {
 			const gate = quadGate(q as "Q1")
@@ -228,8 +229,8 @@ describe("buildGateLabelTraces", () => {
 		const gate = quadGate("Q2") // X- Y+ → troca vira direita/baixo
 		const traces = buildGateLabelTraces(quadShapes(gate, true), RANGE, RANGE)
 		const t = asLabelTrace(traces[0])
-		expect(t.x).toEqual([7])
-		expect(t.y).toEqual([3.5])
+		expect(t.x).toEqual([8.5])
+		expect(t.y).toEqual([1.75])
 	})
 
 	it("texto traz nome e % do pai", () => {

@@ -162,10 +162,12 @@ const gateLabelText = (gate: Gate): string => {
 /**
  * Labels de "% do pai" dentro da região de gates que não têm área própria
  * para o `label` de shape — hoje só o quadrante (4 gates dividem a mesma
- * cruz, então cada um rotula a sua região). A posição é o ponto médio entre
- * o centro da cruz e a borda do range visível; eixos "swapped" trocam a
- * direção X↔Y na tela.
+ * cruz, então cada um rotula a sua região). A posição fica no canto da
+ * região (convenção dos softwares de citometria): 3/4 do caminho entre a
+ * cruz e a borda do range visível, com margem dos eixos. Eixos "swapped"
+ * trocam a direção X↔Y na tela.
  */
+const REGION_FRACTION = 0.75
 export const buildGateLabelTraces = (
 	shapes: GateShape[],
 	xRange: number[],
@@ -195,8 +197,10 @@ export const buildGateLabelTraces = (
 		// Eixo trocado: o X cru passa a controlar o Y da tela (e vice-versa).
 		const xDir = swapped ? dir[1] : dir[0]
 		const yDir = swapped ? dir[0] : dir[1]
-		const lx = xDir > 0 ? (cx + xRange[1]) / 2 : (cx + xRange[0]) / 2
-		const ly = yDir > 0 ? (cy + yRange[1]) / 2 : (cy + yRange[0]) / 2
+		const xEdge = xDir > 0 ? xRange[1] : xRange[0]
+		const yEdge = yDir > 0 ? yRange[1] : yRange[0]
+		const lx = cx + (xEdge - cx) * REGION_FRACTION
+		const ly = cy + (yEdge - cy) * REGION_FRACTION
 
 		traces.push({
 			type: "scatter",
