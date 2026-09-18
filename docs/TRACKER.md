@@ -11,9 +11,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                       | Área afetada                                                  | Branch                    | Sessão      | Desde   |
-| ----------------------------- | ------------------------------------------------------------- | ------------------------- | ----------- | ------- |
-| Vocabulário de linhas (FE-29) | strings visíveis em `src/features/branches/` — sem jargão git | `fix/branch-vocab-domain` | esta sessão | 2026-09 |
+| Feature            | Área afetada                                                                                | Branch                    | Sessão      | Desde   |
+| ------------------ | ------------------------------------------------------------------------------------------- | ------------------------- | ----------- | ------- |
+| Arquivamento FE-29 | seletor fora da UI + `?branch=` desarmado; vocabulário de domínio nos componentes dormentes | `fix/branch-vocab-domain` | esta sessão | 2026-09 |
 
 ## Concluído nesta branch
 
@@ -25,7 +25,7 @@ serviços) ou alinhe com o responsável.
 | FE-31 contas conectadas                    | Perfil "Contas conectadas" (link/unlink real), interstitial `link_notice` no auth-callback, dialog de merge (`merge_notice` → `POST /accounts/merge/confirm/`) — PRs #72/#73/#74 |
 | FE-32 dialogs de confirmação               | `ConfirmDialogProvider` + `useConfirm()` (Promise<boolean>); migrados os 2 `window.confirm` de `useExperimentMetaActions` — ADR-0014                                             |
 | FE-28 derivar análise                      | Dialog no card do experimento + relatório pós-operação — PR #86                                                                                                                  |
-| FE-29 branches de análise                  | `src/features/branches/` + `?branch=` no workspace — PR #88                                                                                                                      |
+| FE-29 branches de análise                  | `src/features/branches/` + `?branch=` no workspace — PR #88. **UI arquivada até depois do v1** (backend e código dormentes ficam)                                                |
 
 ## Livres para pegar
 

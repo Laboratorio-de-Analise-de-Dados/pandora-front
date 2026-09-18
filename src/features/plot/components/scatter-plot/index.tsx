@@ -531,14 +531,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								color="text.secondary"
 								sx={{ order: 2 }}
 							>
-								{/* Contexto da visualização: raiz do arquivo vs. dentro
-								    de um gate — sem isso nada distingue os dois na tela. */}
-								{sourceType === "gate"
-									? `Gate ${parentName ? `"${parentName}"` : "selecionado"}`
-									: "Amostra inteira"}
-								{` · ${data.total_events.toLocaleString()} eventos`}
+								{data.total_events.toLocaleString()} eventos
 								{plotMode === "scatter" && data.sampled_events
-									? ` · exibindo ${data.sampled_events.toLocaleString()}`
+									? ` · amostra de ${data.sampled_events.toLocaleString()}`
 									: plotMode === "histogram"
 										? " · histograma (100% dos dados)"
 										: " · heatmap (100% dos dados)"}
