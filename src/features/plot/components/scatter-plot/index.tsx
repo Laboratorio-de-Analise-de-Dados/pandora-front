@@ -26,7 +26,12 @@ import { getCopyFamilyIds } from "../../../gate/utils"
 
 import { COFACTOR } from "../../utils/biex"
 import { buildTicks } from "../../utils/ticks"
-import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
+import {
+	buildPlotData,
+	hasPlotData,
+	SCATTER_COLOR,
+} from "../../utils/plotTraces"
+import { scatterGatePointColors } from "../../utils/scatterGateColors"
 import {
 	buildGateHoverTraces,
 	buildGateLabelTraces,
@@ -374,7 +379,23 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// Build Plotly trace data
 	// O gráfico é sempre claro (mesmo no dark mode): legibilidade de
 	// densidade/scatter segue o padrão dos softwares de citometria.
-	const plotData = buildPlotData(plotMode, data, "light")
+	// "Color gating": eventos dentro de gates visíveis ganham a cor deles.
+	const pointColors = scatterGatePointColors(
+		data?.x,
+		data?.y,
+		childGates,
+		xAxis,
+		yAxis,
+		effXScale,
+		effYScale,
+		SCATTER_COLOR.light,
+	)
+	const plotData = buildPlotData(
+		plotMode,
+		data,
+		"light",
+		pointColors ?? undefined,
+	)
 	const hasData = hasPlotData(plotMode, data)
 
 	// Traces transparentes só para hover: passar o mouse sobre a área de um

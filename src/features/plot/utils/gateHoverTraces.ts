@@ -143,7 +143,7 @@ export const buildGateHoverTraces = (
 const LABEL_TRACE_NAME = "__gate-label__"
 
 // Sinal de cada quadrante nos eixos crus do gate: [xSign, ySign].
-const QUADRANT_DIR: Record<string, [number, number]> = {
+export const QUADRANT_DIR: Record<string, [number, number]> = {
 	Q1: [1, 1],
 	Q2: [-1, 1],
 	Q3: [-1, -1],
