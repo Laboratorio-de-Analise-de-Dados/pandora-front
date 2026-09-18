@@ -11,9 +11,10 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                   | Área afetada                                                                                         | Branch                   | Sessão      | Desde   |
-| ------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ | ----------- | ------- |
-| FE-29 branches de análise | `src/features/branches/`, `services/branches.ts`, contexto do workspace (`?branch=`), `HistoryPanel` | `feat/analysis-branches` | esta sessão | 2026-09 |
+| Feature                       | Área afetada                                                                                         | Branch                      | Sessão      | Desde   |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------- | ----------- | ------- |
+| FE-29 branches de análise     | `src/features/branches/`, `services/branches.ts`, contexto do workspace (`?branch=`), `HistoryPanel` | `feat/analysis-branches`    | esta sessão | 2026-09 |
+| Indicador de contexto no plot | `scatter-plot/index.tsx` — legenda "Amostra inteira"/"Gate"                                          | `fix/plot-source-indicator` | esta sessão | 2026-09 |
 
 ## Concluído nesta branch
 
