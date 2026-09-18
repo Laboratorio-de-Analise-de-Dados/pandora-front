@@ -1,4 +1,11 @@
-import { Box, Checkbox, Chip, IconButton, Typography } from "@mui/material"
+import {
+	Box,
+	Checkbox,
+	Chip,
+	IconButton,
+	Tooltip,
+	Typography,
+} from "@mui/material"
 import {
 	MdFolder as FolderIcon,
 	MdMoreVert as MoreVertIcon,
@@ -61,31 +68,33 @@ export default function SubsampleGroupItem({
 						{group.files.length === 1 ? "amostra" : "amostras"}
 					</Typography>
 					{group.subsample?.control_type && (
-						<Chip
-							label={
-								group.subsample.control_type === "unstained"
-									? "negativo"
-									: `controle ${group.subsample.control_channel}`
-							}
-							size="small"
-							color="warning"
-							variant="outlined"
-							title="Controle de compensação (BE-22)"
-							sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
-						/>
+						<Tooltip title="Controle de compensação" arrow>
+							<Chip
+								label={
+									group.subsample.control_type === "unstained"
+										? "negativo"
+										: `controle ${group.subsample.control_channel}`
+								}
+								size="small"
+								color="warning"
+								variant="outlined"
+								sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
+							/>
+						</Tooltip>
 					)}
 					{group.subsample && handlers.onSubsampleMenuOpen && (
-						<IconButton
-							size="small"
-							onClick={(e) => {
-								e.stopPropagation()
-								handlers.onSubsampleMenuOpen?.(e, group.subsample!)
-							}}
-							sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
-							title="Opções do subsample"
-						>
-							<MoreVertIcon style={{ fontSize: 16 }} />
-						</IconButton>
+						<Tooltip title="Opções do subsample" arrow>
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handlers.onSubsampleMenuOpen?.(e, group.subsample!)
+								}}
+								sx={{ p: 0.25, flexShrink: 0, ml: "auto" }}
+							>
+								<MoreVertIcon style={{ fontSize: 16 }} />
+							</IconButton>
+						</Tooltip>
 					)}
 				</Box>
 			}
