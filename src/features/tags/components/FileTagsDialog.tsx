@@ -13,21 +13,24 @@ import { AppDialog } from "../../../components/AppDialog"
 import { createTag, fetchTags } from "../../../services/tagService"
 import { extractErrorMessage } from "../../../utils/apiError"
 import type { ExperimentFiles, SampleTag } from "../../../types"
+import { commonTagIds, computeTagTargets } from "../utils/tagTargets"
+import type { TagTarget } from "../utils/tagTargets"
 import TagChip from "./TagChip"
 
 /**
- * Picker de tags da amostra (BE-34/FE-34): edita o conjunto explícito
- * (PUT substitui tudo). Controle é seleção única — o backend valida a
- * exclusividade e o erro aparece aqui. Tags herdadas do subsample são
- * somente leitura; uma explícita de controle as substitui na leitura.
+ * Picker de tags de amostra (BE-34/FE-34). Com uma amostra edita o
+ * conjunto explícito inteiro (PUT substitui tudo); em lote aplica delta —
+ * marcar adiciona em todas, desmarcar remove das que têm, e tags que só
+ * algumas amostras têm são preservadas. Controle é seleção única (o
+ * backend valida e o erro aparece aqui). Herdadas são somente leitura.
  */
 export default function FileTagsDialog({
-	file,
+	files,
 	onSubmit,
 	onClose,
 }: {
-	file: ExperimentFiles | null
-	onSubmit: (fileDataId: number, tagIds: number[]) => Promise<string | null>
+	files: ExperimentFiles[]
+	onSubmit: (targets: TagTarget[]) => Promise<string | null>
 	onClose: () => void
 }) {
 	const queryClient = useQueryClient()
@@ -37,27 +40,35 @@ export default function FileTagsDialog({
 	const [saving, setSaving] = useState(false)
 	const [creating, setCreating] = useState(false)
 
+	const open = files.length > 0
+	const single = files.length === 1 ? files[0] : null
+
 	const { data: vocabulary = [], isLoading } = useQuery({
 		queryKey: ["tags"],
 		queryFn: fetchTags,
-		enabled: !!file,
+		enabled: open,
 	})
 
 	useEffect(() => {
-		setSelected(new Set((file?.tags ?? []).map((t) => t.id)))
+		// Uma amostra: começa do conjunto dela. Lote: começa da interseção.
+		setSelected(
+			single ? new Set(single.tags?.map((t) => t.id)) : commonTagIds(files),
+		)
 		setNewName("")
 		setError(null)
-	}, [file])
+	}, [files, single])
 
 	const controls = vocabulary.filter((t) => t.category === "control")
 	const general = vocabulary.filter((t) => t.category === "general")
-	const inherited = file?.inherited_tags ?? []
-	const suggested = vocabulary.filter(
-		(t) =>
-			t.system_key !== null &&
-			(file?.suggested_tags ?? []).includes(t.system_key) &&
-			!selected.has(t.id),
-	)
+	const inherited = single?.inherited_tags ?? []
+	const suggested = single
+		? vocabulary.filter(
+				(t) =>
+					t.system_key !== null &&
+					(single.suggested_tags ?? []).includes(t.system_key) &&
+					!selected.has(t.id),
+			)
+		: []
 
 	const toggle = (tag: SampleTag) => {
 		setError(null)
@@ -94,9 +105,9 @@ export default function FileTagsDialog({
 	}
 
 	const handleSubmit = async () => {
-		if (!file || saving) return
+		if (!open || saving) return
 		setSaving(true)
-		const submitError = await onSubmit(file.id, [...selected])
+		const submitError = await onSubmit(computeTagTargets(files, selected))
 		setSaving(false)
 		if (submitError) {
 			setError(submitError)
@@ -127,21 +138,28 @@ export default function FileTagsDialog({
 
 	return (
 		<AppDialog
-			open={!!file}
-			title="Tags da amostra"
+			open={open}
+			title={single ? "Tags da amostra" : `Tags de ${files.length} amostras`}
 			onClose={onClose}
 			onConfirm={() => void handleSubmit()}
 			confirmLabel="Salvar"
 			loading={saving}
 		>
-			<Typography
-				variant="body2"
-				color="text.secondary"
-				sx={{ mb: 1.5 }}
-				noWrap
-			>
-				{file?.file_name}
-			</Typography>
+			{single ? (
+				<Typography
+					variant="body2"
+					color="text.secondary"
+					sx={{ mb: 1.5 }}
+					noWrap
+				>
+					{single.file_name}
+				</Typography>
+			) : (
+				<Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+					Marcar adiciona a tag em todas; desmarcar remove das que têm. Tags que
+					só algumas amostras têm são mantidas.
+				</Typography>
+			)}
 			{isLoading ? (
 				<CircularProgress size={20} />
 			) : (

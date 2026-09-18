@@ -51,6 +51,7 @@ import {
 	SubsampleFormDialog,
 } from "./dialogs"
 import FileTagsDialog from "../../../tags/components/FileTagsDialog"
+import type { TagTarget } from "../../../tags/utils/tagTargets"
 
 export default function ParentTree({
 	files,
@@ -97,11 +98,8 @@ export default function ParentTree({
 			control_channel?: string
 		},
 	) => Promise<string | null>
-	/** Substitui as tags explícitas da amostra (BE-34). */
-	onSaveFileTags?: (
-		fileDataId: number,
-		tagIds: number[],
-	) => Promise<string | null>
+	/** Substitui as tags explícitas de uma ou mais amostras (BE-34). */
+	onSaveFileTags?: (targets: TagTarget[]) => Promise<string | null>
 	/** Canais do experimento — alimenta o select do controle single-stain. */
 	channels?: string[]
 }) {
@@ -195,6 +193,16 @@ export default function ParentTree({
 								size="small"
 								color="primary"
 								onClick={selection.moveSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+						{onSaveFileTags && (
+							<Chip
+								label={`Etiquetar ${selection.activeCount}`}
+								size="small"
+								color="secondary"
+								disabled={selection.activeCount === 0}
+								onClick={selection.tagSelected}
 								sx={{ height: 22, fontSize: "0.7rem" }}
 							/>
 						)}
@@ -493,7 +501,7 @@ export default function ParentTree({
 
 			{tagDialog.submit && (
 				<FileTagsDialog
-					file={tagDialog.file}
+					files={tagDialog.targets}
 					onSubmit={tagDialog.submit}
 					onClose={tagDialog.close}
 				/>
