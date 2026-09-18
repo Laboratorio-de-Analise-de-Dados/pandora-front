@@ -35,6 +35,8 @@
 | [FE-31](FE-31-contas-conectadas-perfil.md)            | Contas conectadas no perfil + aviso de vínculo no login SSO (BE-29)                | Entregue — PRs #72/#73/#74     |
 | [FE-32](FE-32-dialogs-de-confirmacao-mui.md)          | Fim dos `window.*` nativos: `AppDialog` + `useConfirm()` compartilhados (ADR-0014) | Implementado — PR #81                         |
 | [FE-33](FE-33-retomada-e-erro-de-processamento.md)    | Retomada silenciosa de processamento órfão + tooltip com motivo do erro (BE-31)    | Não iniciado — depende do backend             |
+| [FE-34](FE-34-identificacao-de-controles.md)          | Identificação de controles pós-processamento: view de marcação com sugestões (BE-26) | Não iniciado — depende do backend             |
+| [FE-35](FE-35-mapa-de-placa-controles.md)             | Mapa de placa 96 poços para taguear controles por poço (BE-26, FE-34)              | Não iniciado — depende do backend             |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de

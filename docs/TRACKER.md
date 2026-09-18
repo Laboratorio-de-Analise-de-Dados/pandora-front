@@ -13,6 +13,7 @@ serviços) ou alinhe com o responsável.
 
 | Feature | Área afetada | Branch | Sessão | Desde |
 | ------- | ------------ | ------ | ------ | ----- |
+| Docs FE-34/35 controles + nota FE-10 | `docs/prd/*` | `docs/fe-34-35-controles` | devin | 2026-09 |
 
 ## Concluído nesta branch
 
@@ -32,3 +33,4 @@ serviços) ou alinhe com o responsável.
 | "Buscar amostras" na árvore    | Follow-up registrado no FE-26                                                                                                                                   |
 | FE-28 derivar análise          | Backend pronto — `POST /experiment/<id>/derive-analysis/`                                                                                                       |
 | FE-29 branches de análise      | Backend pronto — `?branch=` + `/analytics/branches/*`                                                                                                           |
+| FE-34/35 identificação de controles | PRDs prontos (lista + mapa de placa) — depende do BE-26; frente à parte junto do Juvia                                                                       |
