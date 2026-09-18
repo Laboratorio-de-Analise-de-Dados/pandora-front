@@ -47,6 +47,7 @@ export default function GateTreeItem({
 		<TreeNode
 			depth={depth}
 			selected={selected}
+			expandSignal={handlers.expandSignal}
 			onSelect={() =>
 				handlers.onSelect({
 					type: "gate",

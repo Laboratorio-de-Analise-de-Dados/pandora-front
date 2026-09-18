@@ -37,6 +37,7 @@ export default function SubsampleGroupItem({
 	return (
 		<TreeNode
 			depth={0}
+			expandSignal={handlers.expandSignal}
 			label={
 				<Box
 					sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}

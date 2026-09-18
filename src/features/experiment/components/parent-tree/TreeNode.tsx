@@ -3,7 +3,7 @@ import {
 	MdChevronRight as ChevronRight,
 	MdExpandMore as ExpandMore,
 } from "react-icons/md"
-import { ReactNode, useState } from "react"
+import { ReactNode, useEffect, useState } from "react"
 
 /**
  * Nó colapsável da árvore (subsample → amostra → gate). Substitui
@@ -18,6 +18,7 @@ export default function TreeNode({
 	defaultExpanded = true,
 	inactive = false,
 	selected = false,
+	expandSignal,
 }: {
 	label: ReactNode
 	children?: ReactNode
@@ -29,9 +30,17 @@ export default function TreeNode({
 	inactive?: boolean
 	/** Fonte carregada no plot: faixa verde translúcida full-width (FE-26). */
 	selected?: boolean
+	/** "Expandir/recolher tudo" da barra — `seq` novo aplica `expanded`. */
+	expandSignal?: { seq: number; expanded: boolean }
 }) {
 	const [expanded, setExpanded] = useState(defaultExpanded)
 	const expandable = Boolean(children)
+
+	useEffect(() => {
+		if (expandSignal) setExpanded(expandSignal.expanded)
+		// seq é o gatilho — expanded repetido (ex.: colapsar 2x) deve reaplicar.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [expandSignal?.seq])
 
 	const activate = () => {
 		if (expandable) setExpanded((v) => !v)

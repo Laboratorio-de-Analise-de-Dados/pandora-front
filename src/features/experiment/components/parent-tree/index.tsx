@@ -9,6 +9,8 @@ import {
 	MdInfoOutline as InfoIcon,
 	MdOutlineBlurOn as CompensationIcon,
 	MdLocalOffer as TagIcon,
+	MdUnfoldMore as ExpandAllIcon,
+	MdUnfoldLess as CollapseAllIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -105,6 +107,7 @@ export default function ParentTree({
 }) {
 	const {
 		handlers,
+		expansion,
 		selection,
 		gateMenu,
 		gateContextMenu,
@@ -185,6 +188,24 @@ export default function ParentTree({
 						</IconButton>
 					</Tooltip>
 				)}
+				<Tooltip title="Expandir tudo" arrow>
+					<IconButton
+						size="small"
+						onClick={expansion.expandAll}
+						sx={{ p: 0.25 }}
+					>
+						<ExpandAllIcon style={{ fontSize: 18 }} />
+					</IconButton>
+				</Tooltip>
+				<Tooltip title="Recolher tudo" arrow>
+					<IconButton
+						size="small"
+						onClick={expansion.collapseAll}
+						sx={{ p: 0.25 }}
+					>
+						<CollapseAllIcon style={{ fontSize: 18 }} />
+					</IconButton>
+				</Tooltip>
 				{selection.mode && selection.count > 0 && (
 					<>
 						{onMoveFile && (

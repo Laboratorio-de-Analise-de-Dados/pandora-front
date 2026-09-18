@@ -40,6 +40,7 @@ export default function FileTreeItem({
 			depth={depth}
 			inactive={inactive}
 			selected={!selecting && selected}
+			expandSignal={handlers.expandSignal}
 			onSelect={
 				selecting
 					? () => handlers.onToggleFile?.(file.id)

@@ -7,7 +7,10 @@ import type {
 } from "../../../types"
 import type { GateScope } from "../../../services/gateService"
 import type { TagTarget } from "../../tags/utils/tagTargets"
-import type { TreeHandlers } from "../components/parent-tree/types"
+import type {
+	ExpandSignal,
+	TreeHandlers,
+} from "../components/parent-tree/types"
 
 export interface TreeInteractionsParams {
 	files: ExperimentFiles[]
@@ -103,6 +106,7 @@ export function useTreeInteractions({
 	const [archiveTarget, setArchiveTarget] = useState<Subsample | null>(null)
 	const [controlTarget, setControlTarget] = useState<Subsample | null>(null)
 	const [tagTargets, setTagTargets] = useState<ExperimentFiles[]>([])
+	const [expandSignal, setExpandSignal] = useState<ExpandSignal | undefined>()
 
 	const handleFileMenuOpen = (
 		event: React.MouseEvent,
@@ -210,10 +214,17 @@ export function useTreeInteractions({
 		onToggleFile: canBulk && selectionMode ? handleToggleFile : undefined,
 		onToggleGroup: canBulk && selectionMode ? handleToggleGroup : undefined,
 		onFileInfo: setMetadataTarget,
+		expandSignal,
 	}
 
 	return {
 		handlers,
+		expansion: {
+			expandAll: () =>
+				setExpandSignal((s) => ({ seq: (s?.seq ?? 0) + 1, expanded: true })),
+			collapseAll: () =>
+				setExpandSignal((s) => ({ seq: (s?.seq ?? 0) + 1, expanded: false })),
+		},
 		selection: {
 			canBulk,
 			mode: selectionMode,
