@@ -55,6 +55,16 @@ describe("groupFilesBySubsample", () => {
 		expect(groups[1].subsampleId).toBeNull()
 	})
 
+	it("subsample sem arquivo vira grupo vazio (criado para receber arquivos)", () => {
+		const groups = groupFilesBySubsample(
+			[file(1, null)],
+			[subsample(10, "controles")],
+		)
+		expect(groups.map((g) => g.subsampleId)).toEqual([10, null])
+		expect(groups[0].files).toHaveLength(0)
+		expect(groups[0].subsample?.name).toBe("controles")
+	})
+
 	it("retorna vazio para lista vazia", () => {
 		expect(groupFilesBySubsample([])).toEqual([])
 	})
