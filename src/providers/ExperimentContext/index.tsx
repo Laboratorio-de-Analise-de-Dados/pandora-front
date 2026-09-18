@@ -3,6 +3,7 @@ import React, {
 	useContext,
 	FC,
 	ReactNode,
+	useRef,
 	useState,
 	useEffect,
 	useCallback,
@@ -77,12 +78,49 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	const queryClient = useQueryClient()
 	const [experiments, setExperiments] = useState<Experiment[]>([])
 	const [progress, setProgress] = useState<ChunkProgress[]>([])
+
+	// FE-33: `processing` pode ser órfão (request de complete morreu no
+	// meio — restart, queda). O back decide via advisory lock: órfão é
+	// reprocessado, vivo responde 202. Re-chamamos no máximo 3x por
+	// experimento por sessão e seguimos pollando enquanto houver
+	// processamento em curso.
+	const resumeAttempts = useRef<Map<number, number>>(new Map())
+	const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const MAX_RESUME_ATTEMPTS = 3
+	const PROCESSING_POLL_MS = 15000
+
 	const listExperiments = useCallback(async function nts(
 		includeInactive = false,
 	) {
 		const experiments = await fetchExperiments(includeInactive)
 		setExperiments([...experiments])
+
+		const processing = experiments.filter(
+			(e) => e.active && e.status === "processing",
+		)
+		for (const e of processing) {
+			const tries = resumeAttempts.current.get(e.id) ?? 0
+			if (tries >= MAX_RESUME_ATTEMPTS) continue
+			resumeAttempts.current.set(e.id, tries + 1)
+			completeExperimentUpload(e.id)
+				.catch(() => {})
+				.finally(() => listExperiments(includeInactive))
+		}
+		if (pollTimer.current) clearTimeout(pollTimer.current)
+		if (processing.length > 0) {
+			pollTimer.current = setTimeout(
+				() => listExperiments(includeInactive),
+				PROCESSING_POLL_MS,
+			)
+		}
 	}, [])
+
+	useEffect(
+		() => () => {
+			if (pollTimer.current) clearTimeout(pollTimer.current)
+		},
+		[],
+	)
 
 	const chunkSize = 0.5 * 1024 * 1024
 
