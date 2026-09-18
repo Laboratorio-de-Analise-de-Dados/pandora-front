@@ -1,8 +1,8 @@
 # FE-32 — Dialogs de confirmação no padrão MUI (fim dos `window.*` nativos)
 
 **Repo:** pandora-front · **Tipo:** refactor · **Base:** `main`
-**Branch sugerida:** `feat/confirm-dialogs`
-**Status:** não iniciado.
+**Branch:** `feat/confirm-dialogs`
+**Status:** implementado.
 **ADR:** `docs/adr/0014` (convenção de confirmação e feedback)
 
 ## Problema
@@ -25,30 +25,40 @@ migração exige um padrão assíncrono no hook.
 
 ## Escopo
 
-### 1. Componente `ConfirmDialog` compartilhado
+### 1. Shell `AppDialog` + `ConfirmDialog`
 
-`src/components/ConfirmDialog/index.tsx` (componente de UI genérico,
-fora de features):
+`src/components/AppDialog/index.tsx` (novo) — shell base que encapsula
+a anatomia padrão (`Dialog` MUI `fullWidth` + título + corpo + ações
+Cancelar/Confirmar) no tema da app. Dialogs novos partem dele e só
+trocam o conteúdo (`children`), com `actions` customizável e
+`confirmColor="error"` para ações destrutivas. Os ~15 dialogs
+existentes (`RevertDialog`, `DeleteGateDialog`, merge/unlink...) migram
+para ele incrementalmente conforme forem tocados — sem refactor em
+massa neste PRD.
 
-- Props: `open`, `title`, `description` (ou `children`), `confirmLabel`
-  (default "Confirmar"), `cancelLabel` (default "Cancelar"),
-  `severity` (`"default" | "danger"` — danger pinta o botão de `error`),
-  `loading`, `onConfirm`, `onCancel`.
-- `Dialog` MUI com `fullWidth`, título, corpo e `DialogActions`
-  (Cancelar / Confirmar) — mesma anatomia dos dialogs já existentes
-  (merge/unlink no `ConnectedAccounts`, `RevertDialog`).
+`src/components/ConfirmDialog/index.tsx` — confirmação bloqueante
+construída sobre o `AppDialog`:
 
-### 2. Hook `useConfirmDialog` (padrão assíncrono)
+- `severity` (`"default" | "danger"` — danger pinta o botão de `error`).
+- Mesma anatomia dos dialogs já existentes (merge/unlink no
+  `ConnectedAccounts`, `RevertDialog`).
 
-`src/components/ConfirmDialog/useConfirmDialog.ts` — ponte entre o
-mundo síncrono do `window.confirm` e o declarativo do MUI:
+### 2. Hook `useConfirm` via provider (padrão assíncrono)
+
+Implementado como `ConfirmDialogProvider` (montado em `App.tsx`,
+**dentro** do `ThemeModeProvider` — fora dele o dialog renderiza no
+tema claro default do MUI) + `useConfirm()` — ponte entre o mundo
+síncrono do `window.confirm` e o declarativo do MUI:
 
 - `confirm({ title, description, severity? }): Promise<boolean>` —
   abre o dialog e resolve `true`/`false` na escolha.
-- Retorna também o elemento a renderizar (`<ConfirmDialogElement />`)
-  ou o JSX via portal/contexto.
-- Garante resolver em qualquer saída (Cancelar, X, Esc, backdrop) —
-  Promise nunca fica pendurada.
+- Provider global (em vez de elemento por call site) porque os usos
+  reais vivem em hooks (`useExperimentMetaActions`), que não renderizam
+  JSX — com o provider, qualquer hook chama `await confirm(...)` sem
+  o componente precisar montar nada.
+- Garante resolver em qualquer saída (Cancelar, Esc, backdrop) —
+  Promise nunca fica pendurada; uma segunda chamada resolve a anterior
+  como `false`.
 
 ### 3. Migração dos 2 usos
 
@@ -71,21 +81,23 @@ fluxo (confirmou → segue; cancelou → aborta).
 
 ## Arquivos a tocar
 
-- `src/components/ConfirmDialog/index.tsx` (novo) — componente
-- `src/components/ConfirmDialog/useConfirmDialog.ts` (novo) — hook
-- `src/components/ConfirmDialog/useConfirmDialog.test.ts` (novo) —
-  resolve true/false, nunca pendura
+- `src/components/ConfirmDialog/index.tsx` (novo) — provider + hook +
+  render do `Dialog`
+- `src/components/ConfirmDialog/ConfirmDialog.test.tsx` (novo) —
+  resolve true/false, Esc resolve false
+- `src/App.tsx` — monta o `ConfirmDialogProvider` dentro do
+  `ThemeModeProvider`
 - `src/features/experiment/hooks/useExperimentMetaActions.ts` — troca
   os 2 `window.confirm` pelo hook
 
 ## Critérios de aceite
 
-- [ ] Zero `window.confirm`/`alert`/`prompt` em `src/`
-- [ ] ConfirmDialog segue o tema dark e é legível em `xs`
-- [ ] Cancelar por qualquer via (botão, Esc, backdrop) resolve `false`
+- [x] Zero `window.confirm`/`alert`/`prompt` em `src/`
+- [x] ConfirmDialog segue o tema dark e é legível em `xs`
+- [x] Cancelar por qualquer via (botão, Esc, backdrop) resolve `false`
 - [ ] Desativar experimento e upload duplicado funcionam com o dialog
-      novo
-- [ ] `pnpm typecheck` + `pnpm test` + `pnpm build` verdes
+      novo (QA manual)
+- [x] `pnpm typecheck` + `pnpm test` + `pnpm build` verdes
 
 ## Fora de escopo
 

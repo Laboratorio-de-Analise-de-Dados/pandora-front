@@ -1,6 +1,6 @@
 # ADR-0014 — Confirmação e feedback só via componentes MUI
 
-- **Status:** Proposto
+- **Status:** Aceito
 - **Data:** 2026-09-17
 - **Contexto do código:** `src/features/experiment/hooks/useExperimentMetaActions.ts` (2 `window.confirm` restantes), `src/components/ConfirmDialog/` (a criar, PRD FE-32), `react-toastify` em ~15 arquivos vs `Snackbar` MUI no perfil
 
