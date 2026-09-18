@@ -21,14 +21,10 @@ export function useExperimentQuery(id: string) {
 	})
 }
 
-export function useExperimentFilesQuery(
-	id: string,
-	includeInactive = false,
-	branchId?: number | null,
-) {
+export function useExperimentFilesQuery(id: string, includeInactive = false) {
 	return useQuery<ExperimentFiles[]>({
-		queryKey: ["experiment-files", id, includeInactive, branchId ?? "main"],
-		queryFn: async () => fetchExperimentFiles(id, includeInactive, branchId),
+		queryKey: ["experiment-files", id, includeInactive],
+		queryFn: async () => fetchExperimentFiles(id, includeInactive),
 		enabled: !!id,
 	})
 }

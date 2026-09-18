@@ -54,8 +54,6 @@ interface HistoryPanelProps {
 	fileDataId?: number | null
 	/** Nome da amostra do recorte — vai para o título do painel. */
 	fileName?: string
-	/** FE-29: recorte por branch de análise (timeline da linha ativa). */
-	branchId?: number | null
 	onClose: () => void
 }
 
@@ -78,14 +76,9 @@ export default function HistoryPanel({
 	canEdit,
 	fileDataId,
 	fileName,
-	branchId,
 	onClose,
 }: HistoryPanelProps) {
-	const history = useGroupedHistoryQuery(
-		experimentId,
-		fileDataId ?? undefined,
-		branchId,
-	)
+	const history = useGroupedHistoryQuery(experimentId, fileDataId ?? undefined)
 	const checkpoints = useCheckpointsQuery(experimentId)
 	const {
 		pinMutation,
