@@ -29,12 +29,14 @@
 | [FE-25](FE-25-painel-historico-checkpoints.md)        | Painel de histórico e checkpoints de análise                                       | Implementado em `fix/density-missing-channel` |
 | [FE-26](FE-26-tema-visual-pandora.md)                 | Refactor visual: tema dark-first verde/preto/branco                                | Implementado — PR #56                         |
 | [FE-27](FE-27-indicadores-historico-compensacao.md)   | Ícones de compensação + histórico ao lado do arquivo                               | Entregue  |
-| [FE-28](FE-28-derivar-analise-entre-experimentos.md)  | Derivar análise de outro experimento (BE-19)                                       | Não iniciado — backend pronto                 |
-| [FE-29](FE-29-branches-de-analise.md)                 | Branches de análise: seletor, fork e merge (BE-23)                                 | Não iniciado — backend pronto                 |
+| [FE-28](FE-28-derivar-analise-entre-experimentos.md)  | Derivar análise de outro experimento (BE-19)                                       | Implementado — PR #86                         |
+| [FE-29](FE-29-branches-de-analise.md)                 | Branches de análise: seletor, fork e merge (BE-23)                                 | Arquivado pós-v1 — código em `archive/fe-29-branches` |
 | [FE-30](FE-30-pipeline-release-rollback.md)           | Pipeline de release por tag com rollback (ADR-0022)                                | Entregue — workflows na main         |
 | [FE-31](FE-31-contas-conectadas-perfil.md)            | Contas conectadas no perfil + aviso de vínculo no login SSO (BE-29)                | Entregue — PRs #72/#73/#74     |
 | [FE-32](FE-32-dialogs-de-confirmacao-mui.md)          | Fim dos `window.*` nativos: `AppDialog` + `useConfirm()` compartilhados (ADR-0014) | Implementado — PR #81                         |
 | [FE-33](FE-33-retomada-e-erro-de-processamento.md)    | Retomada silenciosa de processamento órfão + tooltip com motivo do erro (BE-31)    | Implementado — PR #85                         |
+| [FE-34](FE-34-identificacao-de-controles.md)          | Identificação de controles pós-processamento: view de marcação com sugestões (BE-26) | Não iniciado — depende do backend             |
+| [FE-35](FE-35-mapa-de-placa-controles.md)             | Mapa de placa 96 poços para taguear controles por poço (BE-26, FE-34)              | Não iniciado — depende do backend             |
 | [FE-36](FE-36-analise-de-dados-graficos-exportacao.md) | Figuras de análise persistidas (dep. BE-33): galeria + gráficos comparativos + grupos por figura + export PNG/SVG com procedência; ANOVA é fase 2 | Não iniciado — fase 1 no v1 |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de

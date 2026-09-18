@@ -4,6 +4,12 @@
 **Branch sugerida:** `fix/invites-flow` (só se houver bug a corrigir)
 **Status:** Roteiro de verificação manual, não executado (precisa de duas contas e ambiente rodando). O bug concreto relatado (convite aceito e membro não aparecia no grupo) era backend e foi corrigido no PR #75.
 
+**Achado 2026-09 (sem rodar o roteiro):** o passo 1 falhou na prática —
+o e-mail de convite saía mas não levava a URL do app ("acesse o Pandora"
+sem link), e convidados precisavam pedir o endereço. Corrigido no backend:
+PR Laboratorio-de-Analise-de-Dados/pandora-backend#107 (corpo leva
+`FRONTEND_URL`, sem token — mantida a decisão de segurança).
+
 ## Situação
 
 O fluxo está implementado dos dois lados:
