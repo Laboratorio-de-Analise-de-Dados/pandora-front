@@ -17,12 +17,13 @@ Board **"Pandora — Implementações"** (id `6aad992388d05be9a96dc1c4`, shortLi
 - **Trello é a fonte de verdade de status**: pipeline (coluna), prioridade
   (etiqueta), progresso/aceitação (checklist do card) e eventos de
   entrega (comentário ou linha na descrição, ex.: "deploy v0.7.0").
-- **Repos guardam só documentação durável**: PRD (`docs/prd/`) = o quê,
-  ADR (`docs/adr/`) = o porquê. PRD/ADR **não** é editado para mudar
-  status — se um campo de status do doc estiver desatualizado, o Trello
-  é quem manda.
+- **Documentação durável**: PRDs no repo privado `pandora-docs`
+  (`pandora-docs/prd/`) = o quê; ADRs de UI/convenção em `docs/adr/` e os
+  sensíveis em `pandora-docs/adr/front/` = o porquê. PRD/ADR **não** é
+  editado para mudar status — se um campo de status do doc estiver
+  desatualizado, o Trello é quem manda.
 - **Todo card linka seus docs**: descrição do card aponta para
-  `https://github.com/Laboratorio-de-Analise-de-Dados/<repo>/blob/main/docs/prd|adr/<arquivo>.md`.
+  `https://github.com/Laboratorio-de-Analise-de-Dados/pandora-docs/blob/main/prd/<arquivo>.md`.
   Card novo de feature = descrição com link do PRD + checklist de
   aceitação quando fizer sentido.
 - `docs/TRACKER.md` segue existindo só para coordenar **área de arquivos

@@ -1,6 +1,6 @@
 ---
 name: prd-adr
-description: Criar PRD (docs/prd/FE-XX) ou ADR (docs/adr/XXXX) seguindo as convenções do Pandora
+description: Criar PRD (pandora-docs/prd/FE-XX) ou ADR (docs/adr/XXXX local, sensíveis em pandora-docs/adr/front/)
 argument-hint: "[prd|adr] <tema da entrega ou decisão>"
 allowed-tools:
   - read
@@ -17,18 +17,19 @@ antes do PRD.
 
 ## Passo 0 — decidir o tipo
 
-- **PRD** (`docs/prd/FE-XX-*.md`): escopo, comportamento esperado, arquivos a
+- **PRD** (`../pandora-docs/prd/FE-XX-*.md`): escopo, comportamento esperado, arquivos a
   tocar, critérios de aceite. Um PRD por MR.
-- **ADR** (`docs/adr/XXXX-*.md`): decisão, alternativas descartadas,
-  consequências. Uma decisão por ADR.
+- **ADR** (`docs/adr/XXXX-*.md`): decisão de UI/convenção, alternativas
+  descartadas, consequências. Uma decisão por ADR. ADR **sensível** (auth,
+  segurança, dados de paciente) → `../pandora-docs/adr/front/XXXX-*.md`.
 - Decisões de **produto/domínio** (o que o sistema garante: soft delete,
   identidade da amostra, histórico) NÃO vão aqui — ficam em
   `pandora-backend/docs/adr/` e são referenciadas por nome, nunca copiadas.
 
 ## PRD — procedimento
 
-1. Descobrir o próximo número: `glob docs/prd/FE-*.md`, pegar o maior + 1.
-2. Criar `docs/prd/FE-XX-<slug-kebab>.md` em PT-BR, com o formato:
+1. Descobrir o próximo número: `glob ../pandora-docs/prd/FE-*.md`, pegar o maior + 1.
+2. Criar `../pandora-docs/prd/FE-XX-<slug-kebab>.md` em PT-BR, com o formato:
 
 ```markdown
 # FE-XX — Título descritivo
@@ -62,9 +63,11 @@ O problema concreto, com o comportamento observado hoje.
 - o que fica explicitamente de fora
 ```
 
-3. Consultar `docs/prd/FE-11-subsamples.md` como referência de tom e nível de
+3. Consultar `../pandora-docs/prd/FE-11-subsamples.md` como referência de tom e nível de
    detalhe.
-4. Adicionar linha na tabela de `docs/prd/README.md`.
+4. Adicionar linha na tabela de `../pandora-docs/prd/README.md`.
+5. **PRD commita no repo `pandora-docs`** (repo separado — branch própria
+   lá; o código continua no PR deste repo, que referencia o PRD por nome).
 
 ## ADR — procedimento
 
