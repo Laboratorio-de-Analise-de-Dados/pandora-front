@@ -29,6 +29,7 @@ import type {
 	MergeResolution,
 } from "../../../services/branches"
 import { extractErrorMessage } from "../../../utils/apiError"
+import { describeFieldValue, fieldLabel } from "../utils/describeFields"
 
 interface MergeDialogProps {
 	open: boolean
@@ -51,8 +52,32 @@ const CHANGE_ICON = {
 	delete: <DeleteIcon style={{ fontSize: 16 }} />,
 } as const
 
-const fmt = (v: unknown) =>
-	v == null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v)
+/** Valor de campo no diff — `color` ganha amostra visual do hex. */
+function FieldValue({ field, v }: { field: string; v: unknown }) {
+	if (field === "color" && typeof v === "string" && v) {
+		return (
+			<Box
+				component="span"
+				sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}
+			>
+				<Box
+					component="span"
+					sx={{
+						width: 10,
+						height: 10,
+						borderRadius: "2px",
+						bgcolor: v,
+						border: "1px solid",
+						borderColor: "divider",
+						display: "inline-block",
+					}}
+				/>
+				{v}
+			</Box>
+		)
+	}
+	return <>{describeFieldValue(field, v)}</>
+}
 
 function ConflictCard({
 	conflict,
@@ -103,15 +128,16 @@ function ConflictCard({
 					{Object.entries(conflict.fields).map(([field, vals]) => (
 						<Box key={field} sx={{ mb: 0.5 }}>
 							<Typography variant="caption" fontWeight="bold">
-								{field}
+								{fieldLabel(field)}
 							</Typography>
 							<Typography
 								variant="caption"
 								display="block"
 								color="text.secondary"
 							>
-								original: {fmt(vals.base)} · {targetName}: {fmt(vals.target)} ·{" "}
-								{sourceName}: {fmt(vals.source)}
+								original: <FieldValue field={field} v={vals.base} /> ·{" "}
+								{targetName}: <FieldValue field={field} v={vals.target} /> ·{" "}
+								{sourceName}: <FieldValue field={field} v={vals.source} />
 							</Typography>
 						</Box>
 					))}

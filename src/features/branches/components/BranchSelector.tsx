@@ -116,27 +116,32 @@ export default function BranchSelector({
 
 	return (
 		<>
-			<FormControl size="small" sx={{ minWidth: 130 }}>
-				<InputLabel id="branch-select-label">Linha de análise</InputLabel>
-				<Select
-					labelId="branch-select-label"
-					value={String(current?.id ?? "")}
-					label="Linha de análise"
-					onChange={(e) => handleSelect(e.target.value)}
-				>
-					{sorted.map((b) => (
-						<MenuItem key={b.id} value={String(b.id)}>
-							<ListItemIcon sx={{ minWidth: 26 }}>
-								<BranchIcon style={{ fontSize: 15 }} />
-							</ListItemIcon>
-							<ListItemText
-								primary={b.is_main ? "Principal" : b.name}
-								secondary={`${b.gates_count} gates`}
-							/>
-						</MenuItem>
-					))}
-				</Select>
-			</FormControl>
+			<Tooltip
+				title="Linhas de análise são versões independentes da árvore de gates — crie uma para testar uma proposta ou colaborar sem alterar a Principal."
+				placement="bottom-start"
+			>
+				<FormControl size="small" sx={{ minWidth: 130 }}>
+					<InputLabel id="branch-select-label">Linha de análise</InputLabel>
+					<Select
+						labelId="branch-select-label"
+						value={String(current?.id ?? "")}
+						label="Linha de análise"
+						onChange={(e) => handleSelect(e.target.value)}
+					>
+						{sorted.map((b) => (
+							<MenuItem key={b.id} value={String(b.id)}>
+								<ListItemIcon sx={{ minWidth: 26 }}>
+									<BranchIcon style={{ fontSize: 15 }} />
+								</ListItemIcon>
+								<ListItemText
+									primary={b.is_main ? "Principal" : b.name}
+									secondary={`${b.gates_count} gates`}
+								/>
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+			</Tooltip>
 			{canEdit && (
 				<Tooltip title="Gerenciar linhas de análise">
 					<IconButton
@@ -207,6 +212,7 @@ export default function BranchSelector({
 			>
 				<TextField
 					label="Nome da linha"
+					placeholder="ex.: revisão do orientador"
 					value={nameValue}
 					onChange={(e) => setNameValue(e.target.value)}
 					fullWidth

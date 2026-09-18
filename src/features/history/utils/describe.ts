@@ -9,7 +9,7 @@
  * - {target_id, fields}                  → campos de amostra/subsample/experimento
  */
 
-const FIELD_LABELS: Record<string, string> = {
+export const FIELD_LABELS: Record<string, string> = {
 	name: "nome",
 	color: "cor",
 	gate_coordinates: "geometria",
