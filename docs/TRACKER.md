@@ -14,6 +14,7 @@ serviços) ou alinhe com o responsável.
 | Feature                   | Área afetada                                                                                         | Branch                   | Sessão      | Desde   |
 | ------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ | ----------- | ------- |
 | FE-29 branches de análise | `src/features/branches/`, `services/branches.ts`, contexto do workspace (`?branch=`), `HistoryPanel` | `feat/analysis-branches` | esta sessão | 2026-09 |
+| Princípios de UX          | `.devin/skills/ui-conventions/SKILL.md` — visão de produto no topo das convenções                    | `docs/ux-principios`     | esta sessão | 2026-09 |
 
 ## Concluído nesta branch
 
