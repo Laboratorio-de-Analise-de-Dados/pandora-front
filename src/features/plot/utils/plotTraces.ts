@@ -33,6 +33,7 @@ export const buildPlotData = (
 				y: edgesToCenters(data?.y_edges),
 				colorscale: DENSITY_STOPS[mode],
 				showscale: true,
+				showlegend: false,
 			},
 		]
 	}
@@ -43,6 +44,7 @@ export const buildPlotData = (
 				x: edgesToCenters(data?.edges),
 				y: data?.counts ?? [],
 				marker: { color: "#10B981" },
+				showlegend: false,
 			},
 		]
 	}
@@ -53,6 +55,7 @@ export const buildPlotData = (
 			x: data?.x ?? [],
 			y: data?.y ?? [],
 			marker: { color: SCATTER_COLOR[mode], size: 2 },
+			showlegend: false,
 		},
 	]
 }

@@ -149,6 +149,26 @@ const QUADRANT_DIR: Record<string, [number, number]> = {
 	Q4: [1, -1],
 }
 
+/**
+ * Cores claras de gate (amarelo, cyan, pastel) somem no fundo claro do
+ * plot. Para texto, escurece mantendo o matiz quando a luminância passa
+ * de ~55% — preserva a associação label↔gate sem perder legibilidade.
+ */
+export const darkenForText = (color: string | undefined): string => {
+	if (!color) return "rgba(0,0,0,0.75)"
+	const m = color.match(/^#?([0-9a-f]{6})$/i)
+	if (!m) return color // rgba/nomeada: usa como veio
+	const n = parseInt(m[1], 16)
+	const r = (n >> 16) & 255
+	const g = (n >> 8) & 255
+	const b = n & 255
+	const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+	if (lum <= 0.55) return color
+	const f = 0.55
+	const d = (c: number) => Math.round(c * f)
+	return `rgb(${d(r)},${d(g)},${d(b)})`
+}
+
 /** "P1<br>(94.9%)" — mesmo formato do `label` de shape. */
 const gateLabelText = (gate: Gate): string => {
 	const percent =
@@ -209,7 +229,7 @@ export const buildGateLabelTraces = (
 			y: [ly],
 			text: gateLabelText(gate),
 			textposition: "middle center",
-			textfont: { size: 11, color: vline.line.color },
+			textfont: { size: 11, color: darkenForText(vline.line.color) },
 			hoverinfo: "skip",
 			name: LABEL_TRACE_NAME,
 			showlegend: false,
