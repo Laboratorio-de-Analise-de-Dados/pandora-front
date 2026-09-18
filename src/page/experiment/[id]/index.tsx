@@ -84,8 +84,12 @@ function ExperimentPageContent() {
 		savingExperiment,
 		canEditExperiment,
 	} = useExperimentMetaActions()
-	const { handleDisableFile, handleEnableFile, handleMoveFileToSubsample } =
-		useFileActions()
+	const {
+		handleDisableFile,
+		handleEnableFile,
+		handleMoveFileToSubsample,
+		handleUpdateFileTags,
+	} = useFileActions()
 	const {
 		handleRequestDeleteGate,
 		handleConfirmDeleteGate,
@@ -316,6 +320,7 @@ function ExperimentPageContent() {
 					onSetSubsampleControl={
 						canEditExperiment ? handleSetSubsampleControl : undefined
 					}
+					onSaveFileTags={canEditExperiment ? handleUpdateFileTags : undefined}
 					channels={values}
 				/>
 			</Box>

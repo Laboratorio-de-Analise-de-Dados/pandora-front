@@ -7,6 +7,12 @@ import type {
 } from "../../../../types"
 import type { GateScope } from "../../../../services/gateService"
 
+/** Sinal de expandir/recolher tudo — `seq` muda a cada clique no botão. */
+export interface ExpandSignal {
+	seq: number
+	expanded: boolean
+}
+
 /** Payload da edição completa do gate (nome + cor + escopo, FE-23). */
 export interface GateEditPayload {
 	name: string
@@ -39,4 +45,6 @@ export interface TreeHandlers {
 	onToggleFile?: (fileId: number) => void
 	onToggleGroup?: (fileIds: number[], checked: boolean) => void
 	onFileInfo?: (file: ExperimentFiles) => void
+	/** Expandir/recolher todos os nós — propagado aos TreeNode. */
+	expandSignal?: ExpandSignal
 }

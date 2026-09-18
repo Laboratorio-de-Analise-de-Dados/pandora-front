@@ -6,7 +6,11 @@ import type {
 	Subsample,
 } from "../../../types"
 import type { GateScope } from "../../../services/gateService"
-import type { TreeHandlers } from "../components/parent-tree/types"
+import type { TagTarget } from "../../tags/utils/tagTargets"
+import type {
+	ExpandSignal,
+	TreeHandlers,
+} from "../components/parent-tree/types"
 
 export interface TreeInteractionsParams {
 	files: ExperimentFiles[]
@@ -35,6 +39,8 @@ export interface TreeInteractionsParams {
 			control_channel?: string
 		},
 	) => Promise<string | null>
+	/** Substitui as tags explícitas de uma ou mais amostras (BE-34). */
+	onSaveFileTags?: (targets: TagTarget[]) => Promise<string | null>
 }
 
 /**
@@ -56,6 +62,7 @@ export function useTreeInteractions({
 	onArchiveSubsample,
 	onMoveFile,
 	onSetSubsampleControl,
+	onSaveFileTags,
 }: TreeInteractionsParams) {
 	// Edição completa do gate pela árvore — mesmo diálogo do gráfico (FE-23).
 	const [editTarget, setEditTarget] = useState<Gate | null>(null)
@@ -98,6 +105,8 @@ export function useTreeInteractions({
 		useState<Subsample | null>(null)
 	const [archiveTarget, setArchiveTarget] = useState<Subsample | null>(null)
 	const [controlTarget, setControlTarget] = useState<Subsample | null>(null)
+	const [tagTargets, setTagTargets] = useState<ExperimentFiles[]>([])
+	const [expandSignal, setExpandSignal] = useState<ExpandSignal | undefined>()
 
 	const handleFileMenuOpen = (
 		event: React.MouseEvent,
@@ -205,10 +214,17 @@ export function useTreeInteractions({
 		onToggleFile: canBulk && selectionMode ? handleToggleFile : undefined,
 		onToggleGroup: canBulk && selectionMode ? handleToggleGroup : undefined,
 		onFileInfo: setMetadataTarget,
+		expandSignal,
 	}
 
 	return {
 		handlers,
+		expansion: {
+			expandAll: () =>
+				setExpandSignal((s) => ({ seq: (s?.seq ?? 0) + 1, expanded: true })),
+			collapseAll: () =>
+				setExpandSignal((s) => ({ seq: (s?.seq ?? 0) + 1, expanded: false })),
+		},
 		selection: {
 			canBulk,
 			mode: selectionMode,
@@ -225,6 +241,9 @@ export function useTreeInteractions({
 			enableSelected: () => {
 				if (inactiveSelected.length > 0 && onEnableFile)
 					onEnableFile(inactiveSelected.map((f) => f.id))
+			},
+			tagSelected: () => {
+				if (activeSelected.length > 0) setTagTargets(activeSelected)
 			},
 		},
 		gateMenu: {
@@ -277,6 +296,10 @@ export function useTreeInteractions({
 			},
 			enable: () => {
 				if (menuFile && onEnableFile) onEnableFile([menuFile.id])
+				closeFileMenu()
+			},
+			tags: () => {
+				if (menuFile) setTagTargets([menuFile])
 				closeFileMenu()
 			},
 		},
@@ -381,6 +404,15 @@ export function useTreeInteractions({
 					}) => onSetSubsampleControl(controlTarget?.id ?? 0, payload)
 				: undefined,
 			close: () => setControlTarget(null),
+		},
+		tagDialog: {
+			targets: tagTargets,
+			submit: onSaveFileTags,
+			open: (file: ExperimentFiles) => setTagTargets([file]),
+			close: () => {
+				setTagTargets([])
+				setSelectedFileIds(new Set())
+			},
 		},
 	}
 }

@@ -5,6 +5,8 @@ import {
 	enableFileData,
 } from "../../../services/experimentService"
 import { moveFileToSubsample } from "../../../services/subsampleService"
+import { updateFileTags } from "../../../services/tagService"
+import type { TagTarget } from "../../tags/utils/tagTargets"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
 import { extractErrorMessage } from "../../../utils/apiError"
 
@@ -109,5 +111,32 @@ export function useFileActions() {
 		[invalidateExperiment],
 	)
 
-	return { handleDisableFile, handleEnableFile, handleMoveFileToSubsample }
+	/**
+	 * Substitui as tags explícitas de uma ou mais amostras (BE-34). A API
+	 * opera uma amostra por PUT — o lote é `allSettled`; devolve a primeira
+	 * mensagem de erro pro diálogo exibir (ex.: exclusividade de controle).
+	 */
+	const handleUpdateFileTags = useCallback(
+		async (targets: TagTarget[]): Promise<string | null> => {
+			try {
+				const results = await Promise.allSettled(
+					targets.map((t) => updateFileTags(t.fileDataId, t.tagIds)),
+				)
+				const failed = results.filter((r) => r.status === "rejected")
+				invalidateExperiment()
+				if (failed.length === 0) return null
+				return extractErrorMessage((failed[0] as PromiseRejectedResult).reason)
+			} catch (error) {
+				return extractErrorMessage(error)
+			}
+		},
+		[invalidateExperiment],
+	)
+
+	return {
+		handleDisableFile,
+		handleEnableFile,
+		handleMoveFileToSubsample,
+		handleUpdateFileTags,
+	}
 }
