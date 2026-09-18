@@ -35,6 +35,11 @@ export interface TreeInteractionsParams {
 			control_channel?: string
 		},
 	) => Promise<string | null>
+	/** Substitui as tags explícitas da amostra (BE-34). */
+	onSaveFileTags?: (
+		fileDataId: number,
+		tagIds: number[],
+	) => Promise<string | null>
 }
 
 /**
@@ -56,6 +61,7 @@ export function useTreeInteractions({
 	onArchiveSubsample,
 	onMoveFile,
 	onSetSubsampleControl,
+	onSaveFileTags,
 }: TreeInteractionsParams) {
 	// Edição completa do gate pela árvore — mesmo diálogo do gráfico (FE-23).
 	const [editTarget, setEditTarget] = useState<Gate | null>(null)
@@ -98,6 +104,7 @@ export function useTreeInteractions({
 		useState<Subsample | null>(null)
 	const [archiveTarget, setArchiveTarget] = useState<Subsample | null>(null)
 	const [controlTarget, setControlTarget] = useState<Subsample | null>(null)
+	const [tagTarget, setTagTarget] = useState<ExperimentFiles | null>(null)
 
 	const handleFileMenuOpen = (
 		event: React.MouseEvent,
@@ -279,6 +286,10 @@ export function useTreeInteractions({
 				if (menuFile && onEnableFile) onEnableFile([menuFile.id])
 				closeFileMenu()
 			},
+			tags: () => {
+				if (menuFile) setTagTarget(menuFile)
+				closeFileMenu()
+			},
 		},
 		subsampleMenu: {
 			anchor: subsampleMenuAnchor,
@@ -381,6 +392,11 @@ export function useTreeInteractions({
 					}) => onSetSubsampleControl(controlTarget?.id ?? 0, payload)
 				: undefined,
 			close: () => setControlTarget(null),
+		},
+		tagDialog: {
+			file: tagTarget,
+			submit: onSaveFileTags,
+			close: () => setTagTarget(null),
 		},
 	}
 }

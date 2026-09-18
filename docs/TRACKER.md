@@ -11,8 +11,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature | Área afetada | Branch | Sessão | Desde |
-| ------- | ------------ | ------ | ------ | ----- |
+| Feature               | Área afetada                                         | Branch                 | Sessão | Desde |
+| --------------------- | ---------------------------------------------------- | ---------------------- | ------ | ----- |
+| FE-34 tags de amostra | `src/features/tags/`, `parent-tree`, types, services | feat/fe-34-sample-tags | devin  | hoje  |
 
 ## Concluído nesta branch
 

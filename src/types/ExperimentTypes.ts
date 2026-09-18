@@ -60,6 +60,18 @@ export interface Subsample {
 	control_channel?: string
 }
 
+/** BE-34: tag semântica de amostra (vocabulário de sistema, org ou pessoal). */
+export interface SampleTag {
+	id: number
+	name: string
+	/** Chave estável das tags de sistema (ex.: "fmo"); null nas de usuário. */
+	system_key: string | null
+	category: "control" | "general"
+	color: string
+	scope: "system" | "organization" | "personal"
+	organization: number | null
+}
+
 export interface ExperimentFiles {
 	id: number
 	file_name: string
@@ -70,6 +82,12 @@ export interface ExperimentFiles {
 	subsample?: number | null
 	/** BE-22: a amostra traz $SPILLOVER/$COMP nos headers FCS. */
 	has_embedded_compensation?: boolean
+	/** BE-34: tags explícitas da amostra. */
+	tags?: SampleTag[]
+	/** BE-34: tags herdadas do subsample (virtuais — não editáveis na amostra). */
+	inherited_tags?: SampleTag[]
+	/** BE-34: system_keys sugeridos pela heurística de filename. */
+	suggested_tags?: string[]
 }
 
 /** Nó selecionado na árvore/plot: uma amostra ou um gate dentro dela. */

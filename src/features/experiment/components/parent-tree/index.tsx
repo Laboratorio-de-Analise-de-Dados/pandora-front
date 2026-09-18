@@ -8,6 +8,7 @@ import {
 	MdSelectAll as SelectAllIcon,
 	MdInfoOutline as InfoIcon,
 	MdOutlineBlurOn as CompensationIcon,
+	MdLocalOffer as TagIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -49,6 +50,7 @@ import {
 	SubsampleControlDialog,
 	SubsampleFormDialog,
 } from "./dialogs"
+import FileTagsDialog from "../../../tags/components/FileTagsDialog"
 
 export default function ParentTree({
 	files,
@@ -64,6 +66,7 @@ export default function ParentTree({
 	onArchiveSubsample,
 	onMoveFile,
 	onSetSubsampleControl,
+	onSaveFileTags,
 	channels = [],
 	source,
 }: {
@@ -94,6 +97,11 @@ export default function ParentTree({
 			control_channel?: string
 		},
 	) => Promise<string | null>
+	/** Substitui as tags explícitas da amostra (BE-34). */
+	onSaveFileTags?: (
+		fileDataId: number,
+		tagIds: number[],
+	) => Promise<string | null>
 	/** Canais do experimento — alimenta o select do controle single-stain. */
 	channels?: string[]
 }) {
@@ -111,6 +119,7 @@ export default function ParentTree({
 		subsampleForm,
 		archiveDialog,
 		controlDialog,
+		tagDialog,
 	} = useTreeInteractions({
 		files,
 		onSelect,
@@ -124,6 +133,7 @@ export default function ParentTree({
 		onArchiveSubsample,
 		onMoveFile,
 		onSetSubsampleControl,
+		onSaveFileTags,
 	})
 
 	const groups = useMemo(
@@ -414,6 +424,16 @@ export default function ParentTree({
 						</ListItemText>
 					</MuiMenuItem>
 				)}
+				{onSaveFileTags && fileMenu.file?.active !== false && (
+					<MuiMenuItem onClick={fileMenu.tags} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<TagIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Etiquetas…
+						</ListItemText>
+					</MuiMenuItem>
+				)}
 				{fileMenu.file?.active === false
 					? onEnableFile && (
 							<MuiMenuItem onClick={fileMenu.enable} dense>
@@ -468,6 +488,14 @@ export default function ParentTree({
 					channels={channels}
 					onSubmit={controlDialog.submit}
 					onClose={controlDialog.close}
+				/>
+			)}
+
+			{tagDialog.submit && (
+				<FileTagsDialog
+					file={tagDialog.file}
+					onSubmit={tagDialog.submit}
+					onClose={tagDialog.close}
 				/>
 			)}
 

@@ -5,6 +5,7 @@ import {
 	enableFileData,
 } from "../../../services/experimentService"
 import { moveFileToSubsample } from "../../../services/subsampleService"
+import { updateFileTags } from "../../../services/tagService"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
 import { extractErrorMessage } from "../../../utils/apiError"
 
@@ -109,5 +110,28 @@ export function useFileActions() {
 		[invalidateExperiment],
 	)
 
-	return { handleDisableFile, handleEnableFile, handleMoveFileToSubsample }
+	/**
+	 * Substitui as tags explícitas da amostra (BE-34). Devolve a mensagem
+	 * de erro pro diálogo exibir (padrão dos handlers de submit) — o 400
+	 * de exclusividade de controle chega aqui como texto.
+	 */
+	const handleUpdateFileTags = useCallback(
+		async (fileDataId: number, tagIds: number[]): Promise<string | null> => {
+			try {
+				await updateFileTags(fileDataId, tagIds)
+				invalidateExperiment()
+				return null
+			} catch (error) {
+				return extractErrorMessage(error)
+			}
+		},
+		[invalidateExperiment],
+	)
+
+	return {
+		handleDisableFile,
+		handleEnableFile,
+		handleMoveFileToSubsample,
+		handleUpdateFileTags,
+	}
 }

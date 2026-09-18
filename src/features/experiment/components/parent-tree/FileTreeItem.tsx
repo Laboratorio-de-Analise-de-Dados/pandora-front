@@ -12,6 +12,7 @@ import {
 	MdOutlineBlurOn as CompensationIcon,
 } from "react-icons/md"
 import type { ExperimentFiles } from "../../../../types"
+import TagChip from "../../../tags/components/TagChip"
 import TreeNode from "./TreeNode"
 import GateTreeItem from "./GateTreeItem"
 import type { TreeHandlers } from "./types"
@@ -89,6 +90,12 @@ export default function FileTreeItem({
 							sx={{ height: 16, fontSize: "0.6rem", flexShrink: 0 }}
 						/>
 					)}
+					{(file.tags ?? []).map((tag) => (
+						<TagChip key={`tag-${tag.id}`} tag={tag} />
+					))}
+					{(file.inherited_tags ?? []).map((tag) => (
+						<TagChip key={`inh-${tag.id}`} tag={tag} inherited />
+					))}
 					<Box sx={{ ml: "auto", display: "flex", flexShrink: 0 }}>
 						{handlers.onFileInfo && (
 							<Tooltip title="Metadados do arquivo" arrow placement="right">
