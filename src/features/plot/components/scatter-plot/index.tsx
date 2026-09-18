@@ -61,9 +61,9 @@ interface ScatterPlotProps {
 	childGates?: Gate[]
 }
 
-// Fundo do plot: off-white (grey.100) — claro como nos softwares de
-// citometria, mas sem o brilho do branco puro no dark mode.
-const PLOT_BG = "#f5f5f5"
+// Fundo do plot: cinza bem claro — lê como "branco" como nos softwares
+// de citometria, mas sem o brilho que cansa a vista no dark mode.
+const PLOT_BG = "#e5e5e5"
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	values,
