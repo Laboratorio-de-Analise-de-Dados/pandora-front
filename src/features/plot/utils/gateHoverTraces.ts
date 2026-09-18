@@ -203,13 +203,20 @@ export const buildGateLabelTraces = (
 		const lx = cx + (xEdge - cx) * REGION_FRACTION
 		const ly = cy + (yEdge - cy) * REGION_FRACTION
 
+		// O texto cresce para dentro da região (na direção da cruz): a
+		// âncora pode ficar perto do canto sem o label encostar nos eixos.
+		const vAnchor = yDir > 0 ? "bottom" : "top"
+		const hAnchor = xDir > 0 ? "left" : "right"
+		const textposition = `${vAnchor} ${hAnchor}` as
+			"top left" | "top right" | "bottom left" | "bottom right"
+
 		traces.push({
 			type: "scatter",
 			mode: "text",
 			x: [lx],
 			y: [ly],
 			text: gateLabelText(gate),
-			textposition: "middle center",
+			textposition,
 			textfont: { size: 11, color: GATE_LABEL_COLOR },
 			hoverinfo: "skip",
 			name: LABEL_TRACE_NAME,

@@ -151,6 +151,7 @@ interface LabelTrace {
 	mode?: string
 	hoverinfo?: string
 	textfont?: { color?: string }
+	textposition?: string
 }
 
 const asLabelTrace = (t: Plotly.Data): LabelTrace => t as unknown as LabelTrace
@@ -208,20 +209,22 @@ describe("buildGateLabelTraces", () => {
 	const RANGE = [0, 10]
 
 	it("posiciona o texto no canto da região de cada quadrante", () => {
-		// Cruz em (4,7), range [0,10]²: canto = 75% do caminho cruz→borda.
-		const expected: Record<string, [number, number]> = {
-			Q1: [8.5, 9.25], // X+ Y+ → canto superior-direito
-			Q2: [1, 9.25], // X- Y+ → canto superior-esquerdo
-			Q3: [1, 1.75], // X- Y- → canto inferior-esquerdo
-			Q4: [8.5, 1.75], // X+ Y- → canto inferior-direito
+		// Cruz em (4,7), range [0,10]²: canto = 75% do caminho cruz→borda,
+		// e o texto cresce para dentro (na direção da cruz).
+		const expected: Record<string, [number, number, string]> = {
+			Q1: [8.5, 9.25, "bottom left"], // X+ Y+ → canto sup.-direito
+			Q2: [1, 9.25, "bottom right"], // X- Y+ → canto sup.-esquerdo
+			Q3: [1, 1.75, "top right"], // X- Y- → canto inf.-esquerdo
+			Q4: [8.5, 1.75, "top left"], // X+ Y- → canto inf.-direito
 		}
-		for (const [q, [ex, ey]] of Object.entries(expected)) {
+		for (const [q, [ex, ey, epos]] of Object.entries(expected)) {
 			const gate = quadGate(q as "Q1")
 			const traces = buildGateLabelTraces(quadShapes(gate), RANGE, RANGE)
 			expect(traces).toHaveLength(1)
 			const t = asLabelTrace(traces[0])
 			expect(t.x).toEqual([ex])
 			expect(t.y).toEqual([ey])
+			expect(t.textposition).toBe(epos)
 			expect(t.mode).toBe("text")
 			expect(t.hoverinfo).toBe("skip")
 		}
@@ -233,6 +236,7 @@ describe("buildGateLabelTraces", () => {
 		const t = asLabelTrace(traces[0])
 		expect(t.x).toEqual([8.5])
 		expect(t.y).toEqual([1.75])
+		expect(t.textposition).toBe("top left")
 	})
 
 	it("texto traz nome e % do pai", () => {
