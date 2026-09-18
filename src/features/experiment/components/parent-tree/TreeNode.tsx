@@ -19,6 +19,7 @@ export default function TreeNode({
 	inactive = false,
 	selected = false,
 	expandSignal,
+	forceExpanded = false,
 }: {
 	label: ReactNode
 	children?: ReactNode
@@ -32,8 +33,11 @@ export default function TreeNode({
 	selected?: boolean
 	/** "Expandir/recolher tudo" da barra — `seq` novo aplica `expanded`. */
 	expandSignal?: { seq: number; expanded: boolean }
+	/** Busca ativa (FE-38): mantém aberto sem perder o estado do usuário. */
+	forceExpanded?: boolean
 }) {
 	const [expanded, setExpanded] = useState(defaultExpanded)
+	const open = forceExpanded || expanded
 	const expandable = Boolean(children)
 
 	useEffect(() => {
@@ -48,7 +52,7 @@ export default function TreeNode({
 	}
 
 	return (
-		<Box role="treeitem" aria-expanded={expandable ? expanded : undefined}>
+		<Box role="treeitem" aria-expanded={expandable ? open : undefined}>
 			<Box
 				onClick={activate}
 				onKeyDown={(e) => {
@@ -99,7 +103,7 @@ export default function TreeNode({
 					}}
 				>
 					{expandable &&
-						(expanded ? (
+						(open ? (
 							<ExpandMore style={{ fontSize: 18 }} />
 						) : (
 							<ChevronRight style={{ fontSize: 18 }} />
@@ -107,7 +111,7 @@ export default function TreeNode({
 				</Box>
 				<Box sx={{ flex: 1, minWidth: 0 }}>{label}</Box>
 			</Box>
-			{expandable && expanded && <Box role="group">{children}</Box>}
+			{expandable && open && <Box role="group">{children}</Box>}
 		</Box>
 	)
 }

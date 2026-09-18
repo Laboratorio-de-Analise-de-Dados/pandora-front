@@ -47,4 +47,6 @@ export interface TreeHandlers {
 	onFileInfo?: (file: ExperimentFiles) => void
 	/** Expandir/recolher todos os nós — propagado aos TreeNode. */
 	expandSignal?: ExpandSignal
+	/** Busca ativa (FE-38): nós ficam abertos para o match não ficar oculto. */
+	forceExpanded?: boolean
 }

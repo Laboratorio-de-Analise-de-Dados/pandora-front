@@ -11,6 +11,8 @@ import {
 	MdLocalOffer as TagIcon,
 	MdUnfoldMore as ExpandAllIcon,
 	MdUnfoldLess as CollapseAllIcon,
+	MdSearch as SearchIcon,
+	MdClose as ClearIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -28,8 +30,10 @@ import {
 	Tooltip,
 	Typography,
 	Divider,
+	InputAdornment,
+	TextField,
 } from "@mui/material"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import type {
 	ExperimentFiles,
 	SelectedSource,
@@ -39,6 +43,11 @@ import {
 	groupFilesBySubsample,
 	hasSubsampleLevel,
 } from "../../utils/groupBySubsample"
+import {
+	filterFilesByQuery,
+	filterGroupsByQuery,
+	normalizeQuery,
+} from "../../utils/treeFilter"
 import { useTreeInteractions } from "../../hooks/useTreeInteractions"
 import { findFileForGate, getCopyFamilyIds } from "../../../gate/utils"
 import GateEditDialog from "../../../gate/components/gate-edit-dialog"
@@ -142,9 +151,25 @@ export default function ParentTree({
 		[files, subsamples],
 	)
 	const grouped = hasSubsampleLevel(groups)
+
+	// FE-38: busca de amostras — filtra por nome, tag e subsample; enquanto
+	// filtra, os nós abrem forçado para o match não ficar oculto.
+	const [query, setQuery] = useState("")
+	const searching = normalizeQuery(query).length > 0
+	const visibleGroups = useMemo(
+		() => filterGroupsByQuery(groups, query),
+		[groups, query],
+	)
+	const visibleFiles = useMemo(
+		() => filterFilesByQuery(files, query),
+		[files, query],
+	)
+	const matchCount = grouped
+		? visibleGroups.reduce((n, g) => n + g.files.length, 0)
+		: visibleFiles.length
 	const treeHandlers = useMemo(
-		() => ({ ...handlers, selectedSource: source }),
-		[handlers, source],
+		() => ({ ...handlers, selectedSource: source, forceExpanded: searching }),
+		[handlers, source, searching],
 	)
 
 	return (
@@ -263,6 +288,37 @@ export default function ParentTree({
 					</Tooltip>
 				)}
 			</Box>
+			<TextField
+				size="small"
+				label="Buscar"
+				placeholder="nome, tag ou subsample…"
+				fullWidth
+				value={query}
+				onChange={(e) => setQuery(e.target.value)}
+				sx={{
+					mb: 0.5,
+					"& .MuiInputBase-input": { py: 0.5, fontSize: "0.8rem" },
+				}}
+				InputProps={{
+					startAdornment: (
+						<InputAdornment position="start">
+							<SearchIcon style={{ fontSize: 16 }} />
+						</InputAdornment>
+					),
+					endAdornment: searching ? (
+						<InputAdornment position="end">
+							<IconButton
+								size="small"
+								aria-label="Limpar busca"
+								onClick={() => setQuery("")}
+								sx={{ p: 0.25 }}
+							>
+								<ClearIcon style={{ fontSize: 14 }} />
+							</IconButton>
+						</InputAdornment>
+					) : undefined,
+				}}
+			/>
 			<Box
 				role="tree"
 				sx={(theme) => ({
@@ -271,8 +327,26 @@ export default function ParentTree({
 					color: theme.palette.text.primary,
 				})}
 			>
+				{searching && (
+					<Typography
+						variant="caption"
+						sx={{
+							display: "block",
+							px: 0.5,
+							pb: 0.5,
+							color: "text.secondary",
+							fontSize: "0.7rem",
+						}}
+					>
+						{matchCount > 0
+							? `${matchCount} de ${files.length} ${
+									files.length === 1 ? "amostra" : "amostras"
+								}`
+							: "Nenhuma amostra encontrada"}
+					</Typography>
+				)}
 				{grouped
-					? groups.map((group) => (
+					? visibleGroups.map((group) => (
 							<SubsampleGroupItem
 								key={
 									group.subsampleId !== null
@@ -283,7 +357,7 @@ export default function ParentTree({
 								handlers={treeHandlers}
 							/>
 						))
-					: files.map((file) => (
+					: visibleFiles.map((file) => (
 							<FileTreeItem
 								key={`file-${file.id}`}
 								file={file}
