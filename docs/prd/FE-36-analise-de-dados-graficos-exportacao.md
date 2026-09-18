@@ -4,7 +4,8 @@
 **Branch sugerida:** `feat/data-analysis-charts`
 **Status:** não iniciado.
 **Dependência:** **BE-33** (`pandora-backend` PRD — `AnalysisFigure`:
-spec + `result_cache` + `result_revision` + `is_stale` + `recompute/`).
+spec + `result_cache` regenerável + `result_revision` + fingerprint
+`is_stale` + `recompute/` + `published`).
 **Decisão 2026-09 (rev.):** a figura é um **objeto persistido com
 procedência** — não um chart efêmero. Grupos de réplicas são definidos
 **por figura** no spec (pergunta de análise varia: "por dia" vs. "por
@@ -13,6 +14,13 @@ binding no modelo. Fase 1 (galeria + gráficos + export) no v1; fase 2
 (testes estatísticos entre grupos) usa os próprios `spec.groups` como
 agrupamento — o pré-requisito de agrupamento foi resolvido pelo desenho
 do BE-33.
+**Decisão 2026-09 (rev.2):** o cache da figura é **efêmero e
+regenerável** (filosofia L2 do Parquet) — a verdade é spec + revisão de
+origem + log de revisões; sem tabela de versões de resultado. Badge de
+staleness é **preciso** (só acusa quando a revisão tocou nos alvos da
+figura) — badge que grita lobo perde credibilidade. `published` trava a
+figura de relatório contra edição acidental, e o recompute **confirma o
+diff** do que deixou de resolver antes do usuário aceitar.
 
 ## Problema
 
@@ -83,23 +91,36 @@ que vai parar no relatório.
 #### 5. Procedência e confiança
 
 - Badge "dados atualizados" / **"desatualizada"** vindo do `is_stale`
-  do BE-33: se a análise mudou depois da geração, a figura avisa e
-  oferece **"Recomputar"** (`POST .../recompute/`) — o usuário controla
-  quando a figura absorve dados novos; re-gating não corrompe
-  silenciosamente a figura do relatório.
+  por fingerprint do BE-33: a figura só acusa quando uma revisão nova
+  **tocou nos gates/amostras que ela usa** (ou operação experiment-wide:
+  apply, merge, compensação) — mexer em gate não relacionado não suja a
+  figura. Badge preciso = badge confiável.
+- **Recomputar** (`POST .../recompute/`) — o usuário controla quando a
+  figura absorve dados novos; re-gating não corrompe silenciosamente a
+  figura do relatório. Se a resposta trouxer `removed_since_last`
+  (populações/amostras que deixaram de resolver), abrir `useConfirm()`
+  com o diff antes de aceitar: *"P1.Q1 não resolve mais; Specimen_03 foi
+  removida — confirmar?"*.
+- Seção `unmatched` do cache visível no detalhe ("P1.Q1 não resolve"),
+  e `meta.warnings` exibidos como aviso ("3 amostras ainda
+  processando") — figura incompleta nunca parece completa.
+- **`published`**: toggle no detalhe que trava a figura contra edição de
+  spec e recompute (backend devolve 409) — a figura citada no relatório
+  não muda sem ação explícita de despublicar.
 - Detalhe da figura exibe a revisão de origem (`result_revision` +
   data) — rastreável até a timeline (FE-30 já existe).
 - Editando o `spec` (grupos/populações) a figura salva pede recompute —
-  nunca regravar cache mudo no front.
+  nunca regravar cache mudo no front; `PATCH` envia `updated_at` e trata
+  412 como "a figura mudou em outra aba — recarregar".
 
 #### 6. Export de imagem
 
 - PNG e SVG via `Plotly.toImage` (Plotly já é dependência — não adicionar
   lib de canvas). Botão "Exportar figura" por gráfico; nome default
   `<experimento>-<figura>.png`.
-- **Carimbo de procedência no export**: o CSV da figura inclui
-  `result_revision`/`computed_at` no cabeçalho — o arquivo de saída diz
-  de qual estado da análise saiu.
+- **Carimbo de procedência no export**: o CSV da figura inclui no
+  cabeçalho `figure_id`, revisão de origem e `computed_at` — o arquivo
+  de saída volta pro objeto exato e diz de qual estado da análise saiu.
 - Export da tabela de dados da figura em CSV reutilizando
   `exportRows`/`downloadFile` de `src/features/stats/utils/exportHelpers.ts`.
 
@@ -130,7 +151,7 @@ que vai parar no relatório.
 ## Critérios de aceite (fase 1)
 
 - [ ] Página de análise acessível a partir do workspace; galeria lista
-      figuras salvas com autor e badge de staleness
+      figuras salvas com autor, badge de staleness e selo `published`
 - [ ] `GroupBuilder`: preset "agrupar por subsample" + edição livre de
       grupos; amostra fora de grupo não entra na figura
 - [ ] Gráfico de stats: selecionar população + métrica + canal → grupos
@@ -138,10 +159,13 @@ que vai parar no relatório.
 - [ ] Amostra sem o gate aparece como ausente, não como zero
 - [ ] Distribuição: sobrepor amostras/gates dos grupos num canal com
       legenda
-- [ ] Figura `is_stale` mostra badge + "Recomputar"; após recompute o
-      badge some e os dados atualizam
-- [ ] Export PNG/SVG legível; export CSV carimbado com a revisão de
-      origem e batendo com os dados plotados
+- [ ] Figura `is_stale` mostra badge + "Recomputar"; recompute com
+      `removed_since_last` pede confirmação com o diff antes de aceitar
+- [ ] `unmatched` e `meta.warnings` visíveis no detalhe da figura
+- [ ] `published` trava edição/recompute (409 tratado com mensagem);
+      despublicar reabilita
+- [ ] Export PNG/SVG legível; export CSV carimbado com `figure_id` +
+      revisão de origem e batendo com os dados plotados
 - [ ] Tudo TanStack Query; gráficos em Plotly (nenhuma lib nova)
 
 ## Fora de escopo
@@ -155,7 +179,8 @@ que vai parar no relatório.
   diferentes) — `spec.groups` só aceita `file_data_ids` do próprio
   experimento; a derivação (FE-28) cobre "mesma aquisição";
   cross-experimento real é visão futura (área top-level).
-- Versionamento do spec da figura (histórico de edições) — v1 guarda só
-  o estado atual; a timeline da análise já cobre a mudança dos dados.
+- Versionamento do spec e histórico de resultados da figura — decisão
+  registrada: cache regenerável + log de revisões cobrem a trilha; não
+  criar tabela de versões (rev.2 do BE-33).
 - Export do plot de gating (scatter/density do workspace) — já coberto
   pelo botão nativo do Plotly se quiserem habilitar; não é esta entrega.
