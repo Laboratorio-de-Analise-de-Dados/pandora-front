@@ -31,5 +31,4 @@ serviços) ou alinhe com o responsável.
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Google SSO — ativação (fase 2) | UI já pronta (botão via `providers.google`); falta só credencial no backend. Decisão 2026-09: ativar antes da virada para v1 em prod — ver PRD BE-29 no backend |
 | "Buscar amostras" na árvore    | Follow-up registrado no FE-26                                                                                                                                   |
-| FE-28 derivar análise          | Backend pronto — `POST /experiment/<id>/derive-analysis/`                                                                                                       |
-| FE-29 branches de análise      | Backend pronto — `?branch=` + `/analytics/branches/*`                                                                                                           |
+| FE-36 análise de dados — fase 1 | Gráficos comparativos de stats + distribuições + export PNG/SVG (v1). ANOVA é fase 2 — depende de agrupamento de réplicas. Ver PRD |
