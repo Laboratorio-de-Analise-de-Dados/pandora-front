@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { buildGateHoverTraces, gateHoverTemplate } from "./gateHoverTraces"
+import {
+	buildGateHoverTraces,
+	buildGateLabelTraces,
+	gateHoverTemplate,
+} from "./gateHoverTraces"
 import type { Gate } from "../../../types"
 import type { GateShape } from "../hooks/useGateShapes"
 
@@ -136,5 +140,114 @@ describe("buildGateHoverTraces", () => {
 			makeShape({ _gateId: 2, _gateData: g2, x0: 2, x1: 3, y0: 2, y1: 3 }),
 		]
 		expect(buildGateHoverTraces(shapes)).toHaveLength(2)
+	})
+})
+
+interface LabelTrace {
+	x?: number[]
+	y?: number[]
+	text?: string
+	mode?: string
+	hoverinfo?: string
+}
+
+const asLabelTrace = (t: Plotly.Data): LabelTrace => t as unknown as LabelTrace
+
+const quadGate = (
+	quadrant: "Q1" | "Q2" | "Q3" | "Q4",
+	over: Partial<Gate> = {},
+): Gate =>
+	makeGate({
+		gate_coordinates: {
+			type: "quadrant",
+			quadrant,
+			x_axis: "FSC-A",
+			y_axis: "SSC-A",
+			center_x: 4,
+			center_y: 7,
+		},
+		analysis_result: {
+			analysis_result: {
+				summary_metrics: {
+					count: 100,
+					percent_of_parent_population: 0.25,
+					percent_of_total_population: 0.25,
+				},
+			},
+		},
+		...over,
+	})
+
+// Cruz em (4,7) num plot de range [0,10]×[0,10].
+const quadShapes = (gate: Gate, swapped = false): GateShape[] => [
+	makeShape({
+		type: "line",
+		x0: 4,
+		x1: 4,
+		y0: 0,
+		y1: 1,
+		yref: "paper",
+		_gateData: gate,
+		_swapped: swapped,
+	}),
+	makeShape({
+		type: "line",
+		x0: 0,
+		x1: 1,
+		xref: "paper",
+		y0: 7,
+		y1: 7,
+		_gateData: gate,
+		_swapped: swapped,
+	}),
+]
+
+describe("buildGateLabelTraces", () => {
+	const RANGE = [0, 10]
+
+	it("posiciona o texto no centro da região de cada quadrante", () => {
+		const expected: Record<string, [number, number]> = {
+			Q1: [7, 8.5], // X+ Y+ → direita/cima
+			Q2: [2, 8.5], // X- Y+ → esquerda/cima
+			Q3: [2, 3.5], // X- Y- → esquerda/baixo
+			Q4: [7, 3.5], // X+ Y- → direita/baixo
+		}
+		for (const [q, [ex, ey]] of Object.entries(expected)) {
+			const gate = quadGate(q as "Q1")
+			const traces = buildGateLabelTraces(quadShapes(gate), RANGE, RANGE)
+			expect(traces).toHaveLength(1)
+			const t = asLabelTrace(traces[0])
+			expect(t.x).toEqual([ex])
+			expect(t.y).toEqual([ey])
+			expect(t.mode).toBe("text")
+			expect(t.hoverinfo).toBe("skip")
+		}
+	})
+
+	it("eixos trocados invertem a direção da região (Q2 ↔ Q4)", () => {
+		const gate = quadGate("Q2") // X- Y+ → troca vira direita/baixo
+		const traces = buildGateLabelTraces(quadShapes(gate, true), RANGE, RANGE)
+		const t = asLabelTrace(traces[0])
+		expect(t.x).toEqual([7])
+		expect(t.y).toEqual([3.5])
+	})
+
+	it("texto traz nome e % do pai", () => {
+		const traces = buildGateLabelTraces(
+			quadShapes(quadGate("Q1", { name: "Q1 (X+Y+)" })),
+			RANGE,
+			RANGE,
+		)
+		expect(asLabelTrace(traces[0]).text).toBe("Q1 (X+Y+)<br>(25.0%)")
+	})
+
+	it("sem métricas, mostra só o nome", () => {
+		const gate = quadGate("Q1", { analysis_result: undefined })
+		const traces = buildGateLabelTraces(quadShapes(gate), RANGE, RANGE)
+		expect(asLabelTrace(traces[0]).text).toBe("CD3+")
+	})
+
+	it("ignora gates que não são quadrante", () => {
+		expect(buildGateLabelTraces([makeShape({})], RANGE, RANGE)).toHaveLength(0)
 	})
 })

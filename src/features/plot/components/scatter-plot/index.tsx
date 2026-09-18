@@ -27,7 +27,10 @@ import { getCopyFamilyIds } from "../../../gate/utils"
 import { COFACTOR } from "../../utils/biex"
 import { buildTicks } from "../../utils/ticks"
 import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
-import { buildGateHoverTraces } from "../../utils/gateHoverTraces"
+import {
+	buildGateHoverTraces,
+	buildGateLabelTraces,
+} from "../../utils/gateHoverTraces"
 import { buildAxisRange } from "../../utils/plotAxes"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
@@ -389,6 +392,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const xTicks = buildTicks(xAxisRange, effXScale, effCof)
 	const yTicks = buildTicks(yAxisRange, effYScale, effCof)
 
+	// Labels de "% do pai" para gates sem área rotulável (quadrantes): um
+	// texto no centro de cada região da cruz. Retângulo/polígono/intervalo
+	// já levam o label no próprio shape.
+	const gateLabelTraces = buildGateLabelTraces(
+		gateShapes,
+		xAxisRange,
+		yAxisRange,
+	)
+
 	const dragmode: "select" | "lasso" | "pan" | false =
 		tool === "edit" || reshapingGateId !== null
 			? "pan"
@@ -589,7 +601,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											? "edit-mode"
 											: `draw-mode-${drawRevision}`
 									}
-									data={[...plotData, ...gateHoverTraces]}
+									data={[...plotData, ...gateHoverTraces, ...gateLabelTraces]}
 									useResizeHandler
 									style={{ width: "100%", height: "100%" }}
 									config={

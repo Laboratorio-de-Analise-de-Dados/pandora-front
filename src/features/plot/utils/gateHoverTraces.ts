@@ -60,6 +60,16 @@ const fillTrace = (
 	showlegend: false,
 })
 
+const groupByGate = (shapes: GateShape[]): Map<number, GateShape[]> => {
+	const byGate = new Map<number, GateShape[]>()
+	for (const s of shapes) {
+		const group = byGate.get(s._gateId)
+		if (group) group.push(s)
+		else byGate.set(s._gateId, [s])
+	}
+	return byGate
+}
+
 /**
  * Converte os shapes dos gates em traces transparentes que só existem para o
  * hover: shapes do Plotly não emitem eventos, então cada gate vira um polígono
@@ -71,12 +81,7 @@ export const buildGateHoverTraces = (
 	shapes: GateShape[],
 	histogramMaxY = 1,
 ): Plotly.Data[] => {
-	const byGate = new Map<number, GateShape[]>()
-	for (const s of shapes) {
-		const group = byGate.get(s._gateId)
-		if (group) group.push(s)
-		else byGate.set(s._gateId, [s])
-	}
+	const byGate = groupByGate(shapes)
 
 	const traces: Plotly.Data[] = []
 	for (const group of byGate.values()) {
@@ -129,6 +134,82 @@ export const buildGateHoverTraces = (
 				showlegend: false,
 			})
 		}
+	}
+	return traces
+}
+
+// Nome de trace reservado para os labels de % dentro da região do gate.
+const LABEL_TRACE_NAME = "__gate-label__"
+
+// Sinal de cada quadrante nos eixos crus do gate: [xSign, ySign].
+const QUADRANT_DIR: Record<string, [number, number]> = {
+	Q1: [1, 1],
+	Q2: [-1, 1],
+	Q3: [-1, -1],
+	Q4: [1, -1],
+}
+
+/** "P1<br>(94.9%)" — mesmo formato do `label` de shape. */
+const gateLabelText = (gate: Gate): string => {
+	const percent =
+		gate.analysis_result?.analysis_result?.summary_metrics
+			?.percent_of_parent_population
+	return percent != null
+		? `${gate.name}<br>(${(percent * 100).toFixed(1)}%)`
+		: gate.name
+}
+
+/**
+ * Labels de "% do pai" dentro da região de gates que não têm área própria
+ * para o `label` de shape — hoje só o quadrante (4 gates dividem a mesma
+ * cruz, então cada um rotula a sua região). A posição é o ponto médio entre
+ * o centro da cruz e a borda do range visível; eixos "swapped" trocam a
+ * direção X↔Y na tela.
+ */
+export const buildGateLabelTraces = (
+	shapes: GateShape[],
+	xRange: number[],
+	yRange: number[],
+): Plotly.Data[] => {
+	const traces: Plotly.Data[] = []
+	for (const group of groupByGate(shapes).values()) {
+		const gate = group[0]._gateData
+		const gc = gate.gate_coordinates
+		if (!gc || gc.type !== "quadrant") continue
+		const dir = QUADRANT_DIR[gc.quadrant]
+		if (!dir) continue
+
+		const vline = group.find((s) => s.type === "line" && s.yref === "paper")
+		const hline = group.find((s) => s.type === "line" && s.xref === "paper")
+		if (
+			!vline ||
+			!hline ||
+			typeof vline.x0 !== "number" ||
+			typeof hline.y0 !== "number"
+		)
+			continue
+
+		const cx = vline.x0
+		const cy = hline.y0
+		const swapped = group[0]._swapped
+		// Eixo trocado: o X cru passa a controlar o Y da tela (e vice-versa).
+		const xDir = swapped ? dir[1] : dir[0]
+		const yDir = swapped ? dir[0] : dir[1]
+		const lx = xDir > 0 ? (cx + xRange[1]) / 2 : (cx + xRange[0]) / 2
+		const ly = yDir > 0 ? (cy + yRange[1]) / 2 : (cy + yRange[0]) / 2
+
+		traces.push({
+			type: "scatter",
+			mode: "text",
+			x: [lx],
+			y: [ly],
+			text: gateLabelText(gate),
+			textposition: "middle center",
+			textfont: { size: 11, color: vline.line.color },
+			hoverinfo: "skip",
+			name: LABEL_TRACE_NAME,
+			showlegend: false,
+		})
 	}
 	return traces
 }
