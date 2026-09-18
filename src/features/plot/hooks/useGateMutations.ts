@@ -2,6 +2,7 @@ import { useCallback } from "react"
 import { toast } from "react-toastify"
 import {
 	deleteGate as deleteGateById,
+	deleteGatesBatch,
 	updateGate,
 } from "../../../services/gateService"
 import type { GateScope } from "../../../services/gateService"
@@ -56,6 +57,29 @@ export function useGateMutations(loadFile: () => void) {
 	)
 
 	/**
+	 * Exclusão em lote no escopo da amostra (família de quadrantes, por ex.).
+	 * `recursive` leva os sub-gates junto — o backend recusa sem ele e a
+	 * CASCADE de parent apagaria a subárvore sem aviso.
+	 */
+	const deleteGates = useCallback(
+		async (gates: Gate[]) => {
+			if (gates.length === 0) return
+			try {
+				const result = await deleteGatesBatch({
+					source_gate_ids: gates.map((g) => g.id),
+					scope: "file",
+					recursive: true,
+				})
+				toast.success(`${result.deleted} gate(s) excluído(s)`)
+				loadFile()
+			} catch (error: unknown) {
+				toast.error(`Erro ao excluir gates: ${extractErrorMessage(error)}`)
+			}
+		},
+		[loadFile],
+	)
+
+	/**
 	 * Salva nome e cor. Com `scope="experiment"` o backend replica nas cópias do
 	 * gate nas outras amostras e devolve os ids propagados e os conflitos de nome.
 	 * Devolve a mensagem de erro (para o diálogo exibir) ou `null` em caso de
@@ -93,5 +117,5 @@ export function useGateMutations(loadFile: () => void) {
 		[loadFile],
 	)
 
-	return { patchCoordinates, deleteGate, saveGateNameColor }
+	return { patchCoordinates, deleteGate, deleteGates, saveGateNameColor }
 }

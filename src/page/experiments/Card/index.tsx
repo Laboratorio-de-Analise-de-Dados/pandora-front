@@ -35,6 +35,7 @@ import { extractErrorMessage } from "../../../utils/apiError"
 import ExperimentContextDialog, {
 	ContextDialogMode,
 } from "../../../features/experiment/components/ExperimentContextDialog"
+import DeriveAnalysisDialog from "../../../features/experiment/components/DeriveAnalysisDialog"
 import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
 import ExperimentDetailsDialog from "../../../features/experiment/components/ExperimentDetailsDialog"
 import ExperimentPreview from "../../../features/experiment/components/ExperimentPreview"
@@ -59,6 +60,7 @@ export default function ExperimentCard({
 	const [restoreOpen, setRestoreOpen] = useState(false)
 	const [restoring, setRestoring] = useState(false)
 	const [detailsOpen, setDetailsOpen] = useState(false)
+	const [deriveOpen, setDeriveOpen] = useState(false)
 	const [editOpen, setEditOpen] = useState(false)
 	const [historyOpen, setHistoryOpen] = useState(false)
 	const [savingExperiment, setSavingExperiment] = useState(false)
@@ -301,6 +303,16 @@ export default function ExperimentCard({
 					<MenuItem
 						onClick={() => {
 							setMenuAnchor(null)
+							setDeriveOpen(true)
+						}}
+					>
+						<ListItemText>Derivar análise de…</ListItemText>
+					</MenuItem>
+				) : null}
+				{canEdit ? (
+					<MenuItem
+						onClick={() => {
+							setMenuAnchor(null)
 							setEditError(null)
 							setEditOpen(true)
 						}}
@@ -340,6 +352,14 @@ export default function ExperimentCard({
 					error={editError}
 					onClose={() => setEditOpen(false)}
 					onSave={handleSaveExperiment}
+				/>
+			)}
+			{deriveOpen && (
+				<DeriveAnalysisDialog
+					open
+					target={experiment}
+					onClose={() => setDeriveOpen(false)}
+					onDone={refresh}
 				/>
 			)}
 			<ExperimentHistoryDrawer

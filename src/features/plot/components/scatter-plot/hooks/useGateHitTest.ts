@@ -37,6 +37,13 @@ interface GateHit {
 	swapped: boolean
 }
 
+// Quadrantes cobrem o plot inteiro — testam por último para que um gate
+// com área própria (retângulo, polígono) sobreposto à região vença.
+const orderForHitTest = (shapes: GateShape[]): GateShape[] => [
+	...shapes.filter((s) => s._gateData?.gate_coordinates?.type !== "quadrant"),
+	...shapes.filter((s) => s._gateData?.gate_coordinates?.type === "quadrant"),
+]
+
 export function useGateHitTest({
 	plotContainerRef,
 	gateShapes,
@@ -62,7 +69,7 @@ export function useGateHitTest({
 			const dataY = yax.p2d(py - yax._offset)
 			if (dataX == null || dataY == null) return null
 
-			for (const shape of gateShapes) {
+			for (const shape of orderForHitTest(gateShapes)) {
 				if (!shape._gateData) continue
 				const gc = shape._gateData.gate_coordinates
 				const swapped = shape._swapped ?? false
@@ -86,7 +93,7 @@ export function useGateHitTest({
 			dataY: number,
 			filter?: (gate: Gate) => boolean,
 		): GateHit | null => {
-			for (const shape of gateShapes) {
+			for (const shape of orderForHitTest(gateShapes)) {
 				if (!shape._gateData) continue
 				if (filter && !filter(shape._gateData)) continue
 				const gc = shape._gateData.gate_coordinates

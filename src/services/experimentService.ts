@@ -153,6 +153,38 @@ export const moveExperiment = async (
 	return res.data
 }
 
+export interface DeriveAnalysisPayload {
+	source_experiment_id: number
+	include_subsamples?: boolean
+	include_compensation?: boolean
+}
+
+export interface DeriveAnalysisReport {
+	source_experiment_id: number
+	matched_files: number
+	created_gates: number
+	skipped_files: { id: number; file_name: string; reason: string }[]
+	unmatched_source_files: { id: number; file_name: string }[]
+	unmatched_target_files: { id: number; file_name: string }[]
+	subsamples_created: string[]
+	compensation_applied: boolean
+}
+
+/** FE-28: deriva a árvore de gates de outro experimento sobre este
+ * (BE-19, ADR-0021). Casa amostras por content_guid (fallback
+ * file_name); o backend exige edição nos dois lados e pula amostras
+ * que já têm gates. */
+export const deriveAnalysis = async (
+	targetId: number,
+	payload: DeriveAnalysisPayload,
+): Promise<DeriveAnalysisReport> => {
+	const res = await CytometryApi.post(
+		`/experiment/${targetId}/derive-analysis`,
+		payload,
+	)
+	return res.data
+}
+
 export interface FileHashCheckResponse {
 	exists: boolean
 	file_name: string | null

@@ -15,6 +15,10 @@ export const GATE_PALETTE = [
 
 export type GatePaletteColor = (typeof GATE_PALETTE)[number]
 
+// Texto dos labels de gate no plot: cor da fonte do gráfico (não a cor
+// do gate) — cores claras de gate ficavam ilegíveis no fundo claro.
+export const GATE_LABEL_COLOR = "rgba(0,0,0,0.78)"
+
 export const getGateColor = (
 	explicitColor: string | null | undefined,
 	index: number,
