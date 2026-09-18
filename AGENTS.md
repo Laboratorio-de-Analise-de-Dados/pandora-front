@@ -73,6 +73,11 @@ Definido pelo `.prettierrc` e observado no código existente:
   `timeZone` nem exiba a string UTC crua.
 - Funções puras em `utils/` (testáveis); estado/side-effects em custom hooks
 - Testes colocados ao lado do código: `foo.ts` → `foo.test.ts`
+- **Dialogs são componentes nossos** (ADR-0014): confirmação pontual usa
+  `useConfirm()` (`ConfirmDialogProvider` em `App.tsx`); dialog dedicado
+  usa o shell `src/components/AppDialog`. Nunca `window.confirm/alert/
+prompt` nem `Dialog` MUI cru em código novo — ao tocar um dialog
+  existente, migrar para o `AppDialog`.
 
 ## Regra de dependência (ADR-0001, ADR-0008)
 
