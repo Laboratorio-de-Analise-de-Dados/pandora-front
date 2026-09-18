@@ -8,6 +8,11 @@ export interface Experiment {
 	active: boolean
 	/** Ciclo de vida do processamento (`new|uploading|processing|done|error`). */
 	status?: string
+	/** Motivo da falha quando `status === "error"` (BE-31). */
+	error_info?: {
+		error_message?: string
+		attempts?: number
+	} | null
 	organization: Organization | null
 	created_by: number
 	/** Username do criador (ListExperimentSerializer); ausente se o back ainda não expõe. */

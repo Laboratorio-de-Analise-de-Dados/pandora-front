@@ -78,8 +78,10 @@ export const uploadExperimentChunk = async (
 
 export const completeExperimentUpload = async (
 	fileId: number,
-	fileName: string,
+	fileName?: string,
 ): Promise<void> => {
+	// `fileName` é opcional: na retomada (BE-31) o back reusa o ZIP já
+	// montado e ignora o nome.
 	await CytometryApi.post("/experiment/complete/", { fileId, fileName })
 }
 

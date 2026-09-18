@@ -12,6 +12,7 @@ import {
 	ListItemText,
 	Menu,
 	MenuItem,
+	Tooltip,
 	Typography,
 } from "@mui/material"
 import { toast } from "react-toastify"
@@ -112,7 +113,7 @@ export default function ExperimentCard({
 			)
 		}
 		if (experiment.status === "error") {
-			return (
+			const chip = (
 				<Chip
 					label="Erro no processamento"
 					size="small"
@@ -120,6 +121,15 @@ export default function ExperimentCard({
 					variant="outlined"
 					sx={{ height: 22, fontSize: "0.7rem" }}
 				/>
+			)
+			// FE-33: o motivo real da falha aparece no hover/touch.
+			const reason = experiment.error_info?.error_message
+			return reason ? (
+				<Tooltip title={reason} arrow>
+					{chip}
+				</Tooltip>
+			) : (
+				chip
 			)
 		}
 		// "new" (BE-24) = criado sem arquivo — não está na fila de nada,

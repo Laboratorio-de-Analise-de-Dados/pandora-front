@@ -12,7 +12,9 @@ export interface SubsampleGroup {
  * Agrupa amostras por subsample preservando a ordem da API. O grupo
  * "Sem subsample" (id null) vai por último. Arquivo referenciando um id que não
  * veio na lista mantém grupo próprio com `subsample` null — nunca se funde com
- * "Sem subsample". Função pura (ADR-0008).
+ * "Sem subsample". Subsample sem arquivo também vira grupo (vazio) — criar um
+ * subsample na UI serve justamente para receber arquivos depois. Função pura
+ * (ADR-0008).
  */
 export function groupFilesBySubsample(
 	files: ExperimentFiles[],
@@ -20,6 +22,13 @@ export function groupFilesBySubsample(
 ): SubsampleGroup[] {
 	const byId = new Map(subsamples.map((s) => [s.id, s]))
 	const groups = new Map<number | null, SubsampleGroup>()
+	for (const subsample of subsamples) {
+		groups.set(subsample.id, {
+			subsampleId: subsample.id,
+			subsample,
+			files: [],
+		})
+	}
 	for (const file of files) {
 		const key = file.subsample ?? null
 		let group = groups.get(key)
