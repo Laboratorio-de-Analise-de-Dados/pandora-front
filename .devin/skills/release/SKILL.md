@@ -21,7 +21,7 @@ environment `production` (aprovável via API, ver passo 5).
 
 Antes de publicar, tudo que entra na release já tem que estar
 **verificado**: CI verde na `main`, typecheck/testes/build locais, QA e
-review fechados. Depois do deploy só se confere o *deploy* — container
+review fechados. Depois do deploy só se confere o _deploy_ — container
 subiu, health check, versão certa no ar — nunca a feature.
 
 E pipeline novo também é código não testado: se `release.yml` ou
@@ -42,10 +42,10 @@ Montar a lista das PRs/commits que entraram desde a última tag.
 
 ## Passo 2 — propor a versão (semver)
 
-| O que entrou | Bump |
-|---|---|
-| Só fixes/docs/ci | patch (`v1.0.0` → `v1.0.1`) |
-| Features novas | minor (`v1.0.0` → `v1.1.0`) |
+| O que entrou                       | Bump                                                |
+| ---------------------------------- | --------------------------------------------------- |
+| Só fixes/docs/ci                   | patch (`v1.0.0` → `v1.0.1`)                         |
+| Features novas                     | minor (`v1.0.0` → `v1.1.0`)                         |
 | Quebra de contrato/compatibilidade | major (`v1.x` → `v2.0.0`) — confirmar com o usuário |
 
 Se o usuário passou a versão/escopo explicitamente, usar o que ele pediu.
@@ -98,3 +98,10 @@ Alternativa: o usuário aprova na UI (Actions → run → Review deployments).
 - Versões são **independentes** (`v*` em cada repo).
 - Se a feature depende de endpoint novo do backend, a release do **back
   tem que ter ido antes** — confirmar com o usuário antes de publicar.
+
+## Passo 7 — atualizar o board
+
+Deploy verificado = os cards das features que entraram na release vão
+para 🚀 Em produção, com comentário citando a tag. O que está mergeado
+mas ainda não saiu em release permanece em 📦 Entregue. Convenções do
+board na skill `/trello-board`.

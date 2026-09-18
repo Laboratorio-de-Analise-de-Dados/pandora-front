@@ -112,6 +112,12 @@ feature conflita com uma linha ativa, pegue outra ou alinhe antes. Ao
 assumir trabalho novo, registre sua linha no tracker no mesmo commit;
 ao concluir, atualize.
 
+Status de pipeline **não** vive no tracker nem em PRD — fica no Trello,
+board "Pandora — Implementações" (skill `/trello-board`): coluna =
+andamento, etiqueta = prioridade, checklist do card = aceitação. Ao
+assumir feature com card, mova-o para 🔨 Em andamento; ao mergear na
+main, 📦 Entregue; 🚀 Em produção só depois de release deployada.
+
 ## Git
 
 - `main` é protegida — trabalhe em `feature/*` ou `devin/*`, nunca commit direto

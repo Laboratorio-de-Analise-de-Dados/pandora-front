@@ -36,6 +36,8 @@ antes do PRD.
 **Repo:** pandora-front · **Tipo:** feature|fix|refactor · **Base:** `main`
 **Branch sugerida:** `feat/<slug>`
 **Status:** não iniciado | em andamento | entregue.
+(estado na criação — depois disso o status vive no card do Trello; não
+edite o PRD para mudar status nem para marcar checklist)
 
 ## Problema
 
