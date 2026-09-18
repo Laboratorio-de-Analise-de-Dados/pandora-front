@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest"
 import { commonTagIds, computeTagTargets } from "./tagTargets"
+import { tagInitials } from "./tagInitials"
 import type { ExperimentFiles, SampleTag } from "../../../types"
+
+describe("tagInitials", () => {
+	it("pega a inicial de cada palavra (máx. 3)", () => {
+		expect(tagInitials("Referência biológica")).toBe("RB")
+		expect(tagInitials("Negativo (unstained)")).toBe("NU")
+		expect(tagInitials("lote 3")).toBe("L3")
+	})
+
+	it("palavra única pega até 3 letras", () => {
+		expect(tagInitials("FMO")).toBe("FMO")
+		expect(tagInitials("beads")).toBe("BEA")
+	})
+})
 
 const tag = (id: number): SampleTag => ({
 	id,

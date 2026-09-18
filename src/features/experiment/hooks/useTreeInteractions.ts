@@ -408,6 +408,7 @@ export function useTreeInteractions({
 		tagDialog: {
 			targets: tagTargets,
 			submit: onSaveFileTags,
+			open: (file: ExperimentFiles) => setTagTargets([file]),
 			close: () => {
 				setTagTargets([])
 				setSelectedFileIds(new Set())

@@ -92,10 +92,10 @@ export default function FileTreeItem({
 						/>
 					)}
 					{(file.tags ?? []).map((tag) => (
-						<TagChip key={`tag-${tag.id}`} tag={tag} />
+						<TagChip key={`tag-${tag.id}`} tag={tag} compact />
 					))}
 					{(file.inherited_tags ?? []).map((tag) => (
-						<TagChip key={`inh-${tag.id}`} tag={tag} inherited />
+						<TagChip key={`inh-${tag.id}`} tag={tag} inherited compact />
 					))}
 					<Box sx={{ ml: "auto", display: "flex", flexShrink: 0 }}>
 						{handlers.onFileInfo && (

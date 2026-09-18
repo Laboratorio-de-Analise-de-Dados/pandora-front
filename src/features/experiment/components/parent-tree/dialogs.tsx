@@ -22,6 +22,7 @@ import {
 import { useEffect, useState } from "react"
 import type { ExperimentFiles, Subsample } from "../../../../types"
 import { fetchFileHeaders } from "../../../../services/experimentService"
+import TagChip from "../../../tags/components/TagChip"
 
 /**
  * Cria ou renomeia um subsample. Com `target` é rename (mostra o `source_path`
@@ -435,9 +436,12 @@ const MetadataTable = ({
 export function FileMetadataDialog({
 	file,
 	onClose,
+	onEditTags,
 }: {
 	file: ExperimentFiles | null
 	onClose: () => void
+	/** Abre o picker de tags (BE-34) — omitido sem permissão de edição. */
+	onEditTags?: (file: ExperimentFiles) => void
 }) {
 	const [headers, setHeaders] = useState<Record<string, unknown> | null>(null)
 	const [error, setError] = useState<string | null>(null)
@@ -510,6 +514,43 @@ export function FileMetadataDialog({
 				</Box>
 			</DialogTitle>
 			<DialogContent>
+				<Box
+					sx={{
+						display: "flex",
+						flexWrap: "wrap",
+						alignItems: "center",
+						gap: 0.75,
+						mb: 1.5,
+					}}
+				>
+					<Typography
+						variant="overline"
+						sx={{ color: "text.secondary", mr: 0.5 }}
+					>
+						Tags
+					</Typography>
+					{(file?.tags ?? []).map((tag) => (
+						<TagChip key={`tag-${tag.id}`} tag={tag} />
+					))}
+					{(file?.inherited_tags ?? []).map((tag) => (
+						<TagChip key={`inh-${tag.id}`} tag={tag} inherited />
+					))}
+					{(file?.tags ?? []).length === 0 &&
+						(file?.inherited_tags ?? []).length === 0 && (
+							<Typography variant="caption" color="text.secondary">
+								Nenhuma
+							</Typography>
+						)}
+					{onEditTags && file && (
+						<Button
+							size="small"
+							onClick={() => onEditTags(file)}
+							sx={{ textTransform: "none", ml: "auto" }}
+						>
+							Editar etiquetas…
+						</Button>
+					)}
+				</Box>
 				{error && (
 					<Typography variant="body2" color="error">
 						{error}

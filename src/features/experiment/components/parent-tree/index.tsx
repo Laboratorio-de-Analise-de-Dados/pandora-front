@@ -509,6 +509,14 @@ export default function ParentTree({
 			<FileMetadataDialog
 				file={metadataDialog.file}
 				onClose={metadataDialog.close}
+				onEditTags={
+					onSaveFileTags
+						? (f) => {
+								metadataDialog.close()
+								tagDialog.open(f)
+							}
+						: undefined
+				}
 			/>
 
 			{controlDialog.submit && (
