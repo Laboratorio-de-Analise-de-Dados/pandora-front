@@ -25,18 +25,23 @@ migração exige um padrão assíncrono no hook.
 
 ## Escopo
 
-### 1. Componente `ConfirmDialog` compartilhado
+### 1. Shell `AppDialog` + `ConfirmDialog`
 
-`src/components/ConfirmDialog/index.tsx` (componente de UI genérico,
-fora de features):
+`src/components/AppDialog/index.tsx` (novo) — shell base que encapsula
+a anatomia padrão (`Dialog` MUI `fullWidth` + título + corpo + ações
+Cancelar/Confirmar) no tema da app. Dialogs novos partem dele e só
+trocam o conteúdo (`children`), com `actions` customizável e
+`confirmColor="error"` para ações destrutivas. Os ~15 dialogs
+existentes (`RevertDialog`, `DeleteGateDialog`, merge/unlink...) migram
+para ele incrementalmente conforme forem tocados — sem refactor em
+massa neste PRD.
 
-- Props: `open`, `title`, `description` (ou `children`), `confirmLabel`
-  (default "Confirmar"), `cancelLabel` (default "Cancelar"),
-  `severity` (`"default" | "danger"` — danger pinta o botão de `error`),
-  `loading`, `onConfirm`, `onCancel`.
-- `Dialog` MUI com `fullWidth`, título, corpo e `DialogActions`
-  (Cancelar / Confirmar) — mesma anatomia dos dialogs já existentes
-  (merge/unlink no `ConnectedAccounts`, `RevertDialog`).
+`src/components/ConfirmDialog/index.tsx` — confirmação bloqueante
+construída sobre o `AppDialog`:
+
+- `severity` (`"default" | "danger"` — danger pinta o botão de `error`).
+- Mesma anatomia dos dialogs já existentes (merge/unlink no
+  `ConnectedAccounts`, `RevertDialog`).
 
 ### 2. Hook `useConfirm` via provider (padrão assíncrono)
 

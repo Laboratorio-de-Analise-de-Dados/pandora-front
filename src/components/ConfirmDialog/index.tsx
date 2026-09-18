@@ -5,14 +5,8 @@ import React, {
 	useRef,
 	useState,
 } from "react"
-import {
-	Button,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	Typography,
-} from "@mui/material"
+import { Typography } from "@mui/material"
+import { AppDialog } from "../AppDialog"
 
 /**
  * Confirmação bloqueante no padrão MUI (ADR-0014) — substitui o
@@ -66,38 +60,23 @@ export const ConfirmDialogProvider: React.FC<{
 	return (
 		<ConfirmContext.Provider value={confirm}>
 			{children}
-			<Dialog
-				open={options !== null}
-				onClose={() => settle(false)}
-				fullWidth
-				maxWidth="xs"
-			>
-				{options && (
-					<>
-						<DialogTitle>{options.title}</DialogTitle>
-						{options.description && (
-							<DialogContent>
-								<Typography variant="body2" color="text.secondary">
-									{options.description}
-								</Typography>
-							</DialogContent>
-						)}
-						<DialogActions>
-							<Button onClick={() => settle(false)}>
-								{options.cancelLabel ?? "Cancelar"}
-							</Button>
-							<Button
-								variant="contained"
-								color={options.severity === "danger" ? "error" : "primary"}
-								onClick={() => settle(true)}
-								autoFocus
-							>
-								{options.confirmLabel ?? "Confirmar"}
-							</Button>
-						</DialogActions>
-					</>
-				)}
-			</Dialog>
+			{options && (
+				<AppDialog
+					open
+					title={options.title}
+					onClose={() => settle(false)}
+					onConfirm={() => settle(true)}
+					confirmLabel={options.confirmLabel}
+					cancelLabel={options.cancelLabel}
+					confirmColor={options.severity === "danger" ? "error" : "primary"}
+				>
+					{options.description && (
+						<Typography variant="body2" color="text.secondary">
+							{options.description}
+						</Typography>
+					)}
+				</AppDialog>
+			)}
 		</ConfirmContext.Provider>
 	)
 }
