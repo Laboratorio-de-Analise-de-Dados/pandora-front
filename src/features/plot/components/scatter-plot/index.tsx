@@ -22,6 +22,7 @@ import { useGateDrawing } from "../../hooks/useGateDrawing"
 import { useGateShapes } from "../../hooks/useGateShapes"
 import { useGateMutations } from "../../hooks/useGateMutations"
 import { useReshapeScope } from "../../hooks/useReshapeScope"
+import { useConfirm } from "../../../../components/ConfirmDialog"
 import { getCopyFamilyIds } from "../../../gate/utils"
 
 import { COFACTOR } from "../../utils/biex"
@@ -32,6 +33,7 @@ import {
 	SCATTER_COLOR,
 } from "../../utils/plotTraces"
 import { scatterGatePointColors } from "../../utils/scatterGateColors"
+import { findQuadrantFamily } from "../../utils/gateHitTest"
 import {
 	buildGateHoverTraces,
 	buildGateLabelTraces,
@@ -197,8 +199,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		invalidateExperiment()
 	}, [refetch, invalidateExperiment])
 
-	const { patchCoordinates, deleteGate, saveGateNameColor } =
+	const { patchCoordinates, deleteGate, deleteGates, saveGateNameColor } =
 		useGateMutations(loadFile)
+	const confirm = useConfirm()
 
 	const familySizeOf = useCallback(
 		(gateId: number) => getCopyFamilyIds(experimentFiles, gateId).length,
@@ -328,6 +331,22 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		if (!contextMenu) return
 		const gate = contextMenu.gate
 		setContextMenu(null)
+
+		// Quadrantes são criados como conjunto de 4 dividindo a mesma cruz —
+		// excluir um só quebraria o conjunto, então apagam-se juntos.
+		if (gate.gate_coordinates?.type === "quadrant") {
+			const family = findQuadrantFamily(childGates, gate)
+			const names = family.map((g) => g.name).join(", ")
+			const ok = await confirm({
+				title: `Excluir o conjunto de quadrantes?`,
+				description: `O gate "${gate.name}" faz parte de um conjunto de ${family.length} quadrantes ligados à mesma cruz. Todos serão excluídos juntos: ${names}.`,
+				confirmLabel: "Excluir todos",
+				severity: "danger",
+			})
+			if (ok) await deleteGates(family)
+			return
+		}
+
 		await deleteGate(gate)
 	}
 
@@ -872,6 +891,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				onReshape={handleContextMenuReshape}
 				onEdit={handleContextMenuEdit}
 				onDelete={handleContextMenuDelete}
+				deleteLabel={
+					contextMenu?.gate.gate_coordinates?.type === "quadrant"
+						? "Excluir quadrantes"
+						: "Excluir"
+				}
 			/>
 		</Box>
 	)
