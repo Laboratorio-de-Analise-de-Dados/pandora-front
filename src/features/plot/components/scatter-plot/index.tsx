@@ -22,12 +22,22 @@ import { useGateDrawing } from "../../hooks/useGateDrawing"
 import { useGateShapes } from "../../hooks/useGateShapes"
 import { useGateMutations } from "../../hooks/useGateMutations"
 import { useReshapeScope } from "../../hooks/useReshapeScope"
+import { useConfirm } from "../../../../components/ConfirmDialog"
 import { getCopyFamilyIds } from "../../../gate/utils"
 
 import { COFACTOR } from "../../utils/biex"
 import { buildTicks } from "../../utils/ticks"
-import { buildPlotData, hasPlotData } from "../../utils/plotTraces"
-import { buildGateHoverTraces } from "../../utils/gateHoverTraces"
+import {
+	buildPlotData,
+	hasPlotData,
+	SCATTER_COLOR,
+} from "../../utils/plotTraces"
+import { scatterGatePointColors } from "../../utils/scatterGateColors"
+import { findQuadrantFamily } from "../../utils/gateHitTest"
+import {
+	buildGateHoverTraces,
+	buildGateLabelTraces,
+} from "../../utils/gateHoverTraces"
 import { buildAxisRange } from "../../utils/plotAxes"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
@@ -57,6 +67,10 @@ interface ScatterPlotProps {
 	siblingGateNames?: string[]
 	childGates?: Gate[]
 }
+
+// Fundo do plot: cinza bem claro — lê como "branco" como nos softwares
+// de citometria, mas sem o brilho que cansa a vista no dark mode.
+const PLOT_BG = "#e5e5e5"
 
 const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	values,
@@ -185,8 +199,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		invalidateExperiment()
 	}, [refetch, invalidateExperiment])
 
-	const { patchCoordinates, deleteGate, saveGateNameColor } =
+	const { patchCoordinates, deleteGate, deleteGates, saveGateNameColor } =
 		useGateMutations(loadFile)
+	const confirm = useConfirm()
 
 	const familySizeOf = useCallback(
 		(gateId: number) => getCopyFamilyIds(experimentFiles, gateId).length,
@@ -316,6 +331,22 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		if (!contextMenu) return
 		const gate = contextMenu.gate
 		setContextMenu(null)
+
+		// Quadrantes são criados como conjunto de 4 dividindo a mesma cruz —
+		// excluir um só quebraria o conjunto, então apagam-se juntos.
+		if (gate.gate_coordinates?.type === "quadrant") {
+			const family = findQuadrantFamily(childGates, gate)
+			const names = family.map((g) => g.name).join(", ")
+			const ok = await confirm({
+				title: `Excluir o conjunto de quadrantes?`,
+				description: `O gate "${gate.name}" faz parte de um conjunto de ${family.length} quadrantes ligados à mesma cruz. Todos serão excluídos juntos: ${names}.`,
+				confirmLabel: "Excluir todos",
+				severity: "danger",
+			})
+			if (ok) await deleteGates(family)
+			return
+		}
+
 		await deleteGate(gate)
 	}
 
@@ -365,7 +396,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	// Build Plotly trace data
-	const plotData = buildPlotData(plotMode, data, theme.palette.mode)
+	// O gráfico é sempre claro (mesmo no dark mode): legibilidade de
+	// densidade/scatter segue o padrão dos softwares de citometria.
+	// "Color gating": eventos dentro de gates visíveis ganham a cor deles.
+	const pointColors = scatterGatePointColors(
+		data?.x,
+		data?.y,
+		childGates,
+		xAxis,
+		yAxis,
+		effXScale,
+		effYScale,
+		SCATTER_COLOR.light,
+	)
+	const plotData = buildPlotData(
+		plotMode,
+		data,
+		"light",
+		pointColors ?? undefined,
+	)
 	const hasData = hasPlotData(plotMode, data)
 
 	// Traces transparentes só para hover: passar o mouse sobre a área de um
@@ -388,6 +437,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const yAxisRange = buildAxisRange(yMin, yMax, effYScale, effCof)
 	const xTicks = buildTicks(xAxisRange, effXScale, effCof)
 	const yTicks = buildTicks(yAxisRange, effYScale, effCof)
+
+	// Labels de "nome (% do pai)" como text traces para todos os tipos de
+	// gate — o label de shape do Plotly não respeita font.color em paths.
+	const gateLabelTraces = buildGateLabelTraces(
+		gateShapes,
+		xAxisRange,
+		yAxisRange,
+	)
 
 	const dragmode: "select" | "lasso" | "pan" | false =
 		tool === "edit" || reshapingGateId !== null
@@ -531,9 +588,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								color="text.secondary"
 								sx={{ order: 2 }}
 							>
-								{data.total_events.toLocaleString()} eventos
+								{/* Contexto da visualização: raiz do arquivo vs. dentro
+								    de um gate — sem isso nada distingue os dois na tela. */}
+								{sourceType === "gate"
+									? `Gate ${parentName ? `"${parentName}"` : "selecionado"}`
+									: "Amostra inteira"}
+								{` · ${data.total_events.toLocaleString()} eventos`}
 								{plotMode === "scatter" && data.sampled_events
-									? ` · amostra de ${data.sampled_events.toLocaleString()}`
+									? ` · exibindo ${data.sampled_events.toLocaleString()}`
 									: plotMode === "histogram"
 										? " · histograma (100% dos dados)"
 										: " · heatmap (100% dos dados)"}
@@ -584,7 +646,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											? "edit-mode"
 											: `draw-mode-${drawRevision}`
 									}
-									data={[...plotData, ...gateHoverTraces]}
+									data={[...plotData, ...gateHoverTraces, ...gateLabelTraces]}
 									useResizeHandler
 									style={{ width: "100%", height: "100%" }}
 									config={
@@ -627,9 +689,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
-											gridcolor: theme.palette.divider,
-											linecolor: theme.palette.divider,
-											zerolinecolor: theme.palette.divider,
+											// Moldura completa: linha do eixo espelhada
+											// no lado oposto (padrão citometria).
+											showline: true,
+											mirror: true,
+											linewidth: 1,
+											gridcolor: "rgba(0,0,0,0.2)",
+											linecolor: "rgba(0,0,0,0.5)",
+											zerolinecolor: "rgba(0,0,0,0.5)",
 										},
 										yaxis: {
 											title: {
@@ -649,24 +716,30 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
-											gridcolor: theme.palette.divider,
-											linecolor: theme.palette.divider,
-											zerolinecolor: theme.palette.divider,
+											showline: true,
+											mirror: true,
+											linewidth: 1,
+											gridcolor: "rgba(0,0,0,0.2)",
+											linecolor: "rgba(0,0,0,0.5)",
+											zerolinecolor: "rgba(0,0,0,0.5)",
 										},
 										autosize: true,
 										hovermode: "closest",
 										hoverlabel: {
-											bgcolor: theme.palette.background.paper,
-											bordercolor: theme.palette.divider,
+											bgcolor: "#ffffff",
+											bordercolor: "rgba(0,0,0,0.15)",
 											font: {
-												color: theme.palette.text.primary,
+												color: "rgba(0,0,0,0.87)",
 												size: 12,
 											},
 										},
-										margin: { l: 60, r: 20, t: 20, b: 60 },
-										plot_bgcolor: theme.palette.background.default,
-										paper_bgcolor: theme.palette.background.default,
-										font: { color: theme.palette.text.secondary },
+										margin: { l: 60, r: 30, t: 30, b: 60 },
+										// Plot sempre claro (mesmo no dark) — padrão
+										// dos softwares de citometria. Off-white
+										// reduz o brilho no dark mode.
+										plot_bgcolor: PLOT_BG,
+										paper_bgcolor: PLOT_BG,
+										font: { color: "rgba(0,0,0,0.78)" },
 										bargap: 0,
 									}}
 									onSelected={
@@ -817,6 +890,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				onReshape={handleContextMenuReshape}
 				onEdit={handleContextMenuEdit}
 				onDelete={handleContextMenuDelete}
+				deleteLabel={
+					contextMenu?.gate.gate_coordinates?.type === "quadrant"
+						? "Excluir quadrantes"
+						: "Excluir"
+				}
 			/>
 		</Box>
 	)

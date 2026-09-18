@@ -243,7 +243,7 @@ export default function DeleteGateDialog({
 						/>
 					}
 					label={<Typography variant="body2">Incluir sub-gates</Typography>}
-					sx={{ display: "block" }}
+					sx={{ display: "flex" }}
 				/>
 
 				{(scope === "subsample" || scope === "experiment") && (
@@ -260,7 +260,7 @@ export default function DeleteGateDialog({
 								Excluir também nesta amostra
 							</Typography>
 						}
-						sx={{ display: "block", mb: 1 }}
+						sx={{ display: "flex", mb: 1 }}
 					/>
 				)}
 

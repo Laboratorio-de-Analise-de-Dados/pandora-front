@@ -1,5 +1,4 @@
 import React from "react"
-import { useTheme } from "@mui/material/styles"
 import type { Gate, Scale } from "../../../../../types"
 import { COFACTOR, biex, toRaw } from "../../../utils/biex"
 
@@ -35,12 +34,10 @@ const PolygonEditOverlay: React.FC<PolygonEditOverlayProps> = ({
 	onVerticesChange,
 	onCommit,
 }) => {
-	const theme = useTheme()
-	// Verde de edição: accent (neon) no dark, primary no light — contraste
-	// garantido nos dois fundos (FE-26).
-	const stroke =
-		theme.palette.mode === "dark" ? "rgba(52,211,153,0.9)" : "#059669"
-	const vertexFill = theme.palette.background.default
+	// O gráfico é sempre claro (mesmo no dark): o verde de edição é o
+	// variant para fundo claro e os vértices são brancos.
+	const stroke = "#059669"
+	const vertexFill = "#ffffff"
 
 	if (vertices.length === 0) return null
 	const { swapped } = editingPolyGate
@@ -108,11 +105,7 @@ const PolygonEditOverlay: React.FC<PolygonEditOverlayProps> = ({
 		>
 			<path
 				d={polyPath}
-				fill={
-					theme.palette.mode === "dark"
-						? "rgba(52,211,153,0.08)"
-						: "rgba(5,150,105,0.08)"
-				}
+				fill="rgba(5,150,105,0.08)"
 				stroke={stroke}
 				strokeWidth={2}
 				pointerEvents="none"

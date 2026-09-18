@@ -12,6 +12,7 @@ interface GateContextMenuProps {
 	onReshape: () => void
 	onEdit: () => void
 	onDelete: () => void
+	deleteLabel?: string
 }
 
 const GateContextMenu: React.FC<GateContextMenuProps> = ({
@@ -20,6 +21,7 @@ const GateContextMenu: React.FC<GateContextMenuProps> = ({
 	onReshape,
 	onEdit,
 	onDelete,
+	deleteLabel = "Excluir",
 }) => (
 	<Menu
 		open={anchorPosition !== null}
@@ -43,7 +45,7 @@ const GateContextMenu: React.FC<GateContextMenuProps> = ({
 			<ListItemIcon>
 				<DeleteIcon fontSize="small" />
 			</ListItemIcon>
-			<ListItemText>Excluir</ListItemText>
+			<ListItemText>{deleteLabel}</ListItemText>
 		</MenuItem>
 	</Menu>
 )

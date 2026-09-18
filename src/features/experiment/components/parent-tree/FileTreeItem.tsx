@@ -91,30 +91,32 @@ export default function FileTreeItem({
 					)}
 					<Box sx={{ ml: "auto", display: "flex", flexShrink: 0 }}>
 						{handlers.onFileInfo && (
-							<IconButton
-								size="small"
-								onClick={(e) => {
-									e.stopPropagation()
-									handlers.onFileInfo?.(file)
-								}}
-								sx={{ p: 0.25 }}
-								title="Metadados do arquivo"
-							>
-								<InfoIcon style={{ fontSize: 15, opacity: 0.6 }} />
-							</IconButton>
+							<Tooltip title="Metadados do arquivo" arrow placement="right">
+								<IconButton
+									size="small"
+									onClick={(e) => {
+										e.stopPropagation()
+										handlers.onFileInfo?.(file)
+									}}
+									sx={{ p: 0.25 }}
+								>
+									<InfoIcon style={{ fontSize: 15, opacity: 0.6 }} />
+								</IconButton>
+							</Tooltip>
 						)}
 						{canManage && (
-							<IconButton
-								size="small"
-								onClick={(e) => {
-									e.stopPropagation()
-									handlers.onFileMenuOpen(e, file)
-								}}
-								sx={{ p: 0.25 }}
-								title="Opções da amostra"
-							>
-								<MoreVertIcon style={{ fontSize: 16 }} />
-							</IconButton>
+							<Tooltip title="Opções da amostra" arrow placement="right">
+								<IconButton
+									size="small"
+									onClick={(e) => {
+										e.stopPropagation()
+										handlers.onFileMenuOpen(e, file)
+									}}
+									sx={{ p: 0.25 }}
+								>
+									<MoreVertIcon style={{ fontSize: 16 }} />
+								</IconButton>
+							</Tooltip>
 						)}
 					</Box>
 				</Box>

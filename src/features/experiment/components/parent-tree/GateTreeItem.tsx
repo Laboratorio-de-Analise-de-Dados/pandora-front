@@ -171,17 +171,18 @@ export default function GateTreeItem({
 						)}
 					</Box>
 					{hasActions && (
-						<IconButton
-							size="small"
-							onClick={(e) => {
-								e.stopPropagation()
-								handlers.onMenuOpen(e, gate)
-							}}
-							sx={{ p: 0.25, flexShrink: 0 }}
-							title="Opções do gate"
-						>
-							<MoreVertIcon style={{ fontSize: 16 }} />
-						</IconButton>
+						<Tooltip title="Opções do gate" arrow placement="right">
+							<IconButton
+								size="small"
+								onClick={(e) => {
+									e.stopPropagation()
+									handlers.onMenuOpen(e, gate)
+								}}
+								sx={{ p: 0.25, flexShrink: 0 }}
+							>
+								<MoreVertIcon style={{ fontSize: 16 }} />
+							</IconButton>
+						</Tooltip>
 					)}
 				</Box>
 			}

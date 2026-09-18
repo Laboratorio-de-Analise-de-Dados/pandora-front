@@ -11,9 +11,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                   | Área afetada                                                                                                   | Branch                  | Sessão      | Desde   |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------- | ------- |
-| Remoção do FE-29 (pós-v1) | revert de `features/branches/`, `services/branches.ts`, wiring `?branch=` — código em `archive/fe-29-branches` | `revert/fe-29-branches` | esta sessão | 2026-09 |
+| Feature                       | Área afetada                                                                     | Branch                      | Sessão      | Desde   |
+| ----------------------------- | -------------------------------------------------------------------------------- | --------------------------- | ----------- | ------- |
+| Indicador de contexto no plot | `scatter-plot/index.tsx` — legenda "Amostra inteira"/"Gate" + quadrantes/%/cores | `fix/plot-source-indicator` | esta sessão | 2026-09 |
 
 ## Concluído nesta branch
 

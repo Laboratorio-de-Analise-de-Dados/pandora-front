@@ -25,7 +25,9 @@ const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
 			? {
 					background: {
 						default: "#F4F4F4",
-						paper: "#FFFFFF",
+						// Off-white: o branco puro nos cards/painéis cansava a
+						// vista; #FAFAFA lê como branco sem o brilho.
+						paper: "#FAFAFA",
 					},
 					primary: {
 						main: PANDORA.primary,

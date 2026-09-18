@@ -253,7 +253,7 @@ export default function ApplyGateDialog({
 						/>
 					}
 					label={<Typography variant="body2">Incluir sub-gates</Typography>}
-					sx={{ display: "block" }}
+					sx={{ display: "flex" }}
 				/>
 
 				{selectedIds.size > 0 && (
