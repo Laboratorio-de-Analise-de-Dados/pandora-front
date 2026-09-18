@@ -34,7 +34,8 @@
 | [FE-30](FE-30-pipeline-release-rollback.md)           | Pipeline de release por tag com rollback (ADR-0022)                                | Entregue — workflows na main         |
 | [FE-31](FE-31-contas-conectadas-perfil.md)            | Contas conectadas no perfil + aviso de vínculo no login SSO (BE-29)                | Entregue — PRs #72/#73/#74     |
 | [FE-32](FE-32-dialogs-de-confirmacao-mui.md)          | Fim dos `window.*` nativos: `AppDialog` + `useConfirm()` compartilhados (ADR-0014) | Implementado — PR #81                         |
-| [FE-33](FE-33-retomada-e-erro-de-processamento.md)    | Retomada silenciosa de processamento órfão + tooltip com motivo do erro (BE-31)    | Não iniciado — depende do backend             |
+| [FE-33](FE-33-retomada-e-erro-de-processamento.md)    | Retomada silenciosa de processamento órfão + tooltip com motivo do erro (BE-31)    | Implementado — PR #85                         |
+| [FE-36](FE-36-analise-de-dados-graficos-exportacao.md) | Figuras de análise persistidas (dep. BE-33): galeria + gráficos comparativos + grupos por figura + export PNG/SVG com procedência; ANOVA é fase 2 | Não iniciado — fase 1 no v1 |
 
 Fora dos PRDs, já entregues: escopo no reshape + confirmação antes de
 sobrescrever (#48), autor do gate no hover da árvore (#49), gestão de

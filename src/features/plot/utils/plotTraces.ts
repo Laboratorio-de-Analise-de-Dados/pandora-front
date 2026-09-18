@@ -13,7 +13,7 @@ const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
 // fundo claro e perdia as baixas densidades no preto.
 
 // Marcador do scatter: neon no escuro, emerald escuro no claro.
-const SCATTER_COLOR: Record<"light" | "dark", string> = {
+export const SCATTER_COLOR: Record<"light" | "dark", string> = {
 	dark: "rgba(52, 211, 153, 0.7)",
 	light: "rgba(5, 150, 105, 0.7)",
 }
@@ -23,6 +23,7 @@ export const buildPlotData = (
 	plotMode: PlotMode,
 	data?: DensityResponse,
 	mode: "light" | "dark" = "dark",
+	pointColors?: string[],
 ): Plotly.Data[] => {
 	if (plotMode === "heatmap") {
 		return [
@@ -33,6 +34,7 @@ export const buildPlotData = (
 				y: edgesToCenters(data?.y_edges),
 				colorscale: DENSITY_STOPS[mode],
 				showscale: true,
+				showlegend: false,
 			},
 		]
 	}
@@ -43,6 +45,7 @@ export const buildPlotData = (
 				x: edgesToCenters(data?.edges),
 				y: data?.counts ?? [],
 				marker: { color: "#10B981" },
+				showlegend: false,
 			},
 		]
 	}
@@ -52,7 +55,8 @@ export const buildPlotData = (
 			mode: "markers" as const,
 			x: data?.x ?? [],
 			y: data?.y ?? [],
-			marker: { color: SCATTER_COLOR[mode], size: 2 },
+			marker: { color: pointColors ?? SCATTER_COLOR[mode], size: 2 },
+			showlegend: false,
 		},
 	]
 }

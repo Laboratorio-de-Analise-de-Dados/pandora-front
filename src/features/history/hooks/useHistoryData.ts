@@ -13,17 +13,11 @@ import type { RevisionStateResponse } from "../../../services/historyService"
 export function useGroupedHistoryQuery(
 	experimentId: number | undefined,
 	fileId?: number,
-	branchId?: number | null,
 ) {
 	return useInfiniteQuery({
-		queryKey: [
-			"history",
-			experimentId,
-			fileId ?? "experiment",
-			branchId ?? "main",
-		],
+		queryKey: ["history", experimentId, fileId ?? "experiment"],
 		queryFn: async ({ pageParam }) =>
-			fetchGroupedHistory(experimentId as number, pageParam, fileId, branchId),
+			fetchGroupedHistory(experimentId as number, pageParam, fileId),
 		initialPageParam: undefined as number | undefined,
 		getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
 		enabled: !!experimentId,
