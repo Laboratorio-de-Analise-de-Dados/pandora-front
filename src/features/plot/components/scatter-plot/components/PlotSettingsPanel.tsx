@@ -62,21 +62,16 @@ export const PlotSettingsButton: React.FC<{
 		<IconButton
 			onClick={onToggle}
 			size="small"
-			sx={(theme) => ({
-				backgroundColor:
-					theme.palette.mode === "dark"
-						? "rgba(22, 22, 22, 0.85)"
-						: "rgba(255, 255, 255, 0.85)",
+			sx={{
+				// Flutua sobre o plot, que é sempre claro (mesmo no dark).
+				backgroundColor: "rgba(255, 255, 255, 0.85)",
 				border: "1px solid",
 				borderColor: "divider",
 				"&:hover": {
-					backgroundColor:
-						theme.palette.mode === "dark"
-							? "rgba(38, 38, 38, 0.9)"
-							: "rgba(255, 255, 255, 0.9)",
+					backgroundColor: "rgba(255, 255, 255, 0.9)",
 					boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
 				},
-			})}
+			}}
 		>
 			<SettingsIcon fontSize="small" />
 		</IconButton>

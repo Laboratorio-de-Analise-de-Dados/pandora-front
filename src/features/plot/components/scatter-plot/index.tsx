@@ -368,7 +368,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	// Build Plotly trace data
-	const plotData = buildPlotData(plotMode, data, theme.palette.mode)
+	// O gráfico é sempre claro (mesmo no dark mode): legibilidade de
+	// densidade/scatter segue o padrão dos softwares de citometria.
+	const plotData = buildPlotData(plotMode, data, "light")
 	const hasData = hasPlotData(plotMode, data)
 
 	// Traces transparentes só para hover: passar o mouse sobre a área de um
@@ -644,9 +646,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
-											gridcolor: theme.palette.divider,
-											linecolor: theme.palette.divider,
-											zerolinecolor: theme.palette.divider,
+											gridcolor: "rgba(0,0,0,0.08)",
+											linecolor: "rgba(0,0,0,0.25)",
+											zerolinecolor: "rgba(0,0,0,0.25)",
 										},
 										yaxis: {
 											title: {
@@ -666,24 +668,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
-											gridcolor: theme.palette.divider,
-											linecolor: theme.palette.divider,
-											zerolinecolor: theme.palette.divider,
+											gridcolor: "rgba(0,0,0,0.08)",
+											linecolor: "rgba(0,0,0,0.25)",
+											zerolinecolor: "rgba(0,0,0,0.25)",
 										},
 										autosize: true,
 										hovermode: "closest",
 										hoverlabel: {
-											bgcolor: theme.palette.background.paper,
-											bordercolor: theme.palette.divider,
+											bgcolor: "#ffffff",
+											bordercolor: "rgba(0,0,0,0.15)",
 											font: {
-												color: theme.palette.text.primary,
+												color: "rgba(0,0,0,0.87)",
 												size: 12,
 											},
 										},
 										margin: { l: 60, r: 20, t: 20, b: 60 },
-										plot_bgcolor: theme.palette.background.default,
-										paper_bgcolor: theme.palette.background.default,
-										font: { color: theme.palette.text.secondary },
+										plot_bgcolor: "#ffffff", // plot sempre claro, mesmo no dark
+										paper_bgcolor: "#ffffff",
+										font: { color: "rgba(0,0,0,0.6)" },
 										bargap: 0,
 									}}
 									onSelected={
