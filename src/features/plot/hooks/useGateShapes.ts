@@ -1,7 +1,11 @@
 import { useMemo } from "react"
 import type { Gate, Scale } from "../../../types"
 import { biex, COFACTOR } from "../utils/biex"
-import { getGateColor, hexToRgba } from "../../../constants/gateColors"
+import {
+	GATE_LABEL_COLOR,
+	getGateColor,
+	hexToRgba,
+} from "../../../constants/gateColors"
 
 type AxisMatch = "exact" | "swapped" | "none"
 
@@ -118,7 +122,7 @@ export function useGateShapes({
 							fillcolor: hexToRgba(color, 0.05),
 							label: {
 								text: gateLabel,
-								font: { size: 11, color: hexToRgba(color, 0.9) },
+								font: { size: 11, color: GATE_LABEL_COLOR },
 							},
 							_gateId: gate.id,
 							_gateData: gate,
@@ -166,7 +170,7 @@ export function useGateShapes({
 							fillcolor: hexToRgba(color, 0.08),
 							label: {
 								text: gateLabel,
-								font: { size: 11, color: hexToRgba(color, 0.9) },
+								font: { size: 11, color: GATE_LABEL_COLOR },
 							},
 							_gateId: gate.id,
 							_gateData: gate,
@@ -194,7 +198,7 @@ export function useGateShapes({
 							fillcolor: hexToRgba(color, 0.05),
 							label: {
 								text: gateLabel,
-								font: { size: 11, color: hexToRgba(color, 0.9) },
+								font: { size: 11, color: GATE_LABEL_COLOR },
 							},
 							_gateId: gate.id,
 							_gateData: gate,

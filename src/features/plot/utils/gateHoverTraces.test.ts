@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest"
 import {
 	buildGateHoverTraces,
 	buildGateLabelTraces,
-	darkenForText,
 	gateHoverTemplate,
 } from "./gateHoverTraces"
+import { GATE_LABEL_COLOR } from "../../../constants/gateColors"
 import type { Gate } from "../../../types"
 import type { GateShape } from "../hooks/useGateShapes"
 
@@ -254,27 +254,12 @@ describe("buildGateLabelTraces", () => {
 		expect(buildGateLabelTraces([makeShape({})], RANGE, RANGE)).toHaveLength(0)
 	})
 
-	it("cor clara do gate é escurecida no texto (legibilidade no fundo claro)", () => {
+	it("texto usa a cor da fonte do plot, não a cor do gate", () => {
 		const shapes = quadShapes(quadGate("Q1")).map((s) => ({
 			...s,
 			line: { ...s.line, color: "#93c5fd" }, // azul pastel → quase some no #e5e5e5
 		}))
 		const t = asLabelTrace(buildGateLabelTraces(shapes, RANGE, RANGE)[0])
-		expect(t.textfont?.color).toBe("rgb(81,108,139)")
-	})
-})
-
-describe("darkenForText", () => {
-	it("mantém cor já escura", () => {
-		expect(darkenForText("#10b981")).toBe("#10b981")
-	})
-
-	it("escurece cor clara mantendo o matiz", () => {
-		// #fbbf24 (âmbar) → 55% de cada canal
-		expect(darkenForText("#fbbf24")).toBe("rgb(138,105,20)")
-	})
-
-	it("sem cor cai no cinza escuro", () => {
-		expect(darkenForText(undefined)).toBe("rgba(0,0,0,0.75)")
+		expect(t.textfont?.color).toBe(GATE_LABEL_COLOR)
 	})
 })
