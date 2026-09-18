@@ -650,6 +650,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											range: xAxisRange,
 											autorange: false,
 											fixedrange: true,
+											// Moldura completa: linha do eixo espelhada
+											// no lado oposto (padrão citometria).
+											showline: true,
+											mirror: true,
+											linewidth: 1,
 											gridcolor: "rgba(0,0,0,0.2)",
 											linecolor: "rgba(0,0,0,0.5)",
 											zerolinecolor: "rgba(0,0,0,0.5)",
@@ -672,6 +677,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
+											showline: true,
+											mirror: true,
+											linewidth: 1,
 											gridcolor: "rgba(0,0,0,0.2)",
 											linecolor: "rgba(0,0,0,0.5)",
 											zerolinecolor: "rgba(0,0,0,0.5)",
@@ -686,7 +694,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												size: 12,
 											},
 										},
-										margin: { l: 60, r: 20, t: 20, b: 60 },
+										margin: { l: 60, r: 30, t: 30, b: 60 },
 										// Plot sempre claro (mesmo no dark) — padrão
 										// dos softwares de citometria. Off-white
 										// reduz o brilho no dark mode.
