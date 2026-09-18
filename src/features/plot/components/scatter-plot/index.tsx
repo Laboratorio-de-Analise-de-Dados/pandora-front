@@ -438,9 +438,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const xTicks = buildTicks(xAxisRange, effXScale, effCof)
 	const yTicks = buildTicks(yAxisRange, effYScale, effCof)
 
-	// Labels de "% do pai" para gates sem área rotulável (quadrantes): um
-	// texto no centro de cada região da cruz. Retângulo/polígono/intervalo
-	// já levam o label no próprio shape.
+	// Labels de "nome (% do pai)" como text traces para todos os tipos de
+	// gate — o label de shape do Plotly não respeita font.color em paths.
 	const gateLabelTraces = buildGateLabelTraces(
 		gateShapes,
 		xAxisRange,

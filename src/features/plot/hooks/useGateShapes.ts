@@ -1,11 +1,7 @@
 import { useMemo } from "react"
 import type { Gate, Scale } from "../../../types"
 import { biex, COFACTOR } from "../utils/biex"
-import {
-	GATE_LABEL_COLOR,
-	getGateColor,
-	hexToRgba,
-} from "../../../constants/gateColors"
+import { getGateColor, hexToRgba } from "../../../constants/gateColors"
 
 type AxisMatch = "exact" | "swapped" | "none"
 
@@ -32,7 +28,6 @@ export interface GateShape {
 	path?: string
 	line: { color: string; width: number; dash?: string }
 	fillcolor?: string
-	label?: { text: string; font: { size: number; color: string } }
 	editable?: boolean
 	_gateId: number
 	_gateData: Gate
@@ -94,14 +89,6 @@ export function useGateShapes({
 				const xScale = swapped ? effYScale : effXScale
 				const yScale = swapped ? effXScale : effYScale
 
-				const percent =
-					gate.analysis_result?.analysis_result?.summary_metrics
-						?.percent_of_parent_population
-				const gateLabel =
-					percent !== undefined && percent !== null
-						? `${gate.name}\n(${(percent * 100).toFixed(1)}%)`
-						: gate.name
-
 				if (gateType === "rectangle" && "startX" in gc && "startY" in gc) {
 					const rawX0 = swapped ? gc.startY : gc.startX
 					const rawX1 = swapped ? gc.endY : gc.endX
@@ -120,10 +107,6 @@ export function useGateShapes({
 							y1,
 							line: { color: hexToRgba(color, 0.7), width: 2 },
 							fillcolor: hexToRgba(color, 0.05),
-							label: {
-								text: gateLabel,
-								font: { size: 11, color: GATE_LABEL_COLOR },
-							},
 							_gateId: gate.id,
 							_gateData: gate,
 							_swapped: swapped,
@@ -168,10 +151,6 @@ export function useGateShapes({
 							yref: "paper",
 							line: { color: "transparent", width: 0 },
 							fillcolor: hexToRgba(color, 0.08),
-							label: {
-								text: gateLabel,
-								font: { size: 11, color: GATE_LABEL_COLOR },
-							},
 							_gateId: gate.id,
 							_gateData: gate,
 							_swapped: false,
@@ -196,10 +175,6 @@ export function useGateShapes({
 							path,
 							line: { color: hexToRgba(color, 0.7), width: 2 },
 							fillcolor: hexToRgba(color, 0.05),
-							label: {
-								text: gateLabel,
-								font: { size: 11, color: GATE_LABEL_COLOR },
-							},
 							_gateId: gate.id,
 							_gateData: gate,
 							_swapped: swapped,

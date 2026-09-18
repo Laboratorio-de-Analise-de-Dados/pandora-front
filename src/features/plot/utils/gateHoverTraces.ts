@@ -160,13 +160,39 @@ const gateLabelText = (gate: Gate): string => {
 		: gate.name
 }
 
+type TextPosition =
+	| "middle center"
+	| "top left"
+	| "top right"
+	| "bottom left"
+	| "bottom right"
+	| "top center"
+
+const labelTrace = (
+	gate: Gate,
+	lx: number,
+	ly: number,
+	textposition: TextPosition,
+): Plotly.Data => ({
+	type: "scatter",
+	mode: "text",
+	x: [lx],
+	y: [ly],
+	text: gateLabelText(gate),
+	textposition,
+	textfont: { size: 11, color: GATE_LABEL_COLOR },
+	hoverinfo: "skip",
+	name: LABEL_TRACE_NAME,
+	showlegend: false,
+})
+
 /**
- * Labels de "% do pai" dentro da região de gates que não têm área própria
- * para o `label` de shape — hoje só o quadrante (4 gates dividem a mesma
- * cruz, então cada um rotula a sua região). A posição fica no canto da
- * região (convenção dos softwares de citometria): 3/4 do caminho entre a
- * cruz e a borda do range visível, com margem dos eixos. Eixos "swapped"
- * trocam a direção X↔Y na tela.
+ * Labels de "nome (% do pai)" desenhados como text traces — o `label` dos
+ * shapes do Plotly não respeita `font.color` em todos os tipos (path saía
+ * na cor da linha), então todo gate rotula por aqui, sempre na cor da
+ * fonte do gráfico. Posições seguem a convenção de citometria: quadrante
+ * no canto da região, retângulo/intervalo na borda superior, polígono no
+ * centroide. Eixos "swapped" trocam a direção X↔Y na tela.
  */
 const REGION_FRACTION = 0.75
 export const buildGateLabelTraces = (
@@ -178,50 +204,70 @@ export const buildGateLabelTraces = (
 	for (const group of groupByGate(shapes).values()) {
 		const gate = group[0]._gateData
 		const gc = gate.gate_coordinates
-		if (!gc || gc.type !== "quadrant") continue
-		const dir = QUADRANT_DIR[gc.quadrant]
-		if (!dir) continue
+		if (!gc) continue
 
-		const vline = group.find((s) => s.type === "line" && s.yref === "paper")
-		const hline = group.find((s) => s.type === "line" && s.xref === "paper")
-		if (
-			!vline ||
-			!hline ||
-			typeof vline.x0 !== "number" ||
-			typeof hline.y0 !== "number"
-		)
+		if (gc.type === "quadrant") {
+			const dir = QUADRANT_DIR[gc.quadrant]
+			if (!dir) continue
+
+			const vline = group.find((s) => s.type === "line" && s.yref === "paper")
+			const hline = group.find((s) => s.type === "line" && s.xref === "paper")
+			if (
+				!vline ||
+				!hline ||
+				typeof vline.x0 !== "number" ||
+				typeof hline.y0 !== "number"
+			)
+				continue
+
+			const cx = vline.x0
+			const cy = hline.y0
+			const swapped = group[0]._swapped
+			// Eixo trocado: o X cru passa a controlar o Y da tela (e vice-versa).
+			const xDir = swapped ? dir[1] : dir[0]
+			const yDir = swapped ? dir[0] : dir[1]
+			const xEdge = xDir > 0 ? xRange[1] : xRange[0]
+			const yEdge = yDir > 0 ? yRange[1] : yRange[0]
+			const lx = cx + (xEdge - cx) * REGION_FRACTION
+			const ly = cy + (yEdge - cy) * REGION_FRACTION
+
+			// O texto cresce para dentro da região (na direção da cruz): a
+			// âncora pode ficar perto do canto sem o label encostar nos eixos.
+			const vAnchor = yDir > 0 ? "bottom" : "top"
+			const hAnchor = xDir > 0 ? "left" : "right"
+			const textposition = `${vAnchor} ${hAnchor}` as
+				"top left" | "top right" | "bottom left" | "bottom right"
+			traces.push(labelTrace(gate, lx, ly, textposition))
 			continue
+		}
 
-		const cx = vline.x0
-		const cy = hline.y0
-		const swapped = group[0]._swapped
-		// Eixo trocado: o X cru passa a controlar o Y da tela (e vice-versa).
-		const xDir = swapped ? dir[1] : dir[0]
-		const yDir = swapped ? dir[0] : dir[1]
-		const xEdge = xDir > 0 ? xRange[1] : xRange[0]
-		const yEdge = yDir > 0 ? yRange[1] : yRange[0]
-		const lx = cx + (xEdge - cx) * REGION_FRACTION
-		const ly = cy + (yEdge - cy) * REGION_FRACTION
+		// Polígono: label no centroide dos vértices.
+		const pathShape = group.find((s) => s.type === "path" && s.path)
+		if (pathShape?.path) {
+			const { xs, ys } = parsePathPoints(pathShape.path)
+			if (xs.length >= 3) {
+				const cx = xs.reduce((a, b) => a + b, 0) / xs.length
+				const cy = ys.reduce((a, b) => a + b, 0) / ys.length
+				traces.push(labelTrace(gate, cx, cy, "middle center"))
+			}
+			continue
+		}
 
-		// O texto cresce para dentro da região (na direção da cruz): a
-		// âncora pode ficar perto do canto sem o label encostar nos eixos.
-		const vAnchor = yDir > 0 ? "bottom" : "top"
-		const hAnchor = xDir > 0 ? "left" : "right"
-		const textposition = `${vAnchor} ${hAnchor}` as
-			"top left" | "top right" | "bottom left" | "bottom right"
-
-		traces.push({
-			type: "scatter",
-			mode: "text",
-			x: [lx],
-			y: [ly],
-			text: gateLabelText(gate),
-			textposition,
-			textfont: { size: 11, color: GATE_LABEL_COLOR },
-			hoverinfo: "skip",
-			name: LABEL_TRACE_NAME,
-			showlegend: false,
-		})
+		const rect = group.find((s) => s.type === "rect")
+		if (rect && typeof rect.x0 === "number" && typeof rect.x1 === "number") {
+			const lx = (rect.x0 + rect.x1) / 2
+			if (rect.yref === "paper") {
+				// Banda de intervalo (histograma): cobre o eixo Y inteiro —
+				// o label fica perto do topo da área de dados.
+				const ly = yRange[0] + (yRange[1] - yRange[0]) * 0.93
+				traces.push(labelTrace(gate, lx, ly, "top center"))
+			} else {
+				// Retângulo: âncora na borda superior, texto pendurado
+				// para dentro do gate (convenção FlowJo).
+				const ly = Math.max(Number(rect.y0), Number(rect.y1))
+				traces.push(labelTrace(gate, lx, ly, "top center"))
+			}
+		}
 	}
 	return traces
 }

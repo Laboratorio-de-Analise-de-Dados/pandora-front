@@ -254,8 +254,94 @@ describe("buildGateLabelTraces", () => {
 		expect(asLabelTrace(traces[0]).text).toBe("CD3+")
 	})
 
-	it("ignora gates que não são quadrante", () => {
-		expect(buildGateLabelTraces([makeShape({})], RANGE, RANGE)).toHaveLength(0)
+	it("retângulo rotula na borda superior, texto para dentro", () => {
+		const traces = buildGateLabelTraces(
+			[makeShape({ x0: 2, x1: 6, y0: 3, y1: 8 })],
+			RANGE,
+			RANGE,
+		)
+		expect(traces).toHaveLength(1)
+		const t = asLabelTrace(traces[0])
+		expect(t.x).toEqual([4]) // centro horizontal do rect
+		expect(t.y).toEqual([8]) // borda superior
+		expect(t.textposition).toBe("top center")
+		expect(t.textfont?.color).toBe(GATE_LABEL_COLOR)
+	})
+
+	it("polígono rotula no centroide dos vértices", () => {
+		const gate = makeGate({
+			gate_coordinates: {
+				type: "polygon",
+				x_axis: "FSC-A",
+				y_axis: "SSC-A",
+				vertices: [
+					[1, 2],
+					[5, 2],
+					[5, 6],
+				],
+			},
+		})
+		const traces = buildGateLabelTraces(
+			[
+				makeShape({
+					type: "path",
+					path: "M 1 2 L 5 2 L 5 6 Z",
+					_gateData: gate,
+				}),
+			],
+			RANGE,
+			RANGE,
+		)
+		expect(traces).toHaveLength(1)
+		const t = asLabelTrace(traces[0])
+		expect(t.x).toEqual([(1 + 5 + 5) / 3])
+		expect(t.y).toEqual([(2 + 2 + 6) / 3])
+		expect(t.textposition).toBe("middle center")
+	})
+
+	it("intervalo (banda paper) rotula perto do topo do range", () => {
+		const gate = makeGate({
+			gate_coordinates: {
+				type: "interval",
+				x_axis: "FSC-A",
+				startX: 3,
+				endX: 9,
+			},
+		})
+		const shapes = [
+			makeShape({
+				type: "line",
+				x0: 3,
+				x1: 3,
+				y0: 0,
+				y1: 1,
+				yref: "paper",
+				_gateData: gate,
+			}),
+			makeShape({
+				type: "line",
+				x0: 9,
+				x1: 9,
+				y0: 0,
+				y1: 1,
+				yref: "paper",
+				_gateData: gate,
+			}),
+			makeShape({
+				x0: 3,
+				x1: 9,
+				y0: 0,
+				y1: 1,
+				yref: "paper",
+				_gateData: gate,
+			}),
+		]
+		const traces = buildGateLabelTraces(shapes, RANGE, RANGE)
+		expect(traces).toHaveLength(1)
+		const t = asLabelTrace(traces[0])
+		expect(t.x).toEqual([6])
+		expect(t.y).toEqual([9.3]) // 93% do range [0,10]
+		expect(t.textposition).toBe("top center")
 	})
 
 	it("texto usa a cor da fonte do plot, não a cor do gate", () => {
