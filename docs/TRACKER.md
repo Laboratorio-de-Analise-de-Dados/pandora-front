@@ -18,8 +18,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature | Área afetada | Branch | Sessão | Desde |
-| ------- | ------------ | ------ | ------ | ----- |
+| Feature                               | Área afetada                                       | Branch                           | Sessão | Desde      |
+| ------------------------------------- | -------------------------------------------------- | -------------------------------- | ------ | ---------- |
+| FE-39 modal de cálculo de compensação | `src/features/compensation/` (dialog novo + panel) | `fix/compensation-compute-modal` | devin  | 2026-09-18 |
 
 ## Concluído nesta branch
 

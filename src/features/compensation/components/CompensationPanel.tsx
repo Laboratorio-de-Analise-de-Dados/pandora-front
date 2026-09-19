@@ -21,6 +21,7 @@ import {
 	MdCheck as ApplyIcon,
 	MdExpandMore as ExpandIcon,
 } from "react-icons/md"
+import { toast } from "react-toastify"
 import {
 	useCompensationActions,
 	useCompensationsQuery,
@@ -28,7 +29,13 @@ import {
 } from "../hooks/useCompensation"
 import { AppDialog } from "../../../components/AppDialog"
 import { useConfirm } from "../../../components/ConfirmDialog"
-import type { CompensationMatrix } from "../../../services/compensationService"
+import ComputeCompensationDialog from "./ComputeCompensationDialog"
+import {
+	computeCompensation,
+	type CompensationComputePayload,
+	type CompensationMatrix,
+} from "../../../services/compensationService"
+import { extractErrorMessage } from "../../../utils/apiError"
 import { formatTime } from "../../history/utils/datetime"
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -128,7 +135,7 @@ export default function CompensationPanel({
 	const embedded = useEmbeddedCompensationQuery(experimentId)
 	const {
 		fromHeaderMutation,
-		computeMutation,
+		invalidateAll,
 		applyMutation,
 		removeMutation,
 		renameMutation,
@@ -138,6 +145,7 @@ export default function CompensationPanel({
 	const confirm = useConfirm()
 	const [showEmbeddedMatrix, setShowEmbeddedMatrix] = useState(false)
 	const [previewMatrix, setPreviewMatrix] = useState<number | null>(null)
+	const [computeOpen, setComputeOpen] = useState(false)
 	const [renameTarget, setRenameTarget] = useState<CompensationMatrix | null>(
 		null,
 	)
@@ -146,9 +154,23 @@ export default function CompensationPanel({
 	const applied = (matrices.data ?? []).find((m) => m.is_applied)
 	const busy =
 		fromHeaderMutation.isPending ||
-		computeMutation.isPending ||
 		applyMutation.isPending ||
 		removeMutation.isPending
+
+	/** FE-39: submit do modal — erro volta pra exibir inline no dialog. */
+	const handleComputeSubmit = async (
+		payload: CompensationComputePayload,
+	): Promise<string | null> => {
+		if (!experimentId) return "Experimento não carregado."
+		try {
+			const matrix = await computeCompensation(experimentId, payload)
+			toast.success(`Matriz "${matrix.name}" calculada dos controles.`)
+			invalidateAll()
+			return null
+		} catch (error) {
+			return extractErrorMessage(error)
+		}
+	}
 
 	return (
 		<Box
@@ -266,7 +288,7 @@ export default function CompensationPanel({
 							size="small"
 							variant="outlined"
 							disabled={busy}
-							onClick={() => computeMutation.mutate({})}
+							onClick={() => setComputeOpen(true)}
 						>
 							Calcular a partir dos controles
 						</Button>
@@ -275,8 +297,8 @@ export default function CompensationPanel({
 							color="text.secondary"
 							sx={{ display: "block", mt: 0.5 }}
 						>
-							Usa os subsamples marcados como controle negativo e single-stain
-							(menu ⋮ do subsample).
+							Escolha as amostras de controle de cada canal direto na lista —
+							subsamples já marcados vêm preenchidos.
 						</Typography>
 					</Box>
 				)}
@@ -397,6 +419,15 @@ export default function CompensationPanel({
 					))}
 				</List>
 			</Box>
+
+			{experimentId && (
+				<ComputeCompensationDialog
+					experimentId={experimentId}
+					open={computeOpen}
+					onClose={() => setComputeOpen(false)}
+					onSubmit={handleComputeSubmit}
+				/>
+			)}
 
 			{/* Renomear */}
 			<AppDialog
