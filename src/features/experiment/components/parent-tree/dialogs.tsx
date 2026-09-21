@@ -83,6 +83,7 @@ export function SubsampleFormDialog({
 			)}
 			<TextField
 				autoFocus
+				slotProps={{ htmlInput: { "data-mui-focusable": true } }}
 				label="Nome do subsample"
 				value={name}
 				onChange={(e) => setName(e.target.value)}

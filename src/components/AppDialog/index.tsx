@@ -68,6 +68,7 @@ export const AppDialog: React.FC<AppDialogProps> = ({
 							onClick={onConfirm}
 							disabled={confirmDisabled || loading}
 							autoFocus={confirmAutoFocus}
+							data-mui-focusable={confirmAutoFocus ? true : undefined}
 						>
 							{confirmLabel}
 						</Button>
