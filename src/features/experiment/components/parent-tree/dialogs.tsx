@@ -90,7 +90,7 @@ export function SubsampleFormDialog({
 				error={!!error}
 				helperText={error}
 				fullWidth
-				sx={{ mt: editing ? 0 : 1 }}
+				sx={{ mt: 1.5 }}
 				onKeyDown={(e) => {
 					if (e.key === "Enter") void handleSubmit()
 				}}
