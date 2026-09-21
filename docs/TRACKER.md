@@ -18,8 +18,9 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature | Área afetada | Branch | Sessão | Desde |
-| ------- | ------------ | ------ | ------ | ----- |
+| Feature                 | Área afetada                                                                   | Branch                           | Sessão | Desde      |
+| ----------------------- | ------------------------------------------------------------------------------ | -------------------------------- | ------ | ---------- |
+| #70 dialogs → AppDialog | `parent-tree/dialogs.tsx` + `src/components/AppDialog` (prop confirmAutoFocus) | `refactor/parent-tree-appdialog` | devin  | 2026-09-21 |
 
 ## Concluído nesta branch
 

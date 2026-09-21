@@ -2,10 +2,6 @@ import {
 	Box,
 	Button,
 	Chip,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
 	FormControl,
 	InputLabel,
 	MenuItem,
@@ -67,44 +63,38 @@ export function SubsampleFormDialog({
 	}
 
 	return (
-		<Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-			<DialogTitle>
-				{editing ? "Renomear subsample" : "Novo subsample"}
-			</DialogTitle>
-			<DialogContent>
-				{editing && target?.source_path && (
-					<Typography
-						variant="caption"
-						sx={{ color: "text.secondary", display: "block", mb: 1 }}
-					>
-						Veio de <code>{target.source_path}</code> no ZIP
-					</Typography>
-				)}
-				<TextField
-					autoFocus
-					label="Nome do subsample"
-					value={name}
-					onChange={(e) => setName(e.target.value)}
-					error={!!error}
-					helperText={error}
-					fullWidth
-					sx={{ mt: editing ? 0 : 1 }}
-					onKeyDown={(e) => {
-						if (e.key === "Enter") void handleSubmit()
-					}}
-				/>
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Cancelar</Button>
-				<Button
-					onClick={() => void handleSubmit()}
-					variant="contained"
-					disabled={!name.trim() || saving}
+		<AppDialog
+			open={open}
+			title={editing ? "Renomear subsample" : "Novo subsample"}
+			onClose={onClose}
+			onConfirm={() => void handleSubmit()}
+			confirmLabel="Salvar"
+			confirmDisabled={!name.trim()}
+			confirmAutoFocus={false}
+			loading={saving}
+		>
+			{editing && target?.source_path && (
+				<Typography
+					variant="caption"
+					sx={{ color: "text.secondary", display: "block", mb: 1 }}
 				>
-					Salvar
-				</Button>
-			</DialogActions>
-		</Dialog>
+					Veio de <code>{target.source_path}</code> no ZIP
+				</Typography>
+			)}
+			<TextField
+				autoFocus
+				label="Nome do subsample"
+				value={name}
+				onChange={(e) => setName(e.target.value)}
+				error={!!error}
+				helperText={error}
+				fullWidth
+				sx={{ mt: editing ? 0 : 1 }}
+				onKeyDown={(e) => {
+					if (e.key === "Enter") void handleSubmit()
+				}}
+			/>
+		</AppDialog>
 	)
 }
 
@@ -122,32 +112,20 @@ export function ArchiveSubsampleDialog({
 	onClose: () => void
 }) {
 	return (
-		<Dialog
+		<AppDialog
 			open={!!target}
+			title="Arquivar subsample"
 			onClose={onClose}
-			fullWidth
-			maxWidth="xs"
-			PaperProps={{ sx: { maxHeight: "90vh", overflowY: "auto" } }}
+			onConfirm={() => target && onConfirm(target.id)}
+			confirmLabel="Arquivar"
 		>
-			<DialogTitle>Arquivar subsample</DialogTitle>
-			<DialogContent>
-				<Typography>
-					O subsample <strong>{target?.name}</strong> sai da listagem, mas nada
-					é apagado: as {target?.files_count ?? 0} amostras ficam preservadas em
-					"Sem subsample" e você pode reativá-lo depois pelo filtro "Mostrar
-					desabilitadas".
-				</Typography>
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Cancelar</Button>
-				<Button
-					onClick={() => target && onConfirm(target.id)}
-					variant="contained"
-				>
-					Arquivar
-				</Button>
-			</DialogActions>
-		</Dialog>
+			<Typography>
+				O subsample <strong>{target?.name}</strong> sai da listagem, mas nada é
+				apagado: as {target?.files_count ?? 0} amostras ficam preservadas em
+				"Sem subsample" e você pode reativá-lo depois pelo filtro "Mostrar
+				desabilitadas".
+			</Typography>
+		</AppDialog>
 	)
 }
 
@@ -180,54 +158,46 @@ export function MoveFileDialog({
 	const active = subsamples.filter((s) => s.active)
 
 	return (
-		<Dialog open={files.length > 0} onClose={onClose} fullWidth maxWidth="xs">
-			<DialogTitle>
-				{files.length > 1 ? `Mover ${files.length} amostras` : "Mover amostra"}
-			</DialogTitle>
-			<DialogContent>
-				<Typography variant="body2" sx={{ mb: 1.5 }}>
-					Mover{" "}
-					<strong>
-						{single
-							? single.file_name
-							: `${files.length} amostras selecionadas`}
-					</strong>{" "}
-					para:
-				</Typography>
-				<FormControl fullWidth size="small">
-					<InputLabel>Subsample</InputLabel>
-					<Select
-						value={selected}
-						label="Subsample"
-						onChange={(e) => setSelected(e.target.value)}
-					>
-						<MenuItem value="">
-							<em>Sem subsample</em>
-						</MenuItem>
-						{active.map((s) => (
-							<MenuItem key={s.id} value={String(s.id)}>
-								{s.name} ({s.files_count}{" "}
-								{s.files_count === 1 ? "amostra" : "amostras"})
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Cancelar</Button>
-				<Button
-					onClick={() =>
-						onConfirm(
-							files.map((f) => f.id),
-							selected === "" ? null : Number(selected),
-						)
-					}
-					variant="contained"
+		<AppDialog
+			open={files.length > 0}
+			title={
+				files.length > 1 ? `Mover ${files.length} amostras` : "Mover amostra"
+			}
+			onClose={onClose}
+			onConfirm={() =>
+				onConfirm(
+					files.map((f) => f.id),
+					selected === "" ? null : Number(selected),
+				)
+			}
+			confirmLabel="Mover"
+		>
+			<Typography variant="body2" sx={{ mb: 1.5 }}>
+				Mover{" "}
+				<strong>
+					{single ? single.file_name : `${files.length} amostras selecionadas`}
+				</strong>{" "}
+				para:
+			</Typography>
+			<FormControl fullWidth size="small">
+				<InputLabel>Subsample</InputLabel>
+				<Select
+					value={selected}
+					label="Subsample"
+					onChange={(e) => setSelected(e.target.value)}
 				>
-					Mover
-				</Button>
-			</DialogActions>
-		</Dialog>
+					<MenuItem value="">
+						<em>Sem subsample</em>
+					</MenuItem>
+					{active.map((s) => (
+						<MenuItem key={s.id} value={String(s.id)}>
+							{s.name} ({s.files_count}{" "}
+							{s.files_count === 1 ? "amostra" : "amostras"})
+						</MenuItem>
+					))}
+				</Select>
+			</FormControl>
+		</AppDialog>
 	)
 }
 
@@ -481,120 +451,122 @@ export function FileMetadataDialog({
 		: []
 
 	return (
-		<Dialog open={!!file} onClose={onClose} fullWidth maxWidth="sm">
-			<DialogTitle sx={{ pb: 1 }}>
-				Metadados do arquivo
-				<Box
-					sx={{
-						display: "flex",
-						flexWrap: "wrap",
-						alignItems: "center",
-						gap: 0.75,
-						mt: 0.5,
-					}}
+		<AppDialog
+			open={!!file}
+			onClose={onClose}
+			maxWidth="sm"
+			cancelLabel="Fechar"
+			title={
+				<>
+					Metadados do arquivo
+					<Box
+						sx={{
+							display: "flex",
+							flexWrap: "wrap",
+							alignItems: "center",
+							gap: 0.75,
+							mt: 0.5,
+						}}
+					>
+						<Typography variant="body2" color="text.secondary" noWrap>
+							{file?.file_name}
+						</Typography>
+						{summary.map(({ key, label, value }) => (
+							<Chip
+								key={key}
+								size="small"
+								variant="outlined"
+								label={`${label}: ${value}`}
+							/>
+						))}
+					</Box>
+				</>
+			}
+		>
+			<Box
+				sx={{
+					display: "flex",
+					flexWrap: "wrap",
+					alignItems: "center",
+					gap: 0.75,
+					mb: 1.5,
+				}}
+			>
+				<Typography
+					variant="overline"
+					sx={{ color: "text.secondary", mr: 0.5 }}
 				>
-					<Typography variant="body2" color="text.secondary" noWrap>
-						{file?.file_name}
-					</Typography>
-					{summary.map(({ key, label, value }) => (
-						<Chip
-							key={key}
-							size="small"
-							variant="outlined"
-							label={`${label}: ${value}`}
-						/>
-					))}
-				</Box>
-			</DialogTitle>
-			<DialogContent>
-				<Box
-					sx={{
-						display: "flex",
-						flexWrap: "wrap",
-						alignItems: "center",
-						gap: 0.75,
-						mb: 1.5,
-					}}
-				>
+					Tags
+				</Typography>
+				{(file?.tags ?? []).map((tag) => (
+					<TagChip key={`tag-${tag.id}`} tag={tag} />
+				))}
+				{(file?.inherited_tags ?? []).map((tag) => (
+					<TagChip key={`inh-${tag.id}`} tag={tag} inherited />
+				))}
+				{(file?.tags ?? []).length === 0 &&
+					(file?.inherited_tags ?? []).length === 0 && (
+						<Typography variant="caption" color="text.secondary">
+							Nenhuma
+						</Typography>
+					)}
+				{onEditTags && file && (
+					<Button
+						size="small"
+						onClick={() => onEditTags(file)}
+						sx={{ textTransform: "none", ml: "auto" }}
+					>
+						Editar etiquetas…
+					</Button>
+				)}
+			</Box>
+			{error && (
+				<Typography variant="body2" color="error">
+					{error}
+				</Typography>
+			)}
+			{!headers && !error && (
+				<Typography variant="body2" color="text.secondary">
+					Carregando…
+				</Typography>
+			)}
+			{headers && (
+				<>
 					<Typography
 						variant="overline"
-						sx={{ color: "text.secondary", mr: 0.5 }}
+						sx={{ color: "text.secondary", display: "block", mb: 0.5 }}
 					>
-						Tags
+						Informações principais
 					</Typography>
-					{(file?.tags ?? []).map((tag) => (
-						<TagChip key={`tag-${tag.id}`} tag={tag} />
-					))}
-					{(file?.inherited_tags ?? []).map((tag) => (
-						<TagChip key={`inh-${tag.id}`} tag={tag} inherited />
-					))}
-					{(file?.tags ?? []).length === 0 &&
-						(file?.inherited_tags ?? []).length === 0 && (
-							<Typography variant="caption" color="text.secondary">
-								Nenhuma
-							</Typography>
-						)}
-					{onEditTags && file && (
-						<Button
-							size="small"
-							onClick={() => onEditTags(file)}
-							sx={{ textTransform: "none", ml: "auto" }}
-						>
-							Editar etiquetas…
-						</Button>
-					)}
-				</Box>
-				{error && (
-					<Typography variant="body2" color="error">
-						{error}
-					</Typography>
-				)}
-				{!headers && !error && (
-					<Typography variant="body2" color="text.secondary">
-						Carregando…
-					</Typography>
-				)}
-				{headers && (
-					<>
-						<Typography
-							variant="overline"
-							sx={{ color: "text.secondary", display: "block", mb: 0.5 }}
-						>
-							Informações principais
+					{curated.length > 0 ? (
+						<MetadataTable head={["Campo", "Valor"]} rows={curated} />
+					) : (
+						<Typography variant="body2" color="text.secondary">
+							O header não traz campos conhecidos — veja a lista completa.
 						</Typography>
-						{curated.length > 0 ? (
-							<MetadataTable head={["Campo", "Valor"]} rows={curated} />
-						) : (
-							<Typography variant="body2" color="text.secondary">
-								O header não traz campos conhecidos — veja a lista completa.
-							</Typography>
-						)}
-						{rest.length > 0 && (
-							<>
-								<Button
-									size="small"
-									onClick={() => setShowAll((v) => !v)}
-									sx={{ mt: 1.5, mb: 0.5, textTransform: "none" }}
-								>
-									{showAll
-										? "Ocultar campos brutos"
-										: `Ver todos os campos (${rest.length})`}
-								</Button>
-								{showAll && (
-									<MetadataTable
-										head={["Keyword", "Valor"]}
-										rows={rest}
-										monoKey
-									/>
-								)}
-							</>
-						)}
-					</>
-				)}
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Fechar</Button>
-			</DialogActions>
-		</Dialog>
+					)}
+					{rest.length > 0 && (
+						<>
+							<Button
+								size="small"
+								onClick={() => setShowAll((v) => !v)}
+								sx={{ mt: 1.5, mb: 0.5, textTransform: "none" }}
+							>
+								{showAll
+									? "Ocultar campos brutos"
+									: `Ver todos os campos (${rest.length})`}
+							</Button>
+							{showAll && (
+								<MetadataTable
+									head={["Keyword", "Valor"]}
+									rows={rest}
+									monoKey
+								/>
+							)}
+						</>
+					)}
+				</>
+			)}
+		</AppDialog>
 	)
 }
