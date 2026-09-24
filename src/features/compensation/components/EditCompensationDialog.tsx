@@ -9,6 +9,7 @@ import {
 	Typography,
 } from "@mui/material"
 import { AppDialog } from "../../../components/AppDialog"
+import MatrixCellsGrid from "./MatrixCellsGrid"
 import { useExperimentQuery } from "../../experiment/hooks/useExperimentData"
 import type {
 	CompensationManualCreatePayload,
@@ -58,6 +59,8 @@ export default function EditCompensationDialog({
 	const [name, setName] = useState("")
 	const [error, setError] = useState<string | null>(null)
 	const [saving, setSaving] = useState(false)
+	// Ajuste abre em modo leitura (a matriz bonita); "Editar" liga as células.
+	const [editing, setEditing] = useState(false)
 
 	// Ao abrir: modo edição vai direto pra grade preenchida; modo novo
 	// começa na escolha de canais (default: todos os fluorescentes).
@@ -65,6 +68,7 @@ export default function EditCompensationDialog({
 		if (!open) return
 		setError(null)
 		setSaving(false)
+		setEditing(!source)
 		if (source) {
 			setStep("grid")
 			setChannels(source.channels)
@@ -158,93 +162,27 @@ export default function EditCompensationDialog({
 					gates e estatísticas e fica registrado no histórico).
 				</Alert>
 			)}
-			<TextField
-				size="small"
-				label="Nome da matriz"
-				value={name}
-				onChange={(e) => setName(e.target.value)}
+			{editing && (
+				<TextField
+					size="small"
+					label="Nome da matriz"
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+				/>
+			)}
+			<MatrixCellsGrid
+				channels={channels}
+				cells={cells}
+				editable={editing}
+				invalid={invalid}
+				changed={changed}
+				onCellChange={setCell}
+				footerHint={
+					source && editing
+						? " Células destacadas divergem da original."
+						: undefined
+				}
 			/>
-			<Box
-				sx={(theme) => ({
-					overflowX: "auto",
-					fontSize: "0.65rem",
-					fontFamily: "monospace",
-					border: 1,
-					borderColor: "divider",
-					borderRadius: 1,
-					p: 0.5,
-					bgcolor: theme.palette.action.hover,
-				})}
-			>
-				<table style={{ borderCollapse: "collapse" }}>
-					<thead>
-						<tr>
-							<th />
-							{channels.map((c) => (
-								<th
-									key={c}
-									style={{
-										padding: "1px 4px",
-										writingMode: "vertical-rl",
-										fontWeight: 600,
-										textAlign: "left",
-									}}
-								>
-									{c}
-								</th>
-							))}
-						</tr>
-					</thead>
-					<tbody>
-						{cells.map((row, i) => (
-							<tr key={channels[i] ?? i}>
-								<td style={{ fontWeight: 600, paddingRight: 4 }}>
-									{channels[i]}
-								</td>
-								{row.map((raw, j) => (
-									<td key={j} style={{ padding: 1 }}>
-										<Box
-											component="input"
-											value={raw}
-											inputMode="decimal"
-											aria-label={`${channels[i]} ← ${channels[j]}`}
-											onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-												setCell(i, j, e.target.value)
-											}
-											sx={{
-												width: "3.4rem",
-												font: "inherit",
-												textAlign: "right",
-												p: "2px 4px",
-												border: 1,
-												borderRadius: 0.5,
-												borderColor: invalid.has(`${i},${j}`)
-													? "error.main"
-													: "divider",
-												bgcolor: invalid.has(`${i},${j}`)
-													? "error.light"
-													: changed.has(`${i},${j}`)
-														? "warning.light"
-														: "background.paper",
-												fontWeight: i === j ? 700 : 400,
-												color: "text.primary",
-												outline: "none",
-												"&:focus": {
-													borderColor: "primary.main",
-												},
-											}}
-										/>
-									</td>
-								))}
-							</tr>
-						))}
-					</tbody>
-				</table>
-				<Typography variant="caption" color="text.secondary">
-					Valores em % — linha = canal detector, coluna = fluorócromo.
-					{source && " Células destacadas divergem da original."}
-				</Typography>
-			</Box>
 		</Box>
 	)
 
@@ -266,6 +204,13 @@ export default function EditCompensationDialog({
 							disabled={!channels.length}
 						>
 							Continuar
+						</Button>
+					</>
+				) : source && !editing ? (
+					<>
+						<Button onClick={onClose}>Fechar</Button>
+						<Button variant="contained" onClick={() => setEditing(true)}>
+							Editar
 						</Button>
 					</>
 				) : (
