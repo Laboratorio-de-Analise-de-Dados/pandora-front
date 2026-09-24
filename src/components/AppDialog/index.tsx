@@ -31,6 +31,8 @@ export interface AppDialogProps {
 	cancelLabel?: string
 	confirmColor?: "primary" | "error"
 	confirmDisabled?: boolean
+	/** Desligar quando o foco inicial pertence a um campo do corpo (form). */
+	confirmAutoFocus?: boolean
 	loading?: boolean
 	maxWidth?: "xs" | "sm" | "md"
 }
@@ -46,6 +48,7 @@ export const AppDialog: React.FC<AppDialogProps> = ({
 	cancelLabel = "Cancelar",
 	confirmColor = "primary",
 	confirmDisabled = false,
+	confirmAutoFocus = true,
 	loading = false,
 	maxWidth = "xs",
 }) => (
@@ -64,7 +67,8 @@ export const AppDialog: React.FC<AppDialogProps> = ({
 							color={confirmColor}
 							onClick={onConfirm}
 							disabled={confirmDisabled || loading}
-							autoFocus
+							autoFocus={confirmAutoFocus}
+							data-mui-focusable={confirmAutoFocus ? true : undefined}
 						>
 							{confirmLabel}
 						</Button>
