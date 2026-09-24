@@ -5,12 +5,20 @@ import {
 	Box,
 	Button,
 	CircularProgress,
+	FormControlLabel,
+	Switch,
 	TextField,
 	Typography,
+	useMediaQuery,
+	useTheme,
 } from "@mui/material"
 import { AppDialog } from "../../../components/AppDialog"
 import MatrixCellsGrid from "./MatrixCellsGrid"
+import CompensationPreview from "./CompensationPreview"
 import { useExperimentQuery } from "../../experiment/hooks/useExperimentData"
+import { useExperimentWorkspace } from "../../experiment/context/ExperimentWorkspaceContext"
+import { useCompensationPreview } from "../hooks/useCompensationPreview"
+import { extractErrorMessage } from "../../../utils/apiError"
 import type {
 	CompensationManualCreatePayload,
 	CompensationMatrix,
@@ -53,6 +61,14 @@ export default function EditCompensationDialog({
 		[experiment.data?.values],
 	)
 
+	// FE-41: a amostra do preview é a mesma do plot principal.
+	const { source: workspaceSource, experimentFiles } = useExperimentWorkspace()
+	const previewFile = experimentFiles.find(
+		(f) => f.id === workspaceSource?.fileDataId,
+	)
+	const theme = useTheme()
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+
 	const [step, setStep] = useState<"channels" | "grid">("grid")
 	const [channels, setChannels] = useState<string[]>([])
 	const [cells, setCells] = useState<string[][]>([])
@@ -61,6 +77,10 @@ export default function EditCompensationDialog({
 	const [saving, setSaving] = useState(false)
 	// Ajuste abre em modo leitura (a matriz bonita); "Editar" liga as células.
 	const [editing, setEditing] = useState(false)
+	// FE-41: preview da matriz em edição — desktop liga, mobile desliga.
+	const [previewOn, setPreviewOn] = useState(true)
+	const [previewX, setPreviewX] = useState("")
+	const [previewY, setPreviewY] = useState("")
 
 	// Ao abrir: modo edição vai direto pra grade preenchida; modo novo
 	// começa na escolha de canais (default: todos os fluorescentes).
@@ -69,18 +89,21 @@ export default function EditCompensationDialog({
 		setError(null)
 		setSaving(false)
 		setEditing(!source)
+		setPreviewOn(!isMobile)
 		if (source) {
 			setStep("grid")
 			setChannels(source.channels)
 			setCells(source.matrix.map((row) => row.map(formatPercentCell)))
 			setName(`${source.name} (ajustada)`)
+			setPreviewX(source.channels[0] ?? "")
+			setPreviewY(source.channels[1] ?? source.channels[0] ?? "")
 		} else {
 			setStep("channels")
 			setChannels([])
 			setCells([])
 			setName("")
 		}
-	}, [open, source])
+	}, [open, source, isMobile])
 
 	// Modo novo: canais chegam assíncronos — seleciona todos por default.
 	useEffect(() => {
@@ -99,10 +122,23 @@ export default function EditCompensationDialog({
 		[source, parsed],
 	)
 
+	// FE-41: preview da grade em edição — inválida não dispara request.
+	const preview = useCompensationPreview({
+		experimentId,
+		channels,
+		matrix: editing && invalid.size === 0 ? (parsed as number[][]) : null,
+		fileId: workspaceSource?.fileDataId,
+		xAxis: previewX,
+		yAxis: previewY,
+		enabled: previewOn && editing && step === "grid",
+	})
+
 	const openGrid = () => {
 		setCells(
 			identityMatrix(channels.length).map((row) => row.map(formatPercentCell)),
 		)
+		setPreviewX(channels[0] ?? "")
+		setPreviewY(channels[1] ?? channels[0] ?? "")
 		setStep("grid")
 	}
 
@@ -183,6 +219,37 @@ export default function EditCompensationDialog({
 						: undefined
 				}
 			/>
+			{editing && (
+				<FormControlLabel
+					control={
+						<Switch
+							size="small"
+							checked={previewOn}
+							onChange={(_, checked) => setPreviewOn(checked)}
+						/>
+					}
+					label={
+						<Typography variant="caption" color="text.secondary">
+							pré-visualizar efeito na amostra atual — nada é salvo
+						</Typography>
+					}
+				/>
+			)}
+			{editing && previewOn && (
+				<CompensationPreview
+					channels={channels}
+					xAxis={previewX}
+					yAxis={previewY}
+					onAxisChange={(axis, channel) =>
+						axis === "x" ? setPreviewX(channel) : setPreviewY(channel)
+					}
+					data={preview.data}
+					loading={preview.isLoading}
+					fetching={preview.isFetching}
+					error={preview.error ? extractErrorMessage(preview.error) : null}
+					fileName={previewFile?.file_name}
+				/>
+			)}
 		</Box>
 	)
 

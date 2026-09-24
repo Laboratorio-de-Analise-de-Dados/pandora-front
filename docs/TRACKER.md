@@ -18,10 +18,11 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                               | Área afetada                                       | Branch                            | Sessão | Desde      |
-| ------------------------------------- | -------------------------------------------------- | --------------------------------- | ------ | ---------- |
-| FE-39 modal de cálculo de compensação | `src/features/compensation/` (dialog novo + panel) | `fix/compensation-compute-modal`  | devin  | 2026-09-18 |
-| FE-40 editor de matriz de compensação | `src/features/compensation/` (dialog novo + panel) | `feat/compensation-matrix-editor` | devin  | 2026-09-24 |
+| Feature                               | Área afetada                                         | Branch                            | Sessão | Desde      |
+| ------------------------------------- | ---------------------------------------------------- | --------------------------------- | ------ | ---------- |
+| FE-39 modal de cálculo de compensação | `src/features/compensation/` (dialog novo + panel)   | `fix/compensation-compute-modal`  | devin  | 2026-09-18 |
+| FE-40 editor de matriz de compensação | `src/features/compensation/` (dialog novo + panel)   | `feat/compensation-matrix-editor` | devin  | 2026-09-24 |
+| FE-41 preview ao vivo da matriz       | `src/features/compensation/` + `compensationService` | `feat/compensation-live-preview`  | devin  | 2026-09-24 |
 
 ## Concluído nesta branch
 

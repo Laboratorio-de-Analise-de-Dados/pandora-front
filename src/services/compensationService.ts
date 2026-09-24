@@ -1,4 +1,7 @@
+import axios from "axios"
 import CytometryApi from "../API"
+import { buildCompensationPreviewMock } from "../features/compensation/utils/previewMock"
+import type { DensityResponse, Scale } from "../types"
 
 /**
  * Compensação (spillover) — BE-22 no backend, ADR-0018/0019.
@@ -134,4 +137,55 @@ export const renameCompensation = async (
 /** Soft delete — se aplicada, o backend desliga antes (com revisão). */
 export const discardCompensation = async (matrixId: number): Promise<void> => {
 	await CytometryApi.delete(`/analytics/compensations/${matrixId}/`)
+}
+
+/** BE-36: parâmetros de renderização — os mesmos do density atual. */
+export interface CompensationPreviewParams {
+	mode: "heatmap"
+	bins: number
+	cutoff: number
+	xscale: Scale
+	yscale: Scale
+	cofactor: number
+}
+
+/** BE-36: prévia ad-hoc — matriz em edição, nunca persistida. */
+export interface CompensationPreviewPayload {
+	channels: string[]
+	matrix: number[][]
+	/** Amostra selecionada no workspace (fileDataId). */
+	file: number
+	x_axis: string
+	y_axis: string
+	params: CompensationPreviewParams
+}
+
+/**
+ * FE-41 / BE-36 (pendente): densidade da amostra com a matriz ad-hoc
+ * aplicada — não persiste nada. Resposta = mesmo formato do density.
+ * TODO(BE-36): enquanto a rota não existe (404), cai no stub sintético
+ * (`utils/previewMock`) pra UI de preview funcionar de ponta a ponta —
+ * remover o catch quando o endpoint chegar.
+ */
+export const previewCompensation = async (
+	experimentId: number,
+	payload: CompensationPreviewPayload,
+): Promise<DensityResponse> => {
+	try {
+		const res = await CytometryApi.post<DensityResponse>(
+			`/experiment/${experimentId}/compensations/preview`,
+			payload,
+		)
+		return res.data
+	} catch (error) {
+		if (axios.isAxiosError(error) && error.response?.status === 404) {
+			return buildCompensationPreviewMock({
+				channels: payload.channels,
+				matrix: payload.matrix,
+				xAxis: payload.x_axis,
+				yAxis: payload.y_axis,
+			})
+		}
+		throw error
+	}
 }
