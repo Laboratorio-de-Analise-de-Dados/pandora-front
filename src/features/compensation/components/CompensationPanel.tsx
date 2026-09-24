@@ -17,6 +17,7 @@ import {
 import {
 	MdClose as CloseIcon,
 	MdEdit as RenameIcon,
+	MdTune as EditMatrixIcon,
 	MdDeleteOutline as DiscardIcon,
 	MdCheck as ApplyIcon,
 	MdExpandMore as ExpandIcon,
@@ -30,9 +31,13 @@ import {
 import { AppDialog } from "../../../components/AppDialog"
 import { useConfirm } from "../../../components/ConfirmDialog"
 import ComputeCompensationDialog from "./ComputeCompensationDialog"
+import EditCompensationDialog from "./EditCompensationDialog"
+import MatrixGrid from "./MatrixGrid"
 import {
 	computeCompensation,
+	createCompensation,
 	type CompensationComputePayload,
+	type CompensationManualCreatePayload,
 	type CompensationMatrix,
 } from "../../../services/compensationService"
 import { extractErrorMessage } from "../../../utils/apiError"
@@ -44,75 +49,11 @@ const SOURCE_LABELS: Record<string, string> = {
 	manual: "manual",
 }
 
-/** Grade N×N da matriz — legível até ~12 canais; além disso vira scroll. */
-function MatrixGrid({
-	channels,
-	matrix,
-}: {
-	channels: string[]
-	matrix: number[][]
-}) {
-	return (
-		<Box
-			component="div"
-			sx={(theme) => ({
-				overflowX: "auto",
-				fontSize: "0.65rem",
-				fontFamily: "monospace",
-				border: 1,
-				borderColor: "divider",
-				borderRadius: 1,
-				p: 0.5,
-				bgcolor: theme.palette.action.hover,
-			})}
-		>
-			<table style={{ borderCollapse: "collapse" }}>
-				<thead>
-					<tr>
-						<th />
-						{channels.map((c) => (
-							<th
-								key={c}
-								style={{
-									padding: "1px 4px",
-									writingMode: "vertical-rl",
-									fontWeight: 600,
-									textAlign: "left",
-								}}
-							>
-								{c}
-							</th>
-						))}
-					</tr>
-				</thead>
-				<tbody>
-					{matrix.map((row, i) => (
-						<tr key={channels[i] ?? i}>
-							<td style={{ fontWeight: 600, paddingRight: 4 }}>
-								{channels[i]}
-							</td>
-							{row.map((v, j) => (
-								<td
-									key={j}
-									style={{
-										textAlign: "right",
-										padding: "0 4px",
-										fontWeight: i === j ? 700 : 400,
-									}}
-								>
-									{(v * 100).toFixed(1)}
-								</td>
-							))}
-						</tr>
-					))}
-				</tbody>
-			</table>
-			<Typography variant="caption" color="text.secondary">
-				Valores em % — linha = canal detector, coluna = fluorócromo.
-			</Typography>
-		</Box>
-	)
-}
+/** FE-40: proveniência — derivada mostra a origem do ajuste. */
+const sourceLabel = (m: CompensationMatrix) =>
+	m.derived_from_name
+		? `ajustada de ${m.derived_from_name}`
+		: (SOURCE_LABELS[m.source] ?? m.source)
 
 interface CompensationPanelProps {
 	experimentId: number | undefined
@@ -146,6 +87,10 @@ export default function CompensationPanel({
 	const [showEmbeddedMatrix, setShowEmbeddedMatrix] = useState(false)
 	const [previewMatrix, setPreviewMatrix] = useState<number | null>(null)
 	const [computeOpen, setComputeOpen] = useState(false)
+	/** FE-40: matriz em ajuste, ou "new" pra criação do zero. */
+	const [editTarget, setEditTarget] = useState<
+		CompensationMatrix | "new" | null
+	>(null)
 	const [renameTarget, setRenameTarget] = useState<CompensationMatrix | null>(
 		null,
 	)
@@ -165,6 +110,25 @@ export default function CompensationPanel({
 		try {
 			const matrix = await computeCompensation(experimentId, payload)
 			toast.success(`Matriz "${matrix.name}" calculada dos controles.`)
+			invalidateAll()
+			return null
+		} catch (error) {
+			return extractErrorMessage(error)
+		}
+	}
+
+	/** FE-40: criação manual (do zero ou ajuste derivado). */
+	const handleCreateSubmit = async (
+		payload: CompensationManualCreatePayload,
+	): Promise<string | null> => {
+		if (!experimentId) return "Experimento não carregado."
+		try {
+			const matrix = await createCompensation(experimentId, payload)
+			toast.success(
+				matrix.is_applied
+					? `Matriz "${matrix.name}" criada e aplicada.`
+					: `Matriz "${matrix.name}" criada.`,
+			)
 			invalidateAll()
 			return null
 		} catch (error) {
@@ -281,24 +245,35 @@ export default function CompensationPanel({
 					</Box>
 				)}
 
-				{/* Calcular dos controles */}
+				{/* Calcular dos controles + criar manual (FE-40) */}
 				{canEdit && (
 					<Box sx={{ mb: 2 }}>
-						<Button
-							size="small"
-							variant="outlined"
-							disabled={busy}
-							onClick={() => setComputeOpen(true)}
-						>
-							Calcular a partir dos controles
-						</Button>
+						<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+							<Button
+								size="small"
+								variant="outlined"
+								disabled={busy}
+								onClick={() => setComputeOpen(true)}
+							>
+								Calcular a partir dos controles
+							</Button>
+							<Button
+								size="small"
+								variant="outlined"
+								disabled={busy}
+								onClick={() => setEditTarget("new")}
+							>
+								Nova matriz
+							</Button>
+						</Box>
 						<Typography
 							variant="caption"
 							color="text.secondary"
 							sx={{ display: "block", mt: 0.5 }}
 						>
 							Escolha as amostras de controle de cada canal direto na lista —
-							subsamples já marcados vêm preenchidos.
+							subsamples já marcados vêm preenchidos. Ou monte a grade na mão
+							com "Nova matriz".
 						</Typography>
 					</Box>
 				)}
@@ -337,6 +312,15 @@ export default function CompensationPanel({
 													</IconButton>
 												</Tooltip>
 											)}
+											<Tooltip title="Ajustar valores (cria matriz derivada)">
+												<IconButton
+													size="small"
+													disabled={busy}
+													onClick={() => setEditTarget(m)}
+												>
+													<EditMatrixIcon fontSize="small" />
+												</IconButton>
+											</Tooltip>
 											<Tooltip title="Renomear">
 												<IconButton
 													size="small"
@@ -396,9 +380,17 @@ export default function CompensationPanel({
 													sx={{ height: 18, fontSize: "0.6rem" }}
 												/>
 											)}
+											{m.derived_from != null && (
+												<Chip
+													label="ajustada"
+													size="small"
+													variant="outlined"
+													sx={{ height: 18, fontSize: "0.6rem" }}
+												/>
+											)}
 										</Box>
 									}
-									secondary={`${SOURCE_LABELS[m.source] ?? m.source} · ${m.channels.length} canais · ${m.created_by_name ?? "—"} · ${formatTime(m.created_at)}`}
+									secondary={`${sourceLabel(m)} · ${m.channels.length} canais · ${m.created_by_name ?? "—"} · ${formatTime(m.created_at)}`}
 								/>
 							</ListItem>
 							<Box sx={{ pl: 1, pb: 0.5 }}>
@@ -426,6 +418,16 @@ export default function CompensationPanel({
 					open={computeOpen}
 					onClose={() => setComputeOpen(false)}
 					onSubmit={handleComputeSubmit}
+				/>
+			)}
+
+			{experimentId && (
+				<EditCompensationDialog
+					experimentId={experimentId}
+					open={editTarget != null}
+					source={editTarget === "new" ? null : editTarget}
+					onClose={() => setEditTarget(null)}
+					onSubmit={handleCreateSubmit}
 				/>
 			)}
 
