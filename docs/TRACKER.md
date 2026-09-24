@@ -18,9 +18,8 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                 | Área afetada                                                                   | Branch                           | Sessão | Desde      |
-| ----------------------- | ------------------------------------------------------------------------------ | -------------------------------- | ------ | ---------- |
-| #70 dialogs → AppDialog | `parent-tree/dialogs.tsx` + `src/components/AppDialog` (prop confirmAutoFocus) | `refactor/parent-tree-appdialog` | devin  | 2026-09-21 |
+| Feature | Área afetada | Branch | Sessão | Desde |
+| ------- | ------------ | ------ | ------ | ----- |
 
 ## Concluído nesta branch
 
@@ -33,6 +32,7 @@ serviços) ou alinhe com o responsável.
 | FE-31 contas conectadas                    | Perfil "Contas conectadas" (link/unlink real), interstitial `link_notice` no auth-callback, dialog de merge (`merge_notice` → `POST /accounts/merge/confirm/`) — PRs #72/#73/#74 |
 | FE-34 tags de amostra                      | `src/features/tags/` (chips compactos, picker com controle exclusivo, sugestões, lote por delta) + metadados — PR #97                                                            |
 | FE-32 dialogs de confirmação               | `ConfirmDialogProvider` + `useConfirm()` (Promise<boolean>); migrados os 2 `window.confirm` de `useExperimentMetaActions` — ADR-0014                                             |
+| #70 dialogs → AppDialog                    | 4 dialogs do parent-tree no shell `AppDialog` + prop `confirmAutoFocus`/`data-mui-focusable` p/ foco inicial — PR #103                                                           |
 
 ## Livres para pegar
 
