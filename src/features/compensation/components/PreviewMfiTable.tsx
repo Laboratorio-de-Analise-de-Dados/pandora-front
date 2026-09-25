@@ -1,18 +1,22 @@
 import { useMemo, useState } from "react"
 import {
 	Box,
+	Button,
 	Checkbox,
-	ListItemText,
-	MenuItem,
-	Select,
+	Chip,
+	FormControlLabel,
+	Popover,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
 	TableHead,
 	TableRow,
+	TextField,
 	Typography,
 } from "@mui/material"
+import { MdArrowDropDown as ArrowDropDownIcon } from "react-icons/md"
+import { defaultScale } from "../../plot/utils/biex"
 import type { CompensationChannelStats } from "../../../services/compensationService"
 
 interface PreviewMfiTableProps {
@@ -43,10 +47,20 @@ export default function PreviewMfiTable({
 }: PreviewMfiTableProps) {
 	// Colunas visíveis — guardo as ESCONDIDAS pra canal novo entrar visível.
 	const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+	const [colsAnchor, setColsAnchor] = useState<HTMLElement | null>(null)
+	const [colSearch, setColSearch] = useState("")
 	const visibleChannels = useMemo(
 		() => channels.filter((c) => !hiddenCols.has(c)),
 		[channels, hiddenCols],
 	)
+
+	const toggleCol = (ch: string) =>
+		setHiddenCols((prev) => {
+			const next = new Set(prev)
+			if (next.has(ch)) next.delete(ch)
+			else next.add(ch)
+			return next
+		})
 
 	const rows = useMemo(
 		() =>
@@ -75,32 +89,99 @@ export default function PreviewMfiTable({
 				<Typography variant="caption" fontWeight={700}>
 					Mediana (MFI) por população
 				</Typography>
-				<Select
-					multiple
+				<Button
 					size="small"
-					value={visibleChannels}
-					renderValue={() => "Colunas"}
-					onChange={(e) => {
-						const sel = e.target.value as string[]
-						setHiddenCols(new Set(channels.filter((c) => !sel.includes(c))))
-					}}
+					variant="outlined"
+					endIcon={<ArrowDropDownIcon />}
+					onClick={(e) => setColsAnchor(e.currentTarget)}
 					sx={{
-						fontSize: "0.75rem",
+						fontSize: "0.7rem",
+						textTransform: "none",
+						py: 0,
+						px: 1,
 						minWidth: 0,
-						"& .MuiSelect-select": { py: 0.25, pr: 3 },
 					}}
-					MenuProps={{ PaperProps: { sx: { maxHeight: 280 } } }}
 				>
-					{channels.map((ch) => (
-						<MenuItem key={ch} value={ch} dense>
-							<Checkbox size="small" checked={!hiddenCols.has(ch)} />
-							<ListItemText
-								primary={ch}
-								primaryTypographyProps={{ variant: "caption" }}
-							/>
-						</MenuItem>
-					))}
-				</Select>
+					Colunas
+				</Button>
+				<Popover
+					open={Boolean(colsAnchor)}
+					anchorEl={colsAnchor}
+					onClose={() => {
+						setColsAnchor(null)
+						setColSearch("")
+					}}
+					anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+					transformOrigin={{ vertical: "top", horizontal: "right" }}
+					slotProps={{ paper: { sx: { width: 220, maxHeight: 380, p: 1.5 } } }}
+				>
+					<TextField
+						size="small"
+						placeholder="Buscar canal…"
+						value={colSearch}
+						onChange={(e) => setColSearch(e.target.value)}
+						sx={{
+							mb: 0.5,
+							"& .MuiInputBase-input": { fontSize: "0.75rem", py: 0.5 },
+						}}
+						fullWidth
+						autoFocus
+					/>
+					<Box sx={{ display: "flex", gap: 0.5, mb: 0.5 }}>
+						<Chip
+							label="Todos"
+							size="small"
+							variant="outlined"
+							onClick={() => setHiddenCols(new Set())}
+							sx={{ fontSize: "0.6rem", height: 20 }}
+						/>
+						<Chip
+							label="Fluoresc."
+							size="small"
+							variant="outlined"
+							onClick={() =>
+								setHiddenCols(
+									new Set(channels.filter((c) => defaultScale(c) === "linear")),
+								)
+							}
+							sx={{ fontSize: "0.6rem", height: 20 }}
+						/>
+						<Chip
+							label="Limpar"
+							size="small"
+							variant="outlined"
+							onClick={() => setHiddenCols(new Set(channels))}
+							sx={{ fontSize: "0.6rem", height: 20 }}
+						/>
+					</Box>
+					<Box sx={{ maxHeight: 260, overflow: "auto" }}>
+						{channels
+							.filter((ch) =>
+								colSearch.trim()
+									? ch.toLowerCase().includes(colSearch.toLowerCase())
+									: true,
+							)
+							.map((ch) => (
+								<FormControlLabel
+									key={ch}
+									control={
+										<Checkbox
+											size="small"
+											checked={!hiddenCols.has(ch)}
+											onChange={() => toggleCol(ch)}
+											sx={{ p: 0.25 }}
+										/>
+									}
+									label={
+										<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
+											{ch}
+										</Typography>
+									}
+									sx={{ display: "block", m: 0, height: 26 }}
+								/>
+							))}
+					</Box>
+				</Popover>
 			</Box>
 			<TableContainer sx={{ maxHeight: 200, overflowX: "auto" }}>
 				<Table size="small" stickyHeader>
