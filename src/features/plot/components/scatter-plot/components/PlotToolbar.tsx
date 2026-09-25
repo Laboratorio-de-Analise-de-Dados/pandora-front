@@ -287,6 +287,11 @@ export interface PlotToolbarProps {
 	onYMaxChange: (v: string) => void
 	/** Ferramentas/config escondidas durante reshape ou edição de gate. */
 	controlsEnabled: boolean
+	/**
+	 * false = esconde o seletor de ferramenta de gate (ex.: prévia de
+	 * compensação — gates read-only, mas escalas/limits seguem úteis).
+	 */
+	gateToolsEnabled?: boolean
 	settingsOpen: boolean
 	onToggleSettings: () => void
 }
@@ -321,6 +326,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	onYMinChange,
 	onYMaxChange,
 	controlsEnabled,
+	gateToolsEnabled = true,
 	settingsOpen,
 	onToggleSettings,
 }) => {
@@ -334,48 +340,50 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 		<>
 			{/* Tipo de gate — mesmo display outlined dos selects de eixo;
 					    tooltip em cada item ajuda a identificar. */}
-			<FormControl size="small" variant="outlined">
-				<InputLabel id="gate-tool-label">Gate</InputLabel>
-				<Select
-					labelId="gate-tool-label"
-					label="Gate"
-					value={tool}
-					onChange={(e) => onToolChange(e.target.value as GateTool)}
-					renderValue={() => (
-						<Box
-							sx={{
-								display: "flex",
-								alignItems: "center",
-								gap: 0.5,
-							}}
-						>
-							{currentTool?.icon}
-							{histogram
-								? (currentTool?.histLabel ?? currentTool?.label)
-								: currentTool?.label}
-						</Box>
-					)}
-					sx={{ fontWeight: 600 }}
-				>
-					{visibleTools.map((t) => (
-						<MenuItem key={t.value} value={t.value}>
-							<Tooltip title={t.tip} placement="right" arrow>
-								<Box
-									sx={{
-										display: "flex",
-										alignItems: "center",
-										gap: 1,
-										width: "100%",
-									}}
-								>
-									{t.icon}
-									{histogram ? (t.histLabel ?? t.label) : t.label}
-								</Box>
-							</Tooltip>
-						</MenuItem>
-					))}
-				</Select>
-			</FormControl>
+			{gateToolsEnabled && (
+				<FormControl size="small" variant="outlined">
+					<InputLabel id="gate-tool-label">Gate</InputLabel>
+					<Select
+						labelId="gate-tool-label"
+						label="Gate"
+						value={tool}
+						onChange={(e) => onToolChange(e.target.value as GateTool)}
+						renderValue={() => (
+							<Box
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									gap: 0.5,
+								}}
+							>
+								{currentTool?.icon}
+								{histogram
+									? (currentTool?.histLabel ?? currentTool?.label)
+									: currentTool?.label}
+							</Box>
+						)}
+						sx={{ fontWeight: 600 }}
+					>
+						{visibleTools.map((t) => (
+							<MenuItem key={t.value} value={t.value}>
+								<Tooltip title={t.tip} placement="right" arrow>
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											gap: 1,
+											width: "100%",
+										}}
+									>
+										{t.icon}
+										{histogram ? (t.histLabel ?? t.label) : t.label}
+									</Box>
+								</Tooltip>
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+			)}
 			{/* Escalas como selects outlined (linear/biex); Y some no histograma. */}
 			<FormControl size="small" variant="outlined">
 				<InputLabel id="x-scale-label">Escala X</InputLabel>

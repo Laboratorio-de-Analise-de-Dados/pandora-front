@@ -29,12 +29,11 @@ import {
 import { AppDialog } from "../../../components/AppDialog"
 import { useConfirm } from "../../../components/ConfirmDialog"
 import ComputeCompensationDialog from "./ComputeCompensationDialog"
-import EditCompensationDialog from "./EditCompensationDialog"
+import ViewCompensationDialog from "./ViewCompensationDialog"
+import { useCompensationEdit } from "../context/CompensationEditContext"
 import {
 	computeCompensation,
-	createCompensation,
 	type CompensationComputePayload,
-	type CompensationManualCreatePayload,
 	type CompensationMatrix,
 } from "../../../services/compensationService"
 import { extractErrorMessage } from "../../../utils/apiError"
@@ -87,12 +86,13 @@ export default function CompensationPanel({
 	} = useCompensationActions(experimentId)
 
 	const confirm = useConfirm()
+	// FE-41: "Editar"/"Nova matriz" ligam o modo de edição do workspace —
+	// a grade mora nesta seção e o plot central vira a prévia ao vivo.
+	const { startEditing } = useCompensationEdit()
 	const [viewEmbedded, setViewEmbedded] = useState(false)
 	const [computeOpen, setComputeOpen] = useState(false)
-	/** FE-40: matriz em ajuste, ou "new" pra criação do zero. */
-	const [editTarget, setEditTarget] = useState<
-		CompensationMatrix | "new" | null
-	>(null)
+	/** Matriz salva aberta no visualizador (read-only + botão Editar). */
+	const [viewTarget, setViewTarget] = useState<CompensationMatrix | null>(null)
 	const [renameTarget, setRenameTarget] = useState<CompensationMatrix | null>(
 		null,
 	)
@@ -112,25 +112,6 @@ export default function CompensationPanel({
 		try {
 			const matrix = await computeCompensation(experimentId, payload)
 			toast.success(`Matriz "${matrix.name}" calculada dos controles.`)
-			invalidateAll()
-			return null
-		} catch (error) {
-			return extractErrorMessage(error)
-		}
-	}
-
-	/** FE-40: criação manual (do zero ou ajuste derivado). */
-	const handleCreateSubmit = async (
-		payload: CompensationManualCreatePayload,
-	): Promise<string | null> => {
-		if (!experimentId) return "Experimento não carregado."
-		try {
-			const matrix = await createCompensation(experimentId, payload)
-			toast.success(
-				matrix.is_applied
-					? `Matriz "${matrix.name}" criada e aplicada.`
-					: `Matriz "${matrix.name}" criada.`,
-			)
 			invalidateAll()
 			return null
 		} catch (error) {
@@ -261,7 +242,7 @@ export default function CompensationPanel({
 								size="small"
 								variant="outlined"
 								disabled={busy}
-								onClick={() => setEditTarget("new")}
+								onClick={() => startEditing(null)}
 							>
 								Nova matriz
 							</Button>
@@ -319,7 +300,7 @@ export default function CompensationPanel({
 										<IconButton
 											size="small"
 											disabled={busy}
-											onClick={() => setEditTarget(m)}
+											onClick={() => setViewTarget(m)}
 										>
 											<EditMatrixIcon fontSize="small" />
 										</IconButton>
@@ -412,31 +393,35 @@ export default function CompensationPanel({
 				/>
 			)}
 
-			{experimentId && (
-				<EditCompensationDialog
-					experimentId={experimentId}
-					open={editTarget != null}
-					source={editTarget === "new" ? null : editTarget}
-					canEdit={canEdit}
-					onClose={() => setEditTarget(null)}
-					onSubmit={handleCreateSubmit}
+			{/* Ver matriz salva — "Editar" troca esta seção pelo editor e
+			    liga a prévia no plot (modo edição do workspace, FE-41). */}
+			{viewTarget && (
+				<ViewCompensationDialog
+					open
+					title={viewTarget.name}
+					channels={viewTarget.channels}
+					matrix={viewTarget.matrix}
+					onClose={() => setViewTarget(null)}
+					onEdit={
+						canEdit
+							? () => {
+									setViewTarget(null)
+									startEditing(viewTarget)
+								}
+							: undefined
+					}
 				/>
 			)}
 
 			{/* Matriz embutida: ver sem editar (não é salva — "Usar do
 				arquivo" cria a persistida). */}
-			{experimentId && embeddedMatrix.data && (
-				<EditCompensationDialog
-					experimentId={experimentId}
+			{embeddedMatrix.data && (
+				<ViewCompensationDialog
 					open={viewEmbedded}
-					source={null}
-					viewOnly={{
-						name: `Matriz do arquivo (amostra #${embeddedMatrix.data.file_data_id})`,
-						channels: embeddedMatrix.data.channels,
-						matrix: embeddedMatrix.data.matrix,
-					}}
+					title={`Matriz do arquivo (amostra #${embeddedMatrix.data.file_data_id})`}
+					channels={embeddedMatrix.data.channels}
+					matrix={embeddedMatrix.data.matrix}
 					onClose={() => setViewEmbedded(false)}
-					onSubmit={handleCreateSubmit}
 				/>
 			)}
 

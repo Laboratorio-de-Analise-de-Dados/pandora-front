@@ -6,7 +6,7 @@ import {
 } from "../../../services/compensationService"
 import { useDebouncedValue } from "../../plot/hooks/useDebouncedValue"
 import { COFACTOR, defaultScale } from "../../plot/utils/biex"
-import type { DensityResponse } from "../../../types"
+import type { DensityResponse, Scale } from "../../../types"
 
 export const PREVIEW_DEBOUNCE_MS = 400
 const PREVIEW_BINS = 120
@@ -22,6 +22,14 @@ interface UseCompensationPreviewParams {
 	yAxis: string
 	/** Toggle do usuário && modo edição — desligado nem monta request. */
 	enabled: boolean
+	/**
+	 * Params de render a espelhar do plot principal (modo workspace):
+	 * escalas/cutoff/bins atuais. Default = preview compacto do dialog.
+	 */
+	bins?: number
+	xScale?: Scale
+	yScale?: Scale
+	cutoff?: number
 }
 
 /**
@@ -38,6 +46,10 @@ export function useCompensationPreview({
 	xAxis,
 	yAxis,
 	enabled,
+	bins,
+	xScale,
+	yScale,
+	cutoff,
 }: UseCompensationPreviewParams) {
 	const payload = useMemo<CompensationPreviewPayload | null>(
 		() =>
@@ -51,14 +63,14 @@ export function useCompensationPreview({
 						y_axis: yAxis,
 						params: {
 							mode: "heatmap",
-							bins: PREVIEW_BINS,
-							cutoff: 0,
-							xscale: defaultScale(xAxis),
-							yscale: defaultScale(yAxis),
+							bins: bins ?? PREVIEW_BINS,
+							cutoff: cutoff ?? 0,
+							xscale: xScale ?? defaultScale(xAxis),
+							yscale: yScale ?? defaultScale(yAxis),
 							cofactor: COFACTOR,
 						},
 					},
-		[channels, matrix, fileId, xAxis, yAxis],
+		[channels, matrix, fileId, xAxis, yAxis, bins, xScale, yScale, cutoff],
 	)
 	const debounced = useDebouncedValue(payload, PREVIEW_DEBOUNCE_MS)
 

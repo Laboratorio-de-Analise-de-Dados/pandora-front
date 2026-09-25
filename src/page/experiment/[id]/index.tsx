@@ -10,7 +10,7 @@ import {
 	useMediaQuery,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Layout from "../../../components/Layout"
 import {
 	ExperimentWorkspaceProvider,
@@ -31,6 +31,9 @@ import HistoryPanel from "../../../features/history/components/HistoryPanel"
 import {
 	CompensationIndicator,
 	CompensationPanel,
+	CompensationWorkspaceEditor,
+	CompensationEditProvider,
+	useCompensationEdit,
 	useCompensationsQuery,
 	useEmbeddedCompensationQuery,
 } from "../../../features/compensation"
@@ -143,6 +146,15 @@ function ExperimentPageContent() {
 	const embeddedCompensation = useEmbeddedCompensationQuery(experiment?.id)
 	const appliedCompensation = compensations.data?.find((m) => m.is_applied)
 	const currentFile = experimentFiles.find((f) => f.id === source?.fileDataId)
+
+	// FE-41: modo edição de compensação — a seção vira o editor e o plot
+	// central mostra a prévia. Entrar no modo abre o painel na seção.
+	const { editing: compEditing } = useCompensationEdit()
+	useEffect(() => {
+		if (!compEditing) return
+		setShowRight(true)
+		setCompOpen(true)
+	}, [compEditing])
 
 	// No mobile os drawers seguem mutuamente exclusivos (um de cada vez):
 	// abrir o painel direito fecha a árvore e vice-versa.
@@ -601,7 +613,19 @@ function ExperimentPageContent() {
 							open={compOpen}
 							onToggle={() => setCompOpen((v) => !v)}
 							trailing={
-								appliedCompensation ? (
+								compEditing ? (
+									<Tooltip title="Editando — prévia não salva">
+										<Box
+											sx={{
+												width: 8,
+												height: 8,
+												borderRadius: "50%",
+												bgcolor: "warning.main",
+												flexShrink: 0,
+											}}
+										/>
+									</Tooltip>
+								) : appliedCompensation ? (
 									<Tooltip
 										title={`Matriz aplicada: ${appliedCompensation.name}`}
 									>
@@ -618,11 +642,15 @@ function ExperimentPageContent() {
 								) : undefined
 							}
 						>
-							<CompensationPanel
-								experimentId={experiment?.id}
-								canEdit={canEditExperiment}
-								embedded
-							/>
+							{compEditing && experiment ? (
+								<CompensationWorkspaceEditor experimentId={experiment.id} />
+							) : (
+								<CompensationPanel
+									experimentId={experiment?.id}
+									canEdit={canEditExperiment}
+									embedded
+								/>
+							)}
 						</PanelSection>
 						<PanelSection
 							title="Histórico"
@@ -690,7 +718,9 @@ function ExperimentPageContent() {
 export default function ExperimentPage() {
 	return (
 		<ExperimentWorkspaceProvider>
-			<ExperimentPageContent />
+			<CompensationEditProvider>
+				<ExperimentPageContent />
+			</CompensationEditProvider>
 		</ExperimentWorkspaceProvider>
 	)
 }
