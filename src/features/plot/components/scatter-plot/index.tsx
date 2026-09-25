@@ -25,7 +25,7 @@ import { useGateShapes } from "../../hooks/useGateShapes"
 import { useGateMutations } from "../../hooks/useGateMutations"
 import { useReshapeScope } from "../../hooks/useReshapeScope"
 import { useConfirm } from "../../../../components/ConfirmDialog"
-import { getCopyFamilyIds } from "../../../gate/utils"
+import { collectAllGates, getCopyFamilyIds } from "../../../gate/utils"
 
 import { COFACTOR } from "../../utils/biex"
 import { buildTicks } from "../../utils/ticks"
@@ -117,9 +117,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// FE-41 — modo edição de compensação: o plot vira a prévia da matriz
 	// em edição (rascunho, nada persistido). A query de densidade normal
 	// desliga e a prévia alimenta os dados; gates ficam somente-leitura.
-	const { editing: compEditing, matrix: compPreviewMatrix } =
-		useCompensationEdit()
+	const {
+		editing: compEditing,
+		matrix: compPreviewMatrix,
+		statsGates,
+		setPreviewStats,
+	} = useCompensationEdit()
 	const previewActive = compEditing != null
+
+	// Gates da amostra em exibição — selecionáveis na comparação de MFI.
+	// Seleção filtrada aos ids válidos aqui: se o usuário trocou de
+	// amostra no meio da edição, ids de outro arquivo não vazam pra API.
+	const currentFileGateIds = useMemo(() => {
+		const file = experimentFiles.find((f) => f.id === fileDataId)
+		return new Set(collectAllGates(file?.gates ?? []).map((g) => g.id))
+	}, [experimentFiles, fileDataId])
+	const previewStatsGates = useMemo(
+		() => statsGates.filter((id) => currentFileGateIds.has(id)),
+		[statsGates, currentFileGateIds],
+	)
 
 	// Nome do subsample da amostra atual — habilita o escopo "subsample" nos
 	// diálogos (só existe quando a amostra está agrupada, BE-07).
@@ -187,11 +203,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	})
 	// Prévia ad-hoc (BE-36): a matriz-rascunho aplicada à amostra atual —
 	// mesmos modo/eixos/escalas/ranges do plot. Debounce de ~400ms.
+	// Fonte = gate → densidade filtrada àquela população; statsGates →
+	// channel_stats por população pra tabela de MFI do editor.
 	const preview = useCompensationPreview({
 		experimentId: Number(experimentId),
 		channels: compEditing?.channels ?? [],
 		matrix: compPreviewMatrix,
 		fileId: fileDataId,
+		gate: previewActive && sourceType === "gate" ? sourceId : undefined,
+		statsGates: previewStatsGates,
 		xAxis,
 		yAxis,
 		enabled: previewActive,
@@ -204,6 +224,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMin: dYMin,
 		yMax: dYMax,
 	})
+	// O editor no painel lê o channel_stats daqui — a query precisa dos
+	// eixos/escalas do plot, então o resultado é publicado no contexto.
+	useEffect(() => {
+		setPreviewStats(
+			previewActive ? (preview.data?.channel_stats ?? null) : null,
+		)
+	}, [previewActive, preview.data, setPreviewStats])
 	const { data, isLoading, isFetching, isError, error } = previewActive
 		? preview
 		: density

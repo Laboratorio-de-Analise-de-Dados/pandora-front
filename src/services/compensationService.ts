@@ -160,7 +160,31 @@ export interface CompensationPreviewPayload {
 	file: number
 	x_axis: string
 	y_axis: string
+	/** Filtra a densidade à população do gate (fonte = gate no workspace). */
+	gate?: number
+	/** Populações extras que entram no `channel_stats` (MFI por gate). */
+	gates?: number[]
 	params: CompensationPreviewParams
+}
+
+/** Stats de um canal numa população — mediana é o MFI do ajuste manual. */
+export interface ChannelStatEntry {
+	median: number | null
+	mean: number | null
+	count: number
+}
+
+/**
+ * BE-36: mediana/mean/count por canal × população — `"file"` (amostra
+ * inteira) + uma entrada por id de gate do payload.
+ */
+export type CompensationChannelStats = Record<
+	string,
+	Record<string, ChannelStatEntry>
+>
+
+export interface CompensationPreviewResponse extends DensityResponse {
+	channel_stats?: CompensationChannelStats
 }
 
 /**
@@ -171,8 +195,8 @@ export interface CompensationPreviewPayload {
 export const previewCompensation = async (
 	experimentId: number,
 	payload: CompensationPreviewPayload,
-): Promise<DensityResponse> => {
-	const res = await CytometryApi.post<DensityResponse>(
+): Promise<CompensationPreviewResponse> => {
+	const res = await CytometryApi.post<CompensationPreviewResponse>(
 		`/experiment/${experimentId}/compensations/preview`,
 		payload,
 	)

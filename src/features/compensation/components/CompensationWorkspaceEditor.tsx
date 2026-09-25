@@ -9,8 +9,10 @@ import {
 } from "@mui/material"
 import { toast } from "react-toastify"
 import MatrixCellsGrid from "./MatrixCellsGrid"
+import PreviewMfiTable from "./PreviewMfiTable"
 import { useCompensationEdit } from "../context/CompensationEditContext"
 import { useExperimentWorkspace } from "../../experiment/context/ExperimentWorkspaceContext"
+import { collectAllGates, getGatePathNames } from "../../gate/utils"
 import { useCompensationActions } from "../hooks/useCompensation"
 import {
 	createCompensation,
@@ -37,17 +39,36 @@ export default function CompensationWorkspaceEditor({
 		matrix,
 		invalid,
 		changed,
+		statsGates,
+		setStatsGates,
+		previewStats,
 		setName,
 		setChannels,
 		setCell,
 		cancelEditing,
 	} = useCompensationEdit()
-	const { values } = useExperimentWorkspace()
+	const { values, experimentFiles, source } = useExperimentWorkspace()
 	const { invalidateAll } = useCompensationActions(experimentId)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
 	const availableChannels = useMemo(() => fluorescentChannels(values), [values])
+
+	// Gates da amostra selecionada — opções do comparador de MFI. Label =
+	// caminho hierárquico (raiz › filho) pra distinguir nomes repetidos.
+	const gateOptions = useMemo(() => {
+		const file = experimentFiles.find((f) => f.id === source?.fileDataId)
+		const tree = file?.gates ?? []
+		return collectAllGates(tree).map((g) => ({
+			id: g.id,
+			label: (getGatePathNames(tree, g.id) ?? [g.name]).join(" › "),
+		}))
+	}, [experimentFiles, source?.fileDataId])
+
+	const gateLabel = useMemo(() => {
+		const byId = new Map(gateOptions.map((o) => [o.id, o.label]))
+		return (id: number) => byId.get(id) ?? `Gate ${id}`
+	}, [gateOptions])
 
 	if (!editing) return null
 
@@ -140,6 +161,36 @@ export default function CompensationWorkspaceEditor({
 					editing.base ? " Células destacadas divergem da original." : undefined
 				}
 			/>
+
+			{gateOptions.length > 0 && (
+				<Autocomplete
+					multiple
+					size="small"
+					limitTags={2}
+					disableCloseOnSelect
+					options={gateOptions}
+					getOptionLabel={(o) => o.label}
+					isOptionEqualToValue={(a, b) => a.id === b.id}
+					value={gateOptions.filter((o) => statsGates.includes(o.id))}
+					onChange={(_, sel) => setStatsGates(sel.map((o) => o.id))}
+					renderInput={(params) => (
+						<TextField
+							{...params}
+							label="Populações comparadas"
+							placeholder="Selecionar gates…"
+						/>
+					)}
+				/>
+			)}
+
+			{previewStats && (
+				<PreviewMfiTable
+					stats={previewStats}
+					channels={editing.channels}
+					gateIds={statsGates}
+					gateLabel={gateLabel}
+				/>
+			)}
 
 			{error && (
 				<Typography variant="caption" color="error">
