@@ -53,6 +53,10 @@ const BASE = {
 	xAxis: "FITC-A",
 	yAxis: "PE-A",
 	enabled: true,
+	plotMode: "heatmap" as const,
+	xScale: "biex" as const,
+	yScale: "biex" as const,
+	cutoff: 0,
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -76,7 +80,7 @@ describe("useCompensationPreview", () => {
 			y_axis: "PE-A",
 			params: {
 				mode: "heatmap",
-				bins: 120,
+				bins: 200,
 				cutoff: 0,
 				xscale: "biex",
 				yscale: "biex",

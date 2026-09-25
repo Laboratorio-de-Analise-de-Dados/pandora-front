@@ -2,14 +2,15 @@ import { useMemo } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import {
 	previewCompensation,
+	type CompensationPreviewParams,
 	type CompensationPreviewPayload,
 } from "../../../services/compensationService"
 import { useDebouncedValue } from "../../plot/hooks/useDebouncedValue"
-import { COFACTOR, defaultScale } from "../../plot/utils/biex"
+import { COFACTOR } from "../../plot/utils/biex"
 import type { DensityResponse, Scale } from "../../../types"
+import type { PlotMode } from "../../plot/hooks/usePlotState"
 
 export const PREVIEW_DEBOUNCE_MS = 400
-const PREVIEW_BINS = 120
 
 interface UseCompensationPreviewParams {
 	experimentId: number
@@ -22,21 +23,23 @@ interface UseCompensationPreviewParams {
 	yAxis: string
 	/** Toggle do usuário && modo edição — desligado nem monta request. */
 	enabled: boolean
-	/**
-	 * Params de render a espelhar do plot principal (modo workspace):
-	 * escalas/cutoff/bins atuais. Default = preview compacto do dialog.
-	 */
-	bins?: number
-	xScale?: Scale
-	yScale?: Scale
-	cutoff?: number
+	/** Params de render — espelham o density do plot principal (FE-41). */
+	plotMode: PlotMode
+	xScale: Scale
+	yScale: Scale
+	cutoff: number
+	xMin?: string
+	xMax?: string
+	yMin?: string
+	yMax?: string
 }
 
 /**
- * FE-41 — preview ad-hoc da matriz em edição (BE-36, hoje stub).
- * Debounce ~400ms pra não disparar a cada tecla; grade inválida, eixo
- * vazio ou toggle desligado não consultam nada. `keepPreviousData`
- * mantém o plot anterior enquanto o novo carrega — a edição nunca trava.
+ * FE-41 + BE-36 — prévia ad-hoc da matriz em edição: o endpoint aplica
+ * a matriz-rascunho na amostra sem persistir nada. Debounce ~400ms pra
+ * não disparar a cada tecla; grade inválida ou modo desligado não
+ * consultam nada. `keepPreviousData` mantém o plot anterior enquanto o
+ * novo carrega — a edição nunca trava.
  */
 export function useCompensationPreview({
 	experimentId,
@@ -46,32 +49,57 @@ export function useCompensationPreview({
 	xAxis,
 	yAxis,
 	enabled,
-	bins,
+	plotMode,
 	xScale,
 	yScale,
 	cutoff,
+	xMin,
+	xMax,
+	yMin,
+	yMax,
 }: UseCompensationPreviewParams) {
-	const payload = useMemo<CompensationPreviewPayload | null>(
-		() =>
-			matrix == null || fileId == null || !xAxis || !yAxis
-				? null
-				: {
-						channels,
-						matrix,
-						file: fileId,
-						x_axis: xAxis,
-						y_axis: yAxis,
-						params: {
-							mode: "heatmap",
-							bins: bins ?? PREVIEW_BINS,
-							cutoff: cutoff ?? 0,
-							xscale: xScale ?? defaultScale(xAxis),
-							yscale: yScale ?? defaultScale(yAxis),
-							cofactor: COFACTOR,
-						},
-					},
-		[channels, matrix, fileId, xAxis, yAxis, bins, xScale, yScale, cutoff],
-	)
+	const payload = useMemo<CompensationPreviewPayload | null>(() => {
+		if (matrix == null || fileId == null || !xAxis || !yAxis) return null
+		// Mesmos params do fetchDensity: a prévia é o mesmo gráfico com a
+		// matriz-rascunho no lugar da compensação aplicada.
+		const params: CompensationPreviewParams = {
+			mode: plotMode,
+			...(plotMode === "heatmap"
+				? { bins: 200, cutoff }
+				: plotMode === "histogram"
+					? { bins: 256 }
+					: { sample: 5000 }),
+			xscale: xScale,
+			yscale: yScale,
+			cofactor: COFACTOR,
+			...(xMin ? { xmin: xMin } : {}),
+			...(xMax ? { xmax: xMax } : {}),
+			...(yMin ? { ymin: yMin } : {}),
+			...(yMax ? { ymax: yMax } : {}),
+		}
+		return {
+			channels,
+			matrix,
+			file: fileId,
+			x_axis: xAxis,
+			y_axis: yAxis,
+			params,
+		}
+	}, [
+		channels,
+		matrix,
+		fileId,
+		xAxis,
+		yAxis,
+		plotMode,
+		xScale,
+		yScale,
+		cutoff,
+		xMin,
+		xMax,
+		yMin,
+		yMax,
+	])
 	const debounced = useDebouncedValue(payload, PREVIEW_DEBOUNCE_MS)
 
 	return useQuery<DensityResponse>({

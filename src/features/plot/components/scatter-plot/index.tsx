@@ -120,9 +120,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const { editing: compEditing, matrix: compPreviewMatrix } =
 		useCompensationEdit()
 	const previewActive = compEditing != null
-	// A prévia (BE-36/stub) responde sempre como heatmap — modos
-	// scatter/histograma voltam a renderizar ao sair da edição.
-	const viewMode: PlotMode = previewActive ? "heatmap" : plotMode
 
 	// Nome do subsample da amostra atual — habilita o escopo "subsample" nos
 	// diálogos (só existe quando a amostra está agrupada, BE-07).
@@ -188,8 +185,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMax: dYMax,
 		enabled: !previewActive,
 	})
-	// Prévia ad-hoc (BE-36/stub): a matriz-rascunho aplicada à amostra
-	// atual — mesmos eixos/escalas/cutoff do plot. Debounce de ~400ms.
+	// Prévia ad-hoc (BE-36): a matriz-rascunho aplicada à amostra atual —
+	// mesmos modo/eixos/escalas/ranges do plot. Debounce de ~400ms.
 	const preview = useCompensationPreview({
 		experimentId: Number(experimentId),
 		channels: compEditing?.channels ?? [],
@@ -198,10 +195,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		xAxis,
 		yAxis,
 		enabled: previewActive,
-		bins: 200,
+		plotMode,
 		xScale,
 		yScale,
 		cutoff,
+		xMin: dXMin,
+		xMax: dXMax,
+		yMin: dYMin,
+		yMax: dYMax,
 	})
 	const { data, isLoading, isFetching, isError, error } = previewActive
 		? preview
@@ -299,7 +300,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yAxis,
 		effXScale,
 		effYScale,
-		plotMode: viewMode,
+		plotMode: plotMode,
 	})
 	const { findGateAtPoint, findGateAtDataPoint } = useGateHitTest({
 		plotContainerRef,
@@ -445,12 +446,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		SCATTER_COLOR.light,
 	)
 	const plotData = buildPlotData(
-		viewMode,
+		plotMode,
 		data,
 		"light",
 		pointColors ?? undefined,
 	)
-	const hasData = hasPlotData(viewMode, data)
+	const hasData = hasPlotData(plotMode, data)
 
 	// Traces transparentes só para hover: passar o mouse sobre a área de um
 	// gate mostra um tooltip com as estatísticas dele (count/%pai/%total).
@@ -634,9 +635,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									? `Gate ${parentName ? `"${parentName}"` : "selecionado"}`
 									: "Amostra inteira"}
 								{` · ${data.total_events.toLocaleString()} eventos`}
-								{viewMode === "scatter" && data.sampled_events
+								{plotMode === "scatter" && data.sampled_events
 									? ` · exibindo ${data.sampled_events.toLocaleString()}`
-									: viewMode === "histogram"
+									: plotMode === "histogram"
 										? " · histograma (100% dos dados)"
 										: " · heatmap (100% dos dados)"}
 								{previewActive ? " · prévia não salva" : ""}
@@ -746,7 +747,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									layout={{
 										dragmode,
 										shapes: editableShapes as Plotly.Layout["shapes"],
-										...(viewMode === "histogram"
+										...(plotMode === "histogram"
 											? { selectdirection: "h" as const }
 											: {}),
 										xaxis: {
@@ -775,18 +776,18 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										yaxis: {
 											title: {
 												text:
-													viewMode === "histogram"
+													plotMode === "histogram"
 														? "Contagem"
 														: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
 											},
-											...(viewMode !== "histogram" && yTicks
+											...(plotMode !== "histogram" && yTicks
 												? {
 														tickmode: "array" as const,
 														tickvals: yTicks.tickvals,
 														ticktext: yTicks.ticktext,
 													}
 												: {}),
-											...(viewMode !== "histogram"
+											...(plotMode !== "histogram"
 												? { range: yAxisRange, autorange: false }
 												: {}),
 											fixedrange: true,
