@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import {
 	applyCompensation,
-	computeCompensation,
 	discardCompensation,
 	fetchCompensations,
 	fetchEmbeddedCompensation,
@@ -11,7 +10,6 @@ import {
 	renameCompensation,
 } from "../../../services/compensationService"
 import type {
-	CompensationComputePayload,
 	CompensationMatrix,
 	EmbeddedCompensation,
 } from "../../../services/compensationService"
@@ -83,16 +81,6 @@ export function useCompensationActions(experimentId: number | undefined) {
 		onError: toastError("importar a matriz do arquivo"),
 	})
 
-	const computeMutation = useMutation({
-		mutationFn: (payload: CompensationComputePayload) =>
-			computeCompensation(experimentId as number, payload),
-		onSuccess: (matrix) => {
-			toast.success(`Matriz "${matrix.name}" calculada dos controles.`)
-			invalidateAll()
-		},
-		onError: toastError("calcular a matriz"),
-	})
-
 	const applyMutation = useMutation({
 		mutationFn: (matrixId: number) =>
 			applyCompensation(experimentId as number, matrixId),
@@ -133,7 +121,7 @@ export function useCompensationActions(experimentId: number | undefined) {
 
 	return {
 		fromHeaderMutation,
-		computeMutation,
+		invalidateAll,
 		applyMutation,
 		removeMutation,
 		renameMutation,

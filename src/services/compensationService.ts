@@ -18,6 +18,9 @@ export interface CompensationMatrix {
 	matrix: number[][]
 	source: CompensationSource
 	is_applied: boolean
+	/** BE-35: id da matriz de origem quando esta é um ajuste manual. */
+	derived_from: number | null
+	derived_from_name: string | null
 	created_by_name: string | null
 	created_at: string
 }
@@ -36,6 +39,15 @@ export interface CompensationComputePayload {
 	negative?: number[]
 	/** Override: canal → ids de amostra do controle single-stain. */
 	controls?: Record<string, number[]>
+}
+
+/** BE-35: criação manual — do zero ou ajustada (`derived_from`) de outra. */
+export interface CompensationManualCreatePayload {
+	name?: string
+	channels: string[]
+	matrix: number[][]
+	derived_from?: number
+	apply?: boolean
 }
 
 export const fetchCompensations = async (
@@ -74,6 +86,18 @@ export const computeCompensation = async (
 ): Promise<CompensationMatrix> => {
 	const res = await CytometryApi.post(
 		`/experiment/${experimentId}/compensations/compute`,
+		payload,
+	)
+	return res.data
+}
+
+/** BE-35: POST compensations/ — matriz manual (do zero ou derivada). */
+export const createCompensation = async (
+	experimentId: number,
+	payload: CompensationManualCreatePayload,
+): Promise<CompensationMatrix> => {
+	const res = await CytometryApi.post(
+		`/experiment/${experimentId}/compensations/`,
 		payload,
 	)
 	return res.data
