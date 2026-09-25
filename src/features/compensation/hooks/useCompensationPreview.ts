@@ -4,10 +4,11 @@ import {
 	previewCompensation,
 	type CompensationPreviewParams,
 	type CompensationPreviewPayload,
+	type CompensationPreviewResponse,
 } from "../../../services/compensationService"
 import { useDebouncedValue } from "../../plot/hooks/useDebouncedValue"
 import { COFACTOR } from "../../plot/utils/biex"
-import type { DensityResponse, Scale } from "../../../types"
+import type { Scale } from "../../../types"
 import type { PlotMode } from "../../plot/hooks/usePlotState"
 
 export const PREVIEW_DEBOUNCE_MS = 400
@@ -19,6 +20,10 @@ interface UseCompensationPreviewParams {
 	matrix: number[][] | null
 	/** Amostra selecionada no workspace (mesma fonte do plot principal). */
 	fileId: number | undefined
+	/** Fonte = gate: densidade da prévia filtrada àquela população. */
+	gate?: number
+	/** Populações comparadas no channel_stats (MFI por gate). */
+	statsGates?: number[]
 	xAxis: string
 	yAxis: string
 	/** Toggle do usuário && modo edição — desligado nem monta request. */
@@ -46,6 +51,8 @@ export function useCompensationPreview({
 	channels,
 	matrix,
 	fileId,
+	gate,
+	statsGates,
 	xAxis,
 	yAxis,
 	enabled,
@@ -83,12 +90,16 @@ export function useCompensationPreview({
 			file: fileId,
 			x_axis: xAxis,
 			y_axis: yAxis,
+			...(gate != null ? { gate } : {}),
+			...(statsGates?.length ? { gates: statsGates } : {}),
 			params,
 		}
 	}, [
 		channels,
 		matrix,
 		fileId,
+		gate,
+		statsGates,
 		xAxis,
 		yAxis,
 		plotMode,
@@ -102,7 +113,7 @@ export function useCompensationPreview({
 	])
 	const debounced = useDebouncedValue(payload, PREVIEW_DEBOUNCE_MS)
 
-	return useQuery<DensityResponse>({
+	return useQuery<CompensationPreviewResponse>({
 		queryKey: ["compensation-preview", experimentId, debounced],
 		queryFn: () =>
 			previewCompensation(

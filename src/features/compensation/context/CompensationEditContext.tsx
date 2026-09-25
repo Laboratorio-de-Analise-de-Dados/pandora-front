@@ -6,7 +6,10 @@ import React, {
 	useRef,
 	useState,
 } from "react"
-import type { CompensationMatrix } from "../../../services/compensationService"
+import type {
+	CompensationChannelStats,
+	CompensationMatrix,
+} from "../../../services/compensationService"
 import { useExperimentWorkspace } from "../../experiment/context/ExperimentWorkspaceContext"
 import { fluorescentChannels } from "../utils/controlAssignments"
 import {
@@ -42,6 +45,16 @@ interface CompensationEditValue {
 	matrix: number[][] | null
 	invalid: ReadonlySet<string>
 	changed: ReadonlySet<string>
+	/** Populações (gates) comparadas na tabela de MFI da prévia. */
+	statsGates: number[]
+	setStatsGates: (ids: number[]) => void
+	/**
+	 * `channel_stats` da última resposta da prévia — o plot publica aqui
+	 * porque a query vive nele (precisa dos eixos/escalas) e o editor
+	 * renderiza a tabela de MFI a partir deste valor.
+	 */
+	previewStats: CompensationChannelStats | null
+	setPreviewStats: (stats: CompensationChannelStats | null) => void
 	startEditing: (base: CompensationMatrix | null) => void
 	cancelEditing: () => void
 	setName: (name: string) => void
@@ -70,9 +83,16 @@ export function CompensationEditProvider({
 }) {
 	const { values } = useExperimentWorkspace()
 	const [editing, setEditing] = useState<CompensationEditing | null>(null)
+	const [statsGates, setStatsGates] = useState<number[]>([])
+	const [previewStats, setPreviewStats] =
+		useState<CompensationChannelStats | null>(null)
 
 	const startEditing = useCallback(
 		(base: CompensationMatrix | null) => {
+			// Toda sessão de edição começa limpa — populações escolhidas são
+			// do arquivo daquela sessão e stats velhos não vazam entre elas.
+			setStatsGates([])
+			setPreviewStats(null)
 			if (base) {
 				setEditing({
 					base,
@@ -96,7 +116,11 @@ export function CompensationEditProvider({
 		[values],
 	)
 
-	const cancelEditing = useCallback(() => setEditing(null), [])
+	const cancelEditing = useCallback(() => {
+		setEditing(null)
+		setStatsGates([])
+		setPreviewStats(null)
+	}, [])
 	const setName = useCallback(
 		(name: string) => setEditing((prev) => (prev ? { ...prev, name } : prev)),
 		[],
@@ -167,6 +191,10 @@ export function CompensationEditProvider({
 			matrix,
 			invalid,
 			changed,
+			statsGates,
+			setStatsGates,
+			previewStats,
+			setPreviewStats,
 			startEditing,
 			cancelEditing,
 			setName,
@@ -178,6 +206,8 @@ export function CompensationEditProvider({
 			matrix,
 			invalid,
 			changed,
+			statsGates,
+			previewStats,
 			startEditing,
 			cancelEditing,
 			setName,
