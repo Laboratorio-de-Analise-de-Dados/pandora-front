@@ -117,12 +117,20 @@ Estrutura canônica — borda por fora, coluna com padding por dentro:
 
 ## Painéis do workspace
 
-- **Desktop**: histórico/compensação são overlays sobre a área central —
-  nunca escondem árvore nem stats. Botão de esconder painel lateral só
-  existe quando o painel está **fechado** (serve pra reabrir).
-- **Mobile**: bottom sheets mutuamente exclusivos (abrir um fecha os
-  outros); plot no topo ocupando a largura, controles abaixo, navegação
-  de amostra perto do rodapé.
+- **Painel direito = casa da análise**: Estatísticas, Compensação e
+  Histórico vivem como seções expansíveis (`PanelSection`) no
+  `CollapsiblePanel` da direita — em área fixa do layout, nunca como
+  overlay sobre o plot. Cada seção abre/fecha como dropdown; as três
+  podem ficar abertas juntas (o painel rola). Painéis embutidos usam o
+  modo `embedded` (sem header/scroll próprios — a seção é o header e o
+  painel controla a rolagem).
+- **Desktop**: sem triggers de compensação/histórico na página — o
+  painel é a entrada única (o ícone flutuante do `CollapsiblePanel`
+  reabre quando fechado).
+- **Mobile**: o painel direito abre como **drawer lateral** (da direita
+  pra esquerda) com as mesmas seções; a árvore segue bottom sheet da
+  esquerda. Drawers mutuamente exclusivos (abrir um fecha os outros);
+  plot no topo, controles abaixo, navegação de amostra perto do rodapé.
 - Workspace ocupa exatamente a viewport — sem scroll de página; footer
   global fica escondido nessa rota. Scroll só dentro de painéis.
 

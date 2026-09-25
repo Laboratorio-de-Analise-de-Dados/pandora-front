@@ -54,7 +54,14 @@ interface HistoryPanelProps {
 	fileDataId?: number | null
 	/** Nome da amostra do recorte — vai para o título do painel. */
 	fileName?: string
-	onClose: () => void
+	/** Limpa o recorte por amostra (volta à timeline do experimento). */
+	onClearFile?: () => void
+	/**
+	 * Dentro de uma PanelSection: sem header/close próprios e com
+	 * altura natural — o painel externo controla o scroll.
+	 */
+	embedded?: boolean
+	onClose?: () => void
 }
 
 interface CheckpointDialogState {
@@ -76,6 +83,8 @@ export default function HistoryPanel({
 	canEdit,
 	fileDataId,
 	fileName,
+	onClearFile,
+	embedded = false,
 	onClose,
 }: HistoryPanelProps) {
 	const history = useGroupedHistoryQuery(experimentId, fileDataId ?? undefined)
@@ -248,36 +257,67 @@ export default function HistoryPanel({
 			sx={{
 				display: "flex",
 				flexDirection: "column",
-				height: "100%",
+				...(embedded ? {} : { height: "100%" }),
 				minHeight: 0,
 			}}
 		>
-			{/* Cabeçalho */}
-			<Box
-				sx={{
-					display: "flex",
-					alignItems: "center",
-					px: 2,
-					py: 1.5,
-					gap: 1,
-				}}
-			>
-				<Box sx={{ flex: 1, minWidth: 0 }}>
-					<Typography variant="h6" noWrap>
-						{fileDataId && fileName
-							? `Histórico — ${fileName}`
-							: "Histórico do experimento"}
-					</Typography>
-					{fileDataId != null && (
-						<Typography variant="caption" color="text.secondary">
-							Só o que toca esta amostra (ações do experimento incluídas)
+			{/* Cabeçalho standalone; no modo embedded a PanelSection é o header. */}
+			{!embedded && (
+				<Box
+					sx={{
+						display: "flex",
+						alignItems: "center",
+						px: 2,
+						py: 1.5,
+						gap: 1,
+					}}
+				>
+					<Box sx={{ flex: 1, minWidth: 0 }}>
+						<Typography variant="h6" noWrap>
+							{fileDataId && fileName
+								? `Histórico — ${fileName}`
+								: "Histórico do experimento"}
 						</Typography>
+						{fileDataId != null && (
+							<Typography variant="caption" color="text.secondary">
+								Só o que toca esta amostra (ações do experimento incluídas)
+							</Typography>
+						)}
+					</Box>
+					{onClose && (
+						<IconButton onClick={onClose} size="small">
+							<CloseIcon />
+						</IconButton>
 					)}
 				</Box>
-				<IconButton onClick={onClose} size="small">
-					<CloseIcon />
-				</IconButton>
-			</Box>
+			)}
+			{/* Recorte por amostra no modo embedded: caption + saída pro
+			    histórico completo. */}
+			{embedded && fileDataId != null && (
+				<Box
+					sx={{
+						display: "flex",
+						alignItems: "center",
+						gap: 0.5,
+						px: 1.5,
+						py: 0.75,
+					}}
+				>
+					<Typography
+						variant="caption"
+						color="text.secondary"
+						noWrap
+						sx={{ flex: 1, minWidth: 0 }}
+					>
+						Só o que toca{fileName ? ` ${fileName}` : " esta amostra"}
+					</Typography>
+					{onClearFile && (
+						<Button size="small" onClick={onClearFile}>
+							Ver tudo
+						</Button>
+					)}
+				</Box>
+			)}
 			{canEdit && (
 				<Box sx={{ px: 2, pb: 1 }}>
 					<Button
@@ -299,7 +339,13 @@ export default function HistoryPanel({
 			)}
 			<Divider />
 
-			<Box sx={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+			<Box
+				sx={
+					embedded
+						? { minHeight: 0 }
+						: { flex: 1, overflowY: "auto", minHeight: 0 }
+				}
+			>
 				{/* Marcos fixados */}
 				{(checkpoints.data ?? []).length > 0 && (
 					<Box sx={{ px: 1.5, py: 1 }}>

@@ -7,6 +7,8 @@ interface PanelSectionProps {
 	icon?: ReactNode
 	open: boolean
 	onToggle: () => void
+	/** Adorno à direita do título, antes do chevron (ex.: indicador de estado). */
+	trailing?: ReactNode
 	children: ReactNode
 }
 
@@ -20,6 +22,7 @@ export default function PanelSection({
 	icon,
 	open,
 	onToggle,
+	trailing,
 	children,
 }: PanelSectionProps) {
 	return (
@@ -51,6 +54,7 @@ export default function PanelSection({
 				>
 					{title}
 				</Typography>
+				{trailing}
 				{open ? (
 					<MdExpandLess style={{ fontSize: 18 }} />
 				) : (
