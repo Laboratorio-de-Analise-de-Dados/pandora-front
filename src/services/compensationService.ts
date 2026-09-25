@@ -1,4 +1,5 @@
 import CytometryApi from "../API"
+import type { DensityResponse, Scale } from "../types"
 
 /**
  * Compensação (spillover) — BE-22 no backend, ADR-0018/0019.
@@ -134,4 +135,46 @@ export const renameCompensation = async (
 /** Soft delete — se aplicada, o backend desliga antes (com revisão). */
 export const discardCompensation = async (matrixId: number): Promise<void> => {
 	await CytometryApi.delete(`/analytics/compensations/${matrixId}/`)
+}
+
+/** BE-36: parâmetros de renderização — os mesmos do density atual. */
+export interface CompensationPreviewParams {
+	mode: "heatmap" | "scatter" | "histogram"
+	bins?: number
+	cutoff?: number
+	sample?: number
+	xscale: Scale
+	yscale: Scale
+	cofactor: number
+	xmin?: string
+	xmax?: string
+	ymin?: string
+	ymax?: string
+}
+
+/** BE-36: prévia ad-hoc — matriz em edição, nunca persistida. */
+export interface CompensationPreviewPayload {
+	channels: string[]
+	matrix: number[][]
+	/** Amostra selecionada no workspace (fileDataId). */
+	file: number
+	x_axis: string
+	y_axis: string
+	params: CompensationPreviewParams
+}
+
+/**
+ * FE-41 / BE-36: densidade da amostra com a matriz ad-hoc aplicada —
+ * não persiste nada. Resposta = mesmo formato do density, então o plot
+ * principal renderiza direto.
+ */
+export const previewCompensation = async (
+	experimentId: number,
+	payload: CompensationPreviewPayload,
+): Promise<DensityResponse> => {
+	const res = await CytometryApi.post<DensityResponse>(
+		`/experiment/${experimentId}/compensations/preview`,
+		payload,
+	)
+	return res.data
 }

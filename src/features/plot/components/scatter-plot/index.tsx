@@ -16,6 +16,8 @@ import { getGateColor } from "../../../../constants/gateColors"
 
 import { usePlotContext } from "../../context/PlotStateContext"
 import { useExperimentWorkspace } from "../../../experiment/context/ExperimentWorkspaceContext"
+import { useCompensationEdit } from "../../../compensation/context/CompensationEditContext"
+import { useCompensationPreview } from "../../../compensation/hooks/useCompensationPreview"
 import { useDebouncedValue } from "../../hooks/useDebouncedValue"
 import { useDensityQuery } from "../../hooks/useDensityQuery"
 import { useGateDrawing } from "../../hooks/useGateDrawing"
@@ -109,8 +111,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		setPlotMode,
 	} = plotState
 
-	const { invalidateExperiment, experimentFiles, subsamples } =
+	const { invalidateExperiment, experimentFiles, subsamples, experimentId } =
 		useExperimentWorkspace()
+
+	// FE-41 — modo edição de compensação: o plot vira a prévia da matriz
+	// em edição (rascunho, nada persistido). A query de densidade normal
+	// desliga e a prévia alimenta os dados; gates ficam somente-leitura.
+	const { editing: compEditing, matrix: compPreviewMatrix } =
+		useCompensationEdit()
+	const previewActive = compEditing != null
 
 	// Nome do subsample da amostra atual — habilita o escopo "subsample" nos
 	// diálogos (só existe quando a amostra está agrupada, BE-07).
@@ -161,21 +170,44 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	const dXMax = useDebouncedValue(xMax, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMin = useDebouncedValue(yMin, RANGE_REFETCH_DEBOUNCE_MS)
 	const dYMax = useDebouncedValue(yMax, RANGE_REFETCH_DEBOUNCE_MS)
-	const { data, isLoading, isFetching, isError, error, refetch } =
-		useDensityQuery({
-			sourceType,
-			sourceId,
-			xAxis,
-			yAxis,
-			plotMode,
-			xScale,
-			yScale,
-			cutoff,
-			xMin: dXMin,
-			xMax: dXMax,
-			yMin: dYMin,
-			yMax: dYMax,
-		})
+	const density = useDensityQuery({
+		sourceType,
+		sourceId,
+		xAxis,
+		yAxis,
+		plotMode,
+		xScale,
+		yScale,
+		cutoff,
+		xMin: dXMin,
+		xMax: dXMax,
+		yMin: dYMin,
+		yMax: dYMax,
+		enabled: !previewActive,
+	})
+	// Prévia ad-hoc (BE-36): a matriz-rascunho aplicada à amostra atual —
+	// mesmos modo/eixos/escalas/ranges do plot. Debounce de ~400ms.
+	const preview = useCompensationPreview({
+		experimentId: Number(experimentId),
+		channels: compEditing?.channels ?? [],
+		matrix: compPreviewMatrix,
+		fileId: fileDataId,
+		xAxis,
+		yAxis,
+		enabled: previewActive,
+		plotMode,
+		xScale,
+		yScale,
+		cutoff,
+		xMin: dXMin,
+		xMax: dXMax,
+		yMin: dYMin,
+		yMax: dYMax,
+	})
+	const { data, isLoading, isFetching, isError, error } = previewActive
+		? preview
+		: density
+	const refetch = density.refetch
 
 	// BE-18: erro de canal ausente vem com `missing_channels` no payload — vira
 	// aviso explicável; o resto segue como erro genérico com o detail real.
@@ -268,7 +300,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yAxis,
 		effXScale,
 		effYScale,
-		plotMode,
+		plotMode: plotMode,
 	})
 	const { findGateAtPoint, findGateAtDataPoint } = useGateHitTest({
 		plotContainerRef,
@@ -289,7 +321,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		})
 
 	// --- Gate click/context menu handlers ---
+	// (gates são read-only durante a prévia de compensação — handlers
+	// guardados por `previewActive` mais abaixo)
 	const handleGateClick = (gate: Gate) => {
+		if (previewActive) return
 		setSelectedGate(gate)
 		setEditGateName(gate.name)
 		const idx = childGates.findIndex((g) => g.id === gate.id)
@@ -300,6 +335,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	const handleContextMenu = (event: React.MouseEvent) => {
+		if (previewActive) return
 		const hit = findGateAtPoint(event.clientX, event.clientY)
 		if (hit) {
 			event.preventDefault()
@@ -446,8 +482,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yAxisRange,
 	)
 
-	const dragmode: "select" | "lasso" | "pan" | false =
-		tool === "edit" || reshapingGateId !== null
+	// Na prévia de compensação o plot é só visualização — pan livre,
+	// sem seleção de gate.
+	const dragmode: "select" | "lasso" | "pan" | false = previewActive
+		? "pan"
+		: tool === "edit" || reshapingGateId !== null
 			? "pan"
 			: tool === "quad"
 				? false
@@ -457,6 +496,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	// Plot click handler
 	const handlePlotClickWrapper = async (event: Plotly.PlotMouseEvent) => {
+		if (previewActive) return
 		if (tool === "quad" && plotMode !== "histogram") {
 			await handleQuadrantClick(event)
 			return
@@ -578,6 +618,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								onYMinChange={setYMin}
 								onYMaxChange={setYMax}
 								controlsEnabled={settingsAvailable}
+								gateToolsEnabled={!previewActive}
 								settingsOpen={settingsOpen}
 								onToggleSettings={() => setSettingsOpen((prev) => !prev)}
 							/>
@@ -599,6 +640,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									: plotMode === "histogram"
 										? " · histograma (100% dos dados)"
 										: " · heatmap (100% dos dados)"}
+								{previewActive ? " · prévia não salva" : ""}
 							</Typography>
 						)}
 						<Box
@@ -622,14 +664,52 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								alignItems: "center",
 								justifyContent: "center",
 								// Separa o plot do canvas (FE-26): superfície com
-								// borda suave + raio — "poço" escuro no dark.
+								// borda suave + raio — "poço" escuro no dark. Em
+								// prévia de compensação a borda vira âmbar (FE-41).
 								bgcolor: "background.paper",
-								border: `1px solid ${theme.palette.divider}`,
+								border: previewActive
+									? `2px solid ${theme.palette.warning.main}`
+									: `1px solid ${theme.palette.divider}`,
 								borderRadius: 3,
 								boxShadow: theme.shadows[2],
 								overflow: "hidden",
 							})}
 						>
+							{/* Chip flutuante de modo edição: o que se vê é a prévia da
+							    matriz-rascunho — nada foi persistido. Sobrevoa o plot sem
+							    ocupar espaço nem bloquear pan/zoom (pointerEvents none). */}
+							{previewActive && (
+								<Box
+									sx={(theme) => ({
+										position: "absolute",
+										top: 8,
+										left: "50%",
+										transform: "translateX(-50%)",
+										zIndex: 24,
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										px: 1.5,
+										py: 0.5,
+										maxWidth: "calc(100% - 24px)",
+										borderRadius: 999,
+										bgcolor: "warning.main",
+										color: theme.palette.getContrastText(
+											theme.palette.warning.main,
+										),
+										boxShadow: theme.shadows[3],
+										pointerEvents: "none",
+									})}
+								>
+									<Typography variant="caption" fontWeight={700} noWrap>
+										Editando compensação
+										{compEditing?.base
+											? ` "${compEditing.base.name}"`
+											: " (nova matriz)"}{" "}
+										— prévia não salva
+									</Typography>
+								</Box>
+							)}
 							{isError && !data ? (
 								<Alert
 									severity={
@@ -743,9 +823,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 										bargap: 0,
 									}}
 									onSelected={
-										handleSelectedArea as (
-											event: Readonly<Plotly.PlotSelectionEvent>,
-										) => void
+										previewActive
+											? undefined
+											: (handleSelectedArea as (
+													event: Readonly<Plotly.PlotSelectionEvent>,
+												) => void)
 									}
 									onClick={handlePlotClickWrapper}
 									onRelayout={

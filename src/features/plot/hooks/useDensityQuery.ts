@@ -16,6 +16,8 @@ interface UseDensityQueryParams {
 	xMax: string
 	yMin: string
 	yMax: string
+	/** false = não dispara (ex.: modo edição de compensação usa a prévia). */
+	enabled?: boolean
 }
 
 export function useDensityQuery({
@@ -31,6 +33,7 @@ export function useDensityQuery({
 	xMax,
 	yMin,
 	yMax,
+	enabled = true,
 }: UseDensityQueryParams) {
 	return useQuery<DensityResponse>({
 		queryKey: [
@@ -63,5 +66,6 @@ export function useDensityQuery({
 				yMin,
 				yMax,
 			}),
+		enabled,
 	})
 }
