@@ -38,6 +38,13 @@ interface EditCompensationDialogProps {
 	onClose: () => void
 	/** Ajuste de matriz existente (deriva); null = criação do zero. */
 	source: CompensationMatrix | null
+	/**
+	 * Matriz somente-leitura (ex.: embutida no arquivo) — mostra a grade
+	 * sem opção de editar/criar.
+	 */
+	viewOnly?: { name: string; channels: string[]; matrix: number[][] } | null
+	/** Sem escrita: a matriz salva abre em leitura sem o botão "Editar". */
+	canEdit?: boolean
 	/** Devolve a mensagem de erro para exibir no dialog; null = sucesso. */
 	onSubmit: (payload: CompensationManualCreatePayload) => Promise<string | null>
 }
@@ -53,6 +60,8 @@ export default function EditCompensationDialog({
 	open,
 	onClose,
 	source,
+	viewOnly,
+	canEdit = true,
 	onSubmit,
 }: EditCompensationDialogProps) {
 	const experiment = useExperimentQuery(String(experimentId))
@@ -82,28 +91,29 @@ export default function EditCompensationDialog({
 	const [previewX, setPreviewX] = useState("")
 	const [previewY, setPreviewY] = useState("")
 
-	// Ao abrir: modo edição vai direto pra grade preenchida; modo novo
+	// Ao abrir: ajuste e viewOnly abrem na grade em leitura; modo novo
 	// começa na escolha de canais (default: todos os fluorescentes).
 	useEffect(() => {
 		if (!open) return
+		const view = source ?? viewOnly ?? null
 		setError(null)
 		setSaving(false)
-		setEditing(!source)
+		setEditing(!view)
 		setPreviewOn(!isMobile)
-		if (source) {
+		if (view) {
 			setStep("grid")
-			setChannels(source.channels)
-			setCells(source.matrix.map((row) => row.map(formatPercentCell)))
-			setName(`${source.name} (ajustada)`)
-			setPreviewX(source.channels[0] ?? "")
-			setPreviewY(source.channels[1] ?? source.channels[0] ?? "")
+			setChannels(view.channels)
+			setCells(view.matrix.map((row) => row.map(formatPercentCell)))
+			setName(source ? `${source.name} (ajustada)` : "")
+			setPreviewX(view.channels[0] ?? "")
+			setPreviewY(view.channels[1] ?? view.channels[0] ?? "")
 		} else {
 			setStep("channels")
 			setChannels([])
 			setCells([])
 			setName("")
 		}
-	}, [open, source, isMobile])
+	}, [open, source, viewOnly, isMobile])
 
 	// Modo novo: canais chegam assíncronos — seleciona todos por default.
 	useEffect(() => {
@@ -253,12 +263,18 @@ export default function EditCompensationDialog({
 		</Box>
 	)
 
-	const loading = !source && experiment.isLoading
+	const loading = !source && !viewOnly && experiment.isLoading
 
 	return (
 		<AppDialog
 			open={open}
-			title={source ? `Ajustar "${source.name}"` : "Nova matriz de compensação"}
+			title={
+				viewOnly
+					? viewOnly.name
+					: source
+						? `Ajustar "${source.name}"`
+						: "Nova matriz de compensação"
+			}
 			onClose={onClose}
 			maxWidth="sm"
 			actions={
@@ -273,12 +289,14 @@ export default function EditCompensationDialog({
 							Continuar
 						</Button>
 					</>
-				) : source && !editing ? (
+				) : !editing ? (
 					<>
 						<Button onClick={onClose}>Fechar</Button>
-						<Button variant="contained" onClick={() => setEditing(true)}>
-							Editar
-						</Button>
+						{source && canEdit && (
+							<Button variant="contained" onClick={() => setEditing(true)}>
+								Editar
+							</Button>
+						)}
 					</>
 				) : (
 					<>

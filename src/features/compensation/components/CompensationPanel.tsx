@@ -4,7 +4,6 @@ import {
 	Button,
 	Chip,
 	CircularProgress,
-	Collapse,
 	Divider,
 	IconButton,
 	List,
@@ -20,7 +19,6 @@ import {
 	MdTune as EditMatrixIcon,
 	MdDeleteOutline as DiscardIcon,
 	MdCheck as ApplyIcon,
-	MdExpandMore as ExpandIcon,
 } from "react-icons/md"
 import { toast } from "react-toastify"
 import {
@@ -32,7 +30,6 @@ import { AppDialog } from "../../../components/AppDialog"
 import { useConfirm } from "../../../components/ConfirmDialog"
 import ComputeCompensationDialog from "./ComputeCompensationDialog"
 import EditCompensationDialog from "./EditCompensationDialog"
-import MatrixGrid from "./MatrixGrid"
 import {
 	computeCompensation,
 	createCompensation,
@@ -84,8 +81,7 @@ export default function CompensationPanel({
 	} = useCompensationActions(experimentId)
 
 	const confirm = useConfirm()
-	const [showEmbeddedMatrix, setShowEmbeddedMatrix] = useState(false)
-	const [previewMatrix, setPreviewMatrix] = useState<number | null>(null)
+	const [viewEmbedded, setViewEmbedded] = useState(false)
 	const [computeOpen, setComputeOpen] = useState(false)
 	/** FE-40: matriz em ajuste, ou "new" pra criação do zero. */
 	const [editTarget, setEditTarget] = useState<
@@ -202,14 +198,7 @@ export default function CompensationPanel({
 							<Button
 								size="small"
 								variant="outlined"
-								onClick={() => setShowEmbeddedMatrix((v) => !v)}
-								endIcon={
-									<ExpandIcon
-										style={{
-											transform: showEmbeddedMatrix ? "rotate(180deg)" : "none",
-										}}
-									/>
-								}
+								onClick={() => setViewEmbedded(true)}
 							>
 								Ver matriz
 							</Button>
@@ -234,14 +223,6 @@ export default function CompensationPanel({
 								</>
 							)}
 						</Box>
-						<Collapse in={showEmbeddedMatrix}>
-							<Box sx={{ mt: 1 }}>
-								<MatrixGrid
-									channels={embedded.data.channels}
-									matrix={embedded.data.matrix}
-								/>
-							</Box>
-						</Collapse>
 					</Box>
 				)}
 
@@ -294,33 +275,38 @@ export default function CompensationPanel({
 				)}
 				<List dense disablePadding>
 					{(matrices.data ?? []).map((m) => (
-						<Box key={m.id}>
-							<ListItem
-								disableGutters
-								secondaryAction={
-									canEdit ? (
-										<Box sx={{ display: "flex" }}>
-											{!m.is_applied && (
-												<Tooltip title="Aplicar esta matriz">
-													<IconButton
-														size="small"
-														color="primary"
-														disabled={busy}
-														onClick={() => applyMutation.mutate(m.id)}
-													>
-														<ApplyIcon fontSize="small" />
-													</IconButton>
-												</Tooltip>
-											)}
-											<Tooltip title="Ajustar valores (cria matriz derivada)">
-												<IconButton
-													size="small"
-													disabled={busy}
-													onClick={() => setEditTarget(m)}
-												>
-													<EditMatrixIcon fontSize="small" />
-												</IconButton>
-											</Tooltip>
+						<ListItem
+							key={m.id}
+							disableGutters
+							secondaryAction={
+								<Box sx={{ display: "flex" }}>
+									{canEdit && !m.is_applied && (
+										<Tooltip title="Aplicar esta matriz">
+											<IconButton
+												size="small"
+												color="primary"
+												disabled={busy}
+												onClick={() => applyMutation.mutate(m.id)}
+											>
+												<ApplyIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
+									)}
+									<Tooltip
+										title={
+											canEdit ? "Ver matriz / ajustar valores" : "Ver matriz"
+										}
+									>
+										<IconButton
+											size="small"
+											disabled={busy}
+											onClick={() => setEditTarget(m)}
+										>
+											<EditMatrixIcon fontSize="small" />
+										</IconButton>
+									</Tooltip>
+									{canEdit && (
+										<>
 											<Tooltip title="Renomear">
 												<IconButton
 													size="small"
@@ -356,58 +342,44 @@ export default function CompensationPanel({
 													<DiscardIcon fontSize="small" />
 												</IconButton>
 											</Tooltip>
-										</Box>
-									) : undefined
+										</>
+									)}
+								</Box>
+							}
+						>
+							<ListItemText
+								primary={
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											gap: 0.5,
+										}}
+									>
+										<Typography variant="body2" noWrap>
+											{m.name}
+										</Typography>
+										{m.is_applied && (
+											<Chip
+												label="aplicada"
+												size="small"
+												color="primary"
+												sx={{ height: 18, fontSize: "0.6rem" }}
+											/>
+										)}
+										{m.derived_from != null && (
+											<Chip
+												label="ajustada"
+												size="small"
+												variant="outlined"
+												sx={{ height: 18, fontSize: "0.6rem" }}
+											/>
+										)}
+									</Box>
 								}
-							>
-								<ListItemText
-									primary={
-										<Box
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												gap: 0.5,
-											}}
-										>
-											<Typography variant="body2" noWrap>
-												{m.name}
-											</Typography>
-											{m.is_applied && (
-												<Chip
-													label="aplicada"
-													size="small"
-													color="primary"
-													sx={{ height: 18, fontSize: "0.6rem" }}
-												/>
-											)}
-											{m.derived_from != null && (
-												<Chip
-													label="ajustada"
-													size="small"
-													variant="outlined"
-													sx={{ height: 18, fontSize: "0.6rem" }}
-												/>
-											)}
-										</Box>
-									}
-									secondary={`${sourceLabel(m)} · ${m.channels.length} canais · ${m.created_by_name ?? "—"} · ${formatTime(m.created_at)}`}
-								/>
-							</ListItem>
-							<Box sx={{ pl: 1, pb: 0.5 }}>
-								<Button
-									size="small"
-									sx={{ textTransform: "none", fontSize: "0.7rem", p: 0 }}
-									onClick={() =>
-										setPreviewMatrix(previewMatrix === m.id ? null : m.id)
-									}
-								>
-									{previewMatrix === m.id ? "ocultar" : "ver matriz"}
-								</Button>
-								<Collapse in={previewMatrix === m.id}>
-									<MatrixGrid channels={m.channels} matrix={m.matrix} />
-								</Collapse>
-							</Box>
-						</Box>
+								secondary={`${sourceLabel(m)} · ${m.channels.length} canais · ${m.created_by_name ?? "—"} · ${formatTime(m.created_at)}`}
+							/>
+						</ListItem>
 					))}
 				</List>
 			</Box>
@@ -426,7 +398,25 @@ export default function CompensationPanel({
 					experimentId={experimentId}
 					open={editTarget != null}
 					source={editTarget === "new" ? null : editTarget}
+					canEdit={canEdit}
 					onClose={() => setEditTarget(null)}
+					onSubmit={handleCreateSubmit}
+				/>
+			)}
+
+			{/* Matriz embutida: ver sem editar (não é salva — "Usar do
+				arquivo" cria a persistida). */}
+			{experimentId && embedded.data && (
+				<EditCompensationDialog
+					experimentId={experimentId}
+					open={viewEmbedded}
+					source={null}
+					viewOnly={{
+						name: `Matriz do arquivo (amostra #${embedded.data.file_data_id})`,
+						channels: embedded.data.channels,
+						matrix: embedded.data.matrix,
+					}}
+					onClose={() => setViewEmbedded(false)}
 					onSubmit={handleCreateSubmit}
 				/>
 			)}
