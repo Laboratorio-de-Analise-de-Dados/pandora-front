@@ -675,25 +675,30 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								overflow: "hidden",
 							})}
 						>
-							{/* Faixa fixa de modo edição: o que se vê é a prévia da
-							    matriz-rascunho — nada foi persistido. */}
+							{/* Chip flutuante de modo edição: o que se vê é a prévia da
+							    matriz-rascunho — nada foi persistido. Sobrevoa o plot sem
+							    ocupar espaço nem bloquear pan/zoom (pointerEvents none). */}
 							{previewActive && (
 								<Box
 									sx={(theme) => ({
 										position: "absolute",
-										top: 0,
-										left: 0,
-										right: 0,
+										top: 8,
+										left: "50%",
+										transform: "translateX(-50%)",
 										zIndex: 24,
 										display: "flex",
 										alignItems: "center",
 										justifyContent: "center",
 										px: 1.5,
 										py: 0.5,
+										maxWidth: "calc(100% - 24px)",
+										borderRadius: 999,
 										bgcolor: "warning.main",
 										color: theme.palette.getContrastText(
 											theme.palette.warning.main,
 										),
+										boxShadow: theme.shadows[3],
+										pointerEvents: "none",
 									})}
 								>
 									<Typography variant="caption" fontWeight={700} noWrap>
