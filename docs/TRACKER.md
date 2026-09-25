@@ -18,25 +18,23 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                                                                                                                                     | Área afetada                                                                                                                        | Branch                            | Sessão | Desde      |
-| ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------ | ---------- |
-| FE-39 modal de cálculo de compensação                                                                                                       | `src/features/compensation/` (dialog novo + panel)                                                                                  | `fix/compensation-compute-modal`  | devin  | 2026-09-18 |
-| FE-40 editor de matriz de compensação                                                                                                       | `src/features/compensation/` (dialog novo + panel)                                                                                  | `feat/compensation-matrix-editor` | devin  | 2026-09-24 |
-| FE-41 preview ao vivo — modo edição no workspace (seção vira editor, plot central = prévia, gates read-only)                                | `src/features/compensation/` (context + editor) + `scatter-plot` + `useDensityQuery`/`useCompensationPreview`                       | `feat/compensation-live-preview`  | devin  | 2026-09-24 |
-| Painel direito em seções expansíveis (Estatísticas + Compensação + Histórico; drawer lateral no mobile; triggers fora da página no desktop) | `src/page/experiment/[id]/` + `CollapsiblePanel`/`PanelSection` + `StatsPanel`/`CompensationPanel`/`HistoryPanel` (modo `embedded`) | `feat/compensation-live-preview`  | devin  | 2026-09-25 |
+| Feature | Área afetada | Branch | Sessão | Desde |
+| ------- | ------------ | ------ | ------ | ----- |
 
 ## Concluído nesta branch
 
-| Feature                                    | Observação                                                                                                                                                                       |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FE-38 buscar amostras na árvore            | Campo de busca no `ParentTree` (nome, tag, subsample; sem acento/case) + `utils/treeFilter*` — PR #99                                                                            |
-| FE-25 painel de histórico/checkpoints      | `src/features/history/` — consome BE-20                                                                                                                                          |
-| BE-21 client (thumbnail, papel, progresso) | `ExperimentPreview`, `RoleChip`, `LinearProgress` nos cards                                                                                                                      |
-| FE-27 indicadores de análise               | `src/features/compensation/` + cluster na sourceNav, histórico por amostra (`?file=`), drawer de histórico no card, badge "Compensado", marcação de controles                    |
-| FE-31 contas conectadas                    | Perfil "Contas conectadas" (link/unlink real), interstitial `link_notice` no auth-callback, dialog de merge (`merge_notice` → `POST /accounts/merge/confirm/`) — PRs #72/#73/#74 |
-| FE-34 tags de amostra                      | `src/features/tags/` (chips compactos, picker com controle exclusivo, sugestões, lote por delta) + metadados — PR #97                                                            |
-| FE-32 dialogs de confirmação               | `ConfirmDialogProvider` + `useConfirm()` (Promise<boolean>); migrados os 2 `window.confirm` de `useExperimentMetaActions` — ADR-0014                                             |
-| #70 dialogs → AppDialog                    | 4 dialogs do parent-tree no shell `AppDialog` + prop `confirmAutoFocus`/`data-mui-focusable` p/ foco inicial — PR #103                                                           |
+| Feature                                    | Observação                                                                                                                                                                          |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FE-39/FE-40/FE-41 compensação              | Modal de cálculo direto + editor de matriz (derivação manual) + prévia ao vivo no workspace (PRs #104/#105 — main). Falta: tabela de MFI por população (dep. `channel_stats` BE-36) |
+| Painel direito em seções expansíveis       | Estatísticas + Compensação + Histórico; drawer lateral no mobile; triggers consolidados (mergeado no PR #105)                                                                       |
+| FE-38 buscar amostras na árvore            | Campo de busca no `ParentTree` (nome, tag, subsample; sem acento/case) + `utils/treeFilter*` — PR #99                                                                               |
+| FE-25 painel de histórico/checkpoints      | `src/features/history/` — consome BE-20                                                                                                                                             |
+| BE-21 client (thumbnail, papel, progresso) | `ExperimentPreview`, `RoleChip`, `LinearProgress` nos cards                                                                                                                         |
+| FE-27 indicadores de análise               | `src/features/compensation/` + cluster na sourceNav, histórico por amostra (`?file=`), drawer de histórico no card, badge "Compensado", marcação de controles                       |
+| FE-31 contas conectadas                    | Perfil "Contas conectadas" (link/unlink real), interstitial `link_notice` no auth-callback, dialog de merge (`merge_notice` → `POST /accounts/merge/confirm/`) — PRs #72/#73/#74    |
+| FE-34 tags de amostra                      | `src/features/tags/` (chips compactos, picker com controle exclusivo, sugestões, lote por delta) + metadados — PR #97                                                               |
+| FE-32 dialogs de confirmação               | `ConfirmDialogProvider` + `useConfirm()` (Promise<boolean>); migrados os 2 `window.confirm` de `useExperimentMetaActions` — ADR-0014                                                |
+| #70 dialogs → AppDialog                    | 4 dialogs do parent-tree no shell `AppDialog` + prop `confirmAutoFocus`/`data-mui-focusable` p/ foco inicial — PR #103                                                              |
 
 ## Livres para pegar
 
