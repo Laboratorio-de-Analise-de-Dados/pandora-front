@@ -1,6 +1,10 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import {
 	Box,
+	Checkbox,
+	ListItemText,
+	MenuItem,
+	Select,
 	Table,
 	TableBody,
 	TableCell,
@@ -37,6 +41,13 @@ export default function PreviewMfiTable({
 	gateIds,
 	gateLabel,
 }: PreviewMfiTableProps) {
+	// Colunas visíveis — guardo as ESCONDIDAS pra canal novo entrar visível.
+	const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+	const visibleChannels = useMemo(
+		() => channels.filter((c) => !hiddenCols.has(c)),
+		[channels, hiddenCols],
+	)
+
 	const rows = useMemo(
 		() =>
 			[
@@ -53,15 +64,50 @@ export default function PreviewMfiTable({
 
 	return (
 		<Box>
-			<Typography variant="caption" fontWeight={700} display="block">
-				Mediana (MFI) por população
-			</Typography>
+			<Box
+				sx={{
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "space-between",
+					gap: 1,
+				}}
+			>
+				<Typography variant="caption" fontWeight={700}>
+					Mediana (MFI) por população
+				</Typography>
+				<Select
+					multiple
+					size="small"
+					value={visibleChannels}
+					renderValue={() => "Colunas"}
+					onChange={(e) => {
+						const sel = e.target.value as string[]
+						setHiddenCols(new Set(channels.filter((c) => !sel.includes(c))))
+					}}
+					sx={{
+						fontSize: "0.75rem",
+						minWidth: 0,
+						"& .MuiSelect-select": { py: 0.25, pr: 3 },
+					}}
+					MenuProps={{ PaperProps: { sx: { maxHeight: 280 } } }}
+				>
+					{channels.map((ch) => (
+						<MenuItem key={ch} value={ch} dense>
+							<Checkbox size="small" checked={!hiddenCols.has(ch)} />
+							<ListItemText
+								primary={ch}
+								primaryTypographyProps={{ variant: "caption" }}
+							/>
+						</MenuItem>
+					))}
+				</Select>
+			</Box>
 			<TableContainer sx={{ maxHeight: 200, overflowX: "auto" }}>
 				<Table size="small" stickyHeader>
 					<TableHead>
 						<TableRow>
 							<TableCell sx={{ fontWeight: 700, py: 0.5 }}>População</TableCell>
-							{channels.map((ch) => (
+							{visibleChannels.map((ch) => (
 								<TableCell
 									key={ch}
 									align="right"
@@ -92,7 +138,7 @@ export default function PreviewMfiTable({
 											</Typography>
 										)}
 									</TableCell>
-									{channels.map((ch) => (
+									{visibleChannels.map((ch) => (
 										<TableCell key={ch} align="right" sx={{ py: 0.5 }}>
 											{formatMfi(pop?.[ch]?.median ?? null)}
 										</TableCell>
