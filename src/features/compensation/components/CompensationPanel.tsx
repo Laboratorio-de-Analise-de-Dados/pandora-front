@@ -55,7 +55,12 @@ const sourceLabel = (m: CompensationMatrix) =>
 interface CompensationPanelProps {
 	experimentId: number | undefined
 	canEdit: boolean
-	onClose: () => void
+	onClose?: () => void
+	/**
+	 * Dentro de uma seção expansível do painel lateral: sem header/X
+	 * próprios e altura natural (o painel inteiro é quem rola).
+	 */
+	embedded?: boolean
 }
 
 /**
@@ -68,9 +73,10 @@ export default function CompensationPanel({
 	experimentId,
 	canEdit,
 	onClose,
+	embedded = false,
 }: CompensationPanelProps) {
 	const matrices = useCompensationsQuery(experimentId)
-	const embedded = useEmbeddedCompensationQuery(experimentId)
+	const embeddedMatrix = useEmbeddedCompensationQuery(experimentId)
 	const {
 		fromHeaderMutation,
 		invalidateAll,
@@ -137,29 +143,42 @@ export default function CompensationPanel({
 			sx={{
 				display: "flex",
 				flexDirection: "column",
-				height: "100%",
 				minHeight: 0,
+				...(embedded ? {} : { height: "100%" }),
 			}}
 		>
+			{!embedded && (
+				<>
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							px: 2,
+							py: 1.5,
+							gap: 1,
+						}}
+					>
+						<Typography variant="h6" sx={{ flex: 1 }}>
+							Compensação
+						</Typography>
+						{onClose && (
+							<IconButton onClick={onClose} size="small">
+								<CloseIcon />
+							</IconButton>
+						)}
+					</Box>
+					<Divider />
+				</>
+			)}
+
 			<Box
 				sx={{
-					display: "flex",
-					alignItems: "center",
-					px: 2,
-					py: 1.5,
-					gap: 1,
+					flex: 1,
+					minHeight: 0,
+					p: 2,
+					...(embedded ? {} : { overflowY: "auto" }),
 				}}
 			>
-				<Typography variant="h6" sx={{ flex: 1 }}>
-					Compensação
-				</Typography>
-				<IconButton onClick={onClose} size="small">
-					<CloseIcon />
-				</IconButton>
-			</Box>
-			<Divider />
-
-			<Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, p: 2 }}>
 				{/* Estado atual */}
 				<Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
 					{applied ? (
@@ -187,12 +206,12 @@ export default function CompensationPanel({
 				</Box>
 
 				{/* Matriz embutida nos headers da amostra */}
-				{embedded.data && (
+				{embeddedMatrix.data && (
 					<Box sx={{ mb: 2 }}>
 						<Typography variant="body2" sx={{ mb: 0.5 }}>
-							<strong>{embedded.data.channels.length} canais</strong> — matriz
-							encontrada nos headers do arquivo (amostra #
-							{embedded.data.file_data_id}).
+							<strong>{embeddedMatrix.data.channels.length} canais</strong> —
+							matriz encontrada nos headers do arquivo (amostra #
+							{embeddedMatrix.data.file_data_id}).
 						</Typography>
 						<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
 							<Button
@@ -406,15 +425,15 @@ export default function CompensationPanel({
 
 			{/* Matriz embutida: ver sem editar (não é salva — "Usar do
 				arquivo" cria a persistida). */}
-			{experimentId && embedded.data && (
+			{experimentId && embeddedMatrix.data && (
 				<EditCompensationDialog
 					experimentId={experimentId}
 					open={viewEmbedded}
 					source={null}
 					viewOnly={{
-						name: `Matriz do arquivo (amostra #${embedded.data.file_data_id})`,
-						channels: embedded.data.channels,
-						matrix: embedded.data.matrix,
+						name: `Matriz do arquivo (amostra #${embeddedMatrix.data.file_data_id})`,
+						channels: embeddedMatrix.data.channels,
+						matrix: embeddedMatrix.data.matrix,
 					}}
 					onClose={() => setViewEmbedded(false)}
 					onSubmit={handleCreateSubmit}

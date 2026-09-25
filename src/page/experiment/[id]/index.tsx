@@ -27,6 +27,7 @@ import ScatterPlot from "../../../features/plot/components/scatter-plot"
 import ParentTree from "../../../features/experiment/components/parent-tree"
 import SourceDropdown from "../../../features/experiment/components/SourceDropdown"
 import CollapsiblePanel from "../../../features/experiment/components/CollapsiblePanel"
+import PanelSection from "../../../features/experiment/components/PanelSection"
 import StatsPanel from "../../../features/stats/components/StatsPanel"
 import HistoryPanel from "../../../features/history/components/HistoryPanel"
 import {
@@ -125,10 +126,14 @@ function ExperimentPageContent() {
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
-	const [showStats, setShowStats] = useState(() => !isMobile)
+	// Painel direito = seções expansíveis (Estatísticas + Compensação) —
+	// nada de overlay sobre o plot no desktop; no mobile é drawer da
+	// direita. Histórico segue overlay/bottom sheet separado.
+	const [showRight, setShowRight] = useState(() => !isMobile)
+	const [statsOpen, setStatsOpen] = useState(true)
+	const [compOpen, setCompOpen] = useState(false)
 	const [showTree, setShowTree] = useState(() => !isMobile)
 	const [showHistory, setShowHistory] = useState(false)
-	const [showCompensation, setShowCompensation] = useState(false)
 	// Recorte do histórico (FE-27): o ícone junto do arquivo abre a timeline
 	// filtrada por `fileDataId`; ações experiment-wide continuam inclusas.
 	const [historyFileId, setHistoryFileId] = useState<number | undefined>(
@@ -140,44 +145,43 @@ function ExperimentPageContent() {
 	const appliedCompensation = compensations.data?.find((m) => m.is_applied)
 	const currentFile = experimentFiles.find((f) => f.id === source?.fileDataId)
 
-	// Desktop: histórico/compensação são overlays sobre a área central —
-	// árvore e stats continuam abertas ao lado. No mobile os sheets seguem
-	// mutuamente exclusivos (um de cada vez).
+	// No mobile os drawers seguem mutuamente exclusivos (um de cada vez).
+	// No desktop, histórico (overlay do topo) e o painel direito podem
+	// ficar abertos juntos — não competem pelo mesmo espaço.
 	const openHistory = (fileId?: number) => {
 		if (isMobile) {
-			setShowStats(false)
+			setShowRight(false)
 			setShowTree(false)
 		}
-		setShowCompensation(false)
 		setHistoryFileId(fileId)
 		setShowHistory(true)
 	}
 	const closeHistory = () => setShowHistory(false)
 	const openCompensation = () => {
 		if (isMobile) {
-			setShowStats(false)
 			setShowTree(false)
+			setShowHistory(false)
 		}
-		setShowHistory(false)
-		setShowCompensation(true)
+		setShowRight(true)
+		setCompOpen(true)
 	}
-	const closeCompensation = () => setShowCompensation(false)
+	const closeCompensation = () => setCompOpen(false)
 	const openStats = () => {
 		if (isMobile) {
 			setShowHistory(false)
-			setShowCompensation(false)
 			setShowTree(false)
 		}
-		setShowStats(true)
+		setShowRight(true)
+		setStatsOpen(true)
 	}
 	const openTree = () => {
 		if (isMobile) {
-			setShowStats(false)
+			setShowRight(false)
 			setShowHistory(false)
-			setShowCompensation(false)
 		}
 		setShowTree(true)
 	}
+	const compVisible = showRight && compOpen
 
 	const treeContent = (
 		<>
@@ -393,9 +397,7 @@ function ExperimentPageContent() {
 					embeddedCompensation.data != null ||
 					experimentFiles.some((f) => f.has_embedded_compensation)
 				}
-				onClick={() =>
-					showCompensation ? closeCompensation() : openCompensation()
-				}
+				onClick={() => (compVisible ? closeCompensation() : openCompensation())}
 			/>
 			<Tooltip title="Histórico desta amostra">
 				<span>
@@ -595,62 +597,52 @@ function ExperimentPageContent() {
 								</Paper>
 							</Collapse>
 						)}
-						{/* Compensação (FE-27): mesmo overlay do histórico. */}
-						{!isMobile && (
-							<Collapse
-								in={showCompensation}
-								unmountOnExit
-								sx={{
-									position: "absolute",
-									top: 0,
-									left: 0,
-									right: 0,
-									zIndex: 20,
-								}}
-							>
-								<Paper
-									sx={(theme) => ({
-										maxHeight: "min(560px, 72vh)",
-										overflowY: "auto",
-										bgcolor: theme.palette.background.paper,
-										border: `1px solid ${theme.palette.divider}`,
-										borderTop: "none",
-										borderRadius: "0 0 16px 16px",
-										boxShadow: theme.shadows[8],
-									})}
-								>
-									<CompensationPanel
-										experimentId={experiment?.id}
-										canEdit={canEditExperiment}
-										onClose={closeCompensation}
-									/>
-								</Paper>
-							</Collapse>
-						)}
 					</Box>
 
-					{/* Coluna direita: estatísticas */}
+					{/* Coluna direita: seções expansíveis — Estatísticas +
+					    Compensação dividem o painel; cada uma abre como
+					    "dropdown" (o usuário controla o que vê). No mobile é
+					    drawer lateral direito, não bottom sheet. */}
 					<CollapsiblePanel
 						side="right"
-						open={showStats}
+						open={showRight}
 						isMobile={isMobile}
 						onOpen={openStats}
-						onClose={() => setShowStats(false)}
-						label="Estatísticas"
+						onClose={() => setShowRight(false)}
+						label="Análise"
 						icon={<StatsIcon style={{ fontSize: 18 }} />}
 						desktopWidth="22%"
 						desktopMinWidth={260}
-						mobileAnchor="bottom"
+						mobileAnchor="right"
 						mobileTriggerTop={56}
-						contentPadding="1rem"
+						contentPadding={0}
 					>
-						<StatsPanel
-							source={source}
-							files={experimentFiles}
-							values={values}
-							fileStats={fileStats}
-							onClose={() => setShowStats(false)}
-						/>
+						<PanelSection
+							title="Estatísticas"
+							icon={<StatsIcon style={{ fontSize: 16 }} />}
+							open={statsOpen}
+							onToggle={() => setStatsOpen((v) => !v)}
+						>
+							<StatsPanel
+								source={source}
+								files={experimentFiles}
+								values={values}
+								fileStats={fileStats}
+								embedded
+							/>
+						</PanelSection>
+						<PanelSection
+							title="Compensação"
+							icon={<BoltIcon style={{ fontSize: 16 }} />}
+							open={compOpen}
+							onToggle={() => setCompOpen((v) => !v)}
+						>
+							<CompensationPanel
+								experimentId={experiment?.id}
+								canEdit={canEditExperiment}
+								embedded
+							/>
+						</PanelSection>
 					</CollapsiblePanel>
 
 					{/* Histórico no mobile: bottom sheet exclusivo (desktop usa o
@@ -682,28 +674,8 @@ function ExperimentPageContent() {
 						</CollapsiblePanel>
 					)}
 
-					{/* Compensação no mobile: bottom sheet exclusivo. */}
-					{isMobile && (
-						<CollapsiblePanel
-							side="right"
-							open={showCompensation}
-							isMobile={isMobile}
-							onOpen={openCompensation}
-							onClose={closeCompensation}
-							label="Compensação"
-							icon={<BoltIcon style={{ fontSize: 18 }} />}
-							desktopWidth="26%"
-							desktopMinWidth={320}
-							mobileAnchor="bottom"
-							hideTrigger
-						>
-							<CompensationPanel
-								experimentId={experiment?.id}
-								canEdit={canEditExperiment}
-								onClose={closeCompensation}
-							/>
-						</CollapsiblePanel>
-					)}
+					{/* Compensação no mobile mora na seção do painel direito
+					    (drawer lateral), como no desktop. */}
 				</Box>
 			</Box>
 

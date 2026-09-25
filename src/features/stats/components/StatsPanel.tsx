@@ -96,6 +96,11 @@ interface StatsPanelProps {
 	values: string[]
 	onClose?: () => void
 	fileStats?: AnalysisResultData | null
+	/**
+	 * Dentro de uma seção expansível do painel lateral: sem header
+	 * próprio e altura natural (o painel inteiro é quem rola).
+	 */
+	embedded?: boolean
 }
 
 export default function StatsPanel({
@@ -104,6 +109,7 @@ export default function StatsPanel({
 	values,
 	onClose,
 	fileStats: externalFileStats,
+	embedded = false,
 }: StatsPanelProps) {
 	// --- Internal source selection ---
 	const [statsSource, setStatsSource] = useState<SelectableItem | null>(null)
@@ -409,7 +415,7 @@ export default function StatsPanel({
 	if (!source) {
 		return (
 			<Box sx={{ p: 2 }}>
-				{headerSection}
+				{!embedded && headerSection}
 				<SourceSelector
 					currentPath={currentPath}
 					selectableItems={selectableItems}
@@ -430,7 +436,7 @@ export default function StatsPanel({
 	if (source.type === "file" && !fileStats) {
 		return (
 			<Box sx={{ p: 2 }}>
-				{headerSection}
+				{!embedded && headerSection}
 				<SourceSelector
 					currentPath={currentPath}
 					selectableItems={selectableItems}
@@ -467,11 +473,10 @@ export default function StatsPanel({
 				p: 1.5,
 				display: "flex",
 				flexDirection: "column",
-				height: "100%",
-				overflow: "hidden",
+				...(embedded ? {} : { height: "100%", overflow: "hidden" }),
 			}}
 		>
-			{headerSection}
+			{!embedded && headerSection}
 
 			<SourceSelector
 				currentPath={currentPath}
