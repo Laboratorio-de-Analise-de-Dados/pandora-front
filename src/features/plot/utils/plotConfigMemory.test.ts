@@ -32,7 +32,7 @@ describe("resolvePlotInitialConfig", () => {
 			keepCurrent: false,
 			viewConfig: base,
 			saved: biexConfig,
-			gateConfig: { xScale: "linear" },
+			persistedConfig: { xScale: "linear" },
 		})
 		expect(result).toBe(biexConfig)
 	})
@@ -41,7 +41,7 @@ describe("resolvePlotInitialConfig", () => {
 		const result = resolvePlotInitialConfig({
 			keepCurrent: false,
 			viewConfig: biexConfig,
-			gateConfig: { xScale: "linear", plotMode: "scatter" },
+			persistedConfig: { xScale: "linear", plotMode: "scatter" },
 		})
 		expect(result).toEqual({
 			...biexConfig,
@@ -50,7 +50,16 @@ describe("resolvePlotInitialConfig", () => {
 		})
 	})
 
-	it("1ª visita a arquivo (sem gate) herda o carry-forward", () => {
+	it("1ª visita a amostra raiz também honra o plot_config persistido", () => {
+		const result = resolvePlotInitialConfig({
+			keepCurrent: false,
+			viewConfig: biexConfig,
+			persistedConfig: { xScale: "linear" },
+		})
+		expect(result).toEqual({ ...biexConfig, xScale: "linear" })
+	})
+
+	it("1ª visita a arquivo sem config salva herda o carry-forward", () => {
 		const result = resolvePlotInitialConfig({
 			keepCurrent: false,
 			viewConfig: biexConfig,

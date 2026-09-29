@@ -88,6 +88,8 @@ export interface ExperimentFiles {
 	inherited_tags?: SampleTag[]
 	/** BE-34: system_keys sugeridos pela heurística de filename. */
 	suggested_tags?: string[]
+	/** #71: config de visualização persistida da amostra raiz. */
+	plot_config?: Partial<PlotViewConfig>
 }
 
 /** Nó selecionado na árvore/plot: uma amostra ou um gate dentro dela. */

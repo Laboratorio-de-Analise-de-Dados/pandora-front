@@ -18,9 +18,10 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                 | Área afetada                                                | Branch | Sessão | Desde |
-| ----------------------- | ----------------------------------------------------------- | ------ | ------ | ----- |
-| FE-41 MFI por população | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0 | —      | —      | —     |
+| Feature                         | Área afetada                                                    | Branch                              | Sessão | Desde      |
+| ------------------------------- | --------------------------------------------------------------- | ----------------------------------- | ------ | ---------- |
+| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0     | —                                   | —      | —          |
+| #77 plot_config da amostra raiz | `usePlotPersistence` + `plotConfigMemory` + `experimentService` | `feat/plot-config-file-persistence` | devin  | 2026-09-29 |
 
 ## Concluído nesta branch
 

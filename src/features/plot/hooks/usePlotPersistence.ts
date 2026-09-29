@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { updateGate } from "../../../services/gateService"
+import { updateFilePlotConfig } from "../../../services/experimentService"
 import type { PlotViewConfig } from "../../../types"
 
 const SAVE_DEBOUNCE_MS = 600
@@ -22,8 +23,8 @@ interface UsePlotPersistenceParams {
 /**
  * Persiste a configuração de visualização estilo FlowJo:
  * - no mount, semeia o carry-forward com a config atual (sem request);
- * - a cada mudança (debounced) atualiza o carry-forward e, se a fonte for um
- *   gate, faz PATCH do `plot_config` no backend.
+ * - a cada mudança (debounced) atualiza o carry-forward e faz PATCH do
+ *   `plot_config` no backend — gate ou amostra raiz (FE-77/BE #71).
  *
  * Falhas de PATCH são silenciosas de propósito — não travam a interação.
  */
@@ -47,6 +48,8 @@ export function usePlotPersistence({
 			onPersistRef.current(sourceType, sourceId, config)
 			if (sourceType === "gate") {
 				updateGate(sourceId, { plot_config: config }).catch(() => undefined)
+			} else {
+				updateFilePlotConfig(sourceId, config).catch(() => undefined)
 			}
 		}, SAVE_DEBOUNCE_MS)
 		return () => clearTimeout(handle)

@@ -4,6 +4,7 @@ import type {
 	Experiment,
 	ExperimentFiles,
 	ExperimentType,
+	PlotViewConfig,
 } from "../types"
 
 export const fetchExperiments = async (
@@ -283,6 +284,17 @@ export const fetchFileHeaders = async (
 ): Promise<FileHeadersResponse> => {
 	const res = await CytometryApi.get(`/experiment/file/${fileDataId}/headers`)
 	return res.data
+}
+
+/** #77 (BE #71): plot_config da amostra raiz — preferência de exibição,
+ * não gera revisão nem invalida densidade. */
+export const updateFilePlotConfig = async (
+	fileDataId: number,
+	plotConfig: Partial<PlotViewConfig>,
+): Promise<void> => {
+	await CytometryApi.patch(`/experiment/file/${fileDataId}/plot-config`, {
+		plot_config: plotConfig,
+	})
 }
 
 /** Histograma 2D de baixa resolução da 1ª amostra ativa (BE-21). */
