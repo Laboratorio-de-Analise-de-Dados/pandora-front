@@ -1,5 +1,5 @@
 import { useState } from "react"
-import Plotly from "plotly.js"
+import Plotly from "plotly.js/dist/plotly"
 import { Button, Menu, MenuItem } from "@mui/material"
 import { MdOutlineFileDownload } from "react-icons/md"
 import type { AnalysisFigure } from "../../../services/figureService"
