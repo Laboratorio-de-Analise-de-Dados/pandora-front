@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom"
 import HomePage from "../page/home"
 import ExperimentsPage from "../page/experiments"
 import ExperimentPage from "../page/experiment/[id]"
+import AnalysisPage from "../page/experiment/[id]/analysis"
 import ProfilePage from "../page/profile"
 import LoginPage from "../page/login"
 import RegisterPage from "../page/register"
@@ -42,6 +43,14 @@ const AppRoutes = () => {
 				element={
 					<ProtectedRoute>
 						<ExperimentPage />
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/experiments/:id/analysis"
+				element={
+					<ProtectedRoute>
+						<AnalysisPage />
 					</ProtectedRoute>
 				}
 			/>
