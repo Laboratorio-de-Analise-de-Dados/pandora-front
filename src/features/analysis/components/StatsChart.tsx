@@ -3,7 +3,11 @@ import Plot from "react-plotly.js"
 import { useTheme } from "@mui/material/styles"
 import { Box, Typography } from "@mui/material"
 import type { AnalysisFigure } from "../../../services/figureService"
-import { buildStatsTraces, metricLabel } from "../utils/figureSeries"
+import {
+	buildStatsTraces,
+	isPercentMetric,
+	metricLabel,
+} from "../utils/figureSeries"
 
 interface StatsChartProps {
 	figure: AnalysisFigure
@@ -23,6 +27,7 @@ const StatsChart = ({ figure, onInit }: StatsChartProps) => {
 			figure.spec.populations,
 			groupNames,
 			figure.chart_type as "stats_bar" | "stats_strip",
+			figure.spec.metric,
 		) as unknown as Plotly.Data[]
 	}, [cache, figure.spec, figure.chart_type])
 
@@ -52,6 +57,10 @@ const StatsChart = ({ figure, onInit }: StatsChartProps) => {
 								? `${metricLabel(figure.spec.metric)} — ${figure.spec.channel}`
 								: metricLabel(figure.spec.metric),
 						},
+						// percent_* chegam como fração — eixo em %.
+						...(isPercentMetric(figure.spec.metric)
+							? { tickformat: ".0%" }
+							: {}),
 					},
 					legend: { orientation: "h", y: -0.2 },
 				}}

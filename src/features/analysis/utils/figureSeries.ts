@@ -4,8 +4,8 @@ import type {
 	FigureResultRow,
 } from "../../../services/figureService"
 
-/** Caminho-sentinela da população "amostra inteira" (stats de raiz). */
-export const ROOT_POPULATION = "."
+/** Literal do contrato BE-33 para a população "amostra inteira" (stats de raiz). */
+export const ROOT_POPULATION = "file"
 
 export const FIGURE_METRICS: { value: FigureMetric; label: string }[] = [
 	{ value: "percent_parent", label: "% do pai" },
@@ -27,9 +27,11 @@ export const metricNeedsChannel = (metric: FigureMetric): boolean =>
 	metric !== "percent_parent" && metric !== "percent_total"
 
 /**
- * Extrai o valor da métrica de um `analysis_result`. Retorna `undefined`
- * quando o resultado não se aplica ou o canal/métrica não existe — ausente
- * é ausente, nunca zero.
+ * Extrai o valor cru da métrica de um `analysis_result` — percentuais ficam
+ * em fração (0.25), como o backend emite nos rows (a conversão para % é só
+ * de exibição, ver `formatMetricValue`). Retorna `undefined` quando o
+ * resultado não se aplica ou o canal/métrica não existe — ausente é
+ * ausente, nunca zero.
  */
 export const metricValue = (
 	ar: AnalysisResultData | undefined,
@@ -38,18 +40,28 @@ export const metricValue = (
 ): number | undefined => {
 	if (!ar || ar.applicable === false) return undefined
 	if (metric === "percent_parent") {
-		return ar.summary_metrics
-			? ar.summary_metrics.percent_of_parent_population * 100
-			: undefined
+		return ar.summary_metrics?.percent_of_parent_population
 	}
 	if (metric === "percent_total") {
-		return ar.summary_metrics
-			? ar.summary_metrics.percent_of_total_population * 100
-			: undefined
+		return ar.summary_metrics?.percent_of_total_population
 	}
 	if (!channel) return undefined
 	return ar.channel_statistics?.[channel]?.[metric]
 }
+
+/** Métrica é percentual (valor cru = fração)? */
+export const isPercentMetric = (metric: FigureMetric): boolean =>
+	metric === "percent_parent" || metric === "percent_total"
+
+/**
+ * Valor para exibição/export: percentuais viram % com 2 casas
+ * (0.25 → "25.00"); demais métricas, 4 casas.
+ */
+export const formatMetricValue = (
+	metric: FigureMetric,
+	value: number,
+): string =>
+	isPercentMetric(metric) ? (value * 100).toFixed(2) : value.toFixed(4)
 
 /** Último segmento do caminho ("Linf/CD3/CD4" → "CD4"); "." → "Amostra inteira". */
 export const populationLabel = (path: string): string =>
@@ -77,8 +89,10 @@ export const buildStatsTraces = (
 	populations: string[],
 	groupNames: string[],
 	chartType: "stats_bar" | "stats_strip",
-): StatsTrace[] =>
-	populations.map((pop) => {
+	metric: FigureMetric,
+): StatsTrace[] => {
+	const yFmt = isPercentMetric(metric) ? "%{y:.2%}" : "%{y:.2f}"
+	return populations.map((pop) => {
 		if (chartType === "stats_bar") {
 			const y = groupNames.map((group) => {
 				const values = rows
@@ -100,8 +114,7 @@ export const buildStatsTraces = (
 				x: groupNames,
 				y,
 				text,
-				hovertemplate:
-					"%{x}<br>%{y:.2f}<br>%{text}<extra>%{fullData.name}</extra>",
+				hovertemplate: `%{x}<br>${yFmt}<br>%{text}<extra>%{fullData.name}</extra>`,
 			}
 		}
 		const popRows = rows.filter((r) => r.population === pop)
@@ -113,10 +126,10 @@ export const buildStatsTraces = (
 			y: popRows.map((r) => r.value),
 			text: popRows.map((r) => r.file_name),
 			marker: { size: 9 },
-			hovertemplate:
-				"%{x}<br>%{y:.2f}<br>%{text}<extra>%{fullData.name}</extra>",
+			hovertemplate: `%{x}<br>${yFmt}<br>%{text}<extra>%{fullData.name}</extra>`,
 		}
 	})
+}
 
 /** Linhas do CSV: cabeçalho de proveniência + dados. */
 export const buildFigureCsvRows = (
@@ -135,6 +148,6 @@ export const buildFigureCsvRows = (
 		r.group,
 		r.file_name,
 		populationLabel(r.population),
-		r.value.toFixed(4),
+		formatMetricValue(metric, r.value),
 	]),
 ]

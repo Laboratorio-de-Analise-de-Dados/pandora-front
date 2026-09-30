@@ -82,7 +82,7 @@ describe("figureMock — contrato BE-33", () => {
 		expect(figure.result_cache?.resolved_inputs.gate_ids).toEqual([11, 21])
 	})
 
-	it("população '.' usa stats de raiz da amostra", async () => {
+	it("população 'file' usa stats de raiz da amostra", async () => {
 		const files = [makeFile(3)]
 		const figure = await mockCreateFigure(
 			9,
@@ -97,7 +97,8 @@ describe("figureMock — contrato BE-33", () => {
 			},
 			deps(files),
 		)
-		expect(figure.result_cache?.rows[0].value).toBeCloseTo(50)
+		// percent_parent é fração crua (0.5) — % só na exibição.
+		expect(figure.result_cache?.rows[0].value).toBeCloseTo(0.5)
 	})
 
 	it("gate ausente não vira zero — entra em unmatched", async () => {
@@ -119,7 +120,9 @@ describe("figureMock — contrato BE-33", () => {
 		const rows = figure.result_cache!.rows
 		expect(rows).toHaveLength(1)
 		expect(figure.result_cache!.unmatched.populations).toEqual(["CD8"])
-		expect(figure.result_cache!.unmatched.files).toContain(2)
+		expect(
+			figure.result_cache!.unmatched.files.map((f) => f.file_data_id),
+		).toContain(2)
 	})
 
 	it("marca stale quando a resolução muda e recompute devolve removidos", async () => {

@@ -28,8 +28,9 @@ export interface FigureGroup {
 }
 
 /**
- * `populations` são caminhos de nomes de gate ("Pai/Filho"). O caminho `"."`
- * representa a amostra inteira (raiz, sem gate).
+ * `populations` são caminhos de nomes de gate ("Pai/Filho" — separador "/",
+ * com fallback " > " no back). O literal `"file"` resolve para as stats da
+ * amostra raiz (ver ROOT_POPULATION em figureSeries).
  */
 export interface FigureSpec {
 	groups: FigureGroup[]
@@ -48,6 +49,8 @@ export interface FigureResultRow {
 
 export interface FigureResultCache {
 	rows: FigureResultRow[]
+	/** Pares (população, amostra) resolvidos — cobre distribution (sem rows). */
+	resolved_pairs?: { population: string; file_data_id: number }[]
 	resolved_inputs: {
 		gate_ids: number[]
 		file_data_ids: number[]
@@ -55,11 +58,12 @@ export interface FigureResultCache {
 	}
 	unmatched: {
 		populations: string[]
-		files: number[]
+		files: { file_data_id: number; file_name: string | null }[]
 	}
 	meta: {
 		n_por_grupo?: Record<string, number>
 		computed_at?: string
+		spec_fingerprint?: string
 		warnings?: string[]
 	}
 }
@@ -89,6 +93,7 @@ export interface FigureCreatePayload {
 
 export interface FigureUpdatePayload {
 	name?: string
+	chart_type?: FigureChartType
 	spec?: FigureSpec
 	published?: boolean
 	/** Optimistic lock — o back devolve 412 se divergir do `updated_at` atual. */
@@ -103,24 +108,35 @@ export interface FigureRecomputeResult {
 	}
 }
 
-const isNotFound = (error: unknown): boolean =>
-	axios.isAxiosError(error) && error.response?.status === 404
+/**
+ * 404 tem dois significados aqui: rota inexistente num backend antigo (Django
+ * devolve HTML) → cai no mock; e recurso fora de escopo/inexistente no BE-33
+ * real (DRF devolve JSON com `detail`) → erro verdadeiro, nunca mock.
+ */
+const isRouteMissing = (error: unknown): boolean => {
+	if (!axios.isAxiosError(error) || error.response?.status !== 404) {
+		return false
+	}
+	const data = error.response.data
+	return !(typeof data === "object" && data !== null && "detail" in data)
+}
 
 /**
- * Enquanto o BE-33 não existe, um 404 cai no mock local (mesmo contrato) —
- * padrão adotado no FE-41. `mockDeps` é ignorado quando o endpoint responde.
+ * Enquanto o BE-33 não existe, um 404 de rota cai no mock local (mesmo
+ * contrato) — padrão adotado no FE-41. `mockDeps` é ignorado quando o
+ * endpoint responde. 404 de recurso (permissão/inexistente) propaga erro.
  */
 export const fetchFigures = async (
 	experimentId: number,
 	mockDeps?: FigureMockDeps,
 ): Promise<AnalysisFigureListItem[]> => {
 	try {
-		const res = await CytometryApi.get<AnalysisFigureListItem[]>(
-			`/analytics/experiment/${experimentId}/figures/`,
-		)
-		return res.data
+		const res = await CytometryApi.get<{
+			results: AnalysisFigureListItem[]
+		}>(`/analytics/experiment/${experimentId}/figures/`)
+		return res.data.results
 	} catch (error) {
-		if (isNotFound(error) && mockDeps) {
+		if (isRouteMissing(error) && mockDeps) {
 			return mockListFigures(experimentId, mockDeps)
 		}
 		throw error
@@ -137,7 +153,7 @@ export const fetchFigure = async (
 		)
 		return res.data
 	} catch (error) {
-		if (isNotFound(error) && mockDeps) {
+		if (isRouteMissing(error) && mockDeps) {
 			return mockGetFigure(figureId, mockDeps)
 		}
 		throw error
@@ -156,7 +172,7 @@ export const createFigure = async (
 		)
 		return res.data
 	} catch (error) {
-		if (isNotFound(error) && mockDeps) {
+		if (isRouteMissing(error) && mockDeps) {
 			return mockCreateFigure(experimentId, payload, mockDeps)
 		}
 		throw error
@@ -175,7 +191,7 @@ export const updateFigure = async (
 		)
 		return res.data
 	} catch (error) {
-		if (isNotFound(error) && mockDeps) {
+		if (isRouteMissing(error) && mockDeps) {
 			return mockUpdateFigure(figureId, payload, mockDeps)
 		}
 		throw error
@@ -186,7 +202,7 @@ export const deleteFigure = async (figureId: number): Promise<void> => {
 	try {
 		await CytometryApi.delete(`/analytics/figures/${figureId}/`)
 	} catch (error) {
-		if (isNotFound(error)) {
+		if (isRouteMissing(error)) {
 			mockDeleteFigure(figureId)
 			return
 		}
@@ -204,7 +220,7 @@ export const recomputeFigure = async (
 		)
 		return res.data
 	} catch (error) {
-		if (isNotFound(error) && mockDeps) {
+		if (isRouteMissing(error) && mockDeps) {
 			return mockRecomputeFigure(figureId, mockDeps)
 		}
 		throw error

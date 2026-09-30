@@ -93,9 +93,12 @@ const FigureEditor = ({
 		return [ROOT_POPULATION, ...availablePopulationPaths(files, ids)]
 	}, [files, spec.groups])
 
+	// file_data_ids é allow_empty=False no backend — grupo vazio → 400.
+	const hasEmptyGroup = spec.groups.some((g) => g.file_data_ids.length === 0)
 	const canSave =
 		name.trim().length > 0 &&
 		spec.groups.length > 0 &&
+		!hasEmptyGroup &&
 		spec.populations.length > 0 &&
 		(!needsChannel || !!spec.channel)
 
@@ -186,6 +189,7 @@ const FigureEditor = ({
 						label="Nome da figura"
 						value={name}
 						disabled={locked}
+						inputProps={{ maxLength: 120 }}
 						onChange={(e) => {
 							setName(e.target.value)
 							setDirty(true)
@@ -200,7 +204,15 @@ const FigureEditor = ({
 								value={chartType}
 								disabled={locked}
 								onChange={(e) => {
-									setChartType(e.target.value as FigureChartType)
+									const next = e.target.value as FigureChartType
+									setChartType(next)
+									// Distribution aceita população única no contrato.
+									if (next === "distribution" && spec.populations.length > 1) {
+										setSpec({
+											...spec,
+											populations: spec.populations.slice(0, 1),
+										})
+									}
 									setDirty(true)
 								}}
 							>
@@ -255,35 +267,56 @@ const FigureEditor = ({
 							</Select>
 						</FormControl>
 					)}
-					<Autocomplete
-						multiple
-						size="small"
-						options={populationOptions}
-						getOptionLabel={populationLabel}
-						value={spec.populations}
-						disabled={locked}
-						onChange={(_e, value) => {
-							setSpec({ ...spec, populations: value })
-							setDirty(true)
-						}}
-						renderInput={(params) => (
-							<TextField
-								{...params}
-								label="Populações"
-								placeholder="gate path ou Amostra inteira"
-							/>
-						)}
-						renderTags={(value, getTagProps) =>
-							value.map((option, index) => (
-								<Chip
-									{...getTagProps({ index })}
-									key={option}
-									size="small"
-									label={populationLabel(option)}
+					{chartType === "distribution" ? (
+						<Autocomplete
+							size="small"
+							options={populationOptions}
+							getOptionLabel={populationLabel}
+							value={spec.populations[0] ?? null}
+							disabled={locked}
+							onChange={(_e, value) => {
+								setSpec({ ...spec, populations: value ? [value] : [] })
+								setDirty(true)
+							}}
+							renderInput={(params) => (
+								<TextField
+									{...params}
+									label="População"
+									placeholder="gate path ou Amostra inteira"
 								/>
-							))
-						}
-					/>
+							)}
+						/>
+					) : (
+						<Autocomplete
+							multiple
+							size="small"
+							options={populationOptions}
+							getOptionLabel={populationLabel}
+							value={spec.populations}
+							disabled={locked}
+							onChange={(_e, value) => {
+								setSpec({ ...spec, populations: value })
+								setDirty(true)
+							}}
+							renderInput={(params) => (
+								<TextField
+									{...params}
+									label="Populações"
+									placeholder="gate path ou Amostra inteira"
+								/>
+							)}
+							renderTags={(value, getTagProps) =>
+								value.map((option, index) => (
+									<Chip
+										{...getTagProps({ index })}
+										key={option}
+										size="small"
+										label={populationLabel(option)}
+									/>
+								))
+							}
+						/>
+					)}
 					<GroupBuilder
 						groups={spec.groups}
 						files={files}
@@ -360,7 +393,7 @@ const FigureEditor = ({
 									).toLocaleString()}`}
 							</Typography>
 							<Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
-								{figure.is_stale && canEdit && (
+								{figure.is_stale && canEdit && !figure.published && (
 									<Button
 										size="small"
 										variant="contained"
@@ -401,7 +434,7 @@ const FigureEditor = ({
 										(p) => `população ${populationLabel(p)}`,
 									),
 									...(figure.result_cache?.unmatched.files ?? []).map(
-										(id) => `amostra #${id}`,
+										(f) => `amostra ${f.file_name ?? `#${f.file_data_id}`}`,
 									),
 								].join(", ")}
 							</Alert>

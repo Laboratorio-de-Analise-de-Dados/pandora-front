@@ -24,9 +24,9 @@ const ar = (
 })
 
 describe("metricValue", () => {
-	it("percentuais vêm de summary_metrics convertidos para %", () => {
-		expect(metricValue(ar(), "percent_parent")).toBeCloseTo(25)
-		expect(metricValue(ar(), "percent_total")).toBeCloseTo(5)
+	it("percentuais vêm de summary_metrics como fração (contrato)", () => {
+		expect(metricValue(ar(), "percent_parent")).toBeCloseTo(0.25)
+		expect(metricValue(ar(), "percent_total")).toBeCloseTo(0.05)
 	})
 
 	it("métricas de canal vêm de channel_statistics", () => {
@@ -81,6 +81,7 @@ describe("buildStatsTraces", () => {
 			["CD4", "CD8"],
 			["D0", "D7"],
 			"stats_bar",
+			"median_mfi",
 		)
 		expect(cd4.type).toBe("bar")
 		expect(cd4.x).toEqual(["D0", "D7"])
@@ -90,7 +91,13 @@ describe("buildStatsTraces", () => {
 	})
 
 	it("stats_strip emite um ponto por amostra", () => {
-		const [cd4] = buildStatsTraces(rows, ["CD4"], ["D0", "D7"], "stats_strip")
+		const [cd4] = buildStatsTraces(
+			rows,
+			["CD4"],
+			["D0", "D7"],
+			"stats_strip",
+			"median_mfi",
+		)
 		expect(cd4.type).toBe("scatter")
 		expect(cd4.x).toEqual(["D0", "D0", "D7"])
 		expect(cd4.y).toEqual([10, 20, 30])
@@ -99,23 +106,25 @@ describe("buildStatsTraces", () => {
 })
 
 describe("populationLabel / buildFigureCsvRows", () => {
-	it("rótulo de população usa o último segmento; '.' vira Amostra inteira", () => {
+	it("rótulo de população usa o último segmento; 'file' vira Amostra inteira", () => {
 		expect(populationLabel("Linf/CD3/CD4")).toBe("CD4")
 		expect(populationLabel(ROOT_POPULATION)).toBe("Amostra inteira")
 	})
 
-	it("CSV carrega cabeçalho de proveniência (revisão + computed_at)", () => {
+	it("CSV carrega cabeçalho de proveniência e formata percentuais", () => {
 		const csv = buildFigureCsvRows(
 			"Fig",
 			42,
 			"2026-09-30T10:00:00Z",
-			"median_mfi",
+			"percent_parent",
 			rows,
 		)
 		expect(csv[0][0]).toContain("Fig")
 		expect(csv[1][0]).toContain("42")
 		expect(csv[2][0]).toContain("2026-09-30")
-		expect(csv[4]).toEqual(["Grupo", "Amostra", "População", "MFI mediana"])
+		expect(csv[4]).toEqual(["Grupo", "Amostra", "População", "% do pai"])
+		// fração 10 → 1000.00% (dados sintéticos)
+		expect(csv[5][3]).toBe("1000.00")
 		expect(csv).toHaveLength(5 + rows.length)
 	})
 })

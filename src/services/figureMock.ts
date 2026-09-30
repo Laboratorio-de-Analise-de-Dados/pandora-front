@@ -88,9 +88,14 @@ const nextId = (store: Store): number =>
 			.map((f) => f.id),
 	) + 1
 
+interface UnmatchedFile {
+	file_data_id: number
+	file_name: string | null
+}
+
 /**
  * Sincronamente resolve cada população do spec para cada amostra dos grupos:
- * `"."` → a própria amostra; `"A/B"` → gate por caminho de nomes.
+ * `"file"` → a própria amostra; `"A/B"` → gate por caminho de nomes.
  * Serve tanto para a fingerprint de staleness quanto para a contagem de
  * `resolved_inputs`/`unmatched` (sem precisar de stats).
  */
@@ -99,16 +104,14 @@ const resolveInputs = (
 	files: ExperimentFiles[],
 ): {
 	resolved: { file: ExperimentFiles; population: string; gateId?: number }[]
-	unmatchedFiles: number[]
-	unmatchedPopulations: string[]
+	unmatchedFiles: Map<number, UnmatchedFile>
 } => {
 	const resolved: {
 		file: ExperimentFiles
 		population: string
 		gateId?: number
 	}[] = []
-	const unmatchedFiles = new Set<number>()
-	const popHit = new Map<string, number>()
+	const unmatchedFiles = new Map<number, UnmatchedFile>()
 
 	const referenced = new Set<number>()
 	for (const group of spec.groups) {
@@ -118,30 +121,38 @@ const resolveInputs = (
 	for (const fileId of referenced) {
 		const file = files.find((f) => f.id === fileId && f.active !== false)
 		if (!file) {
-			unmatchedFiles.add(fileId)
+			unmatchedFiles.set(fileId, {
+				file_data_id: fileId,
+				file_name: files.find((f) => f.id === fileId)?.file_name ?? null,
+			})
 			continue
 		}
 		for (const pop of spec.populations) {
 			if (pop === ROOT_POPULATION) {
 				resolved.push({ file, population: pop })
-				popHit.set(pop, (popHit.get(pop) ?? 0) + 1)
 				continue
 			}
 			const gate = findGateByPathNames(file.gates, pop.split("/"))
 			if (gate) {
 				resolved.push({ file, population: pop, gateId: gate.id })
-				popHit.set(pop, (popHit.get(pop) ?? 0) + 1)
 			} else {
-				unmatchedFiles.add(fileId)
+				unmatchedFiles.set(fileId, {
+					file_data_id: fileId,
+					file_name: file.file_name,
+				})
 			}
 		}
 	}
 
-	return {
-		resolved,
-		unmatchedFiles: [...unmatchedFiles],
-		unmatchedPopulations: spec.populations.filter((p) => !popHit.get(p)),
-	}
+	return { resolved, unmatchedFiles }
+}
+
+const specFingerprint = (spec: FigureSpec): string => {
+	// djb2 — só precisa ser estável, não criptográfico.
+	let h = 5381
+	const s = JSON.stringify(spec ?? {})
+	for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0
+	return (h >>> 0).toString(16)
 }
 
 /** Fingerprint de entradas resolvidas — divergir do cache = figura stale. */
@@ -156,6 +167,7 @@ const inputsFingerprint = (resolved_inputs: {
 
 const computeCache = async (
 	spec: FigureSpec,
+	chartType: string,
 	deps: FigureMockDeps,
 ): Promise<FigureResultCache> => {
 	const { resolved, unmatchedFiles } = resolveInputs(spec, deps.files)
@@ -165,11 +177,22 @@ const computeCache = async (
 	const nPorGrupo: Record<string, number> = {}
 	const groupByFile = new Map<number, string>()
 	for (const group of spec.groups) {
-		for (const fileId of group.file_data_ids)
+		for (const fileId of group.file_data_ids) {
 			groupByFile.set(fileId, group.name)
+			const f = deps.files.find((x) => x.id === fileId)
+			// resolved_inputs cobre toda amostra referenciada que existe+ativa
+			if (f && f.active !== false) fileIds.add(fileId)
+		}
+		nPorGrupo[group.name] = group.file_data_ids.length
 	}
 
+	// Distribution não tem rows — o cache guarda só o fingerprint e as
+	// curvas vêm do densityService live (mesmo comportamento do backend).
+	const isDistribution = chartType === "distribution"
+
 	for (const r of resolved) {
+		if (r.gateId !== undefined) gateIds.add(r.gateId)
+		if (isDistribution) continue
 		const ar =
 			r.population === ROOT_POPULATION
 				? await deps.fetchStats(r.file.id)
@@ -177,38 +200,42 @@ const computeCache = async (
 						?.analysis_result?.analysis_result
 		const value = metricValue(ar, spec.metric, spec.channel)
 		if (value === undefined) {
-			unmatchedFiles.push(r.file.id)
+			unmatchedFiles.set(r.file.id, {
+				file_data_id: r.file.id,
+				file_name: r.file.file_name,
+			})
 			continue
 		}
-		const group = groupByFile.get(r.file.id) ?? ""
 		rows.push({
-			group,
+			group: groupByFile.get(r.file.id) ?? "",
 			file_data_id: r.file.id,
 			file_name: r.file.file_name,
 			population: r.population,
 			value,
 		})
-		if (r.gateId !== undefined) gateIds.add(r.gateId)
-		fileIds.add(r.file.id)
-		nPorGrupo[group] = (nPorGrupo[group] ?? 0) + 1
 	}
 
 	return {
 		rows,
+		resolved_pairs: resolved.map((r) => ({
+			population: r.population,
+			file_data_id: r.file.id,
+		})),
 		resolved_inputs: {
-			gate_ids: [...gateIds],
-			file_data_ids: [...fileIds],
+			gate_ids: [...gateIds].sort((a, b) => a - b),
+			file_data_ids: [...fileIds].sort((a, b) => a - b),
 			channel: spec.channel,
 		},
 		unmatched: {
 			populations: spec.populations.filter(
-				(p) => !rows.some((r) => r.population === p),
+				(p) => !resolved.some((r) => r.population === p),
 			),
-			files: [...new Set(unmatchedFiles)],
+			files: [...unmatchedFiles.values()],
 		},
 		meta: {
 			n_por_grupo: nPorGrupo,
 			computed_at: new Date().toISOString(),
+			spec_fingerprint: specFingerprint(spec),
 		},
 	}
 }
@@ -223,7 +250,7 @@ const withStaleness = (
 	const gateIds = new Set(resolved.flatMap((r) => (r.gateId ? [r.gateId] : [])))
 	const fileIds = new Set([
 		...resolved.map((r) => r.file.id),
-		...unmatchedFiles,
+		...unmatchedFiles.keys(),
 	])
 	const current = inputsFingerprint({
 		gate_ids: [...gateIds],
@@ -280,7 +307,7 @@ export const mockCreateFigure = async (
 		name: payload.name,
 		chart_type: payload.chart_type,
 		spec: payload.spec,
-		result_cache: await computeCache(payload.spec, deps),
+		result_cache: await computeCache(payload.spec, payload.chart_type, deps),
 		result_revision: 1,
 		is_stale: false,
 		published: false,
@@ -315,6 +342,7 @@ export const mockUpdateFigure = async (
 	const updated: AnalysisFigure = {
 		...figure,
 		name: payload.name ?? figure.name,
+		chart_type: payload.chart_type ?? figure.chart_type,
 		spec: payload.spec ?? figure.spec,
 		published: payload.published ?? figure.published,
 		is_stale: payload.spec ? true : figure.is_stale,
@@ -350,22 +378,31 @@ export const mockRecomputeFigure = async (
 	if (!found) throw new Error("Figura não encontrada.")
 	const { figure, experimentId } = found
 
-	const prevRows = figure.result_cache?.rows ?? []
+	// Diff de resolução por resolved_pairs (distribution não tem rows) —
+	// mesmo critério do `removed_since_last` do backend.
+	const prevCache = figure.result_cache
+	const prevPairs: { population: string; file_data_id: number }[] =
+		prevCache?.resolved_pairs ??
+		(prevCache?.rows ?? []).map((r) => ({
+			population: r.population,
+			file_data_id: r.file_data_id,
+		}))
 	const prevFileNames = new Map(
-		prevRows.map((r) => [r.file_data_id, r.file_name]),
+		(prevCache?.rows ?? []).map((r) => [r.file_data_id, r.file_name]),
 	)
+	for (const f of deps.files) prevFileNames.set(f.id, f.file_name)
 
-	const result_cache = await computeCache(figure.spec, deps)
+	const result_cache = await computeCache(figure.spec, figure.chart_type, deps)
+	const nextPairs = result_cache.resolved_pairs ?? []
+	const nextPops = new Set(nextPairs.map((p) => p.population))
+	const nextFileIds = new Set(nextPairs.map((p) => p.file_data_id))
 
 	const removedPopulations = figure.spec.populations.filter(
-		(p) =>
-			prevRows.some((r) => r.population === p) &&
-			!result_cache.rows.some((r) => r.population === p),
+		(p) => prevPairs.some((r) => r.population === p) && !nextPops.has(p),
 	)
 	const removedFileIds = [
-		...new Set(prevRows.map((r) => r.file_data_id)),
-	].filter((id) => !result_cache.rows.some((r) => r.file_data_id === id))
-
+		...new Set(prevPairs.map((p) => p.file_data_id)),
+	].filter((id) => !nextFileIds.has(id))
 	const updated: AnalysisFigure = {
 		...figure,
 		result_cache,
