@@ -441,6 +441,11 @@ const FigureEditor = ({
 								Removidos no recompute: {removedInfo.join(", ")}
 							</Alert>
 						)}
+						{(figure.result_cache?.meta.warnings ?? []).map((w) => (
+							<Alert severity="info" sx={{ mb: 1 }} key={w}>
+								{w}
+							</Alert>
+						))}
 						{(figure.result_cache?.unmatched.populations.length ||
 							figure.result_cache?.unmatched.files.length) && (
 							<Alert severity="warning" sx={{ mb: 1 }}>
