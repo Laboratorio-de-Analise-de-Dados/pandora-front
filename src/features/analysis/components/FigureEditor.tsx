@@ -407,11 +407,13 @@ const FigureEditor = ({
 									).toLocaleString()}`}
 							</Typography>
 							<Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
-								{figure.is_stale && canEdit && !figure.published && (
+								{/* Recompute é sempre disponível (manual, idempotente) —
+								    destaque âmbar quando o back marca stale. */}
+								{canEdit && !figure.published && (
 									<Button
 										size="small"
-										variant="contained"
-										color="warning"
+										variant={figure.is_stale ? "contained" : "outlined"}
+										color={figure.is_stale ? "warning" : "primary"}
 										disabled={recompute.isPending}
 										onClick={handleRecompute}
 									>
