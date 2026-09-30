@@ -20,6 +20,23 @@ export const metricLabel = (metric: FigureMetric): string =>
 	FIGURE_METRICS.find((m) => m.value === metric)?.label ?? metric
 
 /**
+ * Chave do canal como o backend persiste (`normalize_column_name`:
+ * lowercase, sem espaços, "-"→"_") — é assim que `channel_statistics` é
+ * indexada e o que `spec.channel` deve carregar. Idempotente.
+ */
+export const normalizeChannelKey = (name: string): string =>
+	name.toLowerCase().replace(/ /g, "").replace(/-/g, "_")
+
+/** Nome de exibição ("PE-A") a partir da chave normalizada do spec. */
+export const channelLabel = (
+	channel: string | undefined,
+	channels: string[],
+): string =>
+	channel == null
+		? ""
+		: (channels.find((c) => normalizeChannelKey(c) === channel) ?? channel)
+
+/**
  * Métricas que dependem de `channel_statistics` (exigem `channel` no spec).
  * As percentuais saem de `summary_metrics` e não têm canal.
  */
@@ -46,7 +63,7 @@ export const metricValue = (
 		return ar.summary_metrics?.percent_of_total_population
 	}
 	if (!channel) return undefined
-	return ar.channel_statistics?.[channel]?.[metric]
+	return ar.channel_statistics?.[normalizeChannelKey(channel)]?.[metric]
 }
 
 /** Métrica é percentual (valor cru = fração)? */

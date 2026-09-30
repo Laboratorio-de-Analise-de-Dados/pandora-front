@@ -4,10 +4,13 @@ import { Box, CircularProgress, Typography } from "@mui/material"
 import type { AnalysisFigure } from "../../../services/figureService"
 import type { ExperimentFiles } from "../../../types"
 import { useDistributionData } from "../hooks/useDistributionData"
+import { channelLabel } from "../utils/figureSeries"
 
 interface DistributionChartProps {
 	figure: AnalysisFigure
 	files: ExperimentFiles[]
+	/** Nomes de exibição dos canais — `spec.channel` é a chave normalizada. */
+	channels: string[]
 	onInit?: (graphDiv: HTMLElement) => void
 }
 
@@ -19,6 +22,7 @@ interface DistributionChartProps {
 const DistributionChart = ({
 	figure,
 	files,
+	channels,
 	onInit,
 }: DistributionChartProps) => {
 	const theme = useTheme()
@@ -67,7 +71,9 @@ const DistributionChart = ({
 					plot_bgcolor: "transparent",
 					font: { color: theme.palette.text.secondary },
 					margin: { t: 30, r: 16, b: 60, l: 60 },
-					xaxis: { title: { text: figure.spec.channel } },
+					xaxis: {
+						title: { text: channelLabel(figure.spec.channel, channels) },
+					},
 					yaxis: { title: { text: "Densidade (normalizada)" } },
 					legend: { orientation: "h", y: -0.2 },
 				}}

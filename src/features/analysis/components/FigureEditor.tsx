@@ -25,8 +25,10 @@ import type { FigureMockDeps } from "../../../services/figureMock"
 import { useFigureMutations } from "../hooks/useFigures"
 import { availablePopulationPaths } from "../utils/figureGroups"
 import {
+	channelLabel,
 	FIGURE_METRICS,
 	metricNeedsChannel,
+	normalizeChannelKey,
 	populationLabel,
 	ROOT_POPULATION,
 } from "../utils/figureSeries"
@@ -76,7 +78,19 @@ const FigureEditor = ({
 	const [chartType, setChartType] = useState<FigureChartType>(
 		figure?.chart_type ?? "stats_bar",
 	)
-	const [spec, setSpec] = useState<FigureSpec>(figure?.spec ?? emptySpec)
+	// `spec.channel` carrega a chave normalizada (como o back persiste em
+	// `channel_statistics`) — figuras salvas antes com nome de exibição são
+	// normalizadas na carga (idempotente).
+	const [spec, setSpec] = useState<FigureSpec>(() =>
+		figure?.spec
+			? {
+					...figure.spec,
+					channel: figure.spec.channel
+						? normalizeChannelKey(figure.spec.channel)
+						: undefined,
+				}
+			: emptySpec,
+	)
 	const [dirty, setDirty] = useState(false)
 	const [removedInfo, setRemovedInfo] = useState<string[]>([])
 	const [graphDiv, setGraphDiv] = useState<HTMLElement | null>(null)
@@ -260,7 +274,7 @@ const FigureEditor = ({
 								}}
 							>
 								{channels.map((c) => (
-									<MenuItem key={c} value={c}>
+									<MenuItem key={c} value={normalizeChannelKey(c)}>
 										{c}
 									</MenuItem>
 								))}
@@ -444,10 +458,15 @@ const FigureEditor = ({
 								<DistributionChart
 									figure={figure}
 									files={files}
+									channels={channels}
 									onInit={setGraphDiv}
 								/>
 							) : (
-								<StatsChart figure={figure} onInit={setGraphDiv} />
+								<StatsChart
+									figure={figure}
+									channels={channels}
+									onInit={setGraphDiv}
+								/>
 							)}
 						</Box>
 					</>

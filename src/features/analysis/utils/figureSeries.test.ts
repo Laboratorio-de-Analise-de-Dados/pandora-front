@@ -4,7 +4,9 @@ import type { FigureResultRow } from "../../../services/figureService"
 import {
 	buildFigureCsvRows,
 	buildStatsTraces,
+	channelLabel,
 	metricValue,
+	normalizeChannelKey,
 	populationLabel,
 	ROOT_POPULATION,
 } from "./figureSeries"
@@ -17,10 +19,25 @@ const ar = (
 		percent_of_total_population: 0.05,
 		percent_of_parent_population: 0.25,
 	},
+	// chaves normalizadas, como o backend persiste (normalize_column_name)
 	channel_statistics: {
-		"PE-A": { mean_mfi: 1200, median_mfi: 1100, std_dev: 300, cv: 27.3 },
+		pe_a: { mean_mfi: 1200, median_mfi: 1100, std_dev: 300, cv: 27.3 },
 	},
 	...overrides,
+})
+
+describe("normalizeChannelKey / channelLabel", () => {
+	it("espelha normalize_column_name do back e é idempotente", () => {
+		expect(normalizeChannelKey("PE-A")).toBe("pe_a")
+		expect(normalizeChannelKey("APC-Cy7-A")).toBe("apc_cy7_a")
+		expect(normalizeChannelKey("pe_a")).toBe("pe_a")
+	})
+
+	it("channelLabel mapeia a chave do spec pro nome de exibição", () => {
+		expect(channelLabel("pe_a", ["FSC-A", "PE-A"])).toBe("PE-A")
+		expect(channelLabel("desconhecido", ["PE-A"])).toBe("desconhecido")
+		expect(channelLabel(undefined, [])).toBe("")
+	})
 })
 
 describe("metricValue", () => {
@@ -29,9 +46,11 @@ describe("metricValue", () => {
 		expect(metricValue(ar(), "percent_total")).toBeCloseTo(0.05)
 	})
 
-	it("métricas de canal vêm de channel_statistics", () => {
+	it("métricas de canal vêm de channel_statistics (chave normalizada)", () => {
+		expect(metricValue(ar(), "median_mfi", "pe_a")).toBe(1100)
+		expect(metricValue(ar(), "cv", "pe_a")).toBeCloseTo(27.3)
+		// tolerante a nome de exibição (spec antigo) — normalização idempotente
 		expect(metricValue(ar(), "median_mfi", "PE-A")).toBe(1100)
-		expect(metricValue(ar(), "cv", "PE-A")).toBeCloseTo(27.3)
 	})
 
 	it("ausente é ausente — canal inexistente, applicable=false, sem stats", () => {

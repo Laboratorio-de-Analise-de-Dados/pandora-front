@@ -5,17 +5,20 @@ import { Box, Typography } from "@mui/material"
 import type { AnalysisFigure } from "../../../services/figureService"
 import {
 	buildStatsTraces,
+	channelLabel,
 	isPercentMetric,
 	metricLabel,
 } from "../utils/figureSeries"
 
 interface StatsChartProps {
 	figure: AnalysisFigure
+	/** Nomes de exibição dos canais — `spec.channel` é a chave normalizada. */
+	channels: string[]
 	onInit?: (graphDiv: HTMLElement) => void
 }
 
 /** Barras agrupadas ou strip plot de `result_cache` (FE-36). */
-const StatsChart = ({ figure, onInit }: StatsChartProps) => {
+const StatsChart = ({ figure, channels, onInit }: StatsChartProps) => {
 	const theme = useTheme()
 	const cache = figure.result_cache
 
@@ -54,7 +57,7 @@ const StatsChart = ({ figure, onInit }: StatsChartProps) => {
 					yaxis: {
 						title: {
 							text: figure.spec.channel
-								? `${metricLabel(figure.spec.metric)} — ${figure.spec.channel}`
+								? `${metricLabel(figure.spec.metric)} — ${channelLabel(figure.spec.channel, channels)}`
 								: metricLabel(figure.spec.metric),
 						},
 						// percent_* chegam como fração — eixo em %.
