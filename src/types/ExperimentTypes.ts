@@ -154,6 +154,9 @@ export interface ChannelStat {
 	median_mfi: number
 	std_dev: number
 	cv: number
+	/** rCV robusto — (P84−P16)/(2·mediana)·100; válido quando cv quebra. */
+	rcv?: number
+	n?: number
 }
 
 export interface SummaryMetrics {
