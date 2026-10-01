@@ -37,6 +37,7 @@ import {
 	normalizeChannelKey,
 	populationLabel,
 	ROOT_POPULATION,
+	statsTestLabel,
 } from "../utils/figureSeries"
 import GroupBuilder from "./GroupBuilder"
 import StatsChart from "./StatsChart"
@@ -111,8 +112,10 @@ const FigureEditor = ({
 	const [removedInfo, setRemovedInfo] = useState<string[]>([])
 	const [graphDiv, setGraphDiv] = useState<HTMLElement | null>(null)
 	// Toggles de visualização da figura (PRD §3) — locais, não vão pro spec.
-	const [showMeanSd, setShowMeanSd] = useState(false)
+	const [showMean, setShowMean] = useState(false)
+	const [showSd, setShowSd] = useState(false)
 	const [showSignificance, setShowSignificance] = useState(false)
+	const [includeNs, setIncludeNs] = useState(false)
 
 	const { create, update, recompute } = useFigureMutations(
 		experimentId,
@@ -529,43 +532,92 @@ const FigureEditor = ({
 							</Alert>
 						)}
 						{figure.chart_type !== "distribution" && (
-							<FormGroup row sx={{ mb: 0.5 }}>
-								<FormControlLabel
-									control={
-										<Checkbox
+							<>
+								{/* Metodologia efetiva do teste — sempre visível quando o
+								    cache tem stats_tests (PRD §3: com "auto" o analista
+								    precisa saber qual método rodou). */}
+								<Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+									{(figure.result_cache?.stats_tests ?? []).map((t) => (
+										<Chip
+											key={t.population}
 											size="small"
-											checked={showMeanSd}
-											onChange={(e) => setShowMeanSd(e.target.checked)}
+											variant="outlined"
+											label={`${populationLabel(t.population)}: ${statsTestLabel(t)}`}
 										/>
-									}
-									label={
-										<Typography variant="caption">
-											Média ± desvio padrão
-										</Typography>
-									}
-								/>
-								<Tooltip
-									title={
-										figure.result_cache?.stats_tests?.length
-											? "Brackets ns/*/**/*** entre grupos (p ajustado, BH)"
-											: "Sem testes no cache — recompute a figura"
-									}
-								>
+									))}
+								</Stack>
+								<FormGroup row>
 									<FormControlLabel
 										control={
 											<Checkbox
 												size="small"
-												checked={showSignificance}
-												disabled={!figure.result_cache?.stats_tests?.length}
-												onChange={(e) => setShowSignificance(e.target.checked)}
+												checked={showMean}
+												onChange={(e) => setShowMean(e.target.checked)}
+											/>
+										}
+										label={<Typography variant="caption">Média</Typography>}
+									/>
+									<FormControlLabel
+										control={
+											<Checkbox
+												size="small"
+												checked={showSd}
+												onChange={(e) => setShowSd(e.target.checked)}
 											/>
 										}
 										label={
-											<Typography variant="caption">Significância</Typography>
+											<Typography variant="caption">Desvio padrão</Typography>
 										}
 									/>
-								</Tooltip>
-							</FormGroup>
+									<Tooltip
+										title={
+											figure.result_cache?.stats_tests?.length
+												? "Brackets ns/*/**/*** entre grupos (p ajustado, BH)"
+												: "Sem testes no cache — recompute a figura"
+										}
+									>
+										<FormControlLabel
+											control={
+												<Checkbox
+													size="small"
+													checked={showSignificance}
+													disabled={!figure.result_cache?.stats_tests?.length}
+													onChange={(e) =>
+														setShowSignificance(e.target.checked)
+													}
+												/>
+											}
+											label={
+												<Typography variant="caption">Significância</Typography>
+											}
+										/>
+									</Tooltip>
+									{showSignificance && (
+										<FormControlLabel
+											control={
+												<Checkbox
+													size="small"
+													checked={includeNs}
+													onChange={(e) => setIncludeNs(e.target.checked)}
+												/>
+											}
+											label={
+												<Typography variant="caption">incluir ns</Typography>
+											}
+										/>
+									)}
+								</FormGroup>
+								{showSignificance && (
+									<Typography
+										variant="caption"
+										color="text.secondary"
+										sx={{ mb: 0.5 }}
+									>
+										* p&lt;0,05 · ** p&lt;0,01 · *** p&lt;0,001 · ns = sem
+										diferença significativa
+									</Typography>
+								)}
+							</>
 						)}
 						<Box sx={{ flex: 1, minHeight: 320 }}>
 							{figure.chart_type === "distribution" ? (
@@ -579,8 +631,10 @@ const FigureEditor = ({
 								<StatsChart
 									figure={figure}
 									channels={channels}
-									showMeanSd={showMeanSd}
+									showMean={showMean}
+									showSd={showSd}
 									showSignificance={showSignificance}
+									includeNs={includeNs}
 									onInit={setGraphDiv}
 								/>
 							)}

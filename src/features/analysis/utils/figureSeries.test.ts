@@ -14,6 +14,7 @@ import {
 	populationLabel,
 	pToStars,
 	ROOT_POPULATION,
+	statsTestLabel,
 } from "./figureSeries"
 
 const ar = (
@@ -190,9 +191,11 @@ describe("populationLabel / buildFigureCsvRows", () => {
 			rows,
 			tests,
 		)
-		expect(csv.some((r) => r[0]?.includes("Testes estatísticos — CD4"))).toBe(
-			true,
-		)
+		expect(
+			csv.some((r) =>
+				r[0]?.includes("Testes estatísticos — CD4: ANOVA + Welch t (BH)"),
+			),
+		).toBe(true)
 		expect(csv.some((r) => r[0] === "omnibus" && r[2] === "F=4.2")).toBe(true)
 		expect(
 			csv.some(
@@ -224,5 +227,30 @@ describe("groupAggregates / pToStars", () => {
 		expect(pToStars(0.005)).toBe("**")
 		expect(pToStars(0.03)).toBe("*")
 		expect(pToStars(0.2)).toBe("ns")
+	})
+
+	it("statsTestLabel expõe a metodologia efetiva (chip + CSV)", () => {
+		const base: FigureStatsTestResult = {
+			population: "P1",
+			method: "nonparametric",
+			omnibus: { test: "kruskal_wallis", H: 8.1, p: 0.02, df: [3] },
+			pairwise: [
+				{
+					group_a: "A",
+					group_b: "B",
+					U: 12,
+					p: 0.01,
+					p_adj: 0.04,
+					method: "mann_whitney_u",
+				},
+			],
+			n_per_group: {},
+			warnings: [],
+		}
+		expect(statsTestLabel(base)).toBe("Kruskal-Wallis + Mann-Whitney (BH)")
+		// sem omnibus e sem pairwise → cai no rótulo do método
+		expect(statsTestLabel({ ...base, omnibus: null, pairwise: [] })).toBe(
+			"nonparametric",
+		)
 	})
 })

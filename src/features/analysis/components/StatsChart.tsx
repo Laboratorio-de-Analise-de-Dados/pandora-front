@@ -23,10 +23,14 @@ interface StatsChartProps {
 	figure: AnalysisFigure
 	/** Nomes de exibição dos canais — `spec.channel` é a chave normalizada. */
 	channels: string[]
-	/** Overlay "Média ± desvio padrão" por grupo (calculado das rows). */
-	showMeanSd?: boolean
+	/** Overlay da média por grupo (linha horizontal), calculada das rows. */
+	showMean?: boolean
+	/** Overlay de ±1 desvio padrão por grupo (whiskers), das rows. */
+	showSd?: boolean
 	/** Brackets de significância entre grupos (`result_cache.stats_tests`). */
 	showSignificance?: boolean
+	/** Com Significância ligada, inclui também os brackets `ns`. */
+	includeNs?: boolean
 	onInit?: (graphDiv: HTMLElement) => void
 }
 
@@ -34,8 +38,10 @@ interface StatsChartProps {
 const StatsChart = ({
 	figure,
 	channels,
-	showMeanSd = false,
+	showMean = false,
+	showSd = false,
 	showSignificance = false,
+	includeNs = false,
 	onInit,
 }: StatsChartProps) => {
 	const cache = figure.result_cache
@@ -58,28 +64,50 @@ const StatsChart = ({
 			chartType,
 			figure.spec.metric,
 		) as unknown as Plotly.Data[]
-		if (!showMeanSd) return traces
+		if (!showMean && !showSd) return traces
 		if (chartType === "stats_bar") {
-			// A barra já é a média — o overlay é o whisker de ±1 SD.
-			return traces.map((t, i) => {
-				const pop = figure.spec.populations[i]
-				const sd = groupNames.map(
-					(g) =>
-						aggregates.find((a) => a.population === pop && a.group === g)?.sd ??
-						0,
-				)
+			// A barra já é a média — SD vira whisker; "Média" desenha um
+			// marcador horizontal no topo da barra (ênfase p/ relatório).
+			const withSd = showSd
+				? traces.map((t, i) => {
+						const pop = figure.spec.populations[i]
+						const sd = groupNames.map(
+							(g) =>
+								aggregates.find((a) => a.population === pop && a.group === g)
+									?.sd ?? 0,
+						)
+						return {
+							...t,
+							error_y: {
+								type: "data" as const,
+								array: sd,
+								visible: true,
+								thickness: 1.5,
+							},
+						}
+					})
+				: traces
+			if (!showMean) return withSd
+			const meanMarkers = figure.spec.populations.map((pop) => {
+				const entries = groupNames
+					.map((g) =>
+						aggregates.find((a) => a.population === pop && a.group === g),
+					)
+					.filter((a): a is NonNullable<typeof a> => !!a)
 				return {
-					...t,
-					error_y: {
-						type: "data" as const,
-						array: sd,
-						visible: true,
-						thickness: 1.5,
-					},
-				}
+					type: "scatter",
+					mode: "markers",
+					x: entries.map((a) => a.group),
+					y: entries.map((a) => a.mean),
+					marker: { symbol: "line-ns", size: 22, line: { width: 2 } },
+					showlegend: false,
+					hovertemplate: `média %{y:.4g}<extra>${populationLabel(pop)}</extra>`,
+				} as unknown as Plotly.Data
 			})
+			return [...withSd, ...meanMarkers]
 		}
-		// Strip: marcador horizontal na média + whisker de ±1 SD por grupo.
+		// Strip: um trace de overlay por população — média (marcador
+		// horizontal) e/ou whisker de ±1 SD, ambos centrados na média.
 		const overlays = figure.spec.populations.flatMap((pop) => {
 			const entries = groupNames
 				.map((g) =>
@@ -91,18 +119,24 @@ const StatsChart = ({
 				{
 					type: "scatter",
 					mode: "markers",
-					name: `${populationLabel(pop)} — média±SD`,
+					name: `${populationLabel(pop)} — overlay`,
 					x: entries.map((a) => a.group),
 					y: entries.map((a) => a.mean),
-					error_y: {
-						type: "data",
-						array: entries.map((a) => a.sd),
-						visible: true,
-						thickness: 1.5,
-					},
-					marker: { symbol: "line-ns", size: 18, line: { width: 2 } },
+					...(showSd
+						? {
+								error_y: {
+									type: "data" as const,
+									array: entries.map((a) => a.sd),
+									visible: true,
+									thickness: 1.5,
+								},
+							}
+						: {}),
+					marker: showMean
+						? { symbol: "line-ns", size: 18, line: { width: 2 } }
+						: { size: 0.1, opacity: 0 },
 					showlegend: false,
-					hovertemplate: `média %{y:.4g} ±1SD<extra>${populationLabel(pop)}</extra>`,
+					hovertemplate: `média %{y:.4g}${showSd ? " ±1SD" : ""}<extra>${populationLabel(pop)}</extra>`,
 				} as unknown as Plotly.Data,
 			]
 		})
@@ -113,11 +147,13 @@ const StatsChart = ({
 		figure.spec.metric,
 		groupNames,
 		chartType,
-		showMeanSd,
+		showMean,
+		showSd,
 		aggregates,
 	])
 
 	// Brackets Prism: linha ligando grupo_a→group_b, estrelas do p_adj.
+	// Default: só os significativos — `ns` polui o gráfico (PRD §3).
 	const { shapes, annotations, yRange } = useMemo(() => {
 		const tests = showSignificance ? (cache?.stats_tests ?? []) : []
 		if (!tests.length || !cache?.rows.length) {
@@ -132,6 +168,7 @@ const StatsChart = ({
 		let level = 0
 		for (const t of tests) {
 			for (const pair of t.pairwise) {
+				if (!includeNs && pair.p_adj >= 0.05) continue
 				const xa = groupNames.indexOf(pair.group_a)
 				const xb = groupNames.indexOf(pair.group_b)
 				if (xa < 0 || xb < 0) continue
@@ -158,7 +195,7 @@ const StatsChart = ({
 			annotations,
 			yRange: level ? [min, max + step * (level + 2.4)] : undefined,
 		}
-	}, [cache, showSignificance, groupNames])
+	}, [cache, showSignificance, includeNs, groupNames])
 
 	if (!cache || cache.rows.length === 0) {
 		return (
