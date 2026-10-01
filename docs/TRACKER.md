@@ -18,10 +18,11 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                 | Área afetada                                                                                                               | Branch                    | Sessão | Desde      |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------ | ---------- |
-| FE-41 MFI por população | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0                                                                | —                         | —      | —          |
-| FE-36 página de análise | `src/features/analysis/`, `src/services/figureService*.ts`, página `experiment/[id]/analysis`, rota + entrada no workspace | feat/data-analysis-charts | devin  | 2026-09-30 |
+| Feature                         | Área afetada                                                | Branch | Sessão | Desde |
+| ------------------------------- | ----------------------------------------------------------- | ------ | ------ | ----- |
+| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0 | —      | —      | —     |
+| #77 plot_config da amostra raiz | ✅ concluído — mergeado (PR #111)                           | —      | —      | —     |
+| FE-36 página de análise         | ✅ concluído — mergeado (PR #112)                           | —      | —      | —     |
 
 ## Concluído nesta branch
 

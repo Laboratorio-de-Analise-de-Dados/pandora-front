@@ -172,6 +172,14 @@ export function ExperimentWorkspaceProvider({
 		return undefined
 	}, [experimentFiles, source])
 
+	// Amostra da fonte atual — fornece o `plot_config` persistido quando a
+	// fonte é a raiz do arquivo (FE-77), além do nome no `sourceLabel`.
+	const sourceFile = useMemo(
+		() =>
+			experimentFiles.find((f: ExperimentFiles) => f.id === source?.fileDataId),
+		[experimentFiles, source],
+	)
+
 	// Amostras desabilitadas podem aparecer na árvore (filtro), mas não entram na
 	// navegação entre arquivos — o backend recusa densidade de amostra inativa.
 	const navigableFiles = useMemo(
@@ -238,14 +246,13 @@ export function ExperimentWorkspaceProvider({
 	// "arquivo › gate › subgate" — mantém a amostra identificada acima do plot.
 	const sourceLabel = useMemo(() => {
 		if (!source) return ""
-		const file = experimentFiles.find(
-			(f: ExperimentFiles) => f.id === source.fileDataId,
-		)
-		const fileName = file?.file_name ?? source.name
+		const fileName = sourceFile?.file_name ?? source.name
 		if (source.type !== "gate") return fileName
-		const pathNames = file ? getGatePathNames(file.gates, source.id) : undefined
+		const pathNames = sourceFile
+			? getGatePathNames(sourceFile.gates, source.id)
+			: undefined
 		return [fileName, ...(pathNames ?? [source.name])].join(" › ")
-	}, [experimentFiles, source])
+	}, [sourceFile, source])
 
 	const plotInitialConfig = useMemo<PlotViewConfig>(() => {
 		const key = source ? `${source.type}-${source.id}` : null
@@ -253,9 +260,18 @@ export function ExperimentWorkspaceProvider({
 			keepCurrent: keepCurrentViewConfig,
 			viewConfig,
 			saved: key ? savedConfigs[key] : undefined,
-			gateConfig: selectedGate?.plot_config,
+			persistedConfig:
+				selectedGate?.plot_config ??
+				(source?.type === "file" ? sourceFile?.plot_config : undefined),
 		})
-	}, [keepCurrentViewConfig, viewConfig, savedConfigs, source, selectedGate])
+	}, [
+		keepCurrentViewConfig,
+		viewConfig,
+		savedConfigs,
+		source,
+		selectedGate,
+		sourceFile,
+	])
 
 	const value = useMemo<ExperimentWorkspaceValue>(
 		() => ({
