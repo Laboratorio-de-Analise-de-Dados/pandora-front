@@ -18,10 +18,11 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                         | Área afetada                                                    | Branch                              | Sessão | Desde      |
-| ------------------------------- | --------------------------------------------------------------- | ----------------------------------- | ------ | ---------- |
-| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0     | —                                   | —      | —          |
-| #77 plot_config da amostra raiz | `usePlotPersistence` + `plotConfigMemory` + `experimentService` | `feat/plot-config-file-persistence` | devin  | 2026-09-29 |
+| Feature                         | Área afetada                                                | Branch | Sessão | Desde |
+| ------------------------------- | ----------------------------------------------------------- | ------ | ------ | ----- |
+| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0 | —      | —      | —     |
+| #77 plot_config da amostra raiz | ✅ concluído — mergeado (PR #111)                           | —      | —      | —     |
+| FE-36 página de análise         | ✅ concluído — mergeado (PR #112)                           | —      | —      | —     |
 
 ## Concluído nesta branch
 
@@ -40,10 +41,9 @@ serviços) ou alinhe com o responsável.
 
 ## Livres para pegar
 
-| Feature                         | Observação                                                                                                                                                                                                   |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Google SSO — ativação (fase 2)  | UI já pronta (botão via `providers.google`); falta só credencial no backend. Decisão 2026-09: ativar antes da virada para v1 em prod — ver PRD BE-29 no backend                                              |
-| FE-29 branches — retomada       | **Pós-v1.** Código completo arquivado em `archive/fe-29-branches` (seletor, merge, vocabulário de domínio); backend `?branch=` segue na API. Antes de reabrir, repensar a UX de versionamento sem jargão git |
-| FE-35 mapa de placa 96 poços    | FE-34 (UI de tags) já em produção (v0.7.0); falta o mapa de placa — acompanhado no card "FE-34/35" do Trello                                                                                                 |
-| FE-36 análise de dados — fase 1 | Figuras persistidas (dep. BE-33 no backend): galeria + gráficos de stats/distribuições + grupos por figura + export PNG/SVG carimbado com revisão. ANOVA é fase 2. Ver PRD                                   |
-| FE-37 templates de análise      | Herda-e-revisa por tipo de ensaio (CBA etc.): template guarda estrutura + papéis de canal; aplicar remapeia canais e revisa posições com controles. Depende de backend novo. Ver PRD                         |
+| Feature                        | Observação                                                                                                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Google SSO — ativação (fase 2) | UI já pronta (botão via `providers.google`); falta só credencial no backend. Decisão 2026-09: ativar antes da virada para v1 em prod — ver PRD BE-29 no backend                                              |
+| FE-29 branches — retomada      | **Pós-v1.** Código completo arquivado em `archive/fe-29-branches` (seletor, merge, vocabulário de domínio); backend `?branch=` segue na API. Antes de reabrir, repensar a UX de versionamento sem jargão git |
+| FE-35 mapa de placa 96 poços   | FE-34 (UI de tags) já em produção (v0.7.0); falta o mapa de placa — acompanhado no card "FE-34/35" do Trello                                                                                                 |
+| FE-37 templates de análise     | Herda-e-revisa por tipo de ensaio (CBA etc.): template guarda estrutura + papéis de canal; aplicar remapeia canais e revisa posições com controles. Depende de backend novo. Ver PRD                         |
