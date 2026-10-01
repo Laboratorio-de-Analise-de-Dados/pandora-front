@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest"
 import type { AnalysisResultData } from "../../../types"
-import type { FigureResultRow } from "../../../services/figureService"
+import type {
+	FigureResultRow,
+	FigureStatsTestResult,
+} from "../../../services/figureService"
 import {
 	buildFigureCsvRows,
 	buildStatsTraces,
 	channelLabel,
+	groupAggregates,
 	metricValue,
 	normalizeChannelKey,
 	populationLabel,
+	pToStars,
 	ROOT_POPULATION,
 } from "./figureSeries"
 
@@ -144,6 +149,80 @@ describe("populationLabel / buildFigureCsvRows", () => {
 		expect(csv[4]).toEqual(["Grupo", "Amostra", "População", "% do pai"])
 		// fração 10 → 1000.00% (dados sintéticos)
 		expect(csv[5][3]).toBe("1000.00")
-		expect(csv).toHaveLength(5 + rows.length)
+		// rows cruas + seção de agregados por grupo (FE-36 §6)
+		expect(csv.some((r) => r[0] === "Agregados por grupo")).toBe(true)
+		const aggHeader = csv.findIndex((r) => r[0] === "População" && r[2] === "n")
+		expect(csv[aggHeader + 1]).toEqual([
+			"CD4",
+			"D0",
+			"2",
+			"1500.00",
+			"707.11",
+			"1500.00",
+		])
+	})
+
+	it("CSV inclui seção de stats_tests quando presente", () => {
+		const tests: FigureStatsTestResult[] = [
+			{
+				population: "CD4",
+				method: "parametric",
+				omnibus: { test: "one_way_anova", F: 4.2, p: 0.012, df: [2, 21] },
+				pairwise: [
+					{
+						group_a: "D0",
+						group_b: "D7",
+						t: 2.9,
+						p: 0.008,
+						p_adj: 0.032,
+						method: "welch_t",
+					},
+				],
+				n_per_group: { D0: 2, D7: 1 },
+				warnings: ['grupo "D7" com n<3 — teste omitido'],
+			},
+		]
+		const csv = buildFigureCsvRows(
+			"Fig",
+			1,
+			undefined,
+			"median_mfi",
+			rows,
+			tests,
+		)
+		expect(csv.some((r) => r[0]?.includes("Testes estatísticos — CD4"))).toBe(
+			true,
+		)
+		expect(csv.some((r) => r[0] === "omnibus" && r[2] === "F=4.2")).toBe(true)
+		expect(
+			csv.some(
+				(r) => r[0] === "par" && r[1] === "D0 vs D7" && r[4] === "p_adj=0.032",
+			),
+		).toBe(true)
+		expect(csv.some((r) => r[0] === "aviso" && r[1]?.includes("n<3"))).toBe(
+			true,
+		)
+	})
+})
+
+describe("groupAggregates / pToStars", () => {
+	it("agrega n, média, SD (ddof=1) e mediana por grupo × população", () => {
+		const aggs = groupAggregates(rows)
+		expect(aggs).toHaveLength(3)
+		const cd4d0 = aggs.find((a) => a.population === "CD4" && a.group === "D0")!
+		expect(cd4d0.n).toBe(2)
+		expect(cd4d0.mean).toBe(15)
+		expect(cd4d0.sd).toBeCloseTo(Math.sqrt(50))
+		expect(cd4d0.median).toBe(15)
+		const cd4d7 = aggs.find((a) => a.population === "CD4" && a.group === "D7")!
+		expect(cd4d7.n).toBe(1)
+		expect(cd4d7.sd).toBe(0)
+	})
+
+	it("pToStars segue a notação Prism sobre p ajustado", () => {
+		expect(pToStars(0.0005)).toBe("***")
+		expect(pToStars(0.005)).toBe("**")
+		expect(pToStars(0.03)).toBe("*")
+		expect(pToStars(0.2)).toBe("ns")
 	})
 })

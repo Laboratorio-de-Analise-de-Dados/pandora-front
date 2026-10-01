@@ -45,6 +45,7 @@ const FigureExportButton = ({ figure, graphDiv }: FigureExportButtonProps) => {
 			figure.result_cache?.meta?.computed_at,
 			figure.spec.metric,
 			figure.result_cache?.rows ?? [],
+			figure.result_cache?.stats_tests,
 		)
 		exportRows(rows, `${safeName(figure.name)}.csv`, "csv")
 		setAnchor(null)

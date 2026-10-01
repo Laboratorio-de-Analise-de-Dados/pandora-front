@@ -21,6 +21,14 @@ export type FigureMetric =
 	| "median_mfi"
 	| "std_dev"
 	| "cv"
+	| "rcv"
+
+/**
+ * Estratégia de teste entre grupos (BE-33 §7.5): `auto` deixa o backend
+ * escolher por n/pressupostos; a escolha efetiva volta em
+ * `stats_tests[].method`.
+ */
+export type FigureStatsTest = "auto" | "parametric" | "nonparametric"
 
 export interface FigureGroup {
 	name: string
@@ -37,6 +45,7 @@ export interface FigureSpec {
 	populations: string[]
 	metric: FigureMetric
 	channel?: string
+	stats_test?: FigureStatsTest
 }
 
 export interface FigureResultRow {
@@ -45,6 +54,36 @@ export interface FigureResultRow {
 	file_name: string
 	population: string
 	value: number
+}
+
+/**
+ * Teste entre grupos de uma população (BE-33 §7.5). Só existe em
+ * stats_bar/stats_strip — distribution nunca carrega a chave.
+ * `omnibus: null` + `pairwise: []` quando há <2 grupos elegíveis.
+ */
+export interface FigureStatsTestResult {
+	population: string
+	/** Escolha efetiva quando `spec.stats_test` = "auto". */
+	method: "parametric" | "nonparametric"
+	omnibus: {
+		test: "one_way_anova" | "kruskal_wallis"
+		F?: number
+		H?: number
+		p: number
+		df: number[]
+	} | null
+	pairwise: {
+		group_a: string
+		group_b: string
+		t?: number
+		U?: number
+		p: number
+		/** p ajustado (Benjamini-Hochberg). */
+		p_adj: number
+		method: "welch_t" | "mann_whitney_u"
+	}[]
+	n_per_group: Record<string, number>
+	warnings: string[]
 }
 
 export interface FigureResultCache {
@@ -56,6 +95,7 @@ export interface FigureResultCache {
 		file_data_ids: number[]
 		channel?: string
 	}
+	stats_tests?: FigureStatsTestResult[]
 	unmatched: {
 		populations: string[]
 		files: { file_data_id: number; file_name: string | null }[]

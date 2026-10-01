@@ -3,16 +3,21 @@ import {
 	Alert,
 	Box,
 	Button,
+	Checkbox,
 	Chip,
 	FormControl,
+	FormControlLabel,
+	FormGroup,
 	InputLabel,
 	MenuItem,
 	Select,
 	Stack,
 	TextField,
+	Tooltip,
 	Typography,
 } from "@mui/material"
 import Autocomplete from "@mui/material/Autocomplete"
+import { MdOutlineInfo } from "react-icons/md"
 import { toast } from "react-toastify"
 import type { ExperimentFiles, Subsample } from "../../../types"
 import type {
@@ -20,6 +25,7 @@ import type {
 	FigureChartType,
 	FigureMetric,
 	FigureSpec,
+	FigureStatsTest,
 } from "../../../services/figureService"
 import type { FigureMockDeps } from "../../../services/figureMock"
 import { useFigureMutations } from "../hooks/useFigures"
@@ -57,7 +63,17 @@ const emptySpec: FigureSpec = {
 	populations: [],
 	metric: "median_mfi",
 	channel: undefined,
+	stats_test: "auto",
 }
+
+const STATS_TEST_OPTIONS: { value: FigureStatsTest; label: string }[] = [
+	{ value: "auto", label: "Automático" },
+	{ value: "parametric", label: "Paramétrico" },
+	{ value: "nonparametric", label: "Não-paramétrico" },
+]
+
+const STATS_TEST_HELP =
+	"Paramétrico (ANOVA / t de Welch) assume distribuição aprox. normal e variâncias comparáveis — bom com n maior. Não-paramétrico (Kruskal-Wallis / Mann-Whitney) não assume normalidade — mais seguro com poucas réplicas ou dados assimétricos. Automático deixa o backend escolher pelo n e pelos pressupostos."
 
 /** Editor/viewer de figura — spec à esquerda (mobile: acima), gráfico ao lado. */
 const FigureEditor = ({
@@ -94,6 +110,9 @@ const FigureEditor = ({
 	const [dirty, setDirty] = useState(false)
 	const [removedInfo, setRemovedInfo] = useState<string[]>([])
 	const [graphDiv, setGraphDiv] = useState<HTMLElement | null>(null)
+	// Toggles de visualização da figura (PRD §3) — locais, não vão pro spec.
+	const [showMeanSd, setShowMeanSd] = useState(false)
+	const [showSignificance, setShowSignificance] = useState(false)
 
 	const { create, update, recompute } = useFigureMutations(
 		experimentId,
@@ -102,6 +121,7 @@ const FigureEditor = ({
 
 	const needsChannel =
 		chartType === "distribution" || metricNeedsChannel(spec.metric)
+	const isStatsChart = chartType === "stats_bar" || chartType === "stats_strip"
 	const populationOptions = useMemo(() => {
 		const ids = spec.groups.flatMap((g) => g.file_data_ids)
 		return [ROOT_POPULATION, ...availablePopulationPaths(files, ids)]
@@ -281,6 +301,43 @@ const FigureEditor = ({
 							</Select>
 						</FormControl>
 					)}
+					{isStatsChart && (
+						<FormControl size="small" fullWidth>
+							<InputLabel shrink>Teste estatístico</InputLabel>
+							<Select
+								label="Teste estatístico"
+								value={spec.stats_test ?? "auto"}
+								disabled={locked}
+								onChange={(e) => {
+									setSpec({
+										...spec,
+										stats_test: e.target.value as FigureStatsTest,
+									})
+									setDirty(true)
+								}}
+								endAdornment={
+									<Tooltip title={STATS_TEST_HELP} placement="top" arrow>
+										<Box
+											component="span"
+											sx={{
+												display: "inline-flex",
+												mr: 2.5,
+												color: "text.secondary",
+											}}
+										>
+											<MdOutlineInfo size={16} />
+										</Box>
+									</Tooltip>
+								}
+							>
+								{STATS_TEST_OPTIONS.map((o) => (
+									<MenuItem key={o.value} value={o.value}>
+										{o.label}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					)}
 					{chartType === "distribution" ? (
 						<Autocomplete
 							size="small"
@@ -446,6 +503,17 @@ const FigureEditor = ({
 								{w}
 							</Alert>
 						))}
+						{[
+							...new Set(
+								(figure.result_cache?.stats_tests ?? []).flatMap(
+									(t) => t.warnings,
+								),
+							),
+						].map((w) => (
+							<Alert severity="info" sx={{ mb: 1 }} key={w}>
+								{w}
+							</Alert>
+						))}
 						{(figure.result_cache?.unmatched.populations.length ||
 							figure.result_cache?.unmatched.files.length) && (
 							<Alert severity="warning" sx={{ mb: 1 }}>
@@ -460,6 +528,45 @@ const FigureEditor = ({
 								].join(", ")}
 							</Alert>
 						)}
+						{figure.chart_type !== "distribution" && (
+							<FormGroup row sx={{ mb: 0.5 }}>
+								<FormControlLabel
+									control={
+										<Checkbox
+											size="small"
+											checked={showMeanSd}
+											onChange={(e) => setShowMeanSd(e.target.checked)}
+										/>
+									}
+									label={
+										<Typography variant="caption">
+											Média ± desvio padrão
+										</Typography>
+									}
+								/>
+								<Tooltip
+									title={
+										figure.result_cache?.stats_tests?.length
+											? "Brackets ns/*/**/*** entre grupos (p ajustado, BH)"
+											: "Sem testes no cache — recompute a figura"
+									}
+								>
+									<FormControlLabel
+										control={
+											<Checkbox
+												size="small"
+												checked={showSignificance}
+												disabled={!figure.result_cache?.stats_tests?.length}
+												onChange={(e) => setShowSignificance(e.target.checked)}
+											/>
+										}
+										label={
+											<Typography variant="caption">Significância</Typography>
+										}
+									/>
+								</Tooltip>
+							</FormGroup>
+						)}
 						<Box sx={{ flex: 1, minHeight: 320 }}>
 							{figure.chart_type === "distribution" ? (
 								<DistributionChart
@@ -472,6 +579,8 @@ const FigureEditor = ({
 								<StatsChart
 									figure={figure}
 									channels={channels}
+									showMeanSd={showMeanSd}
+									showSignificance={showSignificance}
 									onInit={setGraphDiv}
 								/>
 							)}

@@ -1,10 +1,10 @@
 import Plot from "react-plotly.js"
-import { useTheme } from "@mui/material/styles"
 import { Box, CircularProgress, Typography } from "@mui/material"
 import type { AnalysisFigure } from "../../../services/figureService"
 import type { ExperimentFiles } from "../../../types"
 import { useDistributionData } from "../hooks/useDistributionData"
 import { channelLabel } from "../utils/figureSeries"
+import { ANALYSIS_PLOT_SIZE } from "./StatsChart"
 
 interface DistributionChartProps {
 	figure: AnalysisFigure
@@ -25,7 +25,6 @@ const DistributionChart = ({
 	channels,
 	onInit,
 }: DistributionChartProps) => {
-	const theme = useTheme()
 	const { data: series, isLoading } = useDistributionData(figure, files)
 
 	if (!figure.spec.channel) {
@@ -62,14 +61,15 @@ const DistributionChart = ({
 	}))
 
 	return (
-		<Box sx={{ width: "100%", height: "100%" }}>
+		<Box sx={{ overflowX: "auto" }}>
 			<Plot
 				data={data}
 				layout={{
-					autosize: true,
-					paper_bgcolor: "transparent",
-					plot_bgcolor: "transparent",
-					font: { color: theme.palette.text.secondary },
+					...ANALYSIS_PLOT_SIZE,
+					autosize: false,
+					paper_bgcolor: "#ffffff",
+					plot_bgcolor: "#ffffff",
+					font: { color: "#1a1a1a" },
 					margin: { t: 30, r: 16, b: 60, l: 60 },
 					xaxis: {
 						title: { text: channelLabel(figure.spec.channel, channels) },
@@ -77,8 +77,7 @@ const DistributionChart = ({
 					yaxis: { title: { text: "Densidade (normalizada)" } },
 					legend: { orientation: "h", y: -0.2 },
 				}}
-				config={{ displaylogo: false, responsive: true }}
-				style={{ width: "100%", height: "100%" }}
+				config={{ displaylogo: false }}
 				onInitialized={(_fig, gd) => onInit?.(gd)}
 				onUpdate={(_fig, gd) => onInit?.(gd)}
 			/>
