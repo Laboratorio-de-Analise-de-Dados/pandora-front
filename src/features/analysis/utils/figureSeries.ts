@@ -274,6 +274,7 @@ const OMNIBUS_LABELS: Record<string, string> = {
 }
 const PAIRWISE_LABELS: Record<string, string> = {
 	welch_t: "Welch t",
+	t_student: "t de Student",
 	mann_whitney_u: "Mann-Whitney",
 }
 

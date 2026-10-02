@@ -26,9 +26,20 @@ export type FigureMetric =
 /**
  * Estratégia de teste entre grupos (BE-33 §7.5): `auto` deixa o backend
  * escolher por n/pressupostos; a escolha efetiva volta em
- * `stats_tests[].method`.
+ * `stats_tests[].method`. Além das famílias, o contrato estendido
+ * (BE-33+, card #92) aceita o teste explícito — `t_student`/`t_welch`/
+ * `mann_whitney` rodam por par (sem omnibus, tipo "multiple t-tests"),
+ * `anova`/`kruskal_wallis` rodam omnibus + pairwise.
  */
-export type FigureStatsTest = "auto" | "parametric" | "nonparametric"
+export type FigureStatsTest =
+	| "auto"
+	| "parametric"
+	| "nonparametric"
+	| "t_student"
+	| "t_welch"
+	| "anova"
+	| "kruskal_wallis"
+	| "mann_whitney"
 
 export interface FigureGroup {
 	name: string
@@ -63,8 +74,15 @@ export interface FigureResultRow {
  */
 export interface FigureStatsTestResult {
 	population: string
-	/** Escolha efetiva quando `spec.stats_test` = "auto". */
-	method: "parametric" | "nonparametric"
+	/** Escolha efetiva — família ou o teste explícito pedido no spec. */
+	method:
+		| "parametric"
+		| "nonparametric"
+		| "t_student"
+		| "t_welch"
+		| "anova"
+		| "kruskal_wallis"
+		| "mann_whitney"
 	omnibus: {
 		test: "one_way_anova" | "kruskal_wallis"
 		F?: number
@@ -80,7 +98,7 @@ export interface FigureStatsTestResult {
 		p: number
 		/** p ajustado (Benjamini-Hochberg). */
 		p_adj: number
-		method: "welch_t" | "mann_whitney_u"
+		method: "welch_t" | "t_student" | "mann_whitney_u"
 	}[]
 	n_per_group: Record<string, number>
 	warnings: string[]

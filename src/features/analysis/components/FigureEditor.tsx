@@ -9,6 +9,7 @@ import {
 	FormControlLabel,
 	FormGroup,
 	InputLabel,
+	ListItemText,
 	MenuItem,
 	Select,
 	Stack,
@@ -67,14 +68,64 @@ const emptySpec: FigureSpec = {
 	stats_test: "auto",
 }
 
-const STATS_TEST_OPTIONS: { value: FigureStatsTest; label: string }[] = [
-	{ value: "auto", label: "Automático" },
-	{ value: "parametric", label: "Paramétrico" },
-	{ value: "nonparametric", label: "Não-paramétrico" },
+const STATS_TEST_OPTIONS: {
+	value: FigureStatsTest
+	label: string
+	/** Explicação didática da metodologia — caption no item do select. */
+	description: string
+}[] = [
+	{
+		value: "auto",
+		label: "Automático",
+		description:
+			"O backend escolhe: paramétrico quando todos os grupos têm n≥10, senão não-paramétrico. Recomendado na dúvida.",
+	},
+	{
+		value: "parametric",
+		label: "Paramétrico",
+		description:
+			"ANOVA (omnibus) + t de Welch por par. Assume distribuição ~normal e variâncias comparáveis — mais poderoso com n maior.",
+	},
+	{
+		value: "nonparametric",
+		label: "Não-paramétrico",
+		description:
+			"Kruskal-Wallis (omnibus) + Mann-Whitney por par. Não assume normalidade — seguro com poucas réplicas ou dados assimétricos.",
+	},
+	{
+		value: "t_student",
+		label: "t de Student",
+		description:
+			"Compara médias por par. Assume normalidade e variâncias iguais entre grupos — clássico pra 2 grupos.",
+	},
+	{
+		value: "t_welch",
+		label: "t de Welch",
+		description:
+			"Compara médias por par. Assume ~normalidade mas tolera variâncias diferentes — mais seguro que o t de Student.",
+	},
+	{
+		value: "anova",
+		label: "ANOVA",
+		description:
+			"Omnibus: há alguma diferença entre os 3+ grupos? + t de Welch por par. Assume normalidade e homocedasticidade.",
+	},
+	{
+		value: "kruskal_wallis",
+		label: "Kruskal-Wallis",
+		description:
+			"Versão não-paramétrica da ANOVA (ranks): omnibus 3+ grupos + Mann-Whitney por par. Sem pressupostos.",
+	},
+	{
+		value: "mann_whitney",
+		label: "Mann-Whitney U",
+		description:
+			"Compara ranks por par, sem pressupostos de distribuição. Ideal pra n pequeno — típico em citometria.",
+	},
 ]
 
 const STATS_TEST_HELP =
-	"Paramétrico (ANOVA / t de Welch) assume distribuição aprox. normal e variâncias comparáveis — bom com n maior. Não-paramétrico (Kruskal-Wallis / Mann-Whitney) não assume normalidade — mais seguro com poucas réplicas ou dados assimétricos. Automático deixa o backend escolher pelo n e pelos pressupostos."
+	"Qual teste compara os grupos da figura. Paramétricos assumem ~normalidade e são mais poderosos; não-paramétricos (ranks) são mais seguros com poucas réplicas. Passe o mouse sobre cada opção para ver pressupostos e quando usar."
 
 /** Editor/viewer de figura — spec à esquerda (mobile: acima), gráfico ao lado. */
 const FigureEditor = ({
@@ -335,7 +386,14 @@ const FigureEditor = ({
 							>
 								{STATS_TEST_OPTIONS.map((o) => (
 									<MenuItem key={o.value} value={o.value}>
-										{o.label}
+										<ListItemText
+											primary={o.label}
+											secondary={o.description}
+											secondaryTypographyProps={{
+												variant: "caption",
+												sx: { whiteSpace: "normal" },
+											}}
+										/>
 									</MenuItem>
 								))}
 							</Select>
