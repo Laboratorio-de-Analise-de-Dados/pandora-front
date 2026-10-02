@@ -517,10 +517,8 @@ const FigureEditor = ({
 								{w}
 							</Alert>
 						))}
-						{Boolean(
-							figure.result_cache?.unmatched.populations.length ||
-							figure.result_cache?.unmatched.files.length,
-						) && (
+						{(figure.result_cache?.unmatched.populations.length ||
+							figure.result_cache?.unmatched.files.length) && (
 							<Alert severity="warning" sx={{ mb: 1 }}>
 								Ausentes:{" "}
 								{[
