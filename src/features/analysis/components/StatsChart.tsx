@@ -99,7 +99,7 @@ const StatsChart = ({
 					mode: "markers",
 					x: entries.map((a) => a.group),
 					y: entries.map((a) => a.mean),
-					marker: { symbol: "line-ew", size: 26, line: { width: 2.5 } },
+					marker: { symbol: "line-ns", size: 22, line: { width: 2 } },
 					showlegend: false,
 					hovertemplate: `média %{y:.4g}<extra>${populationLabel(pop)}</extra>`,
 				} as unknown as Plotly.Data
@@ -133,7 +133,7 @@ const StatsChart = ({
 							}
 						: {}),
 					marker: showMean
-						? { symbol: "line-ew", size: 30, line: { width: 2.5 } }
+						? { symbol: "line-ns", size: 18, line: { width: 2 } }
 						: { size: 0.1, opacity: 0 },
 					showlegend: false,
 					hovertemplate: `média %{y:.4g}${showSd ? " ±1SD" : ""}<extra>${populationLabel(pop)}</extra>`,
