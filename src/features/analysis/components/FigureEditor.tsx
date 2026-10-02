@@ -9,7 +9,6 @@ import {
 	FormControlLabel,
 	FormGroup,
 	InputLabel,
-	ListItemText,
 	MenuItem,
 	Select,
 	Stack,
@@ -71,7 +70,7 @@ const emptySpec: FigureSpec = {
 const STATS_TEST_OPTIONS: {
 	value: FigureStatsTest
 	label: string
-	/** Explicação didática da metodologia — caption no item do select. */
+	/** Explicação didática da metodologia — tooltip no item do select. */
 	description: string
 }[] = [
 	{
@@ -388,16 +387,14 @@ const FigureEditor = ({
 								}
 							>
 								{STATS_TEST_OPTIONS.map((o) => (
-									<MenuItem key={o.value} value={o.value}>
-										<ListItemText
-											primary={o.label}
-											secondary={o.description}
-											secondaryTypographyProps={{
-												variant: "caption",
-												sx: { whiteSpace: "normal" },
-											}}
-										/>
-									</MenuItem>
+									<Tooltip
+										key={o.value}
+										title={o.description}
+										placement="right"
+										arrow
+									>
+										<MenuItem value={o.value}>{o.label}</MenuItem>
+									</Tooltip>
 								))}
 							</Select>
 						</FormControl>
