@@ -11,7 +11,6 @@ import {
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import Layout from "../../../components/Layout"
 import {
 	ExperimentWorkspaceProvider,
@@ -52,13 +51,11 @@ import {
 	MdDownload as DownloadIcon,
 	MdHistory as HistoryIcon,
 	MdFlashOn as BoltIcon,
-	MdQueryStats as AnalysisIcon,
 } from "react-icons/md"
 import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../utils/experimentFile"
 import type { UpdateExperimentPayload } from "../../../services/experimentService"
 
 function ExperimentPageContent() {
-	const navigate = useNavigate()
 	const {
 		experiment,
 		experimentFiles,
@@ -440,20 +437,6 @@ function ExperimentPageContent() {
 					flexShrink: 0,
 				}}
 			>
-				{/* FE-36: entrada da página de análise (galeria de figuras). */}
-				<Tooltip title="Figuras de análise do experimento">
-					<span>
-						<IconButton
-							size="small"
-							disabled={!experiment}
-							onClick={() =>
-								navigate(`/experiments/${experiment?.id}/analysis`)
-							}
-						>
-							<AnalysisIcon />
-						</IconButton>
-					</span>
-				</Tooltip>
 				{/* Propagar Gate: botão verde no header (desktop);
 				    no mobile fica no rodapé do sheet da árvore. */}
 				{!isMobile && source?.type === "gate" && canEditExperiment && (
