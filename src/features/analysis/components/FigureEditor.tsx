@@ -362,6 +362,9 @@ const FigureEditor = ({
 								label="Teste estatístico"
 								value={spec.stats_test ?? "auto"}
 								disabled={locked}
+								renderValue={(v) =>
+									STATS_TEST_OPTIONS.find((o) => o.value === v)?.label ?? v
+								}
 								onChange={(e) => {
 									setSpec({
 										...spec,
