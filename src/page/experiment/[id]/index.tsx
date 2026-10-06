@@ -40,6 +40,7 @@ import {
 import ApplyGateDialog from "../../../features/gate/components/apply-gate-dialog"
 import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
 import DeleteGateDialog from "../../../features/gate/components/delete-gate-dialog"
+import { findFileForGate, findGateInTree } from "../../../features/gate/utils"
 import {
 	MdDelete as DeleteIcon,
 	MdEdit as EditIcon,
@@ -115,6 +116,12 @@ function ExperimentPageContent() {
 
 	const [editOpen, setEditOpen] = useState(false)
 	const [editError, setEditError] = useState<string | null>(null)
+	// FE-42 — "Sugerir populações" disparado da árvore: navega para o
+	// gate (o contexto da sugestão é sempre o que está no plot) e o
+	// sinal abre o dialog dentro do ScatterPlot.
+	const [suggestSignal, setSuggestSignal] = useState<{ seq: number } | null>(
+		null,
+	)
 
 	const handleSaveExperiment = async (payload: UpdateExperimentPayload) => {
 		const error = await handleUpdateExperiment(payload)
@@ -136,6 +143,20 @@ function ExperimentPageContent() {
 	const [compOpen, setCompOpen] = useState(false)
 	const [histOpen, setHistOpen] = useState(false)
 	const [showTree, setShowTree] = useState(() => !isMobile)
+
+	const handleSuggestGate = (gateId: number) => {
+		const file = findFileForGate(experimentFiles, gateId)
+		const gate = file ? findGateInTree(file.gates, gateId) : undefined
+		if (!file || !gate) return
+		setSource({
+			type: "gate",
+			id: gate.id,
+			name: gate.name,
+			fileDataId: file.id,
+		})
+		if (isMobile) setShowTree(false)
+		setSuggestSignal((s) => ({ seq: (s?.seq ?? 0) + 1 }))
+	}
 	// Recorte do histórico (FE-27): o ícone junto do arquivo abre a timeline
 	// filtrada por `fileDataId`; ações experiment-wide continuam inclusas.
 	const [historyFileId, setHistoryFileId] = useState<number | undefined>(
@@ -312,6 +333,7 @@ function ExperimentPageContent() {
 					onDeleteGate={handleRequestDeleteGate}
 					onEditGate={handleEditGate}
 					onApplyGate={handleApplyGate}
+					onSuggestGate={canEditExperiment ? handleSuggestGate : undefined}
 					onDisableFile={handleDisableFile}
 					onEnableFile={handleEnableFile}
 					onCreateSubsample={
@@ -560,6 +582,8 @@ function ExperimentPageContent() {
 										}
 										siblingGateNames={siblingGateNames}
 										childGates={childGates}
+										suggestSignal={suggestSignal}
+										onSuggestSignalConsumed={() => setSuggestSignal(null)}
 									/>
 								</PlotStateProvider>
 							) : (

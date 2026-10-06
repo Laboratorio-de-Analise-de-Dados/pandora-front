@@ -17,6 +17,7 @@ import {
 	MdPentagon as PolygonIcon,
 	MdAddBox as QuadrantIcon,
 	MdArrowDropDown as ChevronIcon,
+	MdAutoAwesome as SuggestIcon,
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
@@ -271,6 +272,9 @@ export interface PlotToolbarProps {
 	onSelectY: (v: string) => void
 	tool: GateTool
 	onToolChange: (t: GateTool) => void
+	/** FE-42 — abre o dialog "Sugerir populações" (não é ferramenta de
+	 * desenho; é uma ação que dispara o pedido ao Juvia). */
+	onSuggest?: () => void
 	xScale: Scale
 	yScale: Scale
 	onXScaleChange: (s: Scale) => void
@@ -311,6 +315,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	onSelectY,
 	tool,
 	onToolChange,
+	onSuggest,
 	xScale,
 	yScale,
 	onXScaleChange,
@@ -347,7 +352,16 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 						labelId="gate-tool-label"
 						label="Gate"
 						value={tool}
-						onChange={(e) => onToolChange(e.target.value as GateTool)}
+						onChange={(e) => {
+							// "Sugerir" é ação (abre o dialog de pedido), não
+							// ferramenta de desenho — não muda `tool`.
+							const v = e.target.value as string
+							if (v === "suggest") {
+								onSuggest?.()
+								return
+							}
+							onToolChange(v as GateTool)
+						}}
 						renderValue={() => (
 							<Box
 								sx={{
@@ -381,6 +395,31 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 								</Tooltip>
 							</MenuItem>
 						))}
+						{/* FE-42 — entrada "Sugerir populações" dentro do
+						    mesmo select: é o lugar onde o usuário já procura
+						    como criar um gate. Só faz sentido com 2 canais em
+						    tela (scatter/heatmap). */}
+						{!histogram && onSuggest && (
+							<MenuItem value="suggest">
+								<Tooltip
+									title="Pede para a análise sugerir populações neste par de canais"
+									placement="right"
+									arrow
+								>
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											gap: 1,
+											width: "100%",
+										}}
+									>
+										<SuggestIcon />
+										Sugerir…
+									</Box>
+								</Tooltip>
+							</MenuItem>
+						)}
 					</Select>
 				</FormControl>
 			)}

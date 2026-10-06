@@ -206,6 +206,13 @@ export interface Gate {
 	color?: string | null
 	/** Nome de exibição do autor; ausente em gates criados antes do registro. */
 	created_by_name?: string | null
+	/**
+	 * BE-40: `true` quando o gate nasceu de uma sugestão do Juvia aceita sem
+	 * edição — a geometria é exatamente a proposta da máquina. Rotas humanas
+	 * de create/update viram `false`. Ausente em backends antigos (tratar
+	 * como manual).
+	 */
+	automatic?: boolean
 	created_at?: string
 	plot_config?: Partial<PlotViewConfig>
 	analysis_result?: {

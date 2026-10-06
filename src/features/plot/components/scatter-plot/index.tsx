@@ -12,12 +12,30 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { Gate, Scale } from "../../../../types"
 import type { GateScope } from "../../../../services/gateService"
+import type { SuggestRequestPayload } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
 
 import { usePlotContext } from "../../context/PlotStateContext"
 import { useExperimentWorkspace } from "../../../experiment/context/ExperimentWorkspaceContext"
 import { useCompensationEdit } from "../../../compensation/context/CompensationEditContext"
 import { useCompensationPreview } from "../../../compensation/hooks/useCompensationPreview"
+import {
+	useAcceptSuggestion,
+	useDiscardSuggestion,
+	useRequestSuggestions,
+	useSuggestionsQuery,
+} from "../../../suggest/hooks/useSuggestions"
+import {
+	activeRunsForContext,
+	latestEmptyRun,
+	pendingSuggestionsForContext,
+	type ContextSuggestion,
+} from "../../../suggest/utils/contextFilter"
+import { buildSuggestionShapes } from "../../../suggest/utils/suggestionShapes"
+import PendingSuggestionsCard from "../../../suggest/components/PendingSuggestionsCard"
+import AcceptSuggestionDialog from "../../../suggest/components/AcceptSuggestionDialog"
+import SuggestDialog from "../../../suggest/components/SuggestDialog"
+import { toast } from "react-toastify"
 import { useDebouncedValue } from "../../hooks/useDebouncedValue"
 import { useDensityQuery } from "../../hooks/useDensityQuery"
 import { useGateDrawing } from "../../hooks/useGateDrawing"
@@ -68,6 +86,13 @@ interface ScatterPlotProps {
 	parentName?: string
 	siblingGateNames?: string[]
 	childGates?: Gate[]
+	/** Sinal externo para abrir o dialog de sugestão — muda o seq e o
+	 * plot abre (menu de contexto da árvore dispara aqui; a toolbar tem
+	 * sua própria entrada). */
+	suggestSignal?: { seq: number } | null
+	/** Chamado quando o sinal é consumido — o pai zera para um novo
+	 * mount não reabrir o dialog. */
+	onSuggestSignalConsumed?: () => void
 }
 
 // Fundo do plot: cinza bem claro — lê como "branco" como nos softwares
@@ -83,6 +108,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	parentName,
 	siblingGateNames = [],
 	childGates = [],
+	suggestSignal,
+	onSuggestSignalConsumed,
 }) => {
 	const plotState = usePlotContext()
 
@@ -139,11 +166,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	// Nome do subsample da amostra atual — habilita o escopo "subsample" nos
 	// diálogos (só existe quando a amostra está agrupada, BE-07).
+	const currentFile = experimentFiles.find((f) => f.id === fileDataId)
 	const currentSubsampleName = useMemo(() => {
-		const file = experimentFiles.find((f) => f.id === fileDataId)
+		const file = currentFile
 		if (file?.subsample == null) return undefined
 		return subsamples.find((s) => s.id === file.subsample)?.name
-	}, [experimentFiles, fileDataId, subsamples])
+	}, [currentFile, subsamples])
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -346,6 +374,135 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			effYScale,
 			patchCoordinates: requestPatch,
 		})
+
+	// --- FE-42: sugestões de população (Juvia) ---
+	// Candidatas pendentes vivem no servidor (o job é async e sobrevive a
+	// navegação); aqui só consultamos o contexto em tela (amostra + pai +
+	// par de canais) e desenhamos as propostas com contorno tracejado.
+	const experimentIdNum = experimentId ? Number(experimentId) : undefined
+	const suggestionsQuery = useSuggestionsQuery(experimentIdNum, fileDataId)
+	const pendingSuggestions = useMemo(
+		() =>
+			pendingSuggestionsForContext(
+				suggestionsQuery.data,
+				fileDataId,
+				parentId ?? null,
+				xAxis,
+				yAxis,
+			),
+		[suggestionsQuery.data, fileDataId, parentId, xAxis, yAxis],
+	)
+	const analyzingSuggestion =
+		activeRunsForContext(
+			suggestionsQuery.data,
+			fileDataId,
+			parentId ?? null,
+			xAxis,
+			yAxis,
+		).length > 0
+	const emptySuggestionRun = useMemo(
+		() =>
+			latestEmptyRun(
+				suggestionsQuery.data,
+				fileDataId,
+				parentId ?? null,
+				xAxis,
+				yAxis,
+			),
+		[suggestionsQuery.data, fileDataId, parentId, xAxis, yAxis],
+	)
+	const suggestionShapes = useMemo(
+		() =>
+			buildSuggestionShapes(
+				pendingSuggestions.map((c) => c.suggestion),
+				xAxis,
+				yAxis,
+				effXScale,
+				effYScale,
+				plotMode,
+			),
+		[pendingSuggestions, xAxis, yAxis, effXScale, effYScale, plotMode],
+	)
+
+	const [suggestDialogOpen, setSuggestDialogOpen] = useState(false)
+	const [suggestError, setSuggestError] = useState<string | null>(null)
+	// O menu de contexto da árvore abre o mesmo dialog via sinal (o plot
+	// precisa estar em tela — a sugestão usa os eixos visíveis). O seq é
+	// consumido e o pai zera para um remount não reabrir o dialog.
+	useEffect(() => {
+		if (suggestSignal != null) {
+			setSuggestError(null)
+			setSuggestDialogOpen(true)
+			onSuggestSignalConsumed?.()
+		}
+	}, [suggestSignal, onSuggestSignalConsumed])
+
+	const requestSuggestionMut = useRequestSuggestions(experimentIdNum)
+
+	const handleSuggestSubmit = (
+		payload: Omit<SuggestRequestPayload, "file_id" | "parent_id">,
+	) => {
+		setSuggestError(null)
+		requestSuggestionMut.mutate(
+			{
+				...payload,
+				file_id: fileDataId,
+				parent_id: parentId ?? null,
+			},
+			{
+				onSuccess: () => {
+					setSuggestDialogOpen(false)
+					toast.info(
+						`Analisando populações em ${currentFile?.file_name ?? "amostra"}…`,
+					)
+				},
+				onError: (error) => setSuggestError(extractErrorMessage(error)),
+			},
+		)
+	}
+
+	const [acceptTarget, setAcceptTarget] = useState<ContextSuggestion | null>(
+		null,
+	)
+	const [acceptEditing, setAcceptEditing] = useState(false)
+
+	const acceptSuggestionMut = useAcceptSuggestion(
+		experimentIdNum,
+		fileDataId,
+		loadFile,
+	)
+	const discardSuggestionMut = useDiscardSuggestion(experimentIdNum, fileDataId)
+
+	const handleAcceptSuggestion = (name?: string) => {
+		if (!acceptTarget) return
+		// "Editar" consolida: a geometria proposta vai para o modo reshape
+		// logo depois do aceite — o usuário ajusta e salva, e a rota de
+		// update já marca `automatic=false` no back (BE-40).
+		const reshapeAfter = acceptEditing
+		acceptSuggestionMut.mutate(
+			{ suggestionId: acceptTarget.suggestion.id, payload: { name } },
+			{
+				onSuccess: (gate) => {
+					setAcceptTarget(null)
+					setAcceptEditing(false)
+					toast.success(`População "${gate.name}" adicionada como gate.`)
+					if (reshapeAfter) setReshapingGateId(gate.id)
+				},
+				onError: (error) => {
+					toast.error(`Erro ao aceitar sugestão: ${extractErrorMessage(error)}`)
+				},
+			},
+		)
+	}
+
+	const handleDiscardSuggestion = (s: ContextSuggestion) => {
+		discardSuggestionMut.mutate(s.suggestion.id, {
+			onError: (error) =>
+				toast.error(
+					`Erro ao descartar sugestão: ${extractErrorMessage(error)}`,
+				),
+		})
+	}
 
 	// --- Gate click/context menu handlers ---
 	// (gates são read-only durante a prévia de compensação — handlers
@@ -630,6 +787,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								onSelectY={handleSelectY}
 								tool={tool}
 								onToolChange={setTool}
+								onSuggest={() => {
+									setSuggestError(null)
+									setSuggestDialogOpen(true)
+								}}
 								xScale={xScale}
 								yScale={yScale}
 								onXScaleChange={setXScale}
@@ -778,7 +939,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									}
 									layout={{
 										dragmode,
-										shapes: editableShapes as Plotly.Layout["shapes"],
+										shapes: [
+											...editableShapes,
+											...suggestionShapes,
+										] as Plotly.Layout["shapes"],
 										...(plotMode === "histogram"
 											? { selectdirection: "h" as const }
 											: {}),
@@ -931,6 +1095,34 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									</Button>
 								</Box>
 							)}
+							{/* FE-42: candidatas pendentes do Juvia — card de
+							    revisão no canto do plot, contorno tracejado nos
+							    shapes. Escondido durante edição/compensação. */}
+							{settingsAvailable && !previewActive && (
+								<PendingSuggestionsCard
+									suggestions={pendingSuggestions}
+									analyzing={analyzingSuggestion}
+									emptyRunDetail={
+										emptySuggestionRun?.detail ??
+										(emptySuggestionRun
+											? "Não encontrei separação confiável neste par de canais."
+											: null)
+									}
+									working={
+										acceptSuggestionMut.isPending ||
+										discardSuggestionMut.isPending
+									}
+									onAccept={(s) => {
+										setAcceptEditing(false)
+										setAcceptTarget(s)
+									}}
+									onEdit={(s) => {
+										setAcceptEditing(true)
+										setAcceptTarget(s)
+									}}
+									onDiscard={handleDiscardSuggestion}
+								/>
+							)}
 							{/* Configurações do plot: card overlay no canto do
 								    gráfico, translúcido durante o ajuste das
 								    escalas — mesma dinâmica no desktop e mobile. */}
@@ -1004,6 +1196,34 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						? "Excluir quadrantes"
 						: "Excluir"
 				}
+			/>
+
+			{/* FE-42 — pedido + revisão de sugestões. O dialog usa os eixos
+			    em tela como contexto; a candidata vira gate comum ao aceitar. */}
+			<SuggestDialog
+				open={suggestDialogOpen}
+				onClose={() => setSuggestDialogOpen(false)}
+				fileName={currentFile?.file_name ?? ""}
+				parentName={parentName ?? null}
+				xAxis={xAxis}
+				yAxis={yAxis}
+				tool={tool}
+				files={experimentFiles}
+				subsamples={subsamples}
+				currentFile={currentFile}
+				submitting={requestSuggestionMut.isPending}
+				error={suggestError}
+				onSubmit={handleSuggestSubmit}
+			/>
+			<AcceptSuggestionDialog
+				suggestion={acceptTarget}
+				editing={acceptEditing}
+				saving={acceptSuggestionMut.isPending}
+				onClose={() => {
+					setAcceptTarget(null)
+					setAcceptEditing(false)
+				}}
+				onConfirm={handleAcceptSuggestion}
 			/>
 		</Box>
 	)

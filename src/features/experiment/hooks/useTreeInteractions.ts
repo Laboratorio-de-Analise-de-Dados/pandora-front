@@ -22,6 +22,8 @@ export interface TreeInteractionsParams {
 		payload: { name: string; color: string; scope: GateScope },
 	) => Promise<string | null>
 	onApplyGate?: (gateId: number, gateName: string) => void
+	/** FE-42 — "Sugerir populações" a partir deste gate como pai. */
+	onSuggestGate?: (gateId: number) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void
 	onCreateSubsample?: (name: string) => Promise<string | null>
@@ -55,6 +57,7 @@ export function useTreeInteractions({
 	onDeleteGate,
 	onEditGate,
 	onApplyGate,
+	onSuggestGate,
 	onDisableFile,
 	onEnableFile,
 	onCreateSubsample,
@@ -254,6 +257,10 @@ export function useTreeInteractions({
 				if (menuGate && onApplyGate) onApplyGate(menuGate.id, menuGate.name)
 				closeMenu()
 			},
+			suggest: () => {
+				if (menuGate && onSuggestGate) onSuggestGate(menuGate.id)
+				closeMenu()
+			},
 			edit: () => {
 				if (menuGate) openEdit(menuGate)
 				closeMenu()
@@ -270,6 +277,10 @@ export function useTreeInteractions({
 			apply: () => {
 				if (contextGate && onApplyGate)
 					onApplyGate(contextGate.id, contextGate.name)
+				closeContextMenu()
+			},
+			suggest: () => {
+				if (contextGate && onSuggestGate) onSuggestGate(contextGate.id)
 				closeContextMenu()
 			},
 			edit: () => {

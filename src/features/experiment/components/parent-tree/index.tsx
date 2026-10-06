@@ -13,6 +13,7 @@ import {
 	MdUnfoldLess as CollapseAllIcon,
 	MdSearch as SearchIcon,
 	MdClose as ClearIcon,
+	MdAutoAwesome as SuggestIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -71,6 +72,7 @@ export default function ParentTree({
 	onDeleteGate,
 	onEditGate,
 	onApplyGate,
+	onSuggestGate,
 	onDisableFile,
 	onEnableFile,
 	onCreateSubsample,
@@ -93,6 +95,8 @@ export default function ParentTree({
 		payload: GateEditPayload,
 	) => Promise<string | null>
 	onApplyGate?: (gateId: number, gateName: string) => void
+	/** FE-42 — "Sugerir populações" a partir deste gate como pai. */
+	onSuggestGate?: (gateId: number) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void
 	onCreateSubsample?: (name: string) => Promise<string | null>
@@ -136,6 +140,7 @@ export default function ParentTree({
 		onDeleteGate,
 		onEditGate,
 		onApplyGate,
+		onSuggestGate,
 		onDisableFile,
 		onEnableFile,
 		onCreateSubsample,
@@ -376,6 +381,16 @@ export default function ParentTree({
 				transformOrigin={{ vertical: "top", horizontal: "right" }}
 				slotProps={{ paper: { sx: { minWidth: 180 } } }}
 			>
+				{onSuggestGate && (
+					<MuiMenuItem onClick={gateMenu.suggest} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<SuggestIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Sugerir populações
+						</ListItemText>
+					</MuiMenuItem>
+				)}
 				{onApplyGate && (
 					<MuiMenuItem onClick={gateMenu.apply} dense>
 						<ListItemIcon sx={{ minWidth: 28 }}>
@@ -428,6 +443,16 @@ export default function ParentTree({
 				}
 				slotProps={{ paper: { sx: { minWidth: 180 } } }}
 			>
+				{onSuggestGate && (
+					<MuiMenuItem onClick={gateContextMenu.suggest} dense>
+						<ListItemIcon sx={{ minWidth: 28 }}>
+							<SuggestIcon style={{ fontSize: 18 }} />
+						</ListItemIcon>
+						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
+							Sugerir populações
+						</ListItemText>
+					</MuiMenuItem>
+				)}
 				{onApplyGate && (
 					<MuiMenuItem onClick={gateContextMenu.apply} dense>
 						<ListItemIcon sx={{ minWidth: 28 }}>

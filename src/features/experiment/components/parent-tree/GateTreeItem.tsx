@@ -3,6 +3,7 @@ import {
 	MdLink as LinkIcon,
 	MdMoreVert as MoreVertIcon,
 	MdWarningAmber as WarningIcon,
+	MdAutoAwesome as AutoIcon,
 } from "react-icons/md"
 import type { Gate } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
@@ -110,6 +111,21 @@ export default function GateTreeItem({
 										"& .MuiChip-label": { px: 0.5 },
 									}}
 								/>
+							)}
+							{gate.automatic === true && (
+								<Tooltip
+									title="Sugerida — geometria gerada pela análise e aceita sem edição"
+									arrow
+								>
+									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
+										<AutoIcon
+											style={{
+												fontSize: 14,
+												color: "var(--mui-palette-warning-main, #FBBF24)",
+											}}
+										/>
+									</Box>
+								</Tooltip>
 							)}
 							{notEvaluable && (
 								<Tooltip title={warningTip} arrow>

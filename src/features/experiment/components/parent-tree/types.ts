@@ -32,6 +32,9 @@ export interface TreeHandlers {
 		payload: GateEditPayload,
 	) => Promise<string | null>
 	onApplyGate?: (gateId: number, gateName: string) => void
+	/** FE-42 — abre o pedido de sugestão de populações com o gate como
+	 * contexto pai (o plot navega para ele e o dialog abre). */
+	onSuggestGate?: (gateId: number) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void
 	onMenuOpen: (event: React.MouseEvent, gate: Gate) => void
