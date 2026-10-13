@@ -75,8 +75,50 @@ export interface SuggestionRun {
 	created_at?: string
 }
 
-export interface SuggestionListResponse {
-	runs: SuggestionRun[]
+/** Payload do worker gravado em `job.result.worker_result` (BE-27). */
+export interface AnalysisJobWorkerResult {
+	gates?: { name: string; gate_coordinates: GateCoordinates }[]
+	candidates?: {
+		name: string
+		gate_coordinates: GateCoordinates
+		stats?: GateSuggestionStats | null
+	}[]
+	/** Motivo da resposta honesta ("sem separação confiável"). */
+	reason?: string
+	model?: string
+	gate_type?: SuggestionGateType
+	metrics?: Record<string, number | null>
+	n_total?: number
+}
+
+/** Artefatos materializados pelo `complete` (BE-27 `result`). */
+export interface AnalysisJobResult {
+	worker_result?: AnalysisJobWorkerResult
+	created_gate_ids?: number[]
+	revision_id?: number
+	checkpoint_id?: number
+}
+
+/**
+ * Job da fila BE-27 (`GET/POST /analytics/analysis-jobs/`) — o contrato
+ * real da v1 (JV-04 revisto): gates nascem materializados, sem candidatas
+ * pendentes. Os endpoints `suggestions/` do BE-40 são fase posterior.
+ */
+export interface AnalysisJob {
+	id: number
+	experiment: number
+	file_id: number
+	subsample_id?: number | null
+	gate_id?: number | null
+	operation: string
+	model: string
+	channels: string[]
+	status: SuggestionRunStatus
+	attempts?: number
+	last_error?: string | null
+	result?: AnalysisJobResult | null
+	created_gate_ids?: number[]
+	created_at?: string
 }
 
 export interface AcceptSuggestionPayload {

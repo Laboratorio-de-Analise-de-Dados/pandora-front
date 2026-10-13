@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Plot from "react-plotly.js"
 import { Gate, Scale } from "../../../../types"
 import type { GateScope } from "../../../../services/gateService"
-import type { SuggestRequestPayload } from "../../../../types"
+import type { SuggestRequestPayload, SuggestionRun } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
 
 import { usePlotContext } from "../../context/PlotStateContext"
@@ -423,6 +423,32 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			),
 		[pendingSuggestions, xAxis, yAxis, effXScale, effYScale, plotMode],
 	)
+
+	// v1 (JV-04 revisto): o run materializa as gates direto na árvore ao
+	// concluir — quando um run desta amostra sai de pending/processing
+	// para done com candidatas, refaz o fetch para as gates novas
+	// aparecerem (badge `automatic` incluso). Run vazio (resposta
+	// honesta) e error/quarantine não tocam na árvore.
+	const seenRunStatuses = useRef<Map<number, SuggestionRun["status"]>>(
+		new Map(),
+	)
+	useEffect(() => {
+		const seen = seenRunStatuses.current
+		let materialized = false
+		for (const run of suggestionsQuery.data ?? []) {
+			const was = seen.get(run.id)
+			if (
+				run.file_data === fileDataId &&
+				(was === "pending" || was === "processing") &&
+				run.status === "done" &&
+				(run.suggestions ?? []).length > 0
+			) {
+				materialized = true
+			}
+			seen.set(run.id, run.status)
+		}
+		if (materialized) loadFile()
+	}, [suggestionsQuery.data, fileDataId, loadFile])
 
 	const [suggestDialogOpen, setSuggestDialogOpen] = useState(false)
 	const [suggestError, setSuggestError] = useState<string | null>(null)

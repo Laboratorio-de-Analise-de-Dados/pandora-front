@@ -25,6 +25,7 @@ import {
 	intentByValue,
 	isFluorescenceChannel,
 	SUGGEST_INTENTS,
+	V1_INTENTS,
 	type ControlKind,
 } from "../utils/intents"
 import {
@@ -197,16 +198,22 @@ export default function SuggestDialog({
 							setGateType(intentByValue(next).preferredGateType)
 						}}
 					>
-						{SUGGEST_INTENTS.map((i) => (
-							<MenuItem key={i.value} value={i.value}>
-								<Box>
-									<Typography variant="body2">{i.label}</Typography>
-									<Typography variant="caption" color="text.secondary">
-										{i.description}
-									</Typography>
-								</Box>
-							</MenuItem>
-						))}
+						{SUGGEST_INTENTS.map((i) => {
+							const v1 = V1_INTENTS.has(i.value)
+							return (
+								<MenuItem key={i.value} value={i.value} disabled={!v1}>
+									<Box>
+										<Typography variant="body2">
+											{i.label}
+											{!v1 ? " (em breve)" : ""}
+										</Typography>
+										<Typography variant="caption" color="text.secondary">
+											{i.description}
+										</Typography>
+									</Box>
+								</MenuItem>
+							)
+						})}
 					</Select>
 				</FormControl>
 

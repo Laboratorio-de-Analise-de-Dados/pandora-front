@@ -11,10 +11,14 @@ import type {
 } from "../../../types"
 
 /**
- * FE-42 — candidatas vivem no servidor desde que o job conclui (pendentes
- * persistidas, BE-40): o front consulta em vez de segurar estado volátil.
+ * FE-42 — o front consulta runs em vez de segurar estado volátil.
  * Enquanto houver run pending/processing, polling a cada 3s — o BE-27
  * explicitamente adia WebSocket/SSE.
+ *
+ * v1 (JV-04 revisto): "run" = job da fila BE-27 — o worker materializa
+ * as gates direto e o service mapeia o job para o shape de run.
+ * Candidatas pendentes persistidas + accept/discard são o BE-40, fase
+ * posterior — os hooks de accept/discard ficam prontos mas inertes.
  */
 const POLL_MS = 3000
 

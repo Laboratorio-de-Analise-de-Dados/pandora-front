@@ -93,7 +93,7 @@ describe("activeRunsForContext", () => {
 })
 
 describe("latestEmptyRun", () => {
-	it("run concluído sem candidatas pendentes é o feedback honesto", () => {
+	it("run concluído sem nenhuma candidata gerada é o feedback honesto", () => {
 		const runs = [
 			mkRun({
 				id: 1,
@@ -109,5 +109,19 @@ describe("latestEmptyRun", () => {
 			}),
 		]
 		expect(latestEmptyRun(runs, 10, null, "FSC-A", "SSC-A")?.id).toBe(1)
+	})
+
+	it("run com candidatas já revisadas não conta como vazio", () => {
+		// Todas aceitas/descartadas: o run gerou candidatas — não é a
+		// resposta honesta "sem separação". Na v1 o service mapeia as
+		// gates materializadas como aceitas; mesma garantia vale aqui.
+		const runs = [
+			mkRun({
+				id: 1,
+				status: "done",
+				suggestions: [mkSuggestion(9, true), mkSuggestion(10, false)],
+			}),
+		]
+		expect(latestEmptyRun(runs, 10, null, "FSC-A", "SSC-A")).toBeNull()
 	})
 })

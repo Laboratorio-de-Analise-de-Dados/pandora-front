@@ -18,12 +18,12 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                         | Área afetada                                                                                                 | Branch                  | Sessão | Desde |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------- | ------ | ----- |
-| FE-42 sugestões de população    | `src/features/suggest/`, `services/suggestionService.ts`, `types/`, scatter-plot, parent-tree, `PlotToolbar` | feat/sugerir-populacoes | devin  | 10/10 |
-| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0                                                  | —                       | —      | —     |
-| #77 plot_config da amostra raiz | ✅ concluído — mergeado (PR #111)                                                                            | —                       | —      | —     |
-| FE-36 página de análise         | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114)            | —                       | —      | —     |
+| Feature                         | Área afetada                                                                                                                                                                                             | Branch                  | Sessão | Desde |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------ | ----- |
+| FE-42 sugestões de população    | `src/features/suggest/`, `services/suggestionService.ts`, `types/`, scatter-plot, parent-tree, `PlotToolbar` — adaptada ao contrato v1 (job BE-27 + gates materializadas; accept/discard fica pro BE-40) | feat/sugerir-populacoes | devin  | 10/10 |
+| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0                                                                                                                                              | —                       | —      | —     |
+| #77 plot_config da amostra raiz | ✅ concluído — mergeado (PR #111)                                                                                                                                                                        | —                       | —      | —     |
+| FE-36 página de análise         | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114)                                                                                                        | —                       | —      | —     |
 
 ## Concluído nesta branch
 

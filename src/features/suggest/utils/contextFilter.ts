@@ -61,9 +61,13 @@ export const activeRunsForContext = (
 	)
 
 /**
- * Último run concluído do contexto que fechou sem candidatas — resposta
- * honesta do Juvia ("não encontrei separação confiável") exibida como
- * feedback, não erro (FE-42 §6).
+ * Último run concluído do contexto que fechou sem nunca gerar candidatas —
+ * resposta honesta do Juvia ("não encontrei separação confiável") exibida
+ * como feedback, não erro (FE-42 §6).
+ *
+ * "Sem candidatas" = `suggestions` vazio, não "sem pendentes": run cujas
+ * candidatas foram todas revisadas (BE-40) ou cujas gates já nasceram
+ * materializadas (v1, mapeadas como aceitas) não é um run vazio.
  */
 export const latestEmptyRun = (
 	runs: SuggestionRun[] | undefined,
@@ -79,7 +83,7 @@ export const latestEmptyRun = (
 				(r.parent ?? null) === (parentId ?? null) &&
 				channelsMatch(r.channels, xAxis, yAxis) &&
 				r.status === "done" &&
-				(r.suggestions ?? []).filter((s) => s.accepted === null).length === 0,
+				(r.suggestions ?? []).length === 0,
 		)
 		.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
 	return done[0] ?? null

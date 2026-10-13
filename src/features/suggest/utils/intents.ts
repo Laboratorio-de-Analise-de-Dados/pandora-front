@@ -60,6 +60,15 @@ export const intentByValue = (value: SuggestIntent): IntentOption =>
 	SUGGEST_INTENTS.find((i) => i.value === value) ?? SUGGEST_INTENTS[0]
 
 /**
+ * Intents que a v1 do worker (JV-04 revisto) realmente atende — o job não
+ * carrega `intent`, só `payload.gate_type`: `separate` e `quadrant` se
+ * resumem ao tipo de saída. As demais (positivo/negativo, raras,
+ * controle) voltam quando o Juvia implementar — até lá ficam visíveis
+ * mas desabilitadas no select.
+ */
+export const V1_INTENTS = new Set<SuggestIntent>(["separate", "quadrant"])
+
+/**
  * Canais de morfologia (FSC/SSC) vs. fluorescência — decide que tipo de
  * controle cada eixo precisa no modo "limite por controle" (FE-42 §3):
  * fluorescente pede FMO/isotípico do canal; FSC×SSC pede controle de
