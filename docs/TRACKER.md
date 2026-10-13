@@ -24,6 +24,9 @@ serviços) ou alinhe com o responsável.
 | #77 plot_config da amostra raiz | ✅ concluído — mergeado (PR #111)                                                                 | —      | —      | —     |
 | FE-36 página de análise         | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114) | —      | —      | —     |
 
+| BE-41 par front: convite divergente | `src/page/invite/` — aceitar com esta conta + CTA modo link Microsoft | `fix/invite-divergent-email` | devin | 2026-10-13 |
+| FE-43 multiselect de amostras | `NewExperimentDialog`, `ExperimentContext`, `experimentService`, `utils/experimentFile` | `feat/multifile-upload` | devin | 2026-10-13 |
+
 ## Concluído nesta branch
 
 | Feature                                    | Observação                                                                                                                                                                       |
