@@ -1,25 +1,20 @@
 import React, { useEffect, useState } from "react"
 import {
 	Box,
-	Checkbox,
 	Divider,
-	FormControlLabel,
+	FormControl,
+	InputLabel,
+	MenuItem,
+	Select,
 	Slider,
 	TextField,
 	ToggleButton,
 	ToggleButtonGroup,
 	Typography,
 } from "@mui/material"
+import type { Scale } from "../../../types"
 import { usePlotContext } from "../context/PlotStateContext"
-import {
-	BIEX_SLIDER_MARKS,
-	BIEX_SLIDER_MAX,
-	BIEX_SLIDER_MIN,
-	LINEAR_SLIDER_MARKS,
-	LINEAR_SLIDER_MAX,
-	rawToSlider,
-	sliderToRaw,
-} from "../utils/sliders"
+import { rawToSlider, sliderBounds, sliderToRaw } from "../utils/sliders"
 
 interface PlotConfigPanelProps {
 	onAdjustingChange?: (adjusting: boolean) => void
@@ -99,39 +94,37 @@ export default function PlotConfigPanel({
 			<Divider />
 
 			{/* Escala */}
-			<Box>
-				<Typography
-					variant="caption"
-					fontWeight="bold"
-					color="text.secondary"
-					sx={{ mb: 1, display: "block" }}
-				>
-					Escala
-				</Typography>
-				<FormControlLabel
-					control={
-						<Checkbox
-							checked={xScale === "biex"}
-							onChange={(e) => setXScale(e.target.checked ? "biex" : "linear")}
-							size="small"
-						/>
-					}
-					label={<Typography variant="caption">X Biex</Typography>}
-				/>
+			<Box sx={{ display: "flex", gap: 1 }}>
+				<FormControl size="small" variant="outlined" fullWidth>
+					<InputLabel id="config-x-scale-label">Escala X</InputLabel>
+					<Select
+						labelId="config-x-scale-label"
+						label="Escala X"
+						value={xScale}
+						onChange={(e) => setXScale(e.target.value as Scale)}
+						sx={{ fontWeight: 600 }}
+					>
+						<MenuItem value="linear">Linear</MenuItem>
+						<MenuItem value="biex">Biex</MenuItem>
+						<MenuItem value="log">Log</MenuItem>
+					</Select>
+				</FormControl>
 
 				{plotMode !== "histogram" && (
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={yScale === "biex"}
-								onChange={(e) =>
-									setYScale(e.target.checked ? "biex" : "linear")
-								}
-								size="small"
-							/>
-						}
-						label={<Typography variant="caption">Y Biex</Typography>}
-					/>
+					<FormControl size="small" variant="outlined" fullWidth>
+						<InputLabel id="config-y-scale-label">Escala Y</InputLabel>
+						<Select
+							labelId="config-y-scale-label"
+							label="Escala Y"
+							value={yScale}
+							onChange={(e) => setYScale(e.target.value as Scale)}
+							sx={{ fontWeight: 600 }}
+						>
+							<MenuItem value="linear">Linear</MenuItem>
+							<MenuItem value="biex">Biex</MenuItem>
+							<MenuItem value="log">Log</MenuItem>
+						</Select>
+					</FormControl>
 				)}
 			</Box>
 
@@ -152,14 +145,10 @@ export default function PlotConfigPanel({
 					value={[
 						xMin !== ""
 							? rawToSlider(Number(xMin), xScale)
-							: xScale === "biex"
-								? BIEX_SLIDER_MIN
-								: 0,
+							: sliderBounds(xScale).min,
 						xMax !== ""
 							? rawToSlider(Number(xMax), xScale)
-							: xScale === "biex"
-								? BIEX_SLIDER_MAX
-								: LINEAR_SLIDER_MAX,
+							: sliderBounds(xScale).max,
 					]}
 					onChange={(_, val) => {
 						const [lo, hi] = val as number[]
@@ -168,10 +157,10 @@ export default function PlotConfigPanel({
 						setIsAdjusting(true)
 					}}
 					onChangeCommitted={() => setIsAdjusting(false)}
-					min={xScale === "biex" ? BIEX_SLIDER_MIN : 0}
-					max={xScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-					step={xScale === "biex" ? 0.01 : 500}
-					marks={xScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+					min={sliderBounds(xScale).min}
+					max={sliderBounds(xScale).max}
+					step={sliderBounds(xScale).step}
+					marks={sliderBounds(xScale).marks}
 					valueLabelDisplay="auto"
 					valueLabelFormat={(v) => {
 						const raw = sliderToRaw(v, xScale)
@@ -245,14 +234,10 @@ export default function PlotConfigPanel({
 							value={[
 								yMin !== ""
 									? rawToSlider(Number(yMin), yScale)
-									: yScale === "biex"
-										? BIEX_SLIDER_MIN
-										: 0,
+									: sliderBounds(yScale).min,
 								yMax !== ""
 									? rawToSlider(Number(yMax), yScale)
-									: yScale === "biex"
-										? BIEX_SLIDER_MAX
-										: LINEAR_SLIDER_MAX,
+									: sliderBounds(yScale).max,
 							]}
 							onChange={(_, val) => {
 								const [lo, hi] = val as number[]
@@ -261,12 +246,10 @@ export default function PlotConfigPanel({
 								setIsAdjusting(true)
 							}}
 							onChangeCommitted={() => setIsAdjusting(false)}
-							min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
-							max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-							step={yScale === "biex" ? 0.01 : 500}
-							marks={
-								yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS
-							}
+							min={sliderBounds(yScale).min}
+							max={sliderBounds(yScale).max}
+							step={sliderBounds(yScale).step}
+							marks={sliderBounds(yScale).marks}
 							valueLabelDisplay="auto"
 							valueLabelFormat={(v) => {
 								const raw = sliderToRaw(v, yScale)

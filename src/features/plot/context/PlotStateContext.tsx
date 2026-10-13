@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react"
-import type { PlotViewConfig } from "../../../types"
+import type { ChannelMeta, PlotViewConfig } from "../../../types"
 import {
 	usePlotState,
 	type PlotState,
@@ -19,6 +19,9 @@ const PlotStateContext = createContext<PlotStateContextValue | undefined>(
 interface PlotStateProviderProps {
 	children: ReactNode
 	initialConfig?: Partial<PlotViewConfig>
+	/** Metadados por canal do arquivo FCS — alimentam o default de
+	 *  escala/range ao trocar de eixo (FE-44). */
+	channelMeta?: ChannelMeta[]
 	sourceType: "file" | "gate"
 	sourceId: number
 	onPersist: (
@@ -31,11 +34,12 @@ interface PlotStateProviderProps {
 export function PlotStateProvider({
 	children,
 	initialConfig,
+	channelMeta,
 	sourceType,
 	sourceId,
 	onPersist,
 }: PlotStateProviderProps) {
-	const plotState = usePlotState(initialConfig)
+	const plotState = usePlotState(initialConfig, channelMeta)
 
 	const config = useMemo<PlotViewConfig>(
 		() => ({

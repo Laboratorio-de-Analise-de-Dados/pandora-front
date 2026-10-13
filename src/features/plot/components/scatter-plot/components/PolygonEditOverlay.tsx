@@ -1,6 +1,6 @@
 import React from "react"
 import type { Gate, Scale } from "../../../../../types"
-import { COFACTOR, biex, toRaw } from "../../../utils/biex"
+import { COFACTOR, toDisplay, toRaw } from "../../../utils/biex"
 
 interface PolygonEditOverlayProps {
 	editingPolyGate: { gate: Gate; swapped: boolean }
@@ -48,8 +48,8 @@ const PolygonEditOverlay: React.FC<PolygonEditOverlayProps> = ({
 	const pixelVerts = vertices.map((v) => {
 		const rawX = swapped ? v[1] : v[0]
 		const rawY = swapped ? v[0] : v[1]
-		const dispX = xSc === "biex" ? biex(rawX, cof) : rawX
-		const dispY = ySc === "biex" ? biex(rawY, cof) : rawY
+		const dispX = toDisplay(rawX, xSc, cof)
+		const dispY = toDisplay(rawY, ySc, cof)
 		return dataToPixel(dispX, dispY)
 	})
 
