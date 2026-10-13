@@ -58,7 +58,7 @@ import {
 	buildGateHoverTraces,
 	buildGateLabelTraces,
 } from "../../utils/gateHoverTraces"
-import { buildAxisRange } from "../../utils/plotAxes"
+import { buildAxisRange, channelRangeFor } from "../../utils/plotAxes"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
 import type { PlotMode } from "../../hooks/usePlotState"
@@ -332,6 +332,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMax,
 		cutoff,
 		siblingGateNames,
+		channelMeta: currentFile?.channel_meta,
 		loadFile,
 		setTool,
 		plotConfig: {
@@ -679,8 +680,20 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	)
 
 	// Axis ranges and ticks
-	const xAxisRange = buildAxisRange(xMin, xMax, effXScale, effCof)
-	const yAxisRange = buildAxisRange(yMin, yMax, effYScale, effCof)
+	const xAxisRange = buildAxisRange(
+		xMin,
+		xMax,
+		effXScale,
+		effCof,
+		channelRangeFor(currentFile?.channel_meta, xAxis),
+	)
+	const yAxisRange = buildAxisRange(
+		yMin,
+		yMax,
+		effYScale,
+		effCof,
+		channelRangeFor(currentFile?.channel_meta, yAxis),
+	)
 	const xTicks = buildTicks(xAxisRange, effXScale, effCof)
 	const yTicks = buildTicks(yAxisRange, effYScale, effCof)
 
