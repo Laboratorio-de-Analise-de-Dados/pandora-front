@@ -471,11 +471,11 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					arrow
 				>
 					<Button
-						size="small"
 						variant="outlined"
 						onClick={onSuggest}
 						startIcon={<JuviaCatIcon />}
-						sx={{ fontWeight: 600, whiteSpace: "nowrap" }}
+						// Mesma altura dos selects outlined small da toolbar.
+						sx={{ fontWeight: 600, whiteSpace: "nowrap", height: 40 }}
 					>
 						Sugerir
 					</Button>
