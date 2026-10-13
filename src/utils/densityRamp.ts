@@ -1,25 +1,30 @@
 /**
  * Rampa de densidade por modo do tema (FE-26) — fonte única usada pelo
  * Plotly (`plotTraces`) e pelo preview em canvas dos cards (BE-21).
- * Dark: base quase preta soma no canvas e os aglomerados "acendem" em
- * emerald → neon. Light: base clara some no papel e a densidade escurece.
+ *
+ * Paleta clássica de citometria (jet adaptado): azul → ciano → amarelo →
+ * vermelho conforme a densidade sobe. No dark o primeiro stop é quase
+ * preto-azulado para as baixas densidades não sumirem no fundo; no light
+ * a base clara some no papel e a densidade "acende" do azul ao vermelho.
  */
 export const DENSITY_STOPS: Record<"light" | "dark", [number, string][]> = {
 	dark: [
-		[0, "#0B1F17"],
-		[0.18, "#064E3B"],
-		[0.4, "#047857"],
-		[0.62, "#10B981"],
-		[0.8, "#34D399"],
-		[1, "#D1FAE5"],
+		[0, "#0B1026"],
+		[0.15, "#0018A8"],
+		[0.35, "#0047FF"],
+		[0.55, "#00D4FF"],
+		[0.75, "#FFE600"],
+		[0.9, "#FF7A00"],
+		[1, "#FF1A1A"],
 	],
 	light: [
-		[0, "#F4F4F4"],
-		[0.18, "#D1FAE5"],
-		[0.4, "#6EE7B7"],
-		[0.62, "#10B981"],
-		[0.8, "#047857"],
-		[1, "#064E3B"],
+		[0, "#F4F6FF"],
+		[0.15, "#C9D8FF"],
+		[0.35, "#3D6BFE"],
+		[0.55, "#00C4E6"],
+		[0.75, "#FFD500"],
+		[0.9, "#FF7A00"],
+		[1, "#E60000"],
 	],
 }
 

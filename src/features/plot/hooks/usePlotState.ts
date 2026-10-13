@@ -41,7 +41,7 @@ export function usePlotState(
 	const [xAxis, setXAxis] = useState(initial?.xAxis ?? "FSC-A")
 	const [yAxis, setYAxis] = useState(initial?.yAxis ?? "SSC-A")
 	const [plotMode, setPlotMode] = useState<PlotMode>(
-		initial?.plotMode ?? "heatmap",
+		initial?.plotMode ?? "scatter",
 	)
 	const [tool, setTool] = useState<GateTool>("rect")
 	const [xScale, setXScale] = useState<Scale>(

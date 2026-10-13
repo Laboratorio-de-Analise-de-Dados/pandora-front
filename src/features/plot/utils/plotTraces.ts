@@ -9,8 +9,9 @@ import { edgesToCenters } from "./geometry"
 const SCATTER_TRACE_TYPE: "scattergl" | "scatter" = "scatter"
 
 // Rampas de densidade por modo do tema (FE-26) — compartilhadas com o
-// preview dos cards (`src/utils/densityRamp.ts`). `Jet` foi feito para
-// fundo claro e perdia as baixas densidades no preto.
+// preview dos cards (`src/utils/densityRamp.ts`). Jet adaptado: o
+// clássico azul→vermelho da citometria com primeiro stop escuro para
+// não perder as baixas densidades no fundo preto.
 
 // Marcador do scatter: neon no escuro, emerald escuro no claro.
 export const SCATTER_COLOR: Record<"light" | "dark", string> = {
