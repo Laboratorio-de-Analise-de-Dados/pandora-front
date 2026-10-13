@@ -2,7 +2,7 @@ import type { Scale } from "../../../types"
 import { biex } from "./biex"
 
 export const NICE_RAW = [
-	-100000, -10000, -1000, 0, 1000, 10000, 100000, 1000000,
+	-100000, -10000, -1000, 0, 1000, 10000, 100000, 1000000, 10000000,
 ]
 
 const SUPERSCRIPTS: Record<string, string> = {
@@ -35,13 +35,26 @@ export const fmtTick = (raw: number): string => {
 	return String(raw)
 }
 
-/** Em biex, gera ticks em unidades reais posicionados no espaço transformado. */
+/** Em biex/log, gera ticks em unidades reais posicionados no espaço transformado. */
 export const buildTicks = (
 	edges: number[] | undefined,
 	scale: Scale,
 	cof: number,
 ): { tickvals: number[]; ticktext: string[] } | undefined => {
-	if (scale !== "biex" || !edges || edges.length < 2) return undefined
+	if (!edges || edges.length < 2) return undefined
+	if (scale === "log") {
+		// Eixo já está em log10: ticks nas décadas inteiras dentro do range.
+		const lo = Math.ceil(edges[0])
+		const hi = Math.floor(edges[edges.length - 1])
+		const tickvals: number[] = []
+		const ticktext: string[] = []
+		for (let e = lo; e <= hi; e++) {
+			tickvals.push(e)
+			ticktext.push(`10${toSuperscript(String(e))}`)
+		}
+		return tickvals.length ? { tickvals, ticktext } : undefined
+	}
+	if (scale !== "biex") return undefined
 	const min = edges[0]
 	const max = edges[edges.length - 1]
 	const tickvals: number[] = []

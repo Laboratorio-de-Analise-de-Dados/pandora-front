@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import {
 	Box,
+	Button,
 	FormControl,
 	InputAdornment,
 	InputLabel,
@@ -17,18 +18,11 @@ import {
 	MdPentagon as PolygonIcon,
 	MdAddBox as QuadrantIcon,
 	MdArrowDropDown as ChevronIcon,
+	MdRestartAlt as ResetIcon,
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
-import {
-	BIEX_SLIDER_MIN,
-	BIEX_SLIDER_MAX,
-	LINEAR_SLIDER_MAX,
-	BIEX_SLIDER_MARKS,
-	LINEAR_SLIDER_MARKS,
-	rawToSlider,
-	sliderToRaw,
-} from "../../../utils/sliders"
+import { rawToSlider, sliderBounds, sliderToRaw } from "../../../utils/sliders"
 import AxisSelect from "./AxisSelect"
 import { PlotSettingsButton } from "./PlotSettingsPanel"
 
@@ -101,26 +95,18 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 		</Typography>
 		<Slider
 			value={[
-				min !== ""
-					? rawToSlider(Number(min), scale)
-					: scale === "biex"
-						? BIEX_SLIDER_MIN
-						: 0,
-				max !== ""
-					? rawToSlider(Number(max), scale)
-					: scale === "biex"
-						? BIEX_SLIDER_MAX
-						: LINEAR_SLIDER_MAX,
+				min !== "" ? rawToSlider(Number(min), scale) : sliderBounds(scale).min,
+				max !== "" ? rawToSlider(Number(max), scale) : sliderBounds(scale).max,
 			]}
 			onChange={(_, val) => {
 				const [lo, hi] = val as number[]
 				onMinChange(String(sliderToRaw(lo, scale)))
 				onMaxChange(String(sliderToRaw(hi, scale)))
 			}}
-			min={scale === "biex" ? BIEX_SLIDER_MIN : 0}
-			max={scale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-			step={scale === "biex" ? 0.01 : 500}
-			marks={scale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+			min={sliderBounds(scale).min}
+			max={sliderBounds(scale).max}
+			step={sliderBounds(scale).step}
+			marks={sliderBounds(scale).marks}
 			valueLabelDisplay="auto"
 			valueLabelFormat={(v) => {
 				const raw = sliderToRaw(v, scale)
@@ -137,7 +123,14 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 				"& .MuiSlider-thumb": { width: 10, height: 10 },
 			}}
 		/>
-		<Box sx={{ display: "flex", gap: 1.5, justifyContent: "center" }}>
+		<Box
+			sx={{
+				display: "flex",
+				gap: 1.5,
+				justifyContent: "center",
+				alignItems: "center",
+			}}
+		>
 			<TextField
 				label="Min"
 				type="number"
@@ -174,6 +167,28 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 					"& .MuiInputLabel-root": { fontSize: "0.7rem" },
 				}}
 			/>
+			{/* Volta os dois limites para o automático ($PnR do
+			    detector ou teto global quando o header não declara). */}
+			<Tooltip title="Voltar ao limite automático" arrow>
+				<span>
+					<Button
+						size="small"
+						disabled={min === "" && max === ""}
+						onClick={() => {
+							onMinChange("")
+							onMaxChange("")
+						}}
+						sx={{
+							minWidth: 0,
+							p: 0.5,
+							fontSize: "0.65rem",
+						}}
+						startIcon={<ResetIcon size={14} />}
+					>
+						Auto
+					</Button>
+				</span>
+			</Tooltip>
 		</Box>
 	</Box>
 )
@@ -396,6 +411,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				>
 					<MenuItem value="linear">Linear</MenuItem>
 					<MenuItem value="biex">Biex</MenuItem>
+					<MenuItem value="log">Log</MenuItem>
 				</Select>
 			</FormControl>
 			{!histogram && (
@@ -410,6 +426,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					>
 						<MenuItem value="linear">Linear</MenuItem>
 						<MenuItem value="biex">Biex</MenuItem>
+						<MenuItem value="log">Log</MenuItem>
 					</Select>
 				</FormControl>
 			)}

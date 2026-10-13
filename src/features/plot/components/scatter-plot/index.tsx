@@ -40,7 +40,7 @@ import {
 	buildGateHoverTraces,
 	buildGateLabelTraces,
 } from "../../utils/gateHoverTraces"
-import { buildAxisRange } from "../../utils/plotAxes"
+import { buildAxisRange, channelRangeFor } from "../../utils/plotAxes"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
 import type { PlotMode } from "../../hooks/usePlotState"
@@ -125,13 +125,19 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	} = useCompensationEdit()
 	const previewActive = compEditing != null
 
+	// Amostra em exibição — fornece channel_meta ($PnR/$PnE do header FCS)
+	// para range/escala default dos eixos (FE-44).
+	const currentFile = useMemo(
+		() => experimentFiles.find((f) => f.id === fileDataId),
+		[experimentFiles, fileDataId],
+	)
+
 	// Gates da amostra em exibição — selecionáveis na comparação de MFI.
 	// Seleção filtrada aos ids válidos aqui: se o usuário trocou de
 	// amostra no meio da edição, ids de outro arquivo não vazam pra API.
 	const currentFileGateIds = useMemo(() => {
-		const file = experimentFiles.find((f) => f.id === fileDataId)
-		return new Set(collectAllGates(file?.gates ?? []).map((g) => g.id))
-	}, [experimentFiles, fileDataId])
+		return new Set(collectAllGates(currentFile?.gates ?? []).map((g) => g.id))
+	}, [currentFile])
 	const previewStatsGates = useMemo(
 		() => statsGates.filter((id) => currentFileGateIds.has(id)),
 		[statsGates, currentFileGateIds],
@@ -140,10 +146,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// Nome do subsample da amostra atual — habilita o escopo "subsample" nos
 	// diálogos (só existe quando a amostra está agrupada, BE-07).
 	const currentSubsampleName = useMemo(() => {
-		const file = experimentFiles.find((f) => f.id === fileDataId)
-		if (file?.subsample == null) return undefined
-		return subsamples.find((s) => s.id === file.subsample)?.name
-	}, [experimentFiles, fileDataId, subsamples])
+		if (currentFile?.subsample == null) return undefined
+		return subsamples.find((s) => s.id === currentFile.subsample)?.name
+	}, [currentFile, subsamples])
 
 	const theme = useTheme()
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -304,6 +309,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		yMax,
 		cutoff,
 		siblingGateNames,
+		channelMeta: currentFile?.channel_meta,
 		loadFile,
 		setTool,
 		plotConfig: {
@@ -496,8 +502,20 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	)
 
 	// Axis ranges and ticks
-	const xAxisRange = buildAxisRange(xMin, xMax, effXScale, effCof)
-	const yAxisRange = buildAxisRange(yMin, yMax, effYScale, effCof)
+	const xAxisRange = buildAxisRange(
+		xMin,
+		xMax,
+		effXScale,
+		effCof,
+		channelRangeFor(currentFile?.channel_meta, xAxis),
+	)
+	const yAxisRange = buildAxisRange(
+		yMin,
+		yMax,
+		effYScale,
+		effCof,
+		channelRangeFor(currentFile?.channel_meta, yAxis),
+	)
 	const xTicks = buildTicks(xAxisRange, effXScale, effCof)
 	const yTicks = buildTicks(yAxisRange, effYScale, effCof)
 
@@ -784,7 +802,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											: {}),
 										xaxis: {
 											title: {
-												text: `${xAxis}${effXScale === "biex" ? " (biex)" : ""}`,
+												text: `${xAxis}${effXScale === "linear" ? "" : ` (${effXScale})`}`,
 											},
 											...(xTicks
 												? {
@@ -810,7 +828,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												text:
 													plotMode === "histogram"
 														? "Contagem"
-														: `${yAxis}${effYScale === "biex" ? " (biex)" : ""}`,
+														: `${yAxis}${effYScale === "linear" ? "" : ` (${effYScale})`}`,
 											},
 											...(plotMode !== "histogram" && yTicks
 												? {

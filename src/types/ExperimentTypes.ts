@@ -72,6 +72,18 @@ export interface SampleTag {
 	organization: number | null
 }
 
+/** Metadado de um canal lido do header FCS ($PnN/$PnR/$PnE/$PnS/$PnG). */
+export interface ChannelMeta {
+	name: string
+	/** Nome do stain ($PnS), quando o arquivo declara. */
+	stain?: string
+	/** Range nativo do detector ($PnR) — teto do eixo para esse canal. */
+	range?: number
+	/** Décadas de log na aquisição ($PnE) — 0 = canal linear. */
+	log_decades?: number
+	gain?: number
+}
+
 export interface ExperimentFiles {
 	id: number
 	file_name: string
@@ -82,6 +94,8 @@ export interface ExperimentFiles {
 	subsample?: number | null
 	/** BE-22: a amostra traz $SPILLOVER/$COMP nos headers FCS. */
 	has_embedded_compensation?: boolean
+	/** Por-canal do header FCS — `range` dá o teto do eixo por detector. */
+	channel_meta?: ChannelMeta[]
 	/** BE-34: tags explícitas da amostra. */
 	tags?: SampleTag[]
 	/** BE-34: tags herdadas do subsample (virtuais — não editáveis na amostra). */
@@ -108,7 +122,7 @@ export interface FileData {
 	gates: Gate[]
 }
 
-export type Scale = "linear" | "biex"
+export type Scale = "linear" | "biex" | "log"
 
 export type PlotMode = "heatmap" | "scatter" | "histogram"
 

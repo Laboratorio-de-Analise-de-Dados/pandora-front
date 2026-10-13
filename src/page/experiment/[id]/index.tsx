@@ -547,6 +547,7 @@ function ExperimentPageContent() {
 									sourceType={source.type}
 									sourceId={source.id}
 									initialConfig={plotInitialConfig}
+									channelMeta={currentFile?.channel_meta}
 									onPersist={saveSourceConfig}
 								>
 									<ScatterPlot

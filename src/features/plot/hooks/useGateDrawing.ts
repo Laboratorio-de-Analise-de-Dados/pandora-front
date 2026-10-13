@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
 import { createGate } from "../../../services/gateService"
 import type {
+	ChannelMeta,
 	GateCoordinates,
 	NewGate,
 	PlotViewConfig,
@@ -16,7 +17,7 @@ import {
 import { extractErrorMessage } from "../../../utils/apiError"
 import { toRaw } from "../utils/biex"
 import { isDegenerateSelection } from "../utils/gateSelection"
-import { buildAxisRange } from "../utils/plotAxes"
+import { buildAxisRange, channelRangeFor } from "../utils/plotAxes"
 import type { GateTool, PlotMode } from "./usePlotState"
 
 interface UseGateDrawingParams {
@@ -39,6 +40,8 @@ interface UseGateDrawingParams {
 	yMax: string
 	cutoff: number
 	siblingGateNames: string[]
+	/** $PnR por canal da amostra — teto do eixo fiel ao detector. */
+	channelMeta?: ChannelMeta[]
 	loadFile: () => void
 	setTool: (t: GateTool) => void
 	/** Config de visualização corrente, persistida no gate criado. */
@@ -66,6 +69,7 @@ export function useGateDrawing({
 	yMax,
 	cutoff,
 	siblingGateNames,
+	channelMeta,
 	loadFile,
 	setTool,
 	plotConfig,
@@ -153,12 +157,26 @@ export function useGateDrawing({
 	// Range exibido dos eixos: usado para medir se a seleção teve tamanho
 	// suficiente, tanto em escala linear quanto em biex.
 	const xAxisRange = useMemo(
-		() => buildAxisRange(xMin, xMax, effXScale, effCof),
-		[xMin, xMax, effXScale, effCof],
+		() =>
+			buildAxisRange(
+				xMin,
+				xMax,
+				effXScale,
+				effCof,
+				channelRangeFor(channelMeta, xAxis),
+			),
+		[xMin, xMax, effXScale, effCof, channelMeta, xAxis],
 	)
 	const yAxisRange = useMemo(
-		() => buildAxisRange(yMin, yMax, effYScale, effCof),
-		[yMin, yMax, effYScale, effCof],
+		() =>
+			buildAxisRange(
+				yMin,
+				yMax,
+				effYScale,
+				effCof,
+				channelRangeFor(channelMeta, yAxis),
+			),
+		[yMin, yMax, effYScale, effCof, channelMeta, yAxis],
 	)
 
 	const rejectDegenerate = useCallback(() => {

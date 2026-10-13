@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import type { Gate, Scale } from "../../../types"
-import { biex, COFACTOR } from "../utils/biex"
+import { COFACTOR, toDisplay } from "../utils/biex"
 import { getGateColor, hexToRgba } from "../../../constants/gateColors"
 
 type AxisMatch = "exact" | "swapped" | "none"
@@ -94,10 +94,10 @@ export function useGateShapes({
 					const rawX1 = swapped ? gc.endY : gc.endX
 					const rawY0 = swapped ? gc.startX : gc.startY
 					const rawY1 = swapped ? gc.endX : gc.endY
-					const x0 = xScale === "biex" ? biex(rawX0, cof) : rawX0
-					const x1 = xScale === "biex" ? biex(rawX1, cof) : rawX1
-					const y0 = yScale === "biex" ? biex(rawY0, cof) : rawY0
-					const y1 = yScale === "biex" ? biex(rawY1, cof) : rawY1
+					const x0 = toDisplay(rawX0, xScale, cof)
+					const x1 = toDisplay(rawX1, xScale, cof)
+					const y0 = toDisplay(rawY0, yScale, cof)
+					const y1 = toDisplay(rawY1, yScale, cof)
 					return [
 						{
 							type: "rect",
@@ -115,8 +115,8 @@ export function useGateShapes({
 				}
 
 				if (gateType === "interval" && "startX" in gc && "endX" in gc) {
-					const x0 = effXScale === "biex" ? biex(gc.startX, cof) : gc.startX
-					const x1 = effXScale === "biex" ? biex(gc.endX, cof) : gc.endX
+					const x0 = toDisplay(gc.startX, effXScale, cof)
+					const x1 = toDisplay(gc.endX, effXScale, cof)
 					return [
 						{
 							type: "line",
@@ -164,8 +164,8 @@ export function useGateShapes({
 							.map((v: [number, number], i: number) => {
 								const rawX = swapped ? v[1] : v[0]
 								const rawY = swapped ? v[0] : v[1]
-								const px = xScale === "biex" ? biex(rawX, cof) : rawX
-								const py = yScale === "biex" ? biex(rawY, cof) : rawY
+								const px = toDisplay(rawX, xScale, cof)
+								const py = toDisplay(rawY, yScale, cof)
 								return `${i === 0 ? "M" : "L"} ${px} ${py}`
 							})
 							.join(" ") + " Z"
@@ -185,8 +185,8 @@ export function useGateShapes({
 				if (gateType === "quadrant" && "center_x" in gc && "center_y" in gc) {
 					const rawCx = swapped ? gc.center_y : gc.center_x
 					const rawCy = swapped ? gc.center_x : gc.center_y
-					const cx = xScale === "biex" ? biex(rawCx, cof) : rawCx
-					const cy = yScale === "biex" ? biex(rawCy, cof) : rawCy
+					const cx = toDisplay(rawCx, xScale, cof)
+					const cy = toDisplay(rawCy, yScale, cof)
 					return [
 						{
 							type: "line",

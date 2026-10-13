@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import type { PlotMode, Scale } from "../../../types"
+import type { ChannelMeta, PlotMode, Scale } from "../../../types"
 import { defaultScale } from "../utils/biex"
 
 export type { PlotMode } from "../../../types"
@@ -37,18 +37,21 @@ export interface PlotStateActions {
 
 export function usePlotState(
 	initial?: Partial<PlotState>,
+	/** Metadados por canal do FCS ($PnE/$PnR) — definem escala e range
+	 *  default do eixo quando o usuário troca de canal. */
+	channelMeta?: ChannelMeta[],
 ): PlotState & PlotStateActions {
 	const [xAxis, setXAxis] = useState(initial?.xAxis ?? "FSC-A")
 	const [yAxis, setYAxis] = useState(initial?.yAxis ?? "SSC-A")
 	const [plotMode, setPlotMode] = useState<PlotMode>(
-		initial?.plotMode ?? "heatmap",
+		initial?.plotMode ?? "scatter",
 	)
 	const [tool, setTool] = useState<GateTool>("rect")
 	const [xScale, setXScale] = useState<Scale>(
-		initial?.xScale ?? defaultScale(initial?.xAxis ?? "FSC-A"),
+		initial?.xScale ?? defaultScale(initial?.xAxis ?? "FSC-A", channelMeta),
 	)
 	const [yScale, setYScale] = useState<Scale>(
-		initial?.yScale ?? defaultScale(initial?.yAxis ?? "SSC-A"),
+		initial?.yScale ?? defaultScale(initial?.yAxis ?? "SSC-A", channelMeta),
 	)
 	const [cutoff, setCutoff] = useState(initial?.cutoff ?? 0)
 	const [xMin, setXMin] = useState(initial?.xMin ?? "")
@@ -59,19 +62,25 @@ export function usePlotState(
 	// Trocar de canal (eixo) reinicia escala e limpa os limites: cada canal tem
 	// range próprio, então carregar o min/max do canal anterior daria uma janela
 	// errada. Sem limites, o gráfico volta ao range default do novo canal.
-	const handleSelectX = useCallback((value: string) => {
-		setXAxis(value)
-		setXScale(defaultScale(value))
-		setXMin("")
-		setXMax("")
-	}, [])
+	const handleSelectX = useCallback(
+		(value: string) => {
+			setXAxis(value)
+			setXScale(defaultScale(value, channelMeta))
+			setXMin("")
+			setXMax("")
+		},
+		[channelMeta],
+	)
 
-	const handleSelectY = useCallback((value: string) => {
-		setYAxis(value)
-		setYScale(defaultScale(value))
-		setYMin("")
-		setYMax("")
-	}, [])
+	const handleSelectY = useCallback(
+		(value: string) => {
+			setYAxis(value)
+			setYScale(defaultScale(value, channelMeta))
+			setYMin("")
+			setYMax("")
+		},
+		[channelMeta],
+	)
 
 	return useMemo(
 		() => ({
