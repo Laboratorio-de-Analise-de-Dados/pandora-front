@@ -95,6 +95,7 @@ function ExperimentPageContent() {
 	} = useFileActions()
 	const {
 		handleRequestDeleteGate,
+		handleDeleteGates,
 		handleConfirmDeleteGate,
 		deleteGateTarget,
 		deleteGateLoading,
@@ -331,6 +332,7 @@ function ExperimentPageContent() {
 						if (isMobile) setShowTree(false)
 					}}
 					onDeleteGate={handleRequestDeleteGate}
+					onDeleteGates={canEditExperiment ? handleDeleteGates : undefined}
 					onEditGate={handleEditGate}
 					onApplyGate={handleApplyGate}
 					onSuggestGate={canEditExperiment ? handleSuggestGate : undefined}

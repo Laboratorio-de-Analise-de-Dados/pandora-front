@@ -47,6 +47,9 @@ export interface TreeHandlers {
 	selectedFileIds?: Set<number>
 	onToggleFile?: (fileId: number) => void
 	onToggleGroup?: (fileIds: number[], checked: boolean) => void
+	/** Seleção múltipla de gates (excluir em lote); omitido sem onDeleteGates. */
+	selectedGateIds?: Set<number>
+	onToggleGate?: (gateId: number) => void
 	onFileInfo?: (file: ExperimentFiles) => void
 	/** Expandir/recolher todos os nós — propagado aos TreeNode. */
 	expandSignal?: ExpandSignal

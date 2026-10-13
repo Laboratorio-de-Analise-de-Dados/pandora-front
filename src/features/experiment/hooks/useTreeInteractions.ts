@@ -7,6 +7,7 @@ import type {
 } from "../../../types"
 import type { GateScope } from "../../../services/gateService"
 import type { TagTarget } from "../../tags/utils/tagTargets"
+import { collectAllGates } from "../../gate/utils"
 import type {
 	ExpandSignal,
 	TreeHandlers,
@@ -24,6 +25,8 @@ export interface TreeInteractionsParams {
 	onApplyGate?: (gateId: number, gateName: string) => void
 	/** FE-42 — "Sugerir populações" a partir deste gate como pai. */
 	onSuggestGate?: (gateId: number) => void
+	/** Exclusão em lote dos gates marcados no modo de seleção. */
+	onDeleteGates?: (gateIds: number[]) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void
 	onCreateSubsample?: (name: string) => Promise<string | null>
@@ -58,6 +61,7 @@ export function useTreeInteractions({
 	onEditGate,
 	onApplyGate,
 	onSuggestGate,
+	onDeleteGates,
 	onDisableFile,
 	onEnableFile,
 	onCreateSubsample,
@@ -94,6 +98,8 @@ export function useTreeInteractions({
 	// aparecem como chips com a contagem de selecionadas.
 	const [selectionMode, setSelectionMode] = useState(false)
 	const [selectedFileIds, setSelectedFileIds] = useState<Set<number>>(new Set())
+	const [selectedGateIds, setSelectedGateIds] = useState<Set<number>>(new Set())
+	const [bulkDeleteTargets, setBulkDeleteTargets] = useState<Gate[]>([])
 	const [moveTargets, setMoveTargets] = useState<ExperimentFiles[]>([])
 	const [metadataTarget, setMetadataTarget] = useState<ExperimentFiles | null>(
 		null,
@@ -142,17 +148,28 @@ export function useTreeInteractions({
 		})
 	}
 
+	const handleToggleGate = (gateId: number) => {
+		setSelectedGateIds((prev) => {
+			const next = new Set(prev)
+			if (next.has(gateId)) next.delete(gateId)
+			else next.add(gateId)
+			return next
+		})
+	}
+
 	const selectedFiles = files.filter((f) => selectedFileIds.has(f.id))
 	// Mover vale para qualquer amostra; desabilitar só as ativas, reativar só
 	// as inativas (visíveis só com "Mostrar desabilitadas" ligado).
 	const activeSelected = selectedFiles.filter((f) => f.active !== false)
 	const inactiveSelected = selectedFiles.filter((f) => f.active === false)
 
-	const canBulk = !!(onMoveFile || onDisableFile || onEnableFile)
+	const fileBulk = !!(onMoveFile || onDisableFile || onEnableFile)
+	const canBulk = fileBulk || !!onDeleteGates
 
 	const toggleSelectionMode = () => {
 		setSelectionMode((v) => !v)
 		setSelectedFileIds(new Set())
+		setSelectedGateIds(new Set())
 	}
 
 	const closeSubsampleMenu = () => {
@@ -214,8 +231,10 @@ export function useTreeInteractions({
 					}
 				: undefined,
 		selectedFileIds,
-		onToggleFile: canBulk && selectionMode ? handleToggleFile : undefined,
-		onToggleGroup: canBulk && selectionMode ? handleToggleGroup : undefined,
+		onToggleFile: fileBulk && selectionMode ? handleToggleFile : undefined,
+		onToggleGroup: fileBulk && selectionMode ? handleToggleGroup : undefined,
+		selectedGateIds,
+		onToggleGate: onDeleteGates && selectionMode ? handleToggleGate : undefined,
 		onFileInfo: setMetadataTarget,
 		expandSignal,
 	}
@@ -232,6 +251,7 @@ export function useTreeInteractions({
 			canBulk,
 			mode: selectionMode,
 			count: selectedFileIds.size,
+			gateCount: selectedGateIds.size,
 			activeCount: activeSelected.length,
 			inactiveCount: inactiveSelected.length,
 			toggleMode: toggleSelectionMode,
@@ -247,6 +267,12 @@ export function useTreeInteractions({
 			},
 			tagSelected: () => {
 				if (activeSelected.length > 0) setTagTargets(activeSelected)
+			},
+			deleteSelectedGates: () => {
+				const gates = files
+					.flatMap((f) => collectAllGates(f.gates))
+					.filter((g) => selectedGateIds.has(g.id))
+				if (gates.length > 0) setBulkDeleteTargets(gates)
 			},
 		},
 		gateMenu: {
@@ -383,6 +409,16 @@ export function useTreeInteractions({
 				setSelectedFileIds(new Set())
 			},
 			close: () => setMoveTargets([]),
+		},
+		bulkDeleteDialog: {
+			targets: bulkDeleteTargets,
+			confirm: () => {
+				if (bulkDeleteTargets.length > 0 && onDeleteGates)
+					onDeleteGates(bulkDeleteTargets.map((g) => g.id))
+				setBulkDeleteTargets([])
+				setSelectedGateIds(new Set())
+			},
+			close: () => setBulkDeleteTargets([]),
 		},
 		metadataDialog: {
 			file: metadataTarget,

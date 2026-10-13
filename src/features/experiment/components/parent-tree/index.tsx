@@ -70,6 +70,7 @@ export default function ParentTree({
 	subsamples = [],
 	onSelect,
 	onDeleteGate,
+	onDeleteGates,
 	onEditGate,
 	onApplyGate,
 	onSuggestGate,
@@ -90,6 +91,8 @@ export default function ParentTree({
 	source?: SelectedSource | null
 	onSelect: (source: SelectedSource) => void
 	onDeleteGate?: (gateId: number, gateName: string) => void
+	/** Exclusão em lote — gates marcados no modo de seleção da árvore. */
+	onDeleteGates?: (gateIds: number[]) => void
 	onEditGate?: (
 		gateId: number,
 		payload: GateEditPayload,
@@ -128,6 +131,7 @@ export default function ParentTree({
 		subsampleMenu,
 		editDialog,
 		disableDialog,
+		bulkDeleteDialog,
 		moveDialog,
 		metadataDialog,
 		subsampleForm,
@@ -138,6 +142,7 @@ export default function ParentTree({
 		files,
 		onSelect,
 		onDeleteGate,
+		onDeleteGates,
 		onEditGate,
 		onApplyGate,
 		onSuggestGate,
@@ -204,7 +209,7 @@ export default function ParentTree({
 				{selection.canBulk && (
 					<Tooltip
 						title={
-							selection.mode ? "Concluir seleção" : "Selecionar várias amostras"
+							selection.mode ? "Concluir seleção" : "Selecionar itens em lote"
 						}
 						arrow
 					>
@@ -236,7 +241,7 @@ export default function ParentTree({
 						<CollapseAllIcon style={{ fontSize: 18 }} />
 					</IconButton>
 				</Tooltip>
-				{selection.mode && selection.count > 0 && (
+				{selection.mode && (selection.count > 0 || selection.gateCount > 0) && (
 					<>
 						{onMoveFile && (
 							<Chip
@@ -276,6 +281,18 @@ export default function ParentTree({
 								variant="outlined"
 								disabled={selection.inactiveCount === 0}
 								onClick={selection.enableSelected}
+								sx={{ height: 22, fontSize: "0.7rem" }}
+							/>
+						)}
+						{onDeleteGates && (
+							<Chip
+								label={`Excluir ${selection.gateCount} gate${
+									selection.gateCount === 1 ? "" : "s"
+								}`}
+								size="small"
+								color="error"
+								disabled={selection.gateCount === 0}
+								onClick={selection.deleteSelectedGates}
 								sx={{ height: 22, fontSize: "0.7rem" }}
 							/>
 						)}
@@ -668,6 +685,47 @@ export default function ParentTree({
 					<Button onClick={disableDialog.close}>Cancelar</Button>
 					<Button onClick={disableDialog.confirm} variant="contained">
 						Desabilitar
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Confirmação da exclusão em lote de gates — escopo "file" por
+			    gate alvo; sub-gates caem junto (FK CASCADE). */}
+			<Dialog
+				open={bulkDeleteDialog.targets.length > 0}
+				onClose={bulkDeleteDialog.close}
+				fullWidth
+				maxWidth="xs"
+			>
+				<DialogTitle>
+					Excluir {bulkDeleteDialog.targets.length} gate
+					{bulkDeleteDialog.targets.length === 1 ? "" : "s"}
+				</DialogTitle>
+				<DialogContent>
+					<Typography>
+						{bulkDeleteDialog.targets.length === 1 ? (
+							<>
+								O gate <strong>{bulkDeleteDialog.targets[0]?.name}</strong> será
+								excluído da amostra, junto com seus sub-gates.
+							</>
+						) : (
+							<>
+								Os <strong>{bulkDeleteDialog.targets.length} gates</strong>{" "}
+								selecionados serão excluídos das respectivas amostras, junto com
+								os sub-gates de cada um.
+							</>
+						)}{" "}
+						Esta ação não pode ser desfeita.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={bulkDeleteDialog.close}>Cancelar</Button>
+					<Button
+						onClick={bulkDeleteDialog.confirm}
+						variant="contained"
+						color="error"
+					>
+						Excluir
 					</Button>
 				</DialogActions>
 			</Dialog>
