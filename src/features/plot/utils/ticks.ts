@@ -2,7 +2,7 @@ import type { Scale } from "../../../types"
 import { biex } from "./biex"
 
 export const NICE_RAW = [
-	-100000, -10000, -1000, 0, 1000, 10000, 100000, 1000000,
+	-100000, -10000, -1000, 0, 1000, 10000, 100000, 1000000, 10000000,
 ]
 
 const SUPERSCRIPTS: Record<string, string> = {
