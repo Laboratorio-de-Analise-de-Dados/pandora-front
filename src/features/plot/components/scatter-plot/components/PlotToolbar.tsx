@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import {
 	Box,
+	Button,
 	FormControl,
 	InputAdornment,
 	InputLabel,
@@ -18,8 +19,7 @@ import {
 	MdAddBox as QuadrantIcon,
 	MdArrowDropDown as ChevronIcon,
 } from "react-icons/md"
-// Juvia é a gata branca — a sugestão de populações vem dela.
-import { FaCat as SuggestIcon } from "react-icons/fa"
+import JuviaCatIcon from "../../../../suggest/components/JuviaCatIcon"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
 import {
@@ -415,7 +415,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 											width: "100%",
 										}}
 									>
-										<SuggestIcon />
+										<JuviaCatIcon />
 										Sugerir…
 									</Box>
 								</Tooltip>
@@ -423,6 +423,21 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 						)}
 					</Select>
 				</FormControl>
+			)}
+			{/* A Juvia é ação própria, não ferramenta de desenho — botão
+			    dedicado com a mascote para não ficar escondida no select. */}
+			{!histogram && onSuggest && (
+				<Tooltip title="A Juvia sugere populações neste par de canais" arrow>
+					<Button
+						size="small"
+						variant="outlined"
+						onClick={onSuggest}
+						startIcon={<JuviaCatIcon />}
+						sx={{ fontWeight: 600, whiteSpace: "nowrap" }}
+					>
+						Sugerir
+					</Button>
+				</Tooltip>
 			)}
 			{/* Escalas como selects outlined (linear/biex); Y some no histograma. */}
 			<FormControl size="small" variant="outlined">

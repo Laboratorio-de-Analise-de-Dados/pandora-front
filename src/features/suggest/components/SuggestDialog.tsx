@@ -11,6 +11,7 @@ import {
 } from "@mui/material"
 import { useEffect, useState } from "react"
 import { AppDialog } from "../../../components/AppDialog"
+import JuviaCatIcon from "./JuviaCatIcon"
 import type {
 	ExperimentFiles,
 	Subsample,
@@ -167,7 +168,12 @@ export default function SuggestDialog({
 		<AppDialog
 			open={open}
 			onClose={onClose}
-			title="Sugerir populações"
+			title={
+				<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+					<JuviaCatIcon size={24} />
+					Sugerir populações
+				</Box>
+			}
 			onConfirm={submit}
 			confirmLabel="Sugerir"
 			confirmDisabled={!controlsReady}

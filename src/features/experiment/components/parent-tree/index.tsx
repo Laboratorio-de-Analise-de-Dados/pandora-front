@@ -14,8 +14,7 @@ import {
 	MdSearch as SearchIcon,
 	MdClose as ClearIcon,
 } from "react-icons/md"
-// Juvia é a gata branca — a sugestão de populações vem dela.
-import { FaCat as SuggestIcon } from "react-icons/fa"
+import JuviaCatIcon from "../../../suggest/components/JuviaCatIcon"
 import {
 	Box,
 	Chip,
@@ -385,7 +384,7 @@ export default function ParentTree({
 				{onSuggestGate && (
 					<MuiMenuItem onClick={gateMenu.suggest} dense>
 						<ListItemIcon sx={{ minWidth: 28 }}>
-							<SuggestIcon style={{ fontSize: 18 }} />
+							<JuviaCatIcon size={18} />
 						</ListItemIcon>
 						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
 							Sugerir populações
@@ -447,7 +446,7 @@ export default function ParentTree({
 				{onSuggestGate && (
 					<MuiMenuItem onClick={gateContextMenu.suggest} dense>
 						<ListItemIcon sx={{ minWidth: 28 }}>
-							<SuggestIcon style={{ fontSize: 18 }} />
+							<JuviaCatIcon size={18} />
 						</ListItemIcon>
 						<ListItemText primaryTypographyProps={{ fontSize: "0.85rem" }}>
 							Sugerir populações

@@ -5,7 +5,7 @@ import {
 	MdWarningAmber as WarningIcon,
 } from "react-icons/md"
 // Gates `automatic` vieram da Juvia — a gata branca marca a autoria.
-import { FaCat as AutoIcon } from "react-icons/fa"
+import JuviaCatIcon from "../../../suggest/components/JuviaCatIcon"
 import type { Gate } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
 import { gateAxesLabel, gateAuthorLabel } from "../../../gate/utils"
@@ -119,12 +119,7 @@ export default function GateTreeItem({
 									arrow
 								>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
-										<AutoIcon
-											style={{
-												fontSize: 14,
-												color: "var(--mui-palette-common-white, #FFFFFF)",
-											}}
-										/>
+										<JuviaCatIcon size={15} />
 									</Box>
 								</Tooltip>
 							)}
