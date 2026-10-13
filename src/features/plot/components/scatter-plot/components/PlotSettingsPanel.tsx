@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import {
 	MdClose as CloseIcon,
 	MdSettings as SettingsIcon,
+	MdRestartAlt as ResetIcon,
 } from "react-icons/md"
 import {
 	Box,
@@ -244,7 +245,7 @@ const PlotSettingsContent: React.FC<
 					}}
 				/>
 
-				<Box sx={{ display: "flex", gap: 1 }}>
+				<Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
 					<TextField
 						label="Min"
 						type="number"
@@ -279,6 +280,20 @@ const PlotSettingsContent: React.FC<
 							"& .MuiInputLabel-root": { fontSize: "0.7rem" },
 						}}
 					/>
+					<Tooltip title="Voltar ao limite automático">
+						<span>
+							<IconButton
+								size="small"
+								disabled={xMin === "" && xMax === ""}
+								onClick={() => {
+									onXMinChange("")
+									onXMaxChange("")
+								}}
+							>
+								<ResetIcon />
+							</IconButton>
+						</span>
+					</Tooltip>
 				</Box>
 			</Box>
 
@@ -334,7 +349,7 @@ const PlotSettingsContent: React.FC<
 							}}
 						/>
 
-						<Box sx={{ display: "flex", gap: 1 }}>
+						<Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
 							<TextField
 								label="Min"
 								type="number"
@@ -369,6 +384,20 @@ const PlotSettingsContent: React.FC<
 									"& .MuiInputLabel-root": { fontSize: "0.7rem" },
 								}}
 							/>
+							<Tooltip title="Voltar ao limite automático">
+								<span>
+									<IconButton
+										size="small"
+										disabled={yMin === "" && yMax === ""}
+										onClick={() => {
+											onYMinChange("")
+											onYMaxChange("")
+										}}
+									>
+										<ResetIcon />
+									</IconButton>
+								</span>
+							</Tooltip>
 						</Box>
 					</Box>
 				</>
