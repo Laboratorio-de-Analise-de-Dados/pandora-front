@@ -69,11 +69,13 @@ export const uploadExperimentChunk = async (
 	fileId: number,
 	chunkIndex: number,
 	chunk: Blob,
+	fileName?: string,
 ): Promise<void> => {
 	const formData = new FormData()
 	formData.append("fileId", String(fileId))
 	formData.append("chunkIndex", String(chunkIndex))
 	formData.append("chunk", chunk)
+	if (fileName) formData.append("fileName", fileName)
 	await CytometryApi.post("/experiment/upload-chunk/", formData)
 }
 
@@ -222,11 +224,15 @@ export const uploadExperimentFileChunk = async (
 	fileId: number,
 	chunkIndex: number,
 	chunk: Blob,
+	fileName?: string,
 ): Promise<void> => {
 	const formData = new FormData()
 	formData.append("fileId", String(fileId))
 	formData.append("chunkIndex", String(chunkIndex))
 	formData.append("chunk", chunk)
+	// BE-42: o back confere o nome contra o do init — evita colisão de
+	// chunks entre uploads homônimos e falha cedo (400) se divergir.
+	if (fileName) formData.append("fileName", fileName)
 	await CytometryApi.post("/experiment/files/upload-chunk/", formData)
 }
 
@@ -236,6 +242,10 @@ export interface FileUploadCompleteResponse {
 	added: number
 	/** Amostras puladas por já existirem no experimento. */
 	skipped: string[]
+	/** Amostras cujo nome já existe no experimento com conteúdo
+	 * diferente — o back não sobrescreve (BE-42; ausente em versões
+	 * anteriores da API). */
+	name_conflicts?: string[]
 }
 
 export const completeExperimentFileUpload = async (
