@@ -1,24 +1,27 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Box, Button, Paper, Typography } from "@mui/material"
-import { acceptInvite, fetchInvite, Invite } from "../../services/inviteService"
+import { useQuery } from "@tanstack/react-query"
+import { acceptInvite, fetchInvite } from "../../services/inviteService"
+import { startProviderLink } from "../../services/authService"
 import { extractErrorMessage } from "../../utils/apiError"
 import { useAuth } from "../../providers/AuthContext"
+import { useConfirm } from "../../components/ConfirmDialog"
 
 export default function InvitePage() {
 	const { token } = useParams<{ token: string }>()
 	const navigate = useNavigate()
 	const { user, isAuthenticated } = useAuth()
-	const [invite, setInvite] = useState<Invite | null>(null)
+	const confirm = useConfirm()
 	const [error, setError] = useState("")
 	const [accepted, setAccepted] = useState(false)
 
-	useEffect(() => {
-		if (!token) return
-		fetchInvite(token)
-			.then(setInvite)
-			.catch(() => setError("Convite inválido, expirado ou já processado."))
-	}, [token])
+	const { data: invite, isError: inviteFailed } = useQuery({
+		queryKey: ["invite", token],
+		queryFn: () => fetchInvite(token as string),
+		enabled: !!token,
+		retry: false,
+	})
 
 	const handleAccept = async () => {
 		if (!token) return
@@ -31,7 +34,31 @@ export default function InvitePage() {
 		}
 	}
 
-	if (error) {
+	// BE-41: o token do convite é a prova de posse — email divergente não
+	// bloqueia, mas pede confirmação explícita antes de criar o acesso na
+	// conta logada.
+	const handleAcceptDivergent = async () => {
+		const ok = await confirm({
+			title: "Aceitar convite com esta conta?",
+			description: `Este convite foi enviado para ${inviteEmail}. O acesso ao grupo será criado na conta ${userEmail}.`,
+			confirmLabel: "Aceitar com esta conta",
+		})
+		if (ok) await handleAccept()
+	}
+
+	// CTA de vínculo vai pro modo link autenticado (não pro login SSO) —
+	// o email institucional vira SocialAccount da conta existente, sem
+	// criar usuário fantasma nem depender de merge.
+	const handleLinkMicrosoft = async () => {
+		try {
+			const authorizeUrl = await startProviderLink("microsoft")
+			window.location.href = authorizeUrl
+		} catch {
+			setError("Não foi possível iniciar o vínculo com a Microsoft.")
+		}
+	}
+
+	if (inviteFailed || error) {
 		return (
 			<Box
 				sx={{
@@ -42,7 +69,9 @@ export default function InvitePage() {
 				}}
 			>
 				<Paper sx={{ p: 4, width: 400 }}>
-					<Typography color="error">{error}</Typography>
+					<Typography color="error">
+						{error || "Convite inválido, expirado ou já processado."}
+					</Typography>
 				</Paper>
 			</Box>
 		)
@@ -52,7 +81,7 @@ export default function InvitePage() {
 
 	const inviteEmail = invite.email || ""
 	const userEmail = user?.email || ""
-	const isWrongUser =
+	const isDivergent =
 		isAuthenticated && userEmail.toLowerCase() !== inviteEmail.toLowerCase()
 
 	return (
@@ -81,14 +110,24 @@ export default function InvitePage() {
 					<Typography color="success.main">
 						Convite aceito! Redirecionando...
 					</Typography>
-				) : isWrongUser ? (
-					<Box>
-						<Typography color="error" mb={2}>
-							Este convite pertence a <strong>{inviteEmail}</strong>, mas você
-							está logado como <strong>{userEmail}</strong>.
+				) : isDivergent ? (
+					<Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+						<Typography variant="body2" color="warning.dark">
+							Você está logado como <strong>{userEmail}</strong> — diferente do
+							email convidado. O acesso ao grupo será criado nesta conta.
 						</Typography>
 						<Button
 							variant="contained"
+							fullWidth
+							onClick={handleAcceptDivergent}
+						>
+							Aceitar com esta conta
+						</Button>
+						<Button variant="outlined" fullWidth onClick={handleLinkMicrosoft}>
+							Vincular email institucional (Microsoft)
+						</Button>
+						<Button
+							variant="text"
 							fullWidth
 							onClick={() => navigate(`/login?invite=${token}`)}
 						>

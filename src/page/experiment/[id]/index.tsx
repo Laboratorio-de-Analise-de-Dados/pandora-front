@@ -52,7 +52,9 @@ import {
 	MdDownload as DownloadIcon,
 	MdHistory as HistoryIcon,
 	MdFlashOn as BoltIcon,
+	MdClose as CloseIcon,
 } from "react-icons/md"
+import FileUploadQueueList from "../../../features/experiment/components/FileUploadQueueList"
 import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../utils/experimentFile"
 import type { UpdateExperimentPayload } from "../../../services/experimentService"
 
@@ -80,8 +82,11 @@ function ExperimentPageContent() {
 
 	const {
 		handleDelete,
-		handleAddFile,
+		handleAddFiles,
 		addingFile,
+		uploadItems,
+		handleRetryUpload,
+		clearUploadItems,
 		handleDownload,
 		handleUpdateExperiment,
 		savingExperiment,
@@ -252,11 +257,14 @@ function ExperimentPageContent() {
 										<input
 											type="file"
 											accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
+											multiple
 											hidden
 											onChange={(e) => {
-												const selected = e.target.files?.[0]
+												const selected = Array.from(e.target.files ?? [])
 												e.target.value = ""
-												if (selected) void handleAddFile(selected)
+												if (selected.length > 0) {
+													void handleAddFiles(selected)
+												}
 											}}
 										/>
 									</IconButton>
@@ -311,6 +319,52 @@ function ExperimentPageContent() {
 					</Box>
 				)}
 			</Box>
+			{uploadItems.length > 0 && (
+				<Box
+					sx={{
+						mt: 0.5,
+						p: 0.5,
+						pr: 0.5,
+						border: 1,
+						borderColor: "divider",
+						borderRadius: 1,
+						flexShrink: 0,
+						maxHeight: 180,
+						overflowY: "auto",
+					}}
+				>
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "space-between",
+							px: 1,
+						}}
+					>
+						<Typography variant="caption" color="text.secondary">
+							{
+								uploadItems.filter(
+									(item) => item.status === "done" || item.status === "error",
+								).length
+							}{" "}
+							de {uploadItems.length} concluídos
+						</Typography>
+						<IconButton
+							size="small"
+							onClick={clearUploadItems}
+							disabled={addingFile}
+						>
+							<CloseIcon size={14} />
+						</IconButton>
+					</Box>
+					<FileUploadQueueList
+						files={uploadItems.map((item) => item.file)}
+						items={uploadItems}
+						running={addingFile}
+						onRetry={handleRetryUpload}
+					/>
+				</Box>
+			)}
 			<FormControlLabel
 				control={
 					<Switch

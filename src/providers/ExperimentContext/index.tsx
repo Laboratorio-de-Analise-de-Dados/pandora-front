@@ -33,13 +33,18 @@ interface ChunkProgress {
 interface ExperimentContextProps {
 	experiments: Experiment[]
 	listExperiments: (includeInactive?: boolean) => void
-	createExperiment: (
-		title: string,
-		type: string,
-		file: File,
-		organizationId?: number | null,
-		description?: string,
-	) => Promise<void>
+	createExperiment: (args: {
+		title: string
+		type: string
+		file: File
+		organizationId?: number | null
+		description?: string
+		onProgress?: (percent: number) => void
+		/** Dispara assim que o experimento é criado no init — o FE-43 usa
+		 * para anexar os demais arquivos do lote mesmo se o 1º complete
+		 * falhar depois. */
+		onExperimentCreated?: (experimentId: number) => void
+	}) => Promise<number>
 	createExperimentEmpty: (
 		title: string,
 		type: string,
@@ -49,7 +54,12 @@ interface ExperimentContextProps {
 	addExperimentFile: (
 		experimentId: number,
 		file: File,
-	) => Promise<{ added: number; skipped: string[] }>
+		onProgress?: (percent: number) => void,
+	) => Promise<{
+		added: number
+		skipped: string[]
+		nameConflicts: string[]
+	}>
 	progress: ChunkProgress[]
 }
 
@@ -129,12 +139,14 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			file: File,
 			totalChunks: number,
 			send: (index: number, chunk: Blob) => Promise<void>,
+			onProgress?: (percent: number) => void,
 		) => {
 			const guide: ChunkProgress[] = Array.from(
 				{ length: totalChunks },
 				(_, i) => ({ index: i, status: "pending" as ChunkStatus }),
 			)
 			setProgress(guide)
+			onProgress?.(0)
 
 			const sendChunk = async (index: number) => {
 				const start = index * chunkSize
@@ -146,6 +158,13 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 					guide[index].status = "failed"
 				}
 				setProgress([...guide])
+				onProgress?.(
+					Math.round(
+						(guide.filter((c) => c.status === "uploaded").length /
+							totalChunks) *
+							100,
+					),
+				)
 			}
 
 			await Promise.allSettled(guide.map((c) => sendChunk(c.index)))
@@ -157,13 +176,24 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	)
 
 	const createExperiment = useCallback(
-		async (
-			title: string,
-			type: string,
-			file: File,
-			organizationId?: number | null,
-			description?: string,
-		) => {
+		async (args: {
+			title: string
+			type: string
+			file: File
+			organizationId?: number | null
+			description?: string
+			onProgress?: (percent: number) => void
+			onExperimentCreated?: (experimentId: number) => void
+		}) => {
+			const {
+				title,
+				type,
+				file,
+				organizationId,
+				description,
+				onProgress,
+				onExperimentCreated,
+			} = args
 			const totalChunks = Math.ceil(file.size / chunkSize)
 			const orgId =
 				organizationId === undefined
@@ -179,14 +209,19 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				organizationId: orgId,
 			})
 			const fileId = initResponse.fileId
+			onExperimentCreated?.(fileId)
 
 			localStorage.setItem(
 				"currentUpload",
 				JSON.stringify({ fileId, title, type }),
 			)
 
-			await sendAllChunks(file, totalChunks, (index, chunk) =>
-				uploadExperimentChunk(fileId, index, chunk),
+			await sendAllChunks(
+				file,
+				totalChunks,
+				(index, chunk) =>
+					uploadExperimentChunk(fileId, index, chunk, file.name),
+				onProgress,
 			)
 
 			await completeExperimentUpload(fileId, file.name)
@@ -194,6 +229,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			// Um `type` inédito vira entrada do vocabulário no save (BE-28).
 			queryClient.invalidateQueries({ queryKey: EXPERIMENT_TYPES_QUERY_KEY })
 			localStorage.removeItem("currentUpload")
+			return fileId
 		},
 		[listExperiments, sendAllChunks, chunkSize, user, queryClient],
 	)
@@ -229,7 +265,11 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 	// de chunks, mas anexa via /experiment/files/* — o servidor aglutina .fcs
 	// em ZIP e pula amostras já presentes no experimento.
 	const addExperimentFile = useCallback(
-		async (experimentId: number, file: File) => {
+		async (
+			experimentId: number,
+			file: File,
+			onProgress?: (percent: number) => void,
+		) => {
 			const totalChunks = Math.ceil(file.size / chunkSize)
 			const init = await initExperimentFileUpload(
 				experimentId,
@@ -238,12 +278,20 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			)
 			const fileId = init.fileId
 
-			await sendAllChunks(file, totalChunks, (index, chunk) =>
-				uploadExperimentFileChunk(fileId, index, chunk),
+			await sendAllChunks(
+				file,
+				totalChunks,
+				(index, chunk) =>
+					uploadExperimentFileChunk(fileId, index, chunk, file.name),
+				onProgress,
 			)
 
 			const done = await completeExperimentFileUpload(fileId, file.name)
-			return { added: done.added, skipped: done.skipped }
+			return {
+				added: done.added,
+				skipped: done.skipped,
+				nameConflicts: done.name_conflicts ?? [],
+			}
 		},
 		[chunkSize, sendAllChunks],
 	)
