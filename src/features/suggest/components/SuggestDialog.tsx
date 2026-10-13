@@ -220,24 +220,22 @@ export default function SuggestDialog({
 							)
 						}}
 					>
-						{SUGGEST_INTENTS.map((i) => {
-							const v1 = (is1D ? V1_INTENTS_1D : V1_INTENTS).has(i.value)
-							return (
-								<MenuItem key={i.value} value={i.value} disabled={!v1}>
-									<Box>
-										<Typography variant="body2">
-											{i.label}
-											{!v1 ? " (em breve)" : ""}
-										</Typography>
-										<Typography variant="caption" color="text.secondary">
-											{is1D && i.value === "separate"
-												? "Encontra populações separadas neste canal"
-												: i.description}
-										</Typography>
-									</Box>
-								</MenuItem>
-							)
-						})}
+						{/* Só intents que o worker atende de fato entram no
+						    select — a que ainda não existe não aparece. */}
+						{SUGGEST_INTENTS.filter((i) =>
+							(is1D ? V1_INTENTS_1D : V1_INTENTS).has(i.value),
+						).map((i) => (
+							<MenuItem key={i.value} value={i.value}>
+								<Box>
+									<Typography variant="body2">{i.label}</Typography>
+									<Typography variant="caption" color="text.secondary">
+										{is1D && i.value === "separate"
+											? "Encontra populações separadas neste canal"
+											: i.description}
+									</Typography>
+								</Box>
+							</MenuItem>
+						))}
 					</Select>
 				</FormControl>
 
