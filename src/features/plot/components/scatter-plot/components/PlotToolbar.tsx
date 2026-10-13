@@ -17,6 +17,7 @@ import {
 	MdPentagon as PolygonIcon,
 	MdAddBox as QuadrantIcon,
 	MdArrowDropDown as ChevronIcon,
+	MdRestartAlt as ResetIcon,
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
@@ -137,7 +138,14 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 				"& .MuiSlider-thumb": { width: 10, height: 10 },
 			}}
 		/>
-		<Box sx={{ display: "flex", gap: 1.5, justifyContent: "center" }}>
+		<Box
+			sx={{
+				display: "flex",
+				gap: 1.5,
+				justifyContent: "center",
+				alignItems: "center",
+			}}
+		>
 			<TextField
 				label="Min"
 				type="number"
@@ -174,6 +182,28 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 					"& .MuiInputLabel-root": { fontSize: "0.7rem" },
 				}}
 			/>
+			{/* Volta os dois limites para o automático ($PnR do
+			    detector ou teto global quando o header não declara). */}
+			<Tooltip title="Voltar ao limite automático" arrow>
+				<span>
+					<Button
+						size="small"
+						disabled={min === "" && max === ""}
+						onClick={() => {
+							onMinChange("")
+							onMaxChange("")
+						}}
+						sx={{
+							minWidth: 0,
+							p: 0.5,
+							fontSize: "0.65rem",
+						}}
+						startIcon={<ResetIcon size={14} />}
+					>
+						Auto
+					</Button>
+				</span>
+			</Tooltip>
 		</Box>
 	</Box>
 )
