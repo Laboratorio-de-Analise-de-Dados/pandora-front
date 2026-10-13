@@ -3,8 +3,9 @@ import {
 	MdLink as LinkIcon,
 	MdMoreVert as MoreVertIcon,
 	MdWarningAmber as WarningIcon,
-	MdAutoAwesome as AutoIcon,
 } from "react-icons/md"
+// Gates `automatic` vieram da Juvia — a gata branca marca a autoria.
+import { FaCat as AutoIcon } from "react-icons/fa"
 import type { Gate } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
 import { gateAxesLabel, gateAuthorLabel } from "../../../gate/utils"
@@ -114,14 +115,14 @@ export default function GateTreeItem({
 							)}
 							{gate.automatic === true && (
 								<Tooltip
-									title="Sugerida — geometria gerada pela análise e aceita sem edição"
+									title="Sugerida pela Juvia — geometria gerada pela análise e aceita sem edição"
 									arrow
 								>
 									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
 										<AutoIcon
 											style={{
 												fontSize: 14,
-												color: "var(--mui-palette-warning-main, #FBBF24)",
+												color: "var(--mui-palette-common-white, #FFFFFF)",
 											}}
 										/>
 									</Box>

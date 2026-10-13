@@ -13,8 +13,9 @@ import {
 	MdUnfoldLess as CollapseAllIcon,
 	MdSearch as SearchIcon,
 	MdClose as ClearIcon,
-	MdAutoAwesome as SuggestIcon,
 } from "react-icons/md"
+// Juvia é a gata branca — a sugestão de populações vem dela.
+import { FaCat as SuggestIcon } from "react-icons/fa"
 import {
 	Box,
 	Chip,

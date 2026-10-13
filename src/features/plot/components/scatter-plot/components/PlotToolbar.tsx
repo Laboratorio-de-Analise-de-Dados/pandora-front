@@ -17,8 +17,9 @@ import {
 	MdPentagon as PolygonIcon,
 	MdAddBox as QuadrantIcon,
 	MdArrowDropDown as ChevronIcon,
-	MdAutoAwesome as SuggestIcon,
 } from "react-icons/md"
+// Juvia é a gata branca — a sugestão de populações vem dela.
+import { FaCat as SuggestIcon } from "react-icons/fa"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
 import {
