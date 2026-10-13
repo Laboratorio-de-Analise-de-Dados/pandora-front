@@ -74,7 +74,7 @@ const DEFAULT_VIEW_CONFIG: PlotViewConfig = {
 	yMin: "",
 	yMax: "",
 	cutoff: 0,
-	plotMode: "heatmap",
+	plotMode: "scatter",
 }
 
 const ExperimentWorkspaceContext = createContext<
