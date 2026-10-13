@@ -474,8 +474,16 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 						variant="outlined"
 						onClick={onSuggest}
 						startIcon={<JuviaCatIcon />}
-						// Mesma altura dos selects outlined small da toolbar.
-						sx={{ fontWeight: 600, whiteSpace: "nowrap", height: 40 }}
+						// Mesma altura/cor dos selects outlined da toolbar —
+						// sem a cor primary do botão outlined default.
+						sx={{
+							fontWeight: 600,
+							whiteSpace: "nowrap",
+							height: 40,
+							color: "text.primary",
+							borderColor: "divider",
+							"&:hover": { borderColor: "text.primary" },
+						}}
 					>
 						Sugerir
 					</Button>
