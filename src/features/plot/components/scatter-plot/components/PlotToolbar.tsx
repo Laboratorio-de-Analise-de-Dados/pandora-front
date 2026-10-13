@@ -426,14 +426,18 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 								</Tooltip>
 							</MenuItem>
 						))}
-						{/* FE-42 — entrada "Sugerir populações" dentro do
-						    mesmo select: é o lugar onde o usuário já procura
-						    como criar um gate. Só faz sentido com 2 canais em
-						    tela (scatter/heatmap). */}
-						{!histogram && onSuggest && (
+						{/* FE-42/FE-45 — entrada "Sugerir populações" dentro
+						    do mesmo select: é o lugar onde o usuário já procura
+						    como criar um gate. No histograma o pedido é 1D
+						    (intervalo no eixo X). */}
+						{onSuggest && (
 							<MenuItem value="suggest">
 								<Tooltip
-									title="Pede para a análise sugerir populações neste par de canais"
+									title={
+										histogram
+											? "Pede para a análise sugerir populações neste canal"
+											: "Pede para a análise sugerir populações neste par de canais"
+									}
 									placement="right"
 									arrow
 								>
@@ -455,9 +459,17 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				</FormControl>
 			)}
 			{/* A Juvia é ação própria, não ferramenta de desenho — botão
-			    dedicado com a mascote para não ficar escondida no select. */}
-			{!histogram && onSuggest && (
-				<Tooltip title="A Juvia sugere populações neste par de canais" arrow>
+			    dedicado com a mascote para não ficar escondida no select.
+			    No histograma ela trabalha no canal do eixo X (FE-45). */}
+			{onSuggest && (
+				<Tooltip
+					title={
+						histogram
+							? "A Juvia sugere populações neste canal"
+							: "A Juvia sugere populações neste par de canais"
+					}
+					arrow
+				>
 					<Button
 						size="small"
 						variant="outlined"

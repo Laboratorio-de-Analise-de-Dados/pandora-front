@@ -19,14 +19,15 @@ import type {
 	SuggestionGateType,
 	SuggestRequestPayload,
 } from "../../../types"
-import type { GateTool } from "../../plot/hooks/usePlotState"
+import type { GateTool, PlotMode } from "../../plot/hooks/usePlotState"
 import {
 	controlKindForChannel,
-	gateTypeForTool,
+	gateTypeForMode,
 	intentByValue,
 	isFluorescenceChannel,
 	SUGGEST_INTENTS,
 	V1_INTENTS,
+	V1_INTENTS_1D,
 	type ControlKind,
 } from "../utils/intents"
 import {
@@ -43,6 +44,8 @@ export interface SuggestDialogProps {
 	xAxis: string
 	yAxis: string
 	tool: GateTool
+	/** Histograma → pedido 1D (interval no eixo X — FE-45/JV-06). */
+	plotMode: PlotMode
 	files: ExperimentFiles[]
 	subsamples: Subsample[]
 	/** A amostra em tela — para o aviso "isto já é um controle". */
@@ -114,6 +117,7 @@ export default function SuggestDialog({
 	xAxis,
 	yAxis,
 	tool,
+	plotMode,
 	files,
 	subsamples,
 	currentFile,
@@ -121,18 +125,22 @@ export default function SuggestDialog({
 	error,
 	onSubmit,
 }: SuggestDialogProps) {
+	const is1D = plotMode === "histogram"
 	const [intent, setIntent] = useState<SuggestIntent>("separate")
 	const [gateType, setGateType] = useState<SuggestionGateType>(
-		gateTypeForTool(tool),
+		gateTypeForMode(plotMode, tool),
 	)
 	const [controlX, setControlX] = useState<number | null>(null)
 	const [controlY, setControlY] = useState<number | null>(null)
 
 	// Reabrir com a ferramenta atual — o tipo de saída acompanha o select
-	// Gate da toolbar, revisável aqui.
+	// Gate da toolbar, revisável aqui (no histograma é sempre interval).
 	useEffect(() => {
-		if (open) setGateType(gateTypeForTool(tool))
-	}, [open, tool])
+		if (open) {
+			setGateType(gateTypeForMode(plotMode, tool))
+			if (plotMode === "histogram") setIntent("separate")
+		}
+	}, [open, tool, plotMode])
 
 	const option = intentByValue(intent)
 	const xIsFluo = isFluorescenceChannel(xAxis)
@@ -157,7 +165,9 @@ export default function SuggestDialog({
 					}
 				: undefined
 		onSubmit({
-			channels: [xAxis, yAxis],
+			// 1D manda só o canal do eixo X — o Y do histograma é contagem
+			// derivada, não um canal real (FE-45).
+			channels: is1D ? [xAxis] : [xAxis, yAxis],
 			intent,
 			gate_type: gateType,
 			control_files,
@@ -189,7 +199,11 @@ export default function SuggestDialog({
 						variant="outlined"
 						label={parentName ?? "Todos os eventos"}
 					/>
-					<Chip size="small" variant="outlined" label={`${xAxis} × ${yAxis}`} />
+					<Chip
+						size="small"
+						variant="outlined"
+						label={is1D ? xAxis : `${xAxis} × ${yAxis}`}
+					/>
 				</Box>
 
 				<FormControl size="small" fullWidth>
@@ -201,11 +215,13 @@ export default function SuggestDialog({
 						onChange={(e) => {
 							const next = e.target.value as SuggestIntent
 							setIntent(next)
-							setGateType(intentByValue(next).preferredGateType)
+							setGateType(
+								is1D ? "interval" : intentByValue(next).preferredGateType,
+							)
 						}}
 					>
 						{SUGGEST_INTENTS.map((i) => {
-							const v1 = V1_INTENTS.has(i.value)
+							const v1 = (is1D ? V1_INTENTS_1D : V1_INTENTS).has(i.value)
 							return (
 								<MenuItem key={i.value} value={i.value} disabled={!v1}>
 									<Box>
@@ -214,7 +230,9 @@ export default function SuggestDialog({
 											{!v1 ? " (em breve)" : ""}
 										</Typography>
 										<Typography variant="caption" color="text.secondary">
-											{i.description}
+											{is1D && i.value === "separate"
+												? "Encontra populações separadas neste canal"
+												: i.description}
 										</Typography>
 									</Box>
 								</MenuItem>
@@ -231,8 +249,12 @@ export default function SuggestDialog({
 						labelId="suggest-gate-type-label"
 						label="Tipo de gate sugerido"
 						value={gateType}
+						disabled={is1D}
 						onChange={(e) => setGateType(e.target.value as SuggestionGateType)}
 					>
+						{/* Intervalo é a única geometria 1D — o select fica visível
+							mas travado no histograma (FE-45). */}
+						{is1D && <MenuItem value="interval">Intervalo (1D)</MenuItem>}
 						<MenuItem value="polygon">Poligonal</MenuItem>
 						<MenuItem value="rectangle">Retangular</MenuItem>
 						<MenuItem value="quadrant">Quadrante</MenuItem>

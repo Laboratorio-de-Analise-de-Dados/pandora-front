@@ -9,8 +9,10 @@ import type { GateCoordinates } from "./ExperimentTypes"
 export type SuggestIntent =
 	"separate" | "positive_negative" | "quadrant" | "rare" | "control"
 
-/** Tipo de geometria pedida no run (pré-selecionada pela ferramenta ativa). */
-export type SuggestionGateType = "polygon" | "rectangle" | "quadrant"
+/** Tipo de geometria pedida no run (pré-selecionada pela ferramenta ativa).
+ * `interval` é o caso 1D do histograma (FE-45/JV-06). */
+export type SuggestionGateType =
+	"polygon" | "rectangle" | "quadrant" | "interval"
 
 /**
  * Controle por eixo no modo "limite por controle": canal fluorescente
@@ -26,7 +28,8 @@ export interface SuggestRequestPayload {
 	file_id: number
 	/** null = população raiz da amostra. */
 	parent_id?: number | null
-	channels: [string, string]
+	/** 2 canais no scatter; 1 no histograma (interval, FE-45). */
+	channels: string[]
 	intent: SuggestIntent
 	gate_type: SuggestionGateType
 	control_files?: SuggestionControlFiles
@@ -65,7 +68,8 @@ export interface SuggestionRun {
 	file_data: number
 	/** Gate pai (null = população raiz). */
 	parent: number | null
-	channels: [string, string]
+	/** 2 canais no scatter; 1 no run de histograma (interval). */
+	channels: string[]
 	intent: SuggestIntent
 	gate_type: SuggestionGateType
 	status: SuggestionRunStatus

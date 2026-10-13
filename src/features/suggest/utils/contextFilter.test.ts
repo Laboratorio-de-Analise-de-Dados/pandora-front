@@ -76,6 +76,37 @@ describe("pendingSuggestionsForContext", () => {
 			pendingSuggestionsForContext(runs, 10, null, "FSC-A", "SSC-A"),
 		).toHaveLength(1)
 	})
+
+	it('run 1D (interval do histograma) só casa em contexto 1D — yAxis=""', () => {
+		// FE-45: o caller passa yAxis="" no modo histograma. Um run de
+		// intervalo em PE-A não deve "vazar" para o scatter que usa o
+		// mesmo canal no eixo X.
+		const runs = [
+			mkRun({
+				channels: ["PE-A"],
+				gate_type: "interval",
+				suggestions: [mkSuggestion(11)],
+			}),
+		]
+		expect(
+			pendingSuggestionsForContext(runs, 10, null, "PE-A", ""),
+		).toHaveLength(1)
+		expect(
+			pendingSuggestionsForContext(runs, 10, null, "PE-A", "APC-A"),
+		).toHaveLength(0)
+	})
+
+	it("run 2D não casa no contexto 1D do histograma", () => {
+		const runs = [
+			mkRun({
+				channels: ["PE-A", "APC-A"],
+				suggestions: [mkSuggestion(12)],
+			}),
+		]
+		expect(
+			pendingSuggestionsForContext(runs, 10, null, "PE-A", ""),
+		).toHaveLength(0)
+	})
 })
 
 describe("activeRunsForContext", () => {

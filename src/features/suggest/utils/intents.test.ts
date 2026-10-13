@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest"
 import {
 	controlKindForChannel,
+	gateTypeForMode,
 	gateTypeForTool,
 	intentByValue,
 	isFluorescenceChannel,
 	isMorphologyChannel,
 	SUGGEST_INTENTS,
+	V1_INTENTS,
+	V1_INTENTS_1D,
 } from "./intents"
 
 describe("SUGGEST_INTENTS", () => {
@@ -67,5 +70,27 @@ describe("gateTypeForTool", () => {
 		expect(gateTypeForTool("poly")).toBe("polygon")
 		expect(gateTypeForTool("rect")).toBe("rectangle")
 		expect(gateTypeForTool("edit")).toBe("rectangle")
+	})
+})
+
+describe("gateTypeForMode", () => {
+	it("histograma é sempre interval, qualquer que seja a ferramenta (FE-45)", () => {
+		expect(gateTypeForMode("histogram", "rect")).toBe("interval")
+		expect(gateTypeForMode("histogram", "poly")).toBe("interval")
+		expect(gateTypeForMode("histogram", "quad")).toBe("interval")
+	})
+
+	it("scatter/heatmap seguem a ferramenta ativa", () => {
+		expect(gateTypeForMode("scatter", "quad")).toBe("quadrant")
+		expect(gateTypeForMode("heatmap", "poly")).toBe("polygon")
+	})
+})
+
+describe("V1_INTENTS_1D", () => {
+	it("no 1D só 'separate' é atendida — intents 2D ficam de fora", () => {
+		expect(V1_INTENTS_1D.has("separate")).toBe(true)
+		expect(V1_INTENTS_1D.has("quadrant")).toBe(false)
+		// E é um subconjunto estrito das intents que a v1 atende em 2D.
+		for (const i of V1_INTENTS_1D) expect(V1_INTENTS.has(i)).toBe(true)
 	})
 })

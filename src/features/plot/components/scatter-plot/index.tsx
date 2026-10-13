@@ -382,6 +382,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// par de canais) e desenhamos as propostas com contorno tracejado.
 	const experimentIdNum = experimentId ? Number(experimentId) : undefined
 	const suggestionsQuery = useSuggestionsQuery(experimentIdNum, fileDataId)
+	// Contexto do run: no histograma (FE-45) o pedido é 1D — o eixo Y é
+	// contagem derivada, não canal. `""` faz os filtros casarem só runs
+	// de intervalo, e um run 2D não "vaza" para a visão 1D.
+	const ctxYAxis = plotMode === "histogram" ? "" : yAxis
 	const pendingSuggestions = useMemo(
 		() =>
 			pendingSuggestionsForContext(
@@ -389,9 +393,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				fileDataId,
 				parentId ?? null,
 				xAxis,
-				yAxis,
+				ctxYAxis,
 			),
-		[suggestionsQuery.data, fileDataId, parentId, xAxis, yAxis],
+		[suggestionsQuery.data, fileDataId, parentId, xAxis, ctxYAxis],
 	)
 	const analyzingSuggestion =
 		activeRunsForContext(
@@ -399,7 +403,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 			fileDataId,
 			parentId ?? null,
 			xAxis,
-			yAxis,
+			ctxYAxis,
 		).length > 0
 	const emptySuggestionRun = useMemo(
 		() =>
@@ -408,9 +412,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				fileDataId,
 				parentId ?? null,
 				xAxis,
-				yAxis,
+				ctxYAxis,
 			),
-		[suggestionsQuery.data, fileDataId, parentId, xAxis, yAxis],
+		[suggestionsQuery.data, fileDataId, parentId, xAxis, ctxYAxis],
 	)
 	const suggestionShapes = useMemo(
 		() =>
@@ -1247,6 +1251,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				xAxis={xAxis}
 				yAxis={yAxis}
 				tool={tool}
+				plotMode={plotMode}
 				files={experimentFiles}
 				subsamples={subsamples}
 				currentFile={currentFile}

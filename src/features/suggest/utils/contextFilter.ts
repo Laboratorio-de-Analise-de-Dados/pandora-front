@@ -8,13 +8,21 @@ import type { GateSuggestion, SuggestionRun } from "../../../types"
  * (BE-40 — "mesmo contexto substitui"), então o filtro por `accepted`
  * é suficiente.
  */
+/**
+ * Run 2D casa com o par X×Y em qualquer ordem; run 1D (histograma,
+ * FE-45) só casa quando o contexto também é 1D — o caller passa
+ * `yAxis=""` no modo histograma, então um run de intervalo nunca
+ * "vaza" para o scatter com o mesmo canal no X.
+ */
 const channelsMatch = (
-	runChannels: [string, string],
+	runChannels: string[],
 	xAxis: string,
 	yAxis: string,
 ): boolean =>
-	(runChannels[0] === xAxis && runChannels[1] === yAxis) ||
-	(runChannels[0] === yAxis && runChannels[1] === xAxis)
+	runChannels.length === 1
+		? runChannels[0] === xAxis && yAxis === ""
+		: (runChannels[0] === xAxis && runChannels[1] === yAxis) ||
+			(runChannels[0] === yAxis && runChannels[1] === xAxis)
 
 /** Candidata pendente junto do run que a gerou (contexto + proveniência). */
 export interface ContextSuggestion {

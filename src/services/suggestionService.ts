@@ -26,7 +26,7 @@ const jobToRun = (job: AnalysisJob): SuggestionRun => {
 		id: job.id,
 		file_data: job.file_id,
 		parent: job.gate_id ?? null,
-		channels: [job.channels[0], job.channels[1]] as [string, string],
+		channels: job.channels,
 		intent: "separate",
 		gate_type: worker?.gate_type ?? "polygon",
 		status: job.status,

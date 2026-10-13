@@ -1,4 +1,4 @@
-import type { GateTool } from "../../plot/hooks/usePlotState"
+import type { GateTool, PlotMode } from "../../plot/hooks/usePlotState"
 import type { SuggestIntent, SuggestionGateType } from "../../../types"
 
 /**
@@ -69,6 +69,12 @@ export const intentByValue = (value: SuggestIntent): IntentOption =>
 export const V1_INTENTS = new Set<SuggestIntent>(["separate", "quadrant"])
 
 /**
+ * No 1D (histograma, FE-45/JV-06) só "separate" faz sentido — as demais
+ * são intenções 2D ou pedem controle, sem equivalente num eixo só.
+ */
+export const V1_INTENTS_1D = new Set<SuggestIntent>(["separate"])
+
+/**
  * Canais de morfologia (FSC/SSC) vs. fluorescência — decide que tipo de
  * controle cada eixo precisa no modo "limite por controle" (FE-42 §3):
  * fluorescente pede FMO/isotípico do canal; FSC×SSC pede controle de
@@ -93,3 +99,13 @@ export const controlKindForChannel = (channel: string): ControlKind =>
  */
 export const gateTypeForTool = (tool: GateTool): SuggestionGateType =>
 	tool === "quad" ? "quadrant" : tool === "poly" ? "polygon" : "rectangle"
+
+/**
+ * Modo do plot → geometria do run: histograma é sempre `interval` (1D no
+ * eixo X — FE-45/JV-06); scatter/heatmap seguem a ferramenta ativa.
+ */
+export const gateTypeForMode = (
+	plotMode: PlotMode,
+	tool: GateTool,
+): SuggestionGateType =>
+	plotMode === "histogram" ? "interval" : gateTypeForTool(tool)
