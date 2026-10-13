@@ -20,6 +20,7 @@ import {
 	MdArrowDropDown as ChevronIcon,
 	MdRestartAlt as ResetIcon,
 } from "react-icons/md"
+import JuviaCatIcon from "../../../../suggest/components/JuviaCatIcon"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
 import { rawToSlider, sliderBounds, sliderToRaw } from "../../../utils/sliders"
@@ -286,6 +287,9 @@ export interface PlotToolbarProps {
 	onSelectY: (v: string) => void
 	tool: GateTool
 	onToolChange: (t: GateTool) => void
+	/** FE-42 — abre o dialog "Sugerir populações" (não é ferramenta de
+	 * desenho; é uma ação que dispara o pedido ao Juvia). */
+	onSuggest?: () => void
 	xScale: Scale
 	yScale: Scale
 	onXScaleChange: (s: Scale) => void
@@ -326,6 +330,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	onSelectY,
 	tool,
 	onToolChange,
+	onSuggest,
 	xScale,
 	yScale,
 	onXScaleChange,
@@ -362,7 +367,16 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 						labelId="gate-tool-label"
 						label="Gate"
 						value={tool}
-						onChange={(e) => onToolChange(e.target.value as GateTool)}
+						onChange={(e) => {
+							// "Sugerir" é ação (abre o dialog de pedido), não
+							// ferramenta de desenho — não muda `tool`.
+							const v = e.target.value as string
+							if (v === "suggest") {
+								onSuggest?.()
+								return
+							}
+							onToolChange(v as GateTool)
+						}}
 						renderValue={() => (
 							<Box
 								sx={{
@@ -396,8 +410,68 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 								</Tooltip>
 							</MenuItem>
 						))}
+						{/* FE-42/FE-45 — entrada "Sugerir populações" dentro
+						    do mesmo select: é o lugar onde o usuário já procura
+						    como criar um gate. No histograma o pedido é 1D
+						    (intervalo no eixo X). */}
+						{onSuggest && (
+							<MenuItem value="suggest">
+								<Tooltip
+									title={
+										histogram
+											? "Pede para a análise sugerir populações neste canal"
+											: "Pede para a análise sugerir populações neste par de canais"
+									}
+									placement="right"
+									arrow
+								>
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											gap: 1,
+											width: "100%",
+										}}
+									>
+										<JuviaCatIcon />
+										Sugerir…
+									</Box>
+								</Tooltip>
+							</MenuItem>
+						)}
 					</Select>
 				</FormControl>
+			)}
+			{/* A Juvia é ação própria, não ferramenta de desenho — botão
+			    dedicado com a mascote para não ficar escondida no select.
+			    No histograma ela trabalha no canal do eixo X (FE-45). */}
+			{onSuggest && (
+				<Tooltip
+					title={
+						histogram
+							? "A Juvia sugere populações neste canal"
+							: "A Juvia sugere populações neste par de canais"
+					}
+					arrow
+				>
+					<Button
+						variant="outlined"
+						onClick={onSuggest}
+						startIcon={<JuviaCatIcon />}
+						// Mesma altura/cor dos selects outlined da toolbar —
+						// sem a cor primary do botão outlined default.
+						sx={{
+							fontWeight: 600,
+							whiteSpace: "nowrap",
+							height: 40,
+							color: "text.primary",
+							borderColor: "divider",
+							"&:hover": { borderColor: "text.primary" },
+						}}
+					>
+						Sugerir
+					</Button>
+				</Tooltip>
 			)}
 			{/* Escalas como selects outlined (linear/biex); Y some no histograma. */}
 			<FormControl size="small" variant="outlined">

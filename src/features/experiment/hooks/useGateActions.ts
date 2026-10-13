@@ -6,6 +6,7 @@ import type {
 	DeleteGateTarget,
 } from "../../gate/components/delete-gate-dialog"
 import {
+	collectAllGates,
 	findFileForGate,
 	findGateByPathNames,
 	getGatePathNames,
@@ -112,6 +113,53 @@ export function useGateActions() {
 		[deleteGateTarget, invalidateExperiment, selectParentOfDeletedGate, source],
 	)
 
+	/**
+	 * Exclusão em lote vinda do modo de seleção da árvore: cada gate alvo
+	 * cai na própria amostra (scope "file"), com a subárvore inteira —
+	 * a confirmação já avisou, então `recursive` vai sempre true.
+	 */
+	const handleDeleteGates = useCallback(
+		async (gateIds: number[]) => {
+			if (gateIds.length === 0) return
+			try {
+				const result = await deleteGatesBatch({
+					source_gate_ids: gateIds,
+					scope: "file",
+					recursive: true,
+				})
+				toast.success(
+					`${result.deleted} gate(s) excluído(s) em ${result.details.length} amostra(s).`,
+				)
+				// Se a fonte carregada no plot caiu na subárvore de algum alvo,
+				// sobe a seleção para a amostra (o pai também pode ter caído).
+				if (source?.type === "gate") {
+					const doomed = new Set<number>()
+					for (const file of experimentFiles)
+						for (const g of collectAllGates(file.gates))
+							if (gateIds.includes(g.id))
+								collectAllGates([g]).forEach((d) => doomed.add(d.id))
+					if (doomed.has(source.id)) {
+						const file = findFileForGate(experimentFiles, source.id)
+						setSource(
+							file
+								? {
+										type: "file",
+										id: file.id,
+										name: file.file_name,
+										fileDataId: file.id,
+									}
+								: undefined,
+						)
+					}
+				}
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(`Erro ao excluir gates: ${extractErrorMessage(error)}`)
+			}
+		},
+		[experimentFiles, invalidateExperiment, setSource, source],
+	)
+
 	// FE-23: mesma gravação do diálogo do gráfico — nome + cor + escopo opt-in.
 	// Devolve a mensagem de erro para o diálogo (que permanece aberto) ou null.
 	const { saveGateNameColor } = useGateMutations(invalidateExperiment)
@@ -166,6 +214,7 @@ export function useGateActions() {
 
 	return {
 		handleRequestDeleteGate,
+		handleDeleteGates,
 		handleConfirmDeleteGate,
 		deleteGateTarget,
 		deleteGateLoading,

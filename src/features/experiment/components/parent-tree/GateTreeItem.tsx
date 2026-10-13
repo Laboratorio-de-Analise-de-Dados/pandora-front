@@ -1,9 +1,18 @@
-import { Box, Chip, IconButton, Tooltip, Typography } from "@mui/material"
+import {
+	Box,
+	Checkbox,
+	Chip,
+	IconButton,
+	Tooltip,
+	Typography,
+} from "@mui/material"
 import {
 	MdLink as LinkIcon,
 	MdMoreVert as MoreVertIcon,
 	MdWarningAmber as WarningIcon,
 } from "react-icons/md"
+// Gates `automatic` vieram da Juvia — a gata branca marca a autoria.
+import JuviaCatIcon from "../../../suggest/components/JuviaCatIcon"
 import type { Gate } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
 import { gateAxesLabel, gateAuthorLabel } from "../../../gate/utils"
@@ -40,22 +49,28 @@ export default function GateTreeItem({
 	const authorName = gate.created_by_name?.trim() || null
 	const hasActions =
 		handlers.onApplyGate || handlers.onEditGate || handlers.onDeleteGate
+	// No modo de seleção o clique marca o gate para a ação em lote em vez de
+	// carregá-lo no plot — mesmo comportamento da linha de amostra.
+	const selecting = !!handlers.onToggleGate
 	const selected =
 		handlers.selectedSource?.type === "gate" &&
 		handlers.selectedSource.id === gate.id
 	return (
 		<TreeNode
 			depth={depth}
-			selected={selected}
+			selected={!selecting && selected}
 			expandSignal={handlers.expandSignal}
-			onSelect={() =>
-				handlers.onSelect({
-					type: "gate",
-					id: gate.id,
-					name: gate.name,
-					fileDataId,
-					copiedFromId: gate.copied_from_id,
-				})
+			onSelect={
+				selecting
+					? () => handlers.onToggleGate?.(gate.id)
+					: () =>
+							handlers.onSelect({
+								type: "gate",
+								id: gate.id,
+								name: gate.name,
+								fileDataId,
+								copiedFromId: gate.copied_from_id,
+							})
 			}
 			label={
 				<Box
@@ -71,6 +86,15 @@ export default function GateTreeItem({
 						handlers.onContextMenu(e, gate)
 					}}
 				>
+					{selecting && (
+						<Checkbox
+							size="small"
+							checked={handlers.selectedGateIds?.has(gate.id) ?? false}
+							onClick={(e) => e.stopPropagation()}
+							onChange={() => handlers.onToggleGate?.(gate.id)}
+							sx={{ p: 0.25, alignSelf: "flex-start" }}
+						/>
+					)}
 					<Box
 						sx={{
 							display: "flex",
@@ -110,6 +134,16 @@ export default function GateTreeItem({
 										"& .MuiChip-label": { px: 0.5 },
 									}}
 								/>
+							)}
+							{gate.automatic === true && (
+								<Tooltip
+									title="Sugerida pela Juvia — geometria gerada pela análise e aceita sem edição"
+									arrow
+								>
+									<Box sx={{ display: "inline-flex", alignItems: "center" }}>
+										<JuviaCatIcon size={15} />
+									</Box>
+								</Tooltip>
 							)}
 							{notEvaluable && (
 								<Tooltip title={warningTip} arrow>

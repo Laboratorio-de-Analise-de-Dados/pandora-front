@@ -32,6 +32,9 @@ export interface TreeHandlers {
 		payload: GateEditPayload,
 	) => Promise<string | null>
 	onApplyGate?: (gateId: number, gateName: string) => void
+	/** FE-42 — abre o pedido de sugestão de populações com o gate como
+	 * contexto pai (o plot navega para ele e o dialog abre). */
+	onSuggestGate?: (gateId: number) => void
 	onDisableFile?: (fileDataIds: number[]) => void
 	onEnableFile?: (fileDataIds: number[]) => void
 	onMenuOpen: (event: React.MouseEvent, gate: Gate) => void
@@ -44,6 +47,9 @@ export interface TreeHandlers {
 	selectedFileIds?: Set<number>
 	onToggleFile?: (fileId: number) => void
 	onToggleGroup?: (fileIds: number[], checked: boolean) => void
+	/** Seleção múltipla de gates (excluir em lote); omitido sem onDeleteGates. */
+	selectedGateIds?: Set<number>
+	onToggleGate?: (gateId: number) => void
 	onFileInfo?: (file: ExperimentFiles) => void
 	/** Expandir/recolher todos os nós — propagado aos TreeNode. */
 	expandSignal?: ExpandSignal
