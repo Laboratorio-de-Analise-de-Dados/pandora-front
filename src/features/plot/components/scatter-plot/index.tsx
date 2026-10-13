@@ -390,12 +390,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// contagem derivada, não canal. `""` faz os filtros casarem só runs
 	// de intervalo, e um run 2D não "vaza" para a visão 1D.
 	const ctxYAxis = plotMode === "histogram" ? "" : yAxis
-	// FE-45/JV-06 fica atrás de flag: o desenho por picos do Juvia ainda
-	// funde níveis de bead próximos — o "Sugerir" no histograma fica
-	// escondido até o ajuste de banda/transform. Ligar com
-	// VITE_SUGGEST_HISTOGRAM=true.
+	// FE-45/JV-06 ligado por padrão nesta branch pra teste: o desenho por
+	// picos do Juvia ainda funde níveis de bead próximos — desligar com
+	// VITE_SUGGEST_HISTOGRAM=false se incomodar no histograma.
 	const histogramSuggestEnabled =
-		import.meta.env.VITE_SUGGEST_HISTOGRAM === "true"
+		import.meta.env.VITE_SUGGEST_HISTOGRAM !== "false"
 	const pendingSuggestions = useMemo(
 		() =>
 			pendingSuggestionsForContext(
