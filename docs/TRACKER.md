@@ -18,15 +18,15 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                         | Área afetada                                                                                                                                                    | Branch              | Sessão | Desde |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------ | ----- |
-| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0                                                                                                     | —                   | —      | —     |
-| #77 plot_config da amostra raiz | ✅ concluído — mergeado (PR #111)                                                                                                                               | —                   | —      | —     |
-| FE-36 página de análise         | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114)                                                               | —                   | —      | —     |
-| FE-44 eixos por canal + log     | `plot/utils` (biex→toDisplay genérico, ticks, sliders, plotAxes), toolbar/settings/config panels, `usePlotState`/`PlotStateContext` (channelMeta), scatter-plot | feat/channel-ranges | devin  | 13/10 |
+| Feature                         | Área afetada                                                                                      | Branch | Sessão | Desde |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- | ------ | ------ | ----- |
+| FE-41 MFI por população         | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0                                       | —      | —      | —     |
+| #77 plot_config da amostra raiz | ✅ concluído — mergeado (PR #111)                                                                 | —      | —      | —     |
+| FE-36 página de análise         | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114) | —      | —      | —     |
+| FE-44 eixos por canal + log     | ✅ concluído — mergeado (PR #117), deploy v0.9.0                                                  | —      | —      | —     |
 
-| BE-41 par front: convite divergente | `src/page/invite/` — aceitar com esta conta + CTA modo link Microsoft | `fix/invite-divergent-email` | devin | 2026-10-13 |
-| FE-43 multiselect de amostras | `NewExperimentDialog`, `ExperimentContext`, `experimentService`, `utils/experimentFile` | `feat/multifile-upload` | devin | 2026-10-13 |
+| BE-41 par front: convite divergente | ✅ concluído — mergeado (PR #118), deploy v0.9.0 | — | — | — |
+| FE-43 multiselect de amostras | ✅ concluído — mergeado (PR #119), deploy v0.9.0 | — | — | — |
 
 ## Concluído nesta branch
 
