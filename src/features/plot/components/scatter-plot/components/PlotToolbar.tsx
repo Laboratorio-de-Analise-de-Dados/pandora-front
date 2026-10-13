@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import {
 	Box,
+	Button,
 	FormControl,
 	InputAdornment,
 	InputLabel,
@@ -21,15 +22,7 @@ import {
 } from "react-icons/md"
 import type { Scale } from "../../../../../types"
 import type { GateTool, PlotMode } from "../../../hooks/usePlotState"
-import {
-	BIEX_SLIDER_MIN,
-	BIEX_SLIDER_MAX,
-	LINEAR_SLIDER_MAX,
-	BIEX_SLIDER_MARKS,
-	LINEAR_SLIDER_MARKS,
-	rawToSlider,
-	sliderToRaw,
-} from "../../../utils/sliders"
+import { rawToSlider, sliderBounds, sliderToRaw } from "../../../utils/sliders"
 import AxisSelect from "./AxisSelect"
 import { PlotSettingsButton } from "./PlotSettingsPanel"
 
@@ -102,26 +95,18 @@ const AxisLimitSection: React.FC<AxisLimitSectionProps> = ({
 		</Typography>
 		<Slider
 			value={[
-				min !== ""
-					? rawToSlider(Number(min), scale)
-					: scale === "biex"
-						? BIEX_SLIDER_MIN
-						: 0,
-				max !== ""
-					? rawToSlider(Number(max), scale)
-					: scale === "biex"
-						? BIEX_SLIDER_MAX
-						: LINEAR_SLIDER_MAX,
+				min !== "" ? rawToSlider(Number(min), scale) : sliderBounds(scale).min,
+				max !== "" ? rawToSlider(Number(max), scale) : sliderBounds(scale).max,
 			]}
 			onChange={(_, val) => {
 				const [lo, hi] = val as number[]
 				onMinChange(String(sliderToRaw(lo, scale)))
 				onMaxChange(String(sliderToRaw(hi, scale)))
 			}}
-			min={scale === "biex" ? BIEX_SLIDER_MIN : 0}
-			max={scale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-			step={scale === "biex" ? 0.01 : 500}
-			marks={scale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+			min={sliderBounds(scale).min}
+			max={sliderBounds(scale).max}
+			step={sliderBounds(scale).step}
+			marks={sliderBounds(scale).marks}
 			valueLabelDisplay="auto"
 			valueLabelFormat={(v) => {
 				const raw = sliderToRaw(v, scale)
@@ -426,6 +411,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				>
 					<MenuItem value="linear">Linear</MenuItem>
 					<MenuItem value="biex">Biex</MenuItem>
+					<MenuItem value="log">Log</MenuItem>
 				</Select>
 			</FormControl>
 			{!histogram && (
@@ -440,6 +426,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					>
 						<MenuItem value="linear">Linear</MenuItem>
 						<MenuItem value="biex">Biex</MenuItem>
+						<MenuItem value="log">Log</MenuItem>
 					</Select>
 				</FormControl>
 			)}

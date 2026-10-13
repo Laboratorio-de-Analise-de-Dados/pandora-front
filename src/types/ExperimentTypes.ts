@@ -122,7 +122,7 @@ export interface FileData {
 	gates: Gate[]
 }
 
-export type Scale = "linear" | "biex"
+export type Scale = "linear" | "biex" | "log"
 
 export type PlotMode = "heatmap" | "scatter" | "histogram"
 

@@ -1,5 +1,5 @@
 import type { Gate, Scale } from "../../../types"
-import { biex, COFACTOR } from "./biex"
+import { COFACTOR, toDisplay } from "./biex"
 import { getGateColor, hexToRgba } from "../../../constants/gateColors"
 import { QUADRANT_DIR } from "./gateHoverTraces"
 
@@ -43,8 +43,8 @@ const gatePointTest = (
 
 	const xSc = swapped ? effYScale : effXScale
 	const ySc = swapped ? effXScale : effYScale
-	const tx = (v: number) => (xSc === "biex" ? biex(v, COFACTOR) : v)
-	const ty = (v: number) => (ySc === "biex" ? biex(v, COFACTOR) : v)
+	const tx = (v: number) => toDisplay(v, xSc, COFACTOR)
+	const ty = (v: number) => toDisplay(v, ySc, COFACTOR)
 
 	if (type === "rectangle" && "startX" in gc && "startY" in gc) {
 		const [x0, x1] = [

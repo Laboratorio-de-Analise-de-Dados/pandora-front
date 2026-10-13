@@ -7,12 +7,14 @@ import {
 import {
 	Box,
 	Divider,
+	FormControl,
 	IconButton,
+	InputLabel,
+	MenuItem,
 	Paper,
+	Select,
 	Slider,
 	TextField,
-	FormControlLabel,
-	Checkbox,
 	ToggleButton,
 	ToggleButtonGroup,
 	Tooltip,
@@ -20,15 +22,7 @@ import {
 } from "@mui/material"
 import type { Scale } from "../../../../../types"
 import type { PlotMode } from "../../../hooks/usePlotState"
-import {
-	BIEX_SLIDER_MIN,
-	BIEX_SLIDER_MAX,
-	LINEAR_SLIDER_MAX,
-	BIEX_SLIDER_MARKS,
-	LINEAR_SLIDER_MARKS,
-	rawToSlider,
-	sliderToRaw,
-} from "../../../utils/sliders"
+import { rawToSlider, sliderBounds, sliderToRaw } from "../../../utils/sliders"
 
 interface PlotSettingsControls {
 	plotMode: PlotMode
@@ -156,42 +150,39 @@ const PlotSettingsContent: React.FC<
 
 			<Divider sx={{ my: 2 }} />
 
-			{/* Escala */}
-			<Box sx={{ mb: 2 }}>
-				<Typography
-					variant="caption"
-					fontWeight="bold"
-					color="text.secondary"
-					sx={{ mb: 1, display: "block" }}
-				>
-					Escala
-				</Typography>
-				<FormControlLabel
-					control={
-						<Checkbox
-							checked={xScale === "biex"}
-							onChange={(e) =>
-								onXScaleChange(e.target.checked ? "biex" : "linear")
-							}
-							size="small"
-						/>
-					}
-					label={<Typography variant="caption">X Biex</Typography>}
-				/>
+			{/* Escala — mesmo vocabulário do seletor da toolbar
+			    (linear/biex/log), agora com a opção log do FE-44. */}
+			<Box sx={{ mb: 2, display: "flex", gap: 1 }}>
+				<FormControl size="small" variant="outlined" fullWidth>
+					<InputLabel id="settings-x-scale-label">Escala X</InputLabel>
+					<Select
+						labelId="settings-x-scale-label"
+						label="Escala X"
+						value={xScale}
+						onChange={(e) => onXScaleChange(e.target.value as Scale)}
+						sx={{ fontWeight: 600 }}
+					>
+						<MenuItem value="linear">Linear</MenuItem>
+						<MenuItem value="biex">Biex</MenuItem>
+						<MenuItem value="log">Log</MenuItem>
+					</Select>
+				</FormControl>
 
 				{plotMode !== "histogram" && (
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={yScale === "biex"}
-								onChange={(e) =>
-									onYScaleChange(e.target.checked ? "biex" : "linear")
-								}
-								size="small"
-							/>
-						}
-						label={<Typography variant="caption">Y Biex</Typography>}
-					/>
+					<FormControl size="small" variant="outlined" fullWidth>
+						<InputLabel id="settings-y-scale-label">Escala Y</InputLabel>
+						<Select
+							labelId="settings-y-scale-label"
+							label="Escala Y"
+							value={yScale}
+							onChange={(e) => onYScaleChange(e.target.value as Scale)}
+							sx={{ fontWeight: 600 }}
+						>
+							<MenuItem value="linear">Linear</MenuItem>
+							<MenuItem value="biex">Biex</MenuItem>
+							<MenuItem value="log">Log</MenuItem>
+						</Select>
+					</FormControl>
 				)}
 			</Box>
 
@@ -212,14 +203,10 @@ const PlotSettingsContent: React.FC<
 					value={[
 						xMin !== ""
 							? rawToSlider(Number(xMin), xScale)
-							: xScale === "biex"
-								? BIEX_SLIDER_MIN
-								: 0,
+							: sliderBounds(xScale).min,
 						xMax !== ""
 							? rawToSlider(Number(xMax), xScale)
-							: xScale === "biex"
-								? BIEX_SLIDER_MAX
-								: LINEAR_SLIDER_MAX,
+							: sliderBounds(xScale).max,
 					]}
 					onChange={(_, val) => {
 						const [lo, hi] = val as number[]
@@ -228,10 +215,10 @@ const PlotSettingsContent: React.FC<
 						setIsAdjusting(true)
 					}}
 					onChangeCommitted={() => setIsAdjusting(false)}
-					min={xScale === "biex" ? BIEX_SLIDER_MIN : 0}
-					max={xScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-					step={xScale === "biex" ? 0.01 : 500}
-					marks={xScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS}
+					min={sliderBounds(xScale).min}
+					max={sliderBounds(xScale).max}
+					step={sliderBounds(xScale).step}
+					marks={sliderBounds(xScale).marks}
 					valueLabelDisplay="auto"
 					valueLabelFormat={(v) => {
 						const raw = sliderToRaw(v, xScale)
@@ -315,14 +302,10 @@ const PlotSettingsContent: React.FC<
 							value={[
 								yMin !== ""
 									? rawToSlider(Number(yMin), yScale)
-									: yScale === "biex"
-										? BIEX_SLIDER_MIN
-										: 0,
+									: sliderBounds(yScale).min,
 								yMax !== ""
 									? rawToSlider(Number(yMax), yScale)
-									: yScale === "biex"
-										? BIEX_SLIDER_MAX
-										: LINEAR_SLIDER_MAX,
+									: sliderBounds(yScale).max,
 							]}
 							onChange={(_, val) => {
 								const [lo, hi] = val as number[]
@@ -331,12 +314,10 @@ const PlotSettingsContent: React.FC<
 								setIsAdjusting(true)
 							}}
 							onChangeCommitted={() => setIsAdjusting(false)}
-							min={yScale === "biex" ? BIEX_SLIDER_MIN : 0}
-							max={yScale === "biex" ? BIEX_SLIDER_MAX : LINEAR_SLIDER_MAX}
-							step={yScale === "biex" ? 0.01 : 500}
-							marks={
-								yScale === "biex" ? BIEX_SLIDER_MARKS : LINEAR_SLIDER_MARKS
-							}
+							min={sliderBounds(yScale).min}
+							max={sliderBounds(yScale).max}
+							step={sliderBounds(yScale).step}
+							marks={sliderBounds(yScale).marks}
 							valueLabelDisplay="auto"
 							valueLabelFormat={(v) => {
 								const raw = sliderToRaw(v, yScale)

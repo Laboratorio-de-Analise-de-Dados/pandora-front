@@ -1,4 +1,4 @@
-export { COFACTOR, biex, toRaw, defaultScale } from "./biex"
+export { COFACTOR, biex, logT, toDisplay, toRaw, defaultScale } from "./biex"
 export { NICE_RAW, fmtTick, buildTicks } from "./ticks"
 export {
 	BIEX_SLIDER_MIN,

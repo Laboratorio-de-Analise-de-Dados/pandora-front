@@ -1,5 +1,5 @@
 import type { Gate, GateCoordinates, Scale } from "../../../types"
-import { COFACTOR, biex } from "./biex"
+import { COFACTOR, toDisplay } from "./biex"
 import { pointInPolygon } from "./geometry"
 
 // Sinal de cada quadrante nos eixos crus do gate: [xSign, ySign].
@@ -35,30 +35,10 @@ export const isPointInGate = (
 			endX: number
 			endY: number
 		}
-		const x0 =
-			xs === "biex"
-				? biex(swapped ? rect.startY : rect.startX, cof)
-				: swapped
-					? rect.startY
-					: rect.startX
-		const x1 =
-			xs === "biex"
-				? biex(swapped ? rect.endY : rect.endX, cof)
-				: swapped
-					? rect.endY
-					: rect.endX
-		const y0 =
-			ys === "biex"
-				? biex(swapped ? rect.startX : rect.startY, cof)
-				: swapped
-					? rect.startX
-					: rect.startY
-		const y1 =
-			ys === "biex"
-				? biex(swapped ? rect.endX : rect.endY, cof)
-				: swapped
-					? rect.endX
-					: rect.endY
+		const x0 = toDisplay(swapped ? rect.startY : rect.startX, xs, cof)
+		const x1 = toDisplay(swapped ? rect.endY : rect.endX, xs, cof)
+		const y0 = toDisplay(swapped ? rect.startX : rect.startY, ys, cof)
+		const y1 = toDisplay(swapped ? rect.endX : rect.endY, ys, cof)
 		const minX = Math.min(x0, x1),
 			maxX = Math.max(x0, x1)
 		const minY = Math.min(y0, y1),
@@ -70,8 +50,8 @@ export const isPointInGate = (
 		const verts = (gc.vertices as [number, number][]).map((v) => {
 			const rawX = swapped ? v[1] : v[0]
 			const rawY = swapped ? v[0] : v[1]
-			const dx = xs === "biex" ? biex(rawX, cof) : rawX
-			const dy = ys === "biex" ? biex(rawY, cof) : rawY
+			const dx = toDisplay(rawX, xs, cof)
+			const dy = toDisplay(rawY, ys, cof)
 			return [dx, dy] as [number, number]
 		})
 		return pointInPolygon(dataX, dataY, verts)
@@ -87,18 +67,8 @@ export const isPointInGate = (
 		}
 		const dir = QUADRANT_DIR[quad.quadrant ?? ""]
 		if (!dir) return false
-		const cx =
-			xs === "biex"
-				? biex(swapped ? quad.center_y : quad.center_x, cof)
-				: swapped
-					? quad.center_y
-					: quad.center_x
-		const cy =
-			ys === "biex"
-				? biex(swapped ? quad.center_x : quad.center_y, cof)
-				: swapped
-					? quad.center_x
-					: quad.center_y
+		const cx = toDisplay(swapped ? quad.center_y : quad.center_x, xs, cof)
+		const cy = toDisplay(swapped ? quad.center_x : quad.center_y, ys, cof)
 		const xDir = swapped ? dir[1] : dir[0]
 		const yDir = swapped ? dir[0] : dir[1]
 		return (
@@ -109,8 +79,8 @@ export const isPointInGate = (
 
 	if (gateType === "interval" && "startX" in gc && "endX" in gc) {
 		const intv = gc as { startX: number; endX: number }
-		const x0 = effXScale === "biex" ? biex(intv.startX, cof) : intv.startX
-		const x1 = effXScale === "biex" ? biex(intv.endX, cof) : intv.endX
+		const x0 = toDisplay(intv.startX, effXScale, cof)
+		const x1 = toDisplay(intv.endX, effXScale, cof)
 		const minX = Math.min(x0, x1),
 			maxX = Math.max(x0, x1)
 		return dataX >= minX && dataX <= maxX
