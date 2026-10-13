@@ -25,6 +25,9 @@ serviços) ou alinhe com o responsável.
 | FE-36 página de análise         | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114)                                                               | —                   | —      | —     |
 | FE-44 eixos por canal + log     | `plot/utils` (biex→toDisplay genérico, ticks, sliders, plotAxes), toolbar/settings/config panels, `usePlotState`/`PlotStateContext` (channelMeta), scatter-plot | feat/channel-ranges | devin  | 13/10 |
 
+| BE-41 par front: convite divergente | `src/page/invite/` — aceitar com esta conta + CTA modo link Microsoft | `fix/invite-divergent-email` | devin | 2026-10-13 |
+| FE-43 multiselect de amostras | `NewExperimentDialog`, `ExperimentContext`, `experimentService`, `utils/experimentFile` | `feat/multifile-upload` | devin | 2026-10-13 |
+
 ## Concluído nesta branch
 
 | Feature                                    | Observação                                                                                                                                                                       |
