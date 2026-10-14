@@ -18,16 +18,16 @@ serviços) ou alinhe com o responsável.
 
 ## Em andamento
 
-| Feature                             | Área afetada                                                                                                                                                                                             | Branch                  | Sessão | Desde |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------ | ----- |
-| FE-42 sugestões de população        | `src/features/suggest/`, `services/suggestionService.ts`, `types/`, scatter-plot, parent-tree, `PlotToolbar` — adaptada ao contrato v1 (job BE-27 + gates materializadas; accept/discard fica pro BE-40) | feat/sugerir-populacoes | devin  | 10/10 |
-| FE-45 sugestão 1D no histograma     | `SuggestDialog`, `intents`, `contextFilter`, `PlotToolbar`, `types/` — pedido `channels:[xAxis]` + `gate_type:"interval"` (par com JV-06)                                                                | feat/sugerir-populacoes | devin  | 10/10 |
-| FE-41 MFI por população             | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0                                                                                                                                              | —                       | —      | —     |
-| #77 plot_config da amostra raiz     | ✅ concluído — mergeado (PR #111)                                                                                                                                                                        | —                       | —      | —     |
-| FE-36 página de análise             | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114)                                                                                                        | —                       | —      | —     |
-| FE-44 eixos por canal + log         | ✅ concluído — mergeado (PR #117), deploy v0.9.0                                                                                                                                                         | —                       | —      | —     |
-| BE-41 par front: convite divergente | ✅ concluído — mergeado (PR #118), deploy v0.9.0                                                                                                                                                         | —                       | —      | —     |
-| FE-43 multiselect de amostras       | ✅ concluído — mergeado (PR #119), deploy v0.9.0                                                                                                                                                         | —                       | —      | —     |
+| Feature                             | Área afetada                                                                                                                          | Branch | Sessão | Desde |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | ----- |
+| FE-42 sugestões de população        | ✅ concluído — mergeado (PR #121), deploy v0.10.0. Funcionamento de ponta a ponta aguarda release do back com BE-27                   | —      | —      | —     |
+| FE-45 sugestão 1D no histograma     | ✅ concluído — mergeado (PR #121), deploy v0.10.0. 2 critérios de aceite pendentes de E2E local (back `feat/juvia-job-queue` + Juvia) | —      | —      | —     |
+| FE-41 MFI por população             | ✅ concluído — mergeado (PRs #107/#108/#109), deploy v0.8.0                                                                           | —      | —      | —     |
+| #77 plot_config da amostra raiz     | ✅ concluído — mergeado (PR #111)                                                                                                     | —      | —      | —     |
+| FE-36 página de análise             | ⏸️ arquivado 02/10 — estacionado por decisão de produto; código revertido da main (PRs #112–#114)                                     | —      | —      | —     |
+| FE-44 eixos por canal + log         | ✅ concluído — mergeado (PR #117), deploy v0.9.0                                                                                      | —      | —      | —     |
+| BE-41 par front: convite divergente | ✅ concluído — mergeado (PR #118), deploy v0.9.0                                                                                      | —      | —      | —     |
+| FE-43 multiselect de amostras       | ✅ concluído — mergeado (PR #119), deploy v0.9.0                                                                                      | —      | —      | —     |
 
 ## Concluído nesta branch
 
