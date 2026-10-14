@@ -9,6 +9,7 @@ import type {
 	AcceptSuggestionPayload,
 	SuggestRequestPayload,
 } from "../../../types"
+import { SUGGEST_ENABLED } from "../utils/flags"
 
 /**
  * FE-42 — o front consulta runs em vez de segurar estado volátil.
@@ -35,7 +36,8 @@ export function useSuggestionsQuery(
 	return useQuery({
 		queryKey: suggestionsKey(experimentId, fileDataId),
 		queryFn: () => fetchSuggestions(experimentId!, fileDataId!),
-		enabled: experimentId != null && fileDataId != null,
+		// SUGGEST_ENABLED off = endpoint (BE-27) ausente — nem consulta.
+		enabled: SUGGEST_ENABLED && experimentId != null && fileDataId != null,
 		refetchInterval: (query) => {
 			const runs = query.state.data ?? []
 			return runs.some(

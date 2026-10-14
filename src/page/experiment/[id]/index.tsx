@@ -55,6 +55,7 @@ import {
 	MdClose as CloseIcon,
 } from "react-icons/md"
 import FileUploadQueueList from "../../../features/experiment/components/FileUploadQueueList"
+import { SUGGEST_ENABLED } from "../../../features/suggest/utils/flags"
 import { ACCEPTED_EXPERIMENT_FILE_ACCEPT } from "../../../utils/experimentFile"
 import type { UpdateExperimentPayload } from "../../../services/experimentService"
 
@@ -389,7 +390,9 @@ function ExperimentPageContent() {
 					onDeleteGates={canEditExperiment ? handleDeleteGates : undefined}
 					onEditGate={handleEditGate}
 					onApplyGate={handleApplyGate}
-					onSuggestGate={canEditExperiment ? handleSuggestGate : undefined}
+					onSuggestGate={
+						canEditExperiment && SUGGEST_ENABLED ? handleSuggestGate : undefined
+					}
 					onDisableFile={handleDisableFile}
 					onEnableFile={handleEnableFile}
 					onCreateSubsample={

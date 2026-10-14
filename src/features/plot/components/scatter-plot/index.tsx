@@ -32,6 +32,10 @@ import {
 	type ContextSuggestion,
 } from "../../../suggest/utils/contextFilter"
 import { buildSuggestionShapes } from "../../../suggest/utils/suggestionShapes"
+import {
+	SUGGEST_ENABLED,
+	SUGGEST_HISTOGRAM_ENABLED,
+} from "../../../suggest/utils/flags"
 import PendingSuggestionsCard from "../../../suggest/components/PendingSuggestionsCard"
 import AcceptSuggestionDialog from "../../../suggest/components/AcceptSuggestionDialog"
 import SuggestDialog from "../../../suggest/components/SuggestDialog"
@@ -390,11 +394,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	// contagem derivada, não canal. `""` faz os filtros casarem só runs
 	// de intervalo, e um run 2D não "vaza" para a visão 1D.
 	const ctxYAxis = plotMode === "histogram" ? "" : yAxis
-	// FE-45/JV-06 ligado por padrão nesta branch pra teste: o desenho por
-	// picos do Juvia ainda funde níveis de bead próximos — desligar com
-	// VITE_SUGGEST_HISTOGRAM=false se incomodar no histograma.
-	const histogramSuggestEnabled =
-		import.meta.env.VITE_SUGGEST_HISTOGRAM !== "false"
+	// FE-45/JV-06 ligado por padrão pra teste: o desenho por picos do
+	// Juvia ainda funde níveis de bead próximos — `VITE_SUGGEST=false`
+	// esconde tudo e `VITE_SUGGEST_HISTOGRAM=false` só o caminho 1D
+	// (ver suggest/utils/flags).
 	const pendingSuggestions = useMemo(
 		() =>
 			pendingSuggestionsForContext(
@@ -840,7 +843,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								tool={tool}
 								onToolChange={setTool}
 								onSuggest={
-									plotMode !== "histogram" || histogramSuggestEnabled
+									(
+										plotMode === "histogram"
+											? SUGGEST_HISTOGRAM_ENABLED
+											: SUGGEST_ENABLED
+									)
 										? () => {
 												setSuggestError(null)
 												setSuggestDialogOpen(true)
