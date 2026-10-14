@@ -60,6 +60,7 @@ jobs:
           docker build \
             --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
             --build-arg VITE_APP_VERSION="${{ steps.meta.outputs.image_tag }}" \
+            --build-arg VITE_SUGGEST="${{ vars.VITE_SUGGEST }}" \
             -t "$IMAGE_NAME:${{ steps.meta.outputs.image_tag }}" .
           docker push "$IMAGE_NAME:${{ steps.meta.outputs.image_tag }}"
 
