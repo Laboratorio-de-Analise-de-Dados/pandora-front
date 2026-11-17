@@ -147,6 +147,9 @@ const PlotSettingsContent: React.FC<
 					<ToggleButton value="heatmap" sx={{ fontSize: "0.7rem", py: 0.3 }}>
 						Heatmap
 					</ToggleButton>
+					<ToggleButton value="contour" sx={{ fontSize: "0.7rem", py: 0.3 }}>
+						Contour
+					</ToggleButton>
 					<ToggleButton value="histogram" sx={{ fontSize: "0.7rem", py: 0.3 }}>
 						Hist
 					</ToggleButton>
@@ -389,8 +392,8 @@ const PlotSettingsContent: React.FC<
 				</>
 			)}
 
-			{/* Cutoff de densidade */}
-			{plotMode === "heatmap" && (
+			{/* Cutoff de densidade (heatmap/contour — mesma requisição, FE-50) */}
+			{(plotMode === "heatmap" || plotMode === "contour") && (
 				<>
 					<Divider sx={{ my: 2 }} />
 					<Box>

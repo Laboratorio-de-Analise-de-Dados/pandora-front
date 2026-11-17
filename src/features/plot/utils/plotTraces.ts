@@ -35,6 +35,26 @@ export const buildPlotData = (
 				y: edgesToCenters(data?.y_edges),
 				colorscale: DENSITY_STOPS[mode],
 				showscale: true,
+				// FE-50: o z é a contagem de eventos por bin do histograma 2D —
+				// sem o título a barra exibia "0-16" sem unidade.
+				colorbar: { title: { text: "eventos/bin" } },
+				showlegend: false,
+			},
+		]
+	}
+	if (plotMode === "contour") {
+		// FE-50: isolinhas sobre o mesmo `data.histogram` do heatmap —
+		// sem endpoint novo. Níveis automáticos do Plotly + mesma rampa.
+		return [
+			{
+				type: "contour" as const,
+				z: data?.histogram ?? [],
+				x: edgesToCenters(data?.x_edges),
+				y: edgesToCenters(data?.y_edges),
+				colorscale: DENSITY_STOPS[mode],
+				contours: { coloring: "lines" as const },
+				line: { width: 1.5 },
+				showscale: false,
 				showlegend: false,
 			},
 		]
@@ -67,7 +87,8 @@ export const hasPlotData = (
 	plotMode: PlotMode,
 	data?: DensityResponse,
 ): boolean => {
-	if (plotMode === "heatmap") return !!data?.histogram?.length
+	if (plotMode === "heatmap" || plotMode === "contour")
+		return !!data?.histogram?.length
 	if (plotMode === "histogram") return !!data?.counts?.length
 	return !!data?.x?.length
 }

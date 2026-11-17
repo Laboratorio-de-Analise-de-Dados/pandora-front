@@ -527,9 +527,10 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					onMaxChange={onYMaxChange}
 				/>
 			)}
-			{/* Cutoff de densidade só existe no heatmap — como as opções
-					    saíram do botão de config, ele vive na barra. */}
-			{plotMode === "heatmap" && (
+			{/* Cutoff de densidade só existe nos modos de histograma 2D
+					    (heatmap/contour — mesma requisição, FE-50) — como as
+					    opções saíram do botão de config, ele vive na barra. */}
+			{(plotMode === "heatmap" || plotMode === "contour") && (
 				<Tooltip title="Cutoff de densidade — bins com contagem ≤ cutoff ficam transparentes">
 					<TextField
 						label="Corte"
@@ -609,6 +610,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					sx={{ fontWeight: 600 }}
 				>
 					<MenuItem value="heatmap">Heatmap</MenuItem>
+					<MenuItem value="contour">Contour</MenuItem>
 					<MenuItem value="scatter">Scatter</MenuItem>
 					<MenuItem value="histogram">Histograma</MenuItem>
 				</Select>

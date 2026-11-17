@@ -124,7 +124,7 @@ export interface FileData {
 
 export type Scale = "linear" | "biex" | "log"
 
-export type PlotMode = "heatmap" | "scatter" | "histogram"
+export type PlotMode = "heatmap" | "scatter" | "contour" | "histogram"
 
 export interface RectGateCoordinates {
 	type?: "rectangle"
@@ -205,7 +205,7 @@ export interface PlotViewConfig {
 	yMin: string
 	yMax: string
 	cutoff: number
-	plotMode: "heatmap" | "scatter" | "histogram"
+	plotMode: PlotMode
 }
 
 export interface Gate {

@@ -907,9 +907,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								{` · ${data.total_events.toLocaleString()} eventos`}
 								{plotMode === "scatter" && data.sampled_events
 									? ` · exibindo ${data.sampled_events.toLocaleString()}`
-									: plotMode === "histogram"
-										? " · histograma (100% dos dados)"
-										: " · heatmap (100% dos dados)"}
+									: ` · ${plotMode} (100% dos dados)`}
 								{previewActive ? " · prévia não salva" : ""}
 							</Typography>
 						)}
