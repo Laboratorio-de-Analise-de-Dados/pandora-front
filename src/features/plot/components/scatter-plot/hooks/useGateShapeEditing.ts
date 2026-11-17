@@ -3,6 +3,7 @@ import type { Gate, GateCoordinates, Scale } from "../../../../../types"
 import type { GateShape } from "../../../hooks/useGateShapes"
 import type { GateTool } from "../../../hooks/usePlotState"
 import { COFACTOR, toRaw } from "../../../utils/biex"
+import { shapePathToVertices } from "../../../utils/shapePath"
 
 interface UseGateShapeEditingParams {
 	gateShapes: GateShape[]
@@ -39,7 +40,8 @@ export function useGateShapeEditing({
 		shapeGateMap.current[i] = gateData
 			? { gate: gateData, swapped: swappedFlag }
 			: null
-		const isEditTool = tool === "edit" && shape.type === "rect"
+		const isEditTool =
+			tool === "edit" && (shape.type === "rect" || shape.type === "path")
 		const isReshaping =
 			reshapingGateId !== null &&
 			gateData?.id === reshapingGateId &&
@@ -49,9 +51,9 @@ export function useGateShapeEditing({
 	shapeGateMap.current.length = editableShapes.length
 
 	const handleRelayout = useCallback(
-		async (relayoutData: Record<string, number>) => {
+		async (relayoutData: Record<string, number | string>) => {
 			if (tool !== "edit" && reshapingGateId === null) return
-			const shapeUpdates = new Map<number, Record<string, number>>()
+			const shapeUpdates = new Map<number, Record<string, number | string>>()
 			for (const key of Object.keys(relayoutData)) {
 				const m = key.match(/^shapes\[(\d+)\]\.(\w+)$/)
 				if (!m) continue
@@ -66,15 +68,37 @@ export function useGateShapeEditing({
 				const { gate, swapped } = entry
 				const gc = gate.gate_coordinates
 				const gateType = gc.type ?? "rectangle"
-				if (gateType !== "rectangle" && gateType !== "interval") continue
+				if (
+					gateType !== "rectangle" &&
+					gateType !== "interval" &&
+					gateType !== "polygon"
+				)
+					continue
 				const cof = COFACTOR
+
+				// Polígono (FE-49): shape path editável — o relayout traz o path
+				// inteiro transladado/reshapeado; converte de volta a vértices crus.
+				if (gateType === "polygon" && "vertices" in gc) {
+					if (typeof props.path !== "string") continue
+					const xSc = swapped ? effYScale : effXScale
+					const ySc = swapped ? effXScale : effYScale
+					const xAxisLabel = "x_axis" in gc ? gc.x_axis : undefined
+					const yAxisLabel = "y_axis" in gc ? gc.y_axis : undefined
+					await patchCoordinates(gate.id, {
+						type: "polygon" as const,
+						x_axis: xAxisLabel,
+						y_axis: yAxisLabel,
+						vertices: shapePathToVertices(props.path, swapped, xSc, ySc),
+					})
+					continue
+				}
 
 				if (gateType === "rectangle") {
 					const shape = editableShapes[idx]
-					const x0 = props.x0 ?? (shape.x0 as number)
-					const x1 = props.x1 ?? (shape.x1 as number)
-					const y0 = props.y0 ?? (shape.y0 as number)
-					const y1 = props.y1 ?? (shape.y1 as number)
+					const x0 = Number(props.x0 ?? shape.x0)
+					const x1 = Number(props.x1 ?? shape.x1)
+					const y0 = Number(props.y0 ?? shape.y0)
+					const y1 = Number(props.y1 ?? shape.y1)
 					const xSc = swapped ? effYScale : effXScale
 					const ySc = swapped ? effXScale : effYScale
 					const rawX0 = toRaw(Math.min(x0, x1), xSc, cof)
@@ -95,8 +119,8 @@ export function useGateShapeEditing({
 					await patchCoordinates(gate.id, newCoords)
 				} else if (gateType === "interval") {
 					const shape = editableShapes[idx]
-					const x0 = props.x0 ?? (shape.x0 as number)
-					const x1 = props.x1 ?? (shape.x1 as number)
+					const x0 = Number(props.x0 ?? shape.x0)
+					const x1 = Number(props.x1 ?? shape.x1)
 					const rawX0 = toRaw(Math.min(x0, x1), effXScale, cof)
 					const rawX1 = toRaw(Math.max(x0, x1), effXScale, cof)
 					const xAxisLabel = "x_axis" in gc ? gc.x_axis : undefined

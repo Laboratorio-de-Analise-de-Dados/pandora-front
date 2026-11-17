@@ -3,13 +3,15 @@
  * Plotly (`plotTraces`) e pelo preview em canvas dos cards (BE-21).
  *
  * Paleta clássica de citometria (jet adaptado): azul → ciano → amarelo →
- * vermelho conforme a densidade sobe. No dark o primeiro stop é quase
- * preto-azulado para as baixas densidades não sumirem no fundo; no light
- * a base clara some no papel e a densidade "acende" do azul ao vermelho.
+ * vermelho conforme a densidade sobe. O primeiro stop é um azul presente
+ * nos dois temas (FE-50): densidade baixa *presente* se distingue do
+ * fundo — quem some são só os bins null (abaixo do cutoff, transparentes).
  */
 export const DENSITY_STOPS: Record<"light" | "dark", [number, string][]> = {
 	dark: [
-		[0, "#0B1026"],
+		// FE-50: azul frio presente — antes quase-fundo (#0B1026), o ponto
+		// de baixa densidade sumia; continua azul na base da rampa.
+		[0, "#2547D9"],
 		[0.15, "#0018A8"],
 		[0.35, "#0047FF"],
 		[0.55, "#00D4FF"],
@@ -18,7 +20,8 @@ export const DENSITY_STOPS: Record<"light" | "dark", [number, string][]> = {
 		[1, "#FF1A1A"],
 	],
 	light: [
-		[0, "#F4F6FF"],
+		// FE-50: azul visível sobre o papel claro — antes #F4F6FF ≈ fundo.
+		[0, "#8FA8FA"],
 		[0.15, "#C9D8FF"],
 		[0.35, "#3D6BFE"],
 		[0.55, "#00C4E6"],

@@ -6,6 +6,7 @@ import {
 } from "react-icons/md"
 import {
 	Box,
+	Button,
 	Divider,
 	FormControl,
 	IconButton,
@@ -41,6 +42,9 @@ interface PlotSettingsControls {
 	onYMinChange: (v: string) => void
 	onYMaxChange: (v: string) => void
 	onPlotModeChange: (m: PlotMode) => void
+	/** FE-48: grava a config atual em todas as amostras ativas (BE-46).
+	 *  Ausente = botão escondido (ex.: sem permissão de edição). */
+	onApplyToAll?: () => void
 }
 
 interface PlotSettingsPanelProps extends PlotSettingsControls {
@@ -95,6 +99,7 @@ const PlotSettingsContent: React.FC<
 	onYMinChange,
 	onYMaxChange,
 	onPlotModeChange,
+	onApplyToAll,
 	onClose,
 	setIsAdjusting,
 }) => {
@@ -141,6 +146,9 @@ const PlotSettingsContent: React.FC<
 					</ToggleButton>
 					<ToggleButton value="heatmap" sx={{ fontSize: "0.7rem", py: 0.3 }}>
 						Heatmap
+					</ToggleButton>
+					<ToggleButton value="contour" sx={{ fontSize: "0.7rem", py: 0.3 }}>
+						Contour
 					</ToggleButton>
 					<ToggleButton value="histogram" sx={{ fontSize: "0.7rem", py: 0.3 }}>
 						Hist
@@ -384,8 +392,8 @@ const PlotSettingsContent: React.FC<
 				</>
 			)}
 
-			{/* Cutoff de densidade */}
-			{plotMode === "heatmap" && (
+			{/* Cutoff de densidade (heatmap/contour — mesma requisição, FE-50) */}
+			{(plotMode === "heatmap" || plotMode === "contour") && (
 				<>
 					<Divider sx={{ my: 2 }} />
 					<Box>
@@ -418,6 +426,22 @@ const PlotSettingsContent: React.FC<
 							}}
 						/>
 					</Box>
+				</>
+			)}
+			{/* FE-48: uniformiza a config de exibição entre amostras —
+			    confirmação e contagem ficam no handler (BE-46). */}
+			{onApplyToAll && (
+				<>
+					<Divider sx={{ my: 2 }} />
+					<Button
+						variant="outlined"
+						size="small"
+						fullWidth
+						onClick={onApplyToAll}
+						sx={{ fontSize: "0.7rem" }}
+					>
+						Aplicar a todas as amostras
+					</Button>
 				</>
 			)}
 		</>

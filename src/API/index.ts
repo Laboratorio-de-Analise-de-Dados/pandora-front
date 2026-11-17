@@ -1,4 +1,6 @@
 import axios from "axios"
+import { toast } from "react-toastify"
+import { SERVER_ERROR_MESSAGE, shouldToastServerError } from "../utils/apiError"
 
 export const API_BASE_URL =
 	import.meta.env.VITE_API_URL || "http://localhost:8085"
@@ -38,6 +40,12 @@ CytometryApi.interceptors.response.use(
 				localStorage.removeItem("refresh_token")
 				window.location.href = "/login"
 			}
+		}
+		if (shouldToastServerError(error)) {
+			const method = error.config?.method?.toUpperCase() ?? "REQUEST"
+			const url = error.config?.url ?? ""
+			const status = error.response?.status ?? "sem resposta"
+			toast.error(`${SERVER_ERROR_MESSAGE} (${method} ${url} · ${status})`)
 		}
 		return Promise.reject(error)
 	},

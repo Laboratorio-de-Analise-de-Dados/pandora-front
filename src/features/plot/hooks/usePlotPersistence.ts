@@ -18,6 +18,12 @@ interface UsePlotPersistenceParams {
 		sourceId: number,
 		config: PlotViewConfig,
 	) => void
+	/**
+	 * Chamado só quando a config muda de fato na fonte (não no seed do
+	 * mount) — alimenta a memória por canal da sessão (FE-48), que deve
+	 * refletir o último *ajuste* do usuário, não a config resolvida.
+	 */
+	onConfigChange?: (config: PlotViewConfig) => void
 }
 
 /**
@@ -33,10 +39,13 @@ export function usePlotPersistence({
 	sourceId,
 	config,
 	onPersist,
+	onConfigChange,
 }: UsePlotPersistenceParams) {
 	const isFirst = useRef(true)
 	const onPersistRef = useRef(onPersist)
 	onPersistRef.current = onPersist
+	const onConfigChangeRef = useRef(onConfigChange)
+	onConfigChangeRef.current = onConfigChange
 
 	useEffect(() => {
 		if (isFirst.current) {
@@ -46,6 +55,7 @@ export function usePlotPersistence({
 		}
 		const handle = setTimeout(() => {
 			onPersistRef.current(sourceType, sourceId, config)
+			onConfigChangeRef.current?.(config)
 			if (sourceType === "gate") {
 				updateGate(sourceId, { plot_config: config }).catch(() => undefined)
 			} else {

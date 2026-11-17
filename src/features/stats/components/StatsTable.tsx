@@ -1,12 +1,15 @@
 import React from "react"
 import {
+	Box,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
 	TableHead,
 	TableRow,
+	Tooltip,
 } from "@mui/material"
+import { MdEdit as EditIcon } from "react-icons/md"
 import type { ChannelStat } from "../../../types"
 
 interface MetricDef {
@@ -20,6 +23,9 @@ interface StatsTableProps {
 	channelStats: Record<string, ChannelStat>
 	activeMetrics: MetricDef[]
 	channelLabel: (ch: string) => string
+	/** FE-51: presente quando o usuário pode editar labels — o nome do
+	 * canal vira affordance clicável que abre o rename. */
+	onChannelClick?: (ch: string) => void
 }
 
 const StatsTable: React.FC<StatsTableProps> = ({
@@ -27,6 +33,7 @@ const StatsTable: React.FC<StatsTableProps> = ({
 	channelStats,
 	activeMetrics,
 	channelLabel,
+	onChannelClick,
 }) => (
 	<TableContainer sx={{ flex: 1, overflow: "auto" }}>
 		<Table size="small" stickyHeader>
@@ -83,7 +90,35 @@ const StatsTable: React.FC<StatsTableProps> = ({
 									zIndex: 1,
 								}}
 							>
-								{channelLabel(ch)}
+								{onChannelClick ? (
+									<Tooltip title="Renomear canal…">
+										<Box
+											component="span"
+											onClick={() => onChannelClick(ch)}
+											sx={(theme) => ({
+												cursor: "pointer",
+												display: "inline-flex",
+												alignItems: "center",
+												gap: 1,
+												"&:hover": {
+													color: theme.palette.primary.main,
+													textDecoration: "underline",
+												},
+											})}
+										>
+											{channelLabel(ch)}
+											<EditIcon
+												style={{
+													fontSize: 11,
+													opacity: 0.6,
+													flexShrink: 0,
+												}}
+											/>
+										</Box>
+									</Tooltip>
+								) : (
+									channelLabel(ch)
+								)}
 							</TableCell>
 							{activeMetrics.map((m) => (
 								<TableCell

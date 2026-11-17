@@ -15,6 +15,7 @@ import { useExperimentsContext } from "../../../providers/ExperimentContext"
 import { sha256File } from "../../../utils/fileHash"
 import {
 	ACCEPTED_EXPERIMENT_FILE_MESSAGE,
+	fileUploadKey,
 	findDuplicateFileNames,
 	isAcceptedExperimentFile,
 } from "../../../utils/experimentFile"
@@ -122,10 +123,10 @@ export function useExperimentMetaActions() {
 				)
 			if (accepted.length === 0) return
 
-			const duplicateNames = findDuplicateFileNames(accepted)
+			const duplicateNames = findDuplicateFileNames(accepted, fileUploadKey)
 			const seen = new Set<string>()
 			const unique = accepted.filter((file) => {
-				const key = file.name.trim().toLowerCase()
+				const key = fileUploadKey(file)
 				if (seen.has(key)) return false
 				seen.add(key)
 				return true

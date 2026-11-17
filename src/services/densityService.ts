@@ -1,5 +1,5 @@
 import CytometryApi from "../API"
-import type { DensityResponse, Scale } from "../types"
+import type { DensityResponse, PlotMode, Scale } from "../types"
 import { COFACTOR } from "../features/plot/utils/biex"
 
 export interface FetchDensityParams {
@@ -7,7 +7,9 @@ export interface FetchDensityParams {
 	sourceId: number
 	xAxis: string
 	yAxis: string
-	plotMode: "heatmap" | "scatter" | "histogram"
+	/** "contour" é modo só de render — para o backend é a mesma
+	 * requisição do heatmap (histograma 2D, FE-50). */
+	plotMode: PlotMode
 	xScale: Scale
 	yScale: Scale
 	cutoff: number
@@ -37,7 +39,7 @@ export const fetchDensity = async ({
 			: `/analytics/gate/${sourceId}`
 
 	const params =
-		plotMode === "heatmap"
+		plotMode === "heatmap" || plotMode === "contour"
 			? `mode=heatmap&bins=200&cutoff=${cutoff}`
 			: plotMode === "histogram"
 				? "mode=histogram&bins=256"

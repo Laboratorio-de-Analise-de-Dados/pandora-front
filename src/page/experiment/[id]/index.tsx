@@ -18,6 +18,7 @@ import {
 } from "../../../features/experiment/context/ExperimentWorkspaceContext"
 import { useExperimentMetaActions } from "../../../features/experiment/hooks/useExperimentMetaActions"
 import { useFileActions } from "../../../features/experiment/hooks/useFileActions"
+import { useChannelLabels } from "../../../features/experiment/hooks/useChannelLabels"
 import { useGateActions } from "../../../features/experiment/hooks/useGateActions"
 import { useSubsampleActions } from "../../../features/experiment/hooks/useSubsampleActions"
 import { PlotStateProvider } from "../../../features/plot/context/PlotStateContext"
@@ -41,6 +42,12 @@ import ApplyGateDialog from "../../../features/gate/components/apply-gate-dialog
 import EditExperimentDialog from "../../../features/experiment/components/EditExperimentDialog"
 import DeleteGateDialog from "../../../features/gate/components/delete-gate-dialog"
 import { findFileForGate, findGateInTree } from "../../../features/gate/utils"
+import { drilldownTarget } from "../../../features/gate/utils/gateDrilldown"
+import { createGate } from "../../../services/gateService"
+import GateDrilldownPanel from "../../../features/plot/components/gate-drilldown-panel"
+import { toast } from "react-toastify"
+import { extractErrorMessage } from "../../../utils/apiError"
+import type { Gate, PlotViewConfig } from "../../../types"
 import {
 	MdDelete as DeleteIcon,
 	MdEdit as EditIcon,
@@ -49,6 +56,7 @@ import {
 	MdChevronRight as NextIcon,
 	MdAccountTree as TreeIcon,
 	MdUploadFile as UploadIcon,
+	MdOutlineDriveFolderUpload as FolderUploadIcon,
 	MdDownload as DownloadIcon,
 	MdHistory as HistoryIcon,
 	MdFlashOn as BoltIcon,
@@ -74,6 +82,8 @@ function ExperimentPageContent() {
 		values,
 		plotInitialConfig,
 		saveSourceConfig,
+		saveChannelConfig,
+		invalidateExperiment,
 		goToAdjacentFile,
 		canGoPrevFile,
 		canGoNextFile,
@@ -98,7 +108,58 @@ function ExperimentPageContent() {
 		handleEnableFile,
 		handleMoveFileToSubsample,
 		handleUpdateFileTags,
+		handleApplyPlotConfigToAll,
 	} = useFileActions()
+	const { saveChannelLabels } = useChannelLabels()
+
+	// FE-52: painel lateral "dentro do gate" — duplo clique num gate abre
+	// a população-filha ao lado do plot atual (gate ou id do filho criado).
+	const [drilldownGateId, setDrilldownGateId] = useState<number | null>(null)
+	const [drilldownConfig, setDrilldownConfig] = useState<PlotViewConfig | null>(
+		null,
+	)
+
+	const handleGateDoubleClick = async (gate: Gate, config: PlotViewConfig) => {
+		const file = experimentFiles.find((f) => f.id === gate.file_data)
+		if (!file) return
+		const target = drilldownTarget(gate, file)
+		if (target.kind === "navigate") {
+			setDrilldownGateId(target.gate.id)
+			setDrilldownConfig(config)
+			return
+		}
+		// Sem filho existente o duplo clique cria a cópia — exige edição.
+		if (!canEditExperiment) return
+		try {
+			const created = await createGate({
+				...target.gate,
+				plot_config: config,
+			})
+			invalidateExperiment()
+			setDrilldownGateId(created.id)
+			setDrilldownConfig(config)
+		} catch (error) {
+			toast.error(`Erro ao criar gate: ${extractErrorMessage(error)}`)
+		}
+	}
+
+	// Resolve o gate-filho dos dados atualizados — edições no painel
+	// propagam porque o objeto vem do workspace, não de um snapshot.
+	const drilldownFile =
+		drilldownGateId != null
+			? findFileForGate(experimentFiles, drilldownGateId)
+			: undefined
+	const drilldownGate = drilldownFile
+		? findGateInTree(drilldownFile.gates, drilldownGateId as number)
+		: undefined
+	const drilldownParentName = drilldownGate?.parent_id
+		? findGateInTree(drilldownFile?.gates ?? [], drilldownGate.parent_id)?.name
+		: undefined
+
+	// Trocar de fonte/amostra fecha o painel — ele pertence à visão atual.
+	useEffect(() => {
+		setDrilldownGateId(null)
+	}, [source?.type, source?.id])
 	const {
 		handleRequestDeleteGate,
 		handleDeleteGates,
@@ -247,30 +308,63 @@ function ExperimentPageContent() {
 				{experiment && (
 					<Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, ml: "auto" }}>
 						{canEditExperiment && (
-							<Tooltip title="Adicionar arquivos (.zip ou .fcs)">
-								<span>
-									<IconButton component="label" disabled={addingFile}>
-										{addingFile ? (
-											<CircularProgress size={18} />
-										) : (
-											<UploadIcon fontSize="small" />
-										)}
-										<input
-											type="file"
-											accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
-											multiple
-											hidden
-											onChange={(e) => {
-												const selected = Array.from(e.target.files ?? [])
-												e.target.value = ""
-												if (selected.length > 0) {
-													void handleAddFiles(selected)
-												}
-											}}
-										/>
-									</IconButton>
-								</span>
-							</Tooltip>
+							<>
+								<Tooltip title="Adicionar arquivos (.zip ou .fcs)">
+									<span>
+										<IconButton component="label" disabled={addingFile}>
+											{addingFile ? (
+												<CircularProgress size={18} />
+											) : (
+												<UploadIcon fontSize="small" />
+											)}
+											<input
+												type="file"
+												accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
+												multiple
+												hidden
+												onChange={(e) => {
+													const selected = Array.from(e.target.files ?? [])
+													e.target.value = ""
+													if (selected.length > 0) {
+														void handleAddFiles(selected)
+													}
+												}}
+											/>
+										</IconButton>
+									</span>
+								</Tooltip>
+								<Tooltip title="Adicionar pasta (subpastas viram subsamples)">
+									<span>
+										<IconButton component="label" disabled={addingFile}>
+											<FolderUploadIcon fontSize="small" />
+											<input
+												type="file"
+												multiple
+												hidden
+												ref={(el) => {
+													el?.setAttribute("webkitdirectory", "")
+												}}
+												onChange={(e) => {
+													const selected = Array.from(e.target.files ?? [])
+													e.target.value = ""
+													const fcs = selected.filter((f) =>
+														f.name.toLowerCase().endsWith(".fcs"),
+													)
+													const ignored = selected.length - fcs.length
+													if (ignored > 0) {
+														toast.warn(
+															`${ignored} arquivo(s) não-.fcs ignorado(s)`,
+														)
+													}
+													if (fcs.length > 0) {
+														void handleAddFiles(fcs)
+													}
+												}}
+											/>
+										</IconButton>
+									</span>
+								</Tooltip>
+							</>
 						)}
 						<Tooltip title="Baixar dados (ZIP por subsample)">
 							<IconButton onClick={handleDownload}>
@@ -599,9 +693,14 @@ function ExperimentPageContent() {
 							sx={{
 								flex: 1,
 								minHeight: 0,
-								overflowY: "auto",
+								overflow: "auto",
 								display: "flex",
-								flexDirection: "column",
+								// FE-52: com o painel-filho aberto os dois plots ficam
+								// lado a lado no desktop; no mobile empilham.
+								flexDirection: {
+									xs: "column",
+									md: drilldownGate ? "row" : "column",
+								},
 								alignItems: "center",
 								justifyContent: { xs: "flex-start", md: "center" },
 								gap: "1rem",
@@ -630,6 +729,7 @@ function ExperimentPageContent() {
 									initialConfig={plotInitialConfig}
 									channelMeta={currentFile?.channel_meta}
 									onPersist={saveSourceConfig}
+									onConfigChange={saveChannelConfig}
 								>
 									<ScatterPlot
 										values={values}
@@ -644,10 +744,60 @@ function ExperimentPageContent() {
 										childGates={childGates}
 										suggestSignal={suggestSignal}
 										onSuggestSignalConsumed={() => setSuggestSignal(null)}
+										onPropagateGate={
+											canEditExperiment
+												? (gate) => handleApplyGate(gate.id, gate.name)
+												: undefined
+										}
+										onApplyPlotConfigToAll={
+											canEditExperiment ? handleApplyPlotConfigToAll : undefined
+										}
+										onSaveChannelLabel={
+											canEditExperiment
+												? (channel, label) =>
+														saveChannelLabels(source.fileDataId, {
+															[channel]: label,
+														})
+												: undefined
+										}
+										onGateDoubleClick={handleGateDoubleClick}
 									/>
 								</PlotStateProvider>
 							) : (
 								<Typography>Select a file to load</Typography>
+							)}
+							{/* FE-52: painel lateral "dentro do gate" — duplo clique
+							    abre a população-filha ao lado do plot atual. */}
+							{drilldownGate && source && (
+								<GateDrilldownPanel
+									gate={drilldownGate}
+									parentName={drilldownParentName}
+									values={values}
+									fileDataId={drilldownFile?.id ?? source.fileDataId}
+									initialConfig={
+										drilldownConfig ??
+										drilldownGate.plot_config ??
+										currentFile?.plot_config
+									}
+									channelMeta={(drilldownFile ?? currentFile)?.channel_meta}
+									onPersist={saveSourceConfig}
+									onConfigChange={saveChannelConfig}
+									onPropagateGate={
+										canEditExperiment
+											? (gate) => handleApplyGate(gate.id, gate.name)
+											: undefined
+									}
+									onSaveChannelLabel={
+										canEditExperiment
+											? (channel, label) =>
+													saveChannelLabels(
+														drilldownFile?.id ?? source.fileDataId,
+														{ [channel]: label },
+													)
+											: undefined
+									}
+									onClose={() => setDrilldownGateId(null)}
+								/>
 							)}
 						</Box>
 
@@ -689,6 +839,7 @@ function ExperimentPageContent() {
 								values={values}
 								fileStats={fileStats}
 								embedded
+								canEditLabels={canEditExperiment}
 							/>
 						</PanelSection>
 						<PanelSection

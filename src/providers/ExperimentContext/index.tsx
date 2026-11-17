@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import type { Experiment } from "../../types"
 import { useAuth } from "../AuthContext"
 import { EXPERIMENT_TYPES_QUERY_KEY } from "../../features/experiment/hooks/useExperimentTypes"
+import { fileRelativePath } from "../../utils/experimentFile"
 import {
 	completeExperimentFileUpload,
 	completeExperimentUpload,
@@ -50,7 +51,7 @@ interface ExperimentContextProps {
 		type: string,
 		organizationId?: number | null,
 		description?: string,
-	) => Promise<void>
+	) => Promise<number>
 	addExperimentFile: (
 		experimentId: number,
 		file: File,
@@ -249,7 +250,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 					? (user?.memberships?.[0]?.organization?.id ?? null)
 					: organizationId
 
-			await createEmptyExperiment({
+			const created = await createEmptyExperiment({
 				title,
 				type,
 				description,
@@ -257,6 +258,7 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			})
 			await listExperiments()
 			queryClient.invalidateQueries({ queryKey: EXPERIMENT_TYPES_QUERY_KEY })
+			return created.id
 		},
 		[listExperiments, user, queryClient],
 	)
@@ -271,10 +273,12 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 			onProgress?: (percent: number) => void,
 		) => {
 			const totalChunks = Math.ceil(file.size / chunkSize)
+			const relativePath = fileRelativePath(file)
 			const init = await initExperimentFileUpload(
 				experimentId,
 				file.name,
 				totalChunks,
+				relativePath,
 			)
 			const fileId = init.fileId
 
@@ -286,7 +290,11 @@ export const ExperimentProvider: FC<ExperimentProviderProps> = ({
 				onProgress,
 			)
 
-			const done = await completeExperimentFileUpload(fileId, file.name)
+			const done = await completeExperimentFileUpload(
+				fileId,
+				file.name,
+				relativePath,
+			)
 			return {
 				added: done.added,
 				skipped: done.skipped,

@@ -1,5 +1,5 @@
 import CytometryApi from "../API"
-import type { Subsample } from "../types"
+import type { ExperimentFiles, Subsample } from "../types"
 
 export const fetchSubsamples = async (
 	experimentId: string,
@@ -74,4 +74,17 @@ export const moveFileToSubsample = async (
 	await CytometryApi.patch(`/experiment/file/${fileDataId}/subsample`, {
 		subsample: subsampleId,
 	})
+}
+
+/** FE-53 (BE-48): move amostras em lote — uma transação; `subsample`
+ * null desagrupa. Devolve as amostras movidas. */
+export const moveFilesToSubsample = async (
+	experimentId: string | number,
+	moves: { file_id: number; subsample: number | null }[],
+): Promise<ExperimentFiles[]> => {
+	const res = await CytometryApi.patch(
+		`/experiment/${experimentId}/files/subsample`,
+		{ moves },
+	)
+	return res.data
 }

@@ -19,6 +19,7 @@ import {
 	MdAddBox as QuadrantIcon,
 	MdArrowDropDown as ChevronIcon,
 	MdRestartAlt as ResetIcon,
+	MdCopyAll as ApplyAllIcon,
 } from "react-icons/md"
 import JuviaCatIcon from "../../../../suggest/components/JuviaCatIcon"
 import type { Scale } from "../../../../../types"
@@ -313,6 +314,12 @@ export interface PlotToolbarProps {
 	gateToolsEnabled?: boolean
 	settingsOpen: boolean
 	onToggleSettings: () => void
+	/** FE-48: grava a config atual em todas as amostras ativas (BE-46).
+	 *  Ausente = botão escondido (ex.: sem permissão de edição). */
+	onApplyToAll?: () => void
+	/** FE-51: lápis por opção nos selects de eixo abre o rename do canal
+	 *  (BE-47). Ausente = opções sem lápis (sem permissão). */
+	onRenameChannel?: (channel: string) => void
 }
 
 /**
@@ -349,6 +356,8 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	gateToolsEnabled = true,
 	settingsOpen,
 	onToggleSettings,
+	onApplyToAll,
+	onRenameChannel,
 }) => {
 	const histogram = plotMode === "histogram"
 	const visibleTools = histogram
@@ -522,9 +531,10 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					onMaxChange={onYMaxChange}
 				/>
 			)}
-			{/* Cutoff de densidade só existe no heatmap — como as opções
-					    saíram do botão de config, ele vive na barra. */}
-			{plotMode === "heatmap" && (
+			{/* Cutoff de densidade só existe nos modos de histograma 2D
+					    (heatmap/contour — mesma requisição, FE-50) — como as
+					    opções saíram do botão de config, ele vive na barra. */}
+			{(plotMode === "heatmap" || plotMode === "contour") && (
 				<Tooltip title="Cutoff de densidade — bins com contagem ≤ cutoff ficam transparentes">
 					<TextField
 						label="Corte"
@@ -544,6 +554,33 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 							},
 						}}
 					/>
+				</Tooltip>
+			)}
+			{/* FE-48 — uniformiza a config de exibição entre amostras;
+			    confirmação e contagem ficam no handler da página.
+			    Só no desktop: no mobile a mesma ação vive no painel ⚙️. */}
+			{onApplyToAll && (
+				<Tooltip
+					title="Substitui a configuração de todas as amostras pela atual"
+					arrow
+				>
+					<Button
+						variant="outlined"
+						size="small"
+						onClick={onApplyToAll}
+						startIcon={<ApplyAllIcon />}
+						sx={{
+							display: { xs: "none", md: "inline-flex" },
+							fontWeight: 600,
+							whiteSpace: "nowrap",
+							height: 40,
+							color: "text.primary",
+							borderColor: "divider",
+							"&:hover": { borderColor: "text.primary" },
+						}}
+					>
+						Aplicar a todas
+					</Button>
 				</Tooltip>
 			)}
 			{/* No desktop todas as opções já estão na barra — o botão de
@@ -577,6 +614,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 					sx={{ fontWeight: 600 }}
 				>
 					<MenuItem value="heatmap">Heatmap</MenuItem>
+					<MenuItem value="contour">Contour</MenuItem>
 					<MenuItem value="scatter">Scatter</MenuItem>
 					<MenuItem value="histogram">Histograma</MenuItem>
 				</Select>
@@ -587,6 +625,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				options={values}
 				onChange={onSelectX}
 				size="small"
+				onRenameChannel={onRenameChannel}
 			/>
 			{!histogram && (
 				<>
@@ -599,6 +638,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 						options={values}
 						onChange={onSelectY}
 						size="small"
+						onRenameChannel={onRenameChannel}
 					/>
 				</>
 			)}

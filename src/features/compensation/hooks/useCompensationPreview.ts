@@ -70,8 +70,9 @@ export function useCompensationPreview({
 		// Mesmos params do fetchDensity: a prévia é o mesmo gráfico com a
 		// matriz-rascunho no lugar da compensação aplicada.
 		const params: CompensationPreviewParams = {
-			mode: plotMode,
-			...(plotMode === "heatmap"
+			// FE-50: "contour" é modo só de render — para o backend é heatmap.
+			mode: plotMode === "contour" ? "heatmap" : plotMode,
+			...(plotMode === "heatmap" || plotMode === "contour"
 				? { bins: 200, cutoff }
 				: plotMode === "histogram"
 					? { bins: 256 }

@@ -1,53 +1,38 @@
 import { describe, expect, it } from "vitest"
-import {
-	findDuplicateFileNames,
-	formatFileSize,
-	isAcceptedExperimentFile,
-} from "./experimentFile"
+import { fileRelativePath } from "./experimentFile"
 
-const fakeFile = (name: string) => new File(["x"], name)
+const fcs = (name: string, rel?: string) => {
+	const file = new File(["x"], name, { type: "application/octet-stream" })
+	if (rel !== undefined) {
+		Object.defineProperty(file, "webkitRelativePath", { value: rel })
+	}
+	return file
+}
 
-describe("isAcceptedExperimentFile", () => {
-	it("aceita .fcs e .zip em qualquer caixa", () => {
-		expect(isAcceptedExperimentFile("amostra.fcs")).toBe(true)
-		expect(isAcceptedExperimentFile("LOTE.ZIP")).toBe(true)
+describe("fileRelativePath (FE-54)", () => {
+	it("arquivo solto não tem caminho", () => {
+		expect(fileRelativePath(fcs("a.fcs"))).toBeUndefined()
 	})
 
-	it("rejeita outras extensões", () => {
-		expect(isAcceptedExperimentFile("amostra.csv")).toBe(false)
-		expect(isAcceptedExperimentFile("amostra.fcs.zip.bak")).toBe(false)
-		expect(isAcceptedExperimentFile("amostra")).toBe(false)
-		expect(isAcceptedExperimentFile("")).toBe(false)
-	})
-})
-
-describe("findDuplicateFileNames", () => {
-	it("retorna nomes repetidos na seleção", () => {
-		const files = [fakeFile("a.fcs"), fakeFile("b.fcs"), fakeFile("a.fcs")]
-		expect(findDuplicateFileNames(files)).toEqual(["a.fcs"])
+	it("arquivo na raiz da pasta escolhida fica sem subsample", () => {
+		expect(fileRelativePath(fcs("a.fcs", "Pasta/a.fcs"))).toBeUndefined()
 	})
 
-	it("detecta colisão por caixa diferente e preserva a 1ª grafia", () => {
-		const files = [fakeFile("Tube_1.FCS"), fakeFile("tube_1.fcs")]
-		expect(findDuplicateFileNames(files)).toEqual(["Tube_1.FCS"])
+	it("subdiretório vira caminho relativo", () => {
+		expect(fileRelativePath(fcs("a.fcs", "Pasta/Compensation/a.fcs"))).toBe(
+			"Compensation/a.fcs",
+		)
 	})
 
-	it("lista vazia quando não há duplicados", () => {
-		const files = [fakeFile("a.fcs"), fakeFile("b.zip")]
-		expect(findDuplicateFileNames(files)).toEqual([])
+	it("subníveis preservam a hierarquia", () => {
+		expect(
+			fileRelativePath(fcs("a.fcs", "Pasta/tempo_1/controles/a.fcs")),
+		).toBe("tempo_1/controles/a.fcs")
 	})
 
-	it("não repete o nome quando aparece 3+ vezes", () => {
-		const files = [fakeFile("a.fcs"), fakeFile("a.fcs"), fakeFile("a.fcs")]
-		expect(findDuplicateFileNames(files)).toEqual(["a.fcs"])
-	})
-})
-
-describe("formatFileSize", () => {
-	it("formata bytes, KB, MB e GB", () => {
-		expect(formatFileSize(512)).toBe("512 B")
-		expect(formatFileSize(2048)).toBe("2.0 KB")
-		expect(formatFileSize(3 * 1024 * 1024)).toBe("3.0 MB")
-		expect(formatFileSize(2 * 1024 ** 3)).toBe("2.0 GB")
+	it("segmentos vazios são ignorados", () => {
+		expect(fileRelativePath(fcs("a.fcs", "Pasta//sub//a.fcs"))).toBe(
+			"sub/a.fcs",
+		)
 	})
 })

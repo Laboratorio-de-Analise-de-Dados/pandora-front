@@ -10,7 +10,7 @@ import {
 import { useTheme } from "@mui/material/styles"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Plot from "react-plotly.js"
-import { Gate, Scale } from "../../../../types"
+import { Gate, PlotViewConfig, Scale } from "../../../../types"
 import type { GateScope } from "../../../../services/gateService"
 import type { SuggestRequestPayload, SuggestionRun } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
@@ -63,6 +63,7 @@ import {
 	buildGateLabelTraces,
 } from "../../utils/gateHoverTraces"
 import { buildAxisRange, channelRangeFor } from "../../utils/plotAxes"
+import { axisTitleLabel } from "../../../../utils/channelLabel"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
 import type { PlotMode } from "../../hooks/usePlotState"
@@ -75,6 +76,7 @@ import ReshapeScopeDialog from "./components/ReshapeScopeDialog"
 import { PlotSettingsPanel } from "./components/PlotSettingsPanel"
 import PlotToolbar from "./components/PlotToolbar"
 import GateContextMenu from "./components/GateContextMenu"
+import LabelEditDialog from "../../../stats/components/LabelEditDialog"
 import PolygonEditOverlay from "./components/PolygonEditOverlay"
 
 // Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
@@ -97,6 +99,18 @@ interface ScatterPlotProps {
 	/** Chamado quando o sinal é consumido — o pai zera para um novo
 	 * mount não reabrir o dialog. */
 	onSuggestSignalConsumed?: () => void
+	/** "Propagar gate…" no menu de contexto — a página abre o
+	 * ApplyGateDialog com o gate clicado (ausente = item escondido). */
+	onPropagateGate?: (gate: Gate) => void
+	/** "Aplicar a todas as amostras" no painel de configurações — a página
+	 * confirma e grava a config em lote (ausente = botão escondido). */
+	onApplyPlotConfigToAll?: (config: PlotViewConfig) => void
+	/** FE-51: salvar label de canal (BE-47) — ausente = os lápis de rename
+	 * nos selects de eixo ficam escondidos (sem permissão). */
+	onSaveChannelLabel?: (channel: string, label: string | null) => Promise<void>
+	/** FE-52: duplo clique sobre um gate — "entrar no gate". Recebe a
+	 * config atual do plot para o painel-filho herdar canais/escala. */
+	onGateDoubleClick?: (gate: Gate, config: PlotViewConfig) => void
 }
 
 // Fundo do plot: cinza bem claro — lê como "branco" como nos softwares
@@ -114,6 +128,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	childGates = [],
 	suggestSignal,
 	onSuggestSignalConsumed,
+	onPropagateGate,
+	onApplyPlotConfigToAll,
+	onSaveChannelLabel,
+	onGateDoubleClick,
 }) => {
 	const plotState = usePlotContext()
 
@@ -200,6 +218,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		gate: Gate
 		gateIndex: number
 	} | null>(null)
+	// FE-51: clique no título do eixo abre o rename de canal (BE-47).
+	const [renamingChannel, setRenamingChannel] = useState<string | null>(null)
+	const [renamingLabel, setRenamingLabel] = useState("")
 	// Reshape mode
 	const [reshapingGateId, setReshapingGateId] = useState<number | null>(null)
 	const settingsAvailable = tool !== "edit" && reshapingGateId === null
@@ -577,6 +598,24 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const handleContextMenuClose = () => setContextMenu(null)
 
+	// FE-51: lápis no select de eixo (AxisSelect) → dialog de rename
+	// direto. Sem permissão de edição (prop ausente) não há ação.
+	const openChannelRename = (channel: string) => {
+		if (!onSaveChannelLabel) return
+		setRenamingChannel(channel)
+		setRenamingLabel(currentFile?.channel_labels?.[channel] ?? "")
+	}
+
+	const handleSaveChannelLabel = async () => {
+		if (!renamingChannel || !onSaveChannelLabel) return
+		try {
+			await onSaveChannelLabel(renamingChannel, renamingLabel.trim() || null)
+			setRenamingChannel(null)
+		} catch {
+			// Erro já virou toast no hook — o dialog fica aberto para ajustar.
+		}
+	}
+
 	const handleContextMenuEdit = () => {
 		if (!contextMenu) return
 		setSelectedGate(contextMenu.gate)
@@ -629,6 +668,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		} else {
 			setReshapingGateId(gate.id)
 		}
+	}
+
+	const handleContextMenuPropagate = () => {
+		if (!contextMenu) return
+		onPropagateGate?.(contextMenu.gate)
+		setContextMenu(null)
 	}
 
 	const handleExitReshape = () => {
@@ -872,6 +917,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								gateToolsEnabled={!previewActive}
 								settingsOpen={settingsOpen}
 								onToggleSettings={() => setSettingsOpen((prev) => !prev)}
+								onApplyToAll={
+									onApplyPlotConfigToAll
+										? () => onApplyPlotConfigToAll(plotState.config)
+										: undefined
+								}
+								onRenameChannel={
+									onSaveChannelLabel ? openChannelRename : undefined
+								}
 							/>
 						</Box>
 						{data && (
@@ -888,15 +941,20 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								{` · ${data.total_events.toLocaleString()} eventos`}
 								{plotMode === "scatter" && data.sampled_events
 									? ` · exibindo ${data.sampled_events.toLocaleString()}`
-									: plotMode === "histogram"
-										? " · histograma (100% dos dados)"
-										: " · heatmap (100% dos dados)"}
+									: ` · ${plotMode} (100% dos dados)`}
 								{previewActive ? " · prévia não salva" : ""}
 							</Typography>
 						)}
 						<Box
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
+							onDoubleClick={(event) => {
+								// FE-52: duplo clique no corpo do gate → "entrar" —
+								// navega pro filho ou cria gate-filho cópia do pai.
+								if (previewActive || !onGateDoubleClick) return
+								const hit = findGateAtPoint(event.clientX, event.clientY)
+								if (hit) onGateDoubleClick(hit.gate, plotState.config)
+							}}
 							sx={(theme) => ({
 								// Mobile: o plot ocupa a metade superior da tela
 								// (quase full-width, limitado pela altura); desktop
@@ -1011,7 +1069,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											: {}),
 										xaxis: {
 											title: {
-												text: `${xAxis}${effXScale === "linear" ? "" : ` (${effXScale})`}`,
+												text: axisTitleLabel(xAxis, currentFile, effXScale),
 											},
 											...(xTicks
 												? {
@@ -1037,7 +1095,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												text:
 													plotMode === "histogram"
 														? "Contagem"
-														: `${yAxis}${effYScale === "linear" ? "" : ` (${effYScale})`}`,
+														: axisTitleLabel(yAxis, currentFile, effYScale),
 											},
 											...(plotMode !== "histogram" && yTicks
 												? {
@@ -1209,6 +1267,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									onYMinChange={setYMin}
 									onYMaxChange={setYMax}
 									onPlotModeChange={setPlotMode}
+									onApplyToAll={
+										onApplyPlotConfigToAll
+											? () => onApplyPlotConfigToAll(plotState.config)
+											: undefined
+									}
 								/>
 							)}
 						</Box>
@@ -1253,12 +1316,33 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				onClose={handleContextMenuClose}
 				onReshape={handleContextMenuReshape}
 				onEdit={handleContextMenuEdit}
+				onPropagate={onPropagateGate ? handleContextMenuPropagate : undefined}
 				onDelete={handleContextMenuDelete}
 				deleteLabel={
 					contextMenu?.gate.gate_coordinates?.type === "quadrant"
 						? "Excluir quadrantes"
 						: "Excluir"
 				}
+			/>
+
+			{/* FE-51 — clique no título do eixo abre o rename de canal
+			    (BE-47) direto neste dialog. */}
+			<LabelEditDialog
+				open={renamingChannel !== null}
+				title={renamingChannel ? `Renomear ${renamingChannel}` : ""}
+				allChannels={renamingChannel ? [renamingChannel] : []}
+				channelLabelMap={
+					renamingChannel ? { [renamingChannel]: renamingChannel } : {}
+				}
+				editingLabels={
+					renamingChannel ? { [renamingChannel]: renamingLabel } : {}
+				}
+				onEditingLabelsChange={(labels) =>
+					setRenamingLabel(labels[renamingChannel ?? ""] ?? "")
+				}
+				onSave={handleSaveChannelLabel}
+				onClearAll={() => setRenamingLabel("")}
+				onClose={() => setRenamingChannel(null)}
 			/>
 
 			{/* FE-42 — pedido + revisão de sugestões. O dialog usa os eixos

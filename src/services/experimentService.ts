@@ -212,10 +212,13 @@ export const initExperimentFileUpload = async (
 	experimentId: number,
 	fileName: string,
 	totalChunks: number,
+	relativePath?: string,
 ): Promise<FileUploadInitResponse> => {
 	const res = await CytometryApi.post(
 		`/experiment/${experimentId}/files/init`,
-		{ fileName, totalChunks },
+		// BE-49: caminho relativo da pasta de origem vira subsample;
+		// backends antigos ignoram o campo extra.
+		{ fileName, totalChunks, ...(relativePath ? { relativePath } : {}) },
 	)
 	return res.data
 }
@@ -251,10 +254,12 @@ export interface FileUploadCompleteResponse {
 export const completeExperimentFileUpload = async (
 	fileId: number,
 	fileName: string,
+	relativePath?: string,
 ): Promise<FileUploadCompleteResponse> => {
 	const res = await CytometryApi.post("/experiment/files/complete/", {
 		fileId,
 		fileName,
+		...(relativePath ? { relativePath } : {}),
 	})
 	return res.data
 }
@@ -305,6 +310,37 @@ export const updateFilePlotConfig = async (
 	await CytometryApi.patch(`/experiment/file/${fileDataId}/plot-config`, {
 		plot_config: plotConfig,
 	})
+}
+
+/** FE-48 (BE-46): mesma `plot_config` em lote — sem `fileIds` aplica a
+ * todas as amostras ativas do experimento; com a lista, só às listadas.
+ * Devolve as amostras atualizadas. */
+export const updateFilesPlotConfig = async (
+	experimentId: string | number,
+	plotConfig: PlotViewConfig,
+	fileIds?: number[],
+): Promise<ExperimentFiles[]> => {
+	const res = await CytometryApi.patch(
+		`/experiment/${experimentId}/files/plot-config`,
+		{
+			plot_config: plotConfig,
+			...(fileIds ? { file_ids: fileIds } : {}),
+		},
+	)
+	return res.data
+}
+
+/** FE-51 (BE-47): labels custom de canal por arquivo — merge por chave;
+ * `null`/vazio remove a entrada. Devolve a amostra atualizada. */
+export const updateFileChannelLabels = async (
+	fileDataId: number,
+	labels: Record<string, string | null>,
+): Promise<ExperimentFiles> => {
+	const res = await CytometryApi.patch(
+		`/experiment/file/${fileDataId}/channel-labels`,
+		{ labels },
+	)
+	return res.data
 }
 
 /** Histograma 2D de baixa resolução da 1ª amostra ativa (BE-21). */
