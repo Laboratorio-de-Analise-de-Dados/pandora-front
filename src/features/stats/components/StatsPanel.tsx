@@ -27,6 +27,8 @@ import {
 } from "../../gate/utils"
 import { normalizeChannelName } from "../utils/channelHelpers"
 import { isFluorescence } from "../utils/channelHelpers"
+import { channelDisplayLabel } from "../../../utils/channelLabel"
+import { useChannelLabels } from "../../experiment/hooks/useChannelLabels"
 import { exportRows } from "../utils/exportHelpers"
 import { buildSelectableItems } from "../utils/selectable"
 import { buildAnalysisRows } from "../utils/statsRows"
@@ -86,7 +88,6 @@ const DEFAULT_VISIBLE_METRICS = new Set<MetricColumn>([
 
 const LS_KEY_CHANNELS = "pandora_stats_selectedChannels"
 const LS_KEY_METRICS = "pandora_stats_visibleMetrics"
-const LS_KEY_LABELS = "pandora_channel_labels"
 
 // --- Component ---
 
@@ -101,6 +102,9 @@ interface StatsPanelProps {
 	 * próprio e altura natural (o painel inteiro é quem rola).
 	 */
 	embedded?: boolean
+	/** FE-51: permissão para gravar labels de canal (BE-47) — esconde o
+	 * lápis de "Editar labels" quando ausente. */
+	canEditLabels?: boolean
 }
 
 export default function StatsPanel({
@@ -110,6 +114,7 @@ export default function StatsPanel({
 	onClose,
 	fileStats: externalFileStats,
 	embedded = false,
+	canEditLabels = false,
 }: StatsPanelProps) {
 	// --- Internal source selection ---
 	const [statsSource, setStatsSource] = useState<SelectableItem | null>(null)
@@ -168,19 +173,9 @@ export default function StatsPanel({
 	const [statsExpanded, setStatsExpanded] = useState(true)
 	const [channelMenuAnchor, setChannelMenuAnchor] =
 		useState<HTMLElement | null>(null)
-	const [customLabels, setCustomLabels] = useState<Record<string, string>>(
-		() => {
-			try {
-				const saved = localStorage.getItem(LS_KEY_LABELS)
-				if (saved) return JSON.parse(saved) as Record<string, string>
-			} catch {
-				/* ignore */
-			}
-			return {}
-		},
-	)
 	const [labelDialogOpen, setLabelDialogOpen] = useState(false)
 	const [editingLabels, setEditingLabels] = useState<Record<string, string>>({})
+	const { saveChannelLabels } = useChannelLabels()
 
 	// Export dialog state
 	const [exportDialog, setExportDialog] = useState<{
@@ -208,28 +203,24 @@ export default function StatsPanel({
 		return map
 	}, [values])
 
-	const channelLabel = useCallback(
-		(ch: string) => customLabels[ch] || channelLabelMap[ch] || ch,
-		[channelLabelMap, customLabels],
+	// FE-51: labels de canal agora vêm do arquivo (channel_labels, BE-47)
+	// — o mapa é por arquivo; a fonte de stats pode ser amostra ou gate.
+	const statsFile = useMemo(
+		() => files.find((f) => f.id === source?.fileDataId),
+		[files, source?.fileDataId],
 	)
 
-	useEffect(() => {
-		localStorage.setItem(LS_KEY_LABELS, JSON.stringify(customLabels))
-	}, [customLabels])
-
-	const openLabelDialog = useCallback(() => {
-		setEditingLabels({ ...customLabels })
-		setLabelDialogOpen(true)
-	}, [customLabels])
-
-	const saveLabelDialog = useCallback(() => {
-		const cleaned: Record<string, string> = {}
-		for (const [key, val] of Object.entries(editingLabels)) {
-			if (val.trim()) cleaned[key] = val.trim()
-		}
-		setCustomLabels(cleaned)
-		setLabelDialogOpen(false)
-	}, [editingLabels])
+	const channelLabel = useCallback(
+		(ch: string) => {
+			const raw = channelLabelMap[ch] ?? ch
+			return channelDisplayLabel(
+				raw,
+				statsFile?.channel_meta?.find((m) => m.name === raw),
+				statsFile?.channel_labels?.[raw],
+			)
+		},
+		[channelLabelMap, statsFile],
+	)
 
 	const allChannels = useMemo(() => {
 		const analysis = currentGate?.analysis_result?.analysis_result
@@ -239,6 +230,50 @@ export default function StatsPanel({
 			return Object.keys(fileStats.channel_statistics)
 		return values.map((v) => normalizeChannelName(v))
 	}, [currentGate, fileStats, values])
+
+	const openLabelDialog = useCallback(() => {
+		const labels: Record<string, string> = {}
+		for (const ch of allChannels) {
+			const raw = channelLabelMap[ch] ?? ch
+			const custom = statsFile?.channel_labels?.[raw]
+			if (custom) labels[ch] = custom
+		}
+		setEditingLabels(labels)
+		setLabelDialogOpen(true)
+	}, [allChannels, channelLabelMap, statsFile])
+
+	// Grava no arquivo via BE-47 — merge por chave: label grava, campo
+	// esvaziado (que antes tinha label) vai como `null` para remover.
+	const saveLabelDialog = useCallback(async () => {
+		if (!statsFile) {
+			setLabelDialogOpen(false)
+			return
+		}
+		const prev = statsFile.channel_labels ?? {}
+		const metaNames = new Set(statsFile.channel_meta?.map((m) => m.name) ?? [])
+		const payload: Record<string, string | null> = {}
+		for (const ch of allChannels) {
+			const raw = channelLabelMap[ch] ?? ch
+			// O endpoint valida contra os canais do arquivo — chave de stats
+			// sem canal correspondente no header não pode ir no payload.
+			if (metaNames.size > 0 && !metaNames.has(raw)) continue
+			const val = editingLabels[ch]?.trim() ?? ""
+			if (val) payload[raw] = val
+			else if (prev[raw]) payload[raw] = null
+		}
+		try {
+			await saveChannelLabels(statsFile.id, payload)
+			setLabelDialogOpen(false)
+		} catch {
+			// Erro já virou toast no hook — o dialog fica aberto para ajustar.
+		}
+	}, [
+		editingLabels,
+		statsFile,
+		allChannels,
+		channelLabelMap,
+		saveChannelLabels,
+	])
 
 	useEffect(() => {
 		try {
@@ -584,15 +619,17 @@ export default function StatsPanel({
 										/{allChannels.length} parâmetros
 									</Typography>
 									<Box sx={{ flex: 1 }} />
-									<Tooltip title="Editar labels">
-										<IconButton
-											size="small"
-											onClick={openLabelDialog}
-											sx={{ p: 0.25 }}
-										>
-											<EditIcon style={{ fontSize: 14 }} />
-										</IconButton>
-									</Tooltip>
+									{canEditLabels && (
+										<Tooltip title="Editar labels">
+											<IconButton
+												size="small"
+												onClick={openLabelDialog}
+												sx={{ p: 0.25 }}
+											>
+												<EditIcon style={{ fontSize: 14 }} />
+											</IconButton>
+										</Tooltip>
+									)}
 								</Box>
 
 								<ChannelConfigPopover

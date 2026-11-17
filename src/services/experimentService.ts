@@ -325,6 +325,19 @@ export const updateFilesPlotConfig = async (
 	return res.data
 }
 
+/** FE-51 (BE-47): labels custom de canal por arquivo — merge por chave;
+ * `null`/vazio remove a entrada. Devolve a amostra atualizada. */
+export const updateFileChannelLabels = async (
+	fileDataId: number,
+	labels: Record<string, string | null>,
+): Promise<ExperimentFiles> => {
+	const res = await CytometryApi.patch(
+		`/experiment/file/${fileDataId}/channel-labels`,
+		{ labels },
+	)
+	return res.data
+}
+
 /** Histograma 2D de baixa resolução da 1ª amostra ativa (BE-21). */
 export interface ExperimentPreviewResponse {
 	file_data_id: number

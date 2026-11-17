@@ -18,6 +18,7 @@ import {
 } from "../../../features/experiment/context/ExperimentWorkspaceContext"
 import { useExperimentMetaActions } from "../../../features/experiment/hooks/useExperimentMetaActions"
 import { useFileActions } from "../../../features/experiment/hooks/useFileActions"
+import { useChannelLabels } from "../../../features/experiment/hooks/useChannelLabels"
 import { useGateActions } from "../../../features/experiment/hooks/useGateActions"
 import { useSubsampleActions } from "../../../features/experiment/hooks/useSubsampleActions"
 import { PlotStateProvider } from "../../../features/plot/context/PlotStateContext"
@@ -101,6 +102,7 @@ function ExperimentPageContent() {
 		handleUpdateFileTags,
 		handleApplyPlotConfigToAll,
 	} = useFileActions()
+	const { saveChannelLabels } = useChannelLabels()
 	const {
 		handleRequestDeleteGate,
 		handleDeleteGates,
@@ -655,6 +657,14 @@ function ExperimentPageContent() {
 										onApplyPlotConfigToAll={
 											canEditExperiment ? handleApplyPlotConfigToAll : undefined
 										}
+										onSaveChannelLabel={
+											canEditExperiment
+												? (channel, label) =>
+														saveChannelLabels(source.fileDataId, {
+															[channel]: label,
+														})
+												: undefined
+										}
 									/>
 								</PlotStateProvider>
 							) : (
@@ -700,6 +710,7 @@ function ExperimentPageContent() {
 								values={values}
 								fileStats={fileStats}
 								embedded
+								canEditLabels={canEditExperiment}
 							/>
 						</PanelSection>
 						<PanelSection

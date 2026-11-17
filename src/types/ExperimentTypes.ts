@@ -96,6 +96,9 @@ export interface ExperimentFiles {
 	has_embedded_compensation?: boolean
 	/** Por-canal do header FCS — `range` dá o teto do eixo por detector. */
 	channel_meta?: ChannelMeta[]
+	/** BE-47: labels custom de canal por arquivo — `{nome cru: label}`.
+	 * Precedência de exibição: custom > `stain` > nome cru. */
+	channel_labels?: Record<string, string>
 	/** BE-34: tags explícitas da amostra. */
 	tags?: SampleTag[]
 	/** BE-34: tags herdadas do subsample (virtuais — não editáveis na amostra). */

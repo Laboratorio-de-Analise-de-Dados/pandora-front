@@ -4,6 +4,10 @@ import {
 	Button,
 	CircularProgress,
 	LinearProgress,
+	ListItemIcon,
+	ListItemText,
+	Menu,
+	MenuItem,
 	Typography,
 	useMediaQuery,
 } from "@mui/material"
@@ -63,6 +67,7 @@ import {
 	buildGateLabelTraces,
 } from "../../utils/gateHoverTraces"
 import { buildAxisRange, channelRangeFor } from "../../utils/plotAxes"
+import { axisTitleLabel } from "../../../../utils/channelLabel"
 import { extractErrorMessage } from "../../../../utils/apiError"
 
 import type { PlotMode } from "../../hooks/usePlotState"
@@ -75,6 +80,8 @@ import ReshapeScopeDialog from "./components/ReshapeScopeDialog"
 import { PlotSettingsPanel } from "./components/PlotSettingsPanel"
 import PlotToolbar from "./components/PlotToolbar"
 import GateContextMenu from "./components/GateContextMenu"
+import LabelEditDialog from "../../../stats/components/LabelEditDialog"
+import { MdEdit as EditIcon } from "react-icons/md"
 import PolygonEditOverlay from "./components/PolygonEditOverlay"
 
 // Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
@@ -103,6 +110,9 @@ interface ScatterPlotProps {
 	/** "Aplicar a todas as amostras" no painel de configurações — a página
 	 * confirma e grava a config em lote (ausente = botão escondido). */
 	onApplyPlotConfigToAll?: (config: PlotViewConfig) => void
+	/** FE-51: salvar label de canal (BE-47) — ausente = botão direito no
+	 * título do eixo não oferece "Renomear canal…" (sem permissão). */
+	onSaveChannelLabel?: (channel: string, label: string | null) => Promise<void>
 }
 
 // Fundo do plot: cinza bem claro — lê como "branco" como nos softwares
@@ -122,6 +132,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	onSuggestSignalConsumed,
 	onPropagateGate,
 	onApplyPlotConfigToAll,
+	onSaveChannelLabel,
 }) => {
 	const plotState = usePlotContext()
 
@@ -208,6 +219,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		gate: Gate
 		gateIndex: number
 	} | null>(null)
+	// FE-51: botão direito no título do eixo → "Renomear canal…" (BE-47).
+	const [axisMenu, setAxisMenu] = useState<{
+		mouseX: number
+		mouseY: number
+		channel: string
+	} | null>(null)
+	const [renamingChannel, setRenamingChannel] = useState<string | null>(null)
+	const [renamingLabel, setRenamingLabel] = useState("")
 	// Reshape mode
 	const [reshapingGateId, setReshapingGateId] = useState<number | null>(null)
 	const settingsAvailable = tool !== "edit" && reshapingGateId === null
@@ -571,6 +590,22 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const handleContextMenu = (event: React.MouseEvent) => {
 		if (previewActive) return
+		// FE-51: botão direito no título do eixo — o Plotly marca os grupos
+		// SVG com `.xaxis-title`/`.yaxis-title`.
+		const axisTitle = (event.target as Element).closest?.(
+			".xaxis-title, .yaxis-title",
+		)
+		if (axisTitle) {
+			event.preventDefault()
+			if (onSaveChannelLabel) {
+				setAxisMenu({
+					mouseX: event.clientX,
+					mouseY: event.clientY,
+					channel: axisTitle.classList.contains("yaxis-title") ? yAxis : xAxis,
+				})
+			}
+			return
+		}
 		const hit = findGateAtPoint(event.clientX, event.clientY)
 		if (hit) {
 			event.preventDefault()
@@ -584,6 +619,23 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	}
 
 	const handleContextMenuClose = () => setContextMenu(null)
+
+	const handleAxisMenuRename = () => {
+		if (!axisMenu) return
+		setRenamingChannel(axisMenu.channel)
+		setRenamingLabel(currentFile?.channel_labels?.[axisMenu.channel] ?? "")
+		setAxisMenu(null)
+	}
+
+	const handleSaveChannelLabel = async () => {
+		if (!renamingChannel || !onSaveChannelLabel) return
+		try {
+			await onSaveChannelLabel(renamingChannel, renamingLabel.trim() || null)
+			setRenamingChannel(null)
+		} catch {
+			// Erro já virou toast no hook — o dialog fica aberto para ajustar.
+		}
+	}
 
 	const handleContextMenuEdit = () => {
 		if (!contextMenu) return
@@ -1028,7 +1080,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 											: {}),
 										xaxis: {
 											title: {
-												text: `${xAxis}${effXScale === "linear" ? "" : ` (${effXScale})`}`,
+												text: axisTitleLabel(xAxis, currentFile, effXScale),
 											},
 											...(xTicks
 												? {
@@ -1054,7 +1106,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 												text:
 													plotMode === "histogram"
 														? "Contagem"
-														: `${yAxis}${effYScale === "linear" ? "" : ` (${effYScale})`}`,
+														: axisTitleLabel(yAxis, currentFile, effYScale),
 											},
 											...(plotMode !== "histogram" && yTicks
 												? {
@@ -1282,6 +1334,43 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						? "Excluir quadrantes"
 						: "Excluir"
 				}
+			/>
+
+			{/* FE-51 — botão direito no título do eixo abre o rename de canal
+			    (BE-47). O menu só existe quando a página passa o save
+			    (permissão de edição). */}
+			<Menu
+				open={axisMenu !== null}
+				onClose={() => setAxisMenu(null)}
+				anchorReference="anchorPosition"
+				anchorPosition={
+					axisMenu ? { top: axisMenu.mouseY, left: axisMenu.mouseX } : undefined
+				}
+			>
+				<MenuItem onClick={handleAxisMenuRename}>
+					<ListItemIcon>
+						<EditIcon fontSize="small" />
+					</ListItemIcon>
+					<ListItemText>Renomear canal…</ListItemText>
+				</MenuItem>
+			</Menu>
+
+			<LabelEditDialog
+				open={renamingChannel !== null}
+				title={renamingChannel ? `Renomear ${renamingChannel}` : ""}
+				allChannels={renamingChannel ? [renamingChannel] : []}
+				channelLabelMap={
+					renamingChannel ? { [renamingChannel]: renamingChannel } : {}
+				}
+				editingLabels={
+					renamingChannel ? { [renamingChannel]: renamingLabel } : {}
+				}
+				onEditingLabelsChange={(labels) =>
+					setRenamingLabel(labels[renamingChannel ?? ""] ?? "")
+				}
+				onSave={handleSaveChannelLabel}
+				onClearAll={() => setRenamingLabel("")}
+				onClose={() => setRenamingChannel(null)}
 			/>
 
 			{/* FE-42 — pedido + revisão de sugestões. O dialog usa os eixos
