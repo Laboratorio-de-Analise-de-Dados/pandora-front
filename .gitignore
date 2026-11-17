@@ -33,3 +33,5 @@ yarn.lock
 
 # artefato incremental do tsc
 tsconfig.tsbuildinfo
+# artefatos locais do pipeline de spec (tasks, previews — nunca commita)
+.scratch/
