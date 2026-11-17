@@ -8,7 +8,10 @@ import {
 	Select,
 	Typography,
 } from "@mui/material"
-import { MdCloudUpload as CloudUploadIcon } from "react-icons/md"
+import {
+	MdCloudUpload as CloudUploadIcon,
+	MdOutlineDriveFolderUpload as FolderUploadIcon,
+} from "react-icons/md"
 import Button from "@mui/material/Button"
 import Box from "@mui/material/Box"
 import { AppDialog } from "../../../../components/AppDialog"
@@ -21,6 +24,8 @@ import type { UploadOneFile } from "../../hooks/useFileUploadQueue"
 import {
 	ACCEPTED_EXPERIMENT_FILE_ACCEPT,
 	ACCEPTED_EXPERIMENT_FILE_MESSAGE,
+	fileRelativePath,
+	fileUploadKey,
 	findDuplicateFileNames,
 	isAcceptedExperimentFile,
 } from "../../../../utils/experimentFile"
@@ -88,14 +93,35 @@ export default function NewExperimentDialog({
 			isAcceptedExperimentFile(file.name),
 		)
 
+		ingestFiles(accepted)
+	}
+
+	const handleFolderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const selected = Array.from(event.target.files ?? [])
+		event.target.value = ""
+		if (selected.length === 0) return
+
+		// FE-54: na pasta só entram .fcs — o resto é ignorado com aviso.
+		const fcs = selected.filter((file) =>
+			file.name.toLowerCase().endsWith(".fcs"),
+		)
+		const ignored = selected.length - fcs.length
+		if (ignored > 0) {
+			toast.warn(`${ignored} arquivo(s) não-.fcs ignorado(s)`)
+		}
+		ingestFiles(fcs)
+	}
+
+	const ingestFiles = (accepted: File[]) => {
 		setFiles((prev) => {
-			const duplicates = findDuplicateFileNames([...prev, ...accepted])
-			const existing = new Set(
-				prev.map((file) => file.name.trim().toLowerCase()),
+			const duplicates = findDuplicateFileNames(
+				[...prev, ...accepted],
+				fileUploadKey,
 			)
+			const existing = new Set(prev.map((file) => fileUploadKey(file)))
 			const incoming = new Set<string>()
 			const kept = accepted.filter((file) => {
-				const key = file.name.trim().toLowerCase()
+				const key = fileUploadKey(file)
 				if (existing.has(key) || incoming.has(key)) return false
 				incoming.add(key)
 				return true
@@ -115,6 +141,20 @@ export default function NewExperimentDialog({
 		(orgId: number | null) =>
 		(file: File, index: number): UploadOneFile =>
 		async (onProgress) => {
+			if (
+				experimentIdRef.current === null &&
+				fileRelativePath(file) !== undefined
+			) {
+				// FE-54: o fluxo de criação não carrega caminho relativo —
+				// seleção de pasta cria o experimento vazio e anexa todos
+				// os .fcs por /files/* (que preserva o path → subsample).
+				experimentIdRef.current = await createExperimentEmpty(
+					title,
+					experimentType,
+					orgId,
+					description,
+				)
+			}
 			if (index === 0 && experimentIdRef.current === null) {
 				const experimentId = await createExperiment({
 					title,
@@ -227,23 +267,44 @@ export default function NewExperimentDialog({
 			</FormControl>
 
 			<FormControl margin="normal" fullWidth>
-				<Button
-					component="label"
-					variant="contained"
-					tabIndex={-1}
-					startIcon={<CloudUploadIcon />}
-					sx={{ alignSelf: "flex-start" }}
-					disabled={queue.running || batchStarted}
-				>
-					{files.length > 0 ? "Adicionar arquivos" : "Upload files (opcional)"}
-					<input
-						type="file"
-						accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
-						onChange={handleFileChange}
-						multiple
-						hidden
-					/>
-				</Button>
+				<Box sx={{ display: "flex", gap: 1, alignSelf: "flex-start" }}>
+					<Button
+						component="label"
+						variant="contained"
+						tabIndex={-1}
+						startIcon={<CloudUploadIcon />}
+						disabled={queue.running || batchStarted}
+					>
+						{files.length > 0
+							? "Adicionar arquivos"
+							: "Upload files (opcional)"}
+						<input
+							type="file"
+							accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
+							onChange={handleFileChange}
+							multiple
+							hidden
+						/>
+					</Button>
+					<Button
+						component="label"
+						variant="outlined"
+						tabIndex={-1}
+						startIcon={<FolderUploadIcon />}
+						disabled={queue.running || batchStarted}
+					>
+						Selecionar pasta
+						<input
+							type="file"
+							onChange={handleFolderChange}
+							multiple
+							hidden
+							ref={(el) => {
+								el?.setAttribute("webkitdirectory", "")
+							}}
+						/>
+					</Button>
+				</Box>
 				<Typography variant="caption" marginTop={1}>
 					Formatos aceitos: .fcs ou .zip — é possível selecionar vários arquivos
 					de uma vez, ou adicionar amostras depois, dentro do experimento

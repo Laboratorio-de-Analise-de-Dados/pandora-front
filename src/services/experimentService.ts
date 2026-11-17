@@ -212,10 +212,13 @@ export const initExperimentFileUpload = async (
 	experimentId: number,
 	fileName: string,
 	totalChunks: number,
+	relativePath?: string,
 ): Promise<FileUploadInitResponse> => {
 	const res = await CytometryApi.post(
 		`/experiment/${experimentId}/files/init`,
-		{ fileName, totalChunks },
+		// BE-49: caminho relativo da pasta de origem vira subsample;
+		// backends antigos ignoram o campo extra.
+		{ fileName, totalChunks, ...(relativePath ? { relativePath } : {}) },
 	)
 	return res.data
 }
@@ -251,10 +254,12 @@ export interface FileUploadCompleteResponse {
 export const completeExperimentFileUpload = async (
 	fileId: number,
 	fileName: string,
+	relativePath?: string,
 ): Promise<FileUploadCompleteResponse> => {
 	const res = await CytometryApi.post("/experiment/files/complete/", {
 		fileId,
 		fileName,
+		...(relativePath ? { relativePath } : {}),
 	})
 	return res.data
 }

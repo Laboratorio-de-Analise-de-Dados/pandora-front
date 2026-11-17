@@ -56,6 +56,7 @@ import {
 	MdChevronRight as NextIcon,
 	MdAccountTree as TreeIcon,
 	MdUploadFile as UploadIcon,
+	MdOutlineDriveFolderUpload as FolderUploadIcon,
 	MdDownload as DownloadIcon,
 	MdHistory as HistoryIcon,
 	MdFlashOn as BoltIcon,
@@ -307,30 +308,63 @@ function ExperimentPageContent() {
 				{experiment && (
 					<Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, ml: "auto" }}>
 						{canEditExperiment && (
-							<Tooltip title="Adicionar arquivos (.zip ou .fcs)">
-								<span>
-									<IconButton component="label" disabled={addingFile}>
-										{addingFile ? (
-											<CircularProgress size={18} />
-										) : (
-											<UploadIcon fontSize="small" />
-										)}
-										<input
-											type="file"
-											accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
-											multiple
-											hidden
-											onChange={(e) => {
-												const selected = Array.from(e.target.files ?? [])
-												e.target.value = ""
-												if (selected.length > 0) {
-													void handleAddFiles(selected)
-												}
-											}}
-										/>
-									</IconButton>
-								</span>
-							</Tooltip>
+							<>
+								<Tooltip title="Adicionar arquivos (.zip ou .fcs)">
+									<span>
+										<IconButton component="label" disabled={addingFile}>
+											{addingFile ? (
+												<CircularProgress size={18} />
+											) : (
+												<UploadIcon fontSize="small" />
+											)}
+											<input
+												type="file"
+												accept={ACCEPTED_EXPERIMENT_FILE_ACCEPT}
+												multiple
+												hidden
+												onChange={(e) => {
+													const selected = Array.from(e.target.files ?? [])
+													e.target.value = ""
+													if (selected.length > 0) {
+														void handleAddFiles(selected)
+													}
+												}}
+											/>
+										</IconButton>
+									</span>
+								</Tooltip>
+								<Tooltip title="Adicionar pasta (subpastas viram subsamples)">
+									<span>
+										<IconButton component="label" disabled={addingFile}>
+											<FolderUploadIcon fontSize="small" />
+											<input
+												type="file"
+												multiple
+												hidden
+												ref={(el) => {
+													el?.setAttribute("webkitdirectory", "")
+												}}
+												onChange={(e) => {
+													const selected = Array.from(e.target.files ?? [])
+													e.target.value = ""
+													const fcs = selected.filter((f) =>
+														f.name.toLowerCase().endsWith(".fcs"),
+													)
+													const ignored = selected.length - fcs.length
+													if (ignored > 0) {
+														toast.warn(
+															`${ignored} arquivo(s) não-.fcs ignorado(s)`,
+														)
+													}
+													if (fcs.length > 0) {
+														void handleAddFiles(fcs)
+													}
+												}}
+											/>
+										</IconButton>
+									</span>
+								</Tooltip>
+							</>
 						)}
 						<Tooltip title="Baixar dados (ZIP por subsample)">
 							<IconButton onClick={handleDownload}>
