@@ -10,7 +10,7 @@ import {
 import { useTheme } from "@mui/material/styles"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Plot from "react-plotly.js"
-import { Gate, Scale } from "../../../../types"
+import { Gate, PlotViewConfig, Scale } from "../../../../types"
 import type { GateScope } from "../../../../services/gateService"
 import type { SuggestRequestPayload, SuggestionRun } from "../../../../types"
 import { getGateColor } from "../../../../constants/gateColors"
@@ -97,6 +97,12 @@ interface ScatterPlotProps {
 	/** Chamado quando o sinal é consumido — o pai zera para um novo
 	 * mount não reabrir o dialog. */
 	onSuggestSignalConsumed?: () => void
+	/** "Propagar gate…" no menu de contexto — a página abre o
+	 * ApplyGateDialog com o gate clicado (ausente = item escondido). */
+	onPropagateGate?: (gate: Gate) => void
+	/** "Aplicar a todas as amostras" no painel de configurações — a página
+	 * confirma e grava a config em lote (ausente = botão escondido). */
+	onApplyPlotConfigToAll?: (config: PlotViewConfig) => void
 }
 
 // Fundo do plot: cinza bem claro — lê como "branco" como nos softwares
@@ -114,6 +120,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	childGates = [],
 	suggestSignal,
 	onSuggestSignalConsumed,
+	onPropagateGate,
+	onApplyPlotConfigToAll,
 }) => {
 	const plotState = usePlotContext()
 
@@ -631,6 +639,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		}
 	}
 
+	const handleContextMenuPropagate = () => {
+		if (!contextMenu) return
+		onPropagateGate?.(contextMenu.gate)
+		setContextMenu(null)
+	}
+
 	const handleExitReshape = () => {
 		setReshapingGateId(null)
 		setEditingPolyGate(null)
@@ -872,6 +886,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 								gateToolsEnabled={!previewActive}
 								settingsOpen={settingsOpen}
 								onToggleSettings={() => setSettingsOpen((prev) => !prev)}
+								onApplyToAll={
+									onApplyPlotConfigToAll
+										? () => onApplyPlotConfigToAll(plotState.config)
+										: undefined
+								}
 							/>
 						</Box>
 						{data && (
@@ -1209,6 +1228,11 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									onYMinChange={setYMin}
 									onYMaxChange={setYMax}
 									onPlotModeChange={setPlotMode}
+									onApplyToAll={
+										onApplyPlotConfigToAll
+											? () => onApplyPlotConfigToAll(plotState.config)
+											: undefined
+									}
 								/>
 							)}
 						</Box>
@@ -1253,6 +1277,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				onClose={handleContextMenuClose}
 				onReshape={handleContextMenuReshape}
 				onEdit={handleContextMenuEdit}
+				onPropagate={onPropagateGate ? handleContextMenuPropagate : undefined}
 				onDelete={handleContextMenuDelete}
 				deleteLabel={
 					contextMenu?.gate.gate_coordinates?.type === "quadrant"

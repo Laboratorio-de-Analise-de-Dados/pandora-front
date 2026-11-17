@@ -19,6 +19,7 @@ import {
 	MdAddBox as QuadrantIcon,
 	MdArrowDropDown as ChevronIcon,
 	MdRestartAlt as ResetIcon,
+	MdCopyAll as ApplyAllIcon,
 } from "react-icons/md"
 import JuviaCatIcon from "../../../../suggest/components/JuviaCatIcon"
 import type { Scale } from "../../../../../types"
@@ -313,6 +314,9 @@ export interface PlotToolbarProps {
 	gateToolsEnabled?: boolean
 	settingsOpen: boolean
 	onToggleSettings: () => void
+	/** FE-48: grava a config atual em todas as amostras ativas (BE-46).
+	 *  Ausente = botão escondido (ex.: sem permissão de edição). */
+	onApplyToAll?: () => void
 }
 
 /**
@@ -349,6 +353,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	gateToolsEnabled = true,
 	settingsOpen,
 	onToggleSettings,
+	onApplyToAll,
 }) => {
 	const histogram = plotMode === "histogram"
 	const visibleTools = histogram
@@ -544,6 +549,33 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 							},
 						}}
 					/>
+				</Tooltip>
+			)}
+			{/* FE-48 — uniformiza a config de exibição entre amostras;
+			    confirmação e contagem ficam no handler da página.
+			    Só no desktop: no mobile a mesma ação vive no painel ⚙️. */}
+			{onApplyToAll && (
+				<Tooltip
+					title="Substitui a configuração de todas as amostras pela atual"
+					arrow
+				>
+					<Button
+						variant="outlined"
+						size="small"
+						onClick={onApplyToAll}
+						startIcon={<ApplyAllIcon />}
+						sx={{
+							display: { xs: "none", md: "inline-flex" },
+							fontWeight: 600,
+							whiteSpace: "nowrap",
+							height: 40,
+							color: "text.primary",
+							borderColor: "divider",
+							"&:hover": { borderColor: "text.primary" },
+						}}
+					>
+						Aplicar a todas
+					</Button>
 				</Tooltip>
 			)}
 			{/* No desktop todas as opções já estão na barra — o botão de

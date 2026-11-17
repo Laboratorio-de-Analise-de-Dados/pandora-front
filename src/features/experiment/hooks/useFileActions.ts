@@ -3,11 +3,20 @@ import { toast } from "react-toastify"
 import {
 	disableFileData,
 	enableFileData,
+	updateFilesPlotConfig,
 } from "../../../services/experimentService"
 import { moveFileToSubsample } from "../../../services/subsampleService"
+import { updateGate } from "../../../services/gateService"
+import {
+	findFileForGate,
+	gatesAtSamePath,
+	getGatePathNames,
+} from "../../gate/utils/gateTreeHelpers"
 import { updateFileTags } from "../../../services/tagService"
+import type { PlotViewConfig } from "../../../types"
 import type { TagTarget } from "../../tags/utils/tagTargets"
 import { useExperimentWorkspace } from "../context/ExperimentWorkspaceContext"
+import { useConfirm } from "../../../components/ConfirmDialog"
 import { extractErrorMessage } from "../../../utils/apiError"
 
 /**
@@ -16,8 +25,14 @@ import { extractErrorMessage } from "../../../utils/apiError"
  * com toasts agregados por domínio.
  */
 export function useFileActions() {
-	const { experimentFiles, source, setSource, invalidateExperiment } =
-		useExperimentWorkspace()
+	const {
+		experimentId,
+		experimentFiles,
+		source,
+		setSource,
+		invalidateExperiment,
+	} = useExperimentWorkspace()
+	const confirm = useConfirm()
 
 	const handleDisableFile = useCallback(
 		async (fileDataIds: number[]) => {
@@ -133,10 +148,71 @@ export function useFileActions() {
 		[invalidateExperiment],
 	)
 
+	/** FE-48 (BE-46): "aplicar a todas as amostras" — grava a config atual
+	 * do plot em todas as amostras ativas. Fonte aberta = gate → aplica ao
+	 * gate na mesma posição da árvore (mesmo caminho de nomes) em cada
+	 * amostra, um PATCH por gate — o endpoint em lote só toca files. */
+	const handleApplyPlotConfigToAll = useCallback(
+		async (config: PlotViewConfig) => {
+			const activeFiles = experimentFiles.filter((f) => f.active !== false)
+
+			if (source?.type === "gate") {
+				const sourceFile = findFileForGate(experimentFiles, source.id)
+				const pathNames = sourceFile
+					? getGatePathNames(sourceFile.gates, source.id)
+					: null
+				if (!pathNames) return
+				const targets = gatesAtSamePath(activeFiles, pathNames)
+				const label = pathNames.join(" > ")
+				const ok = await confirm({
+					title: "Aplicar ao gate em todas as amostras?",
+					description: `Substitui a configuração de visualização salva do gate "${label}" em ${targets.length} amostras pela config atual do gráfico.`,
+					confirmLabel: "Aplicar a todas",
+				})
+				if (!ok) return
+				const results = await Promise.allSettled(
+					targets.map((g) => updateGate(g.id, { plot_config: config })),
+				)
+				const failed = results.filter(
+					(r): r is PromiseRejectedResult => r.status === "rejected",
+				)
+				const applied = targets.length - failed.length
+				if (applied > 0) {
+					toast.success(
+						`Configuração aplicada ao gate "${label}" em ${applied} amostras`,
+					)
+					invalidateExperiment()
+				}
+				if (failed.length > 0) {
+					toast.error(
+						`Erro ao aplicar em ${failed.length} amostras: ${extractErrorMessage(failed[0].reason)}`,
+					)
+				}
+				return
+			}
+
+			const ok = await confirm({
+				title: "Aplicar a todas as amostras?",
+				description: `Substitui a configuração de visualização salva de ${activeFiles.length} amostras pela config atual do gráfico.`,
+				confirmLabel: "Aplicar a todas",
+			})
+			if (!ok) return
+			try {
+				const updated = await updateFilesPlotConfig(experimentId, config)
+				toast.success(`Configuração aplicada a ${updated.length} amostras`)
+				invalidateExperiment()
+			} catch (error) {
+				toast.error(`Erro ao aplicar: ${extractErrorMessage(error)}`)
+			}
+		},
+		[confirm, experimentFiles, experimentId, invalidateExperiment, source],
+	)
+
 	return {
 		handleDisableFile,
 		handleEnableFile,
 		handleMoveFileToSubsample,
 		handleUpdateFileTags,
+		handleApplyPlotConfigToAll,
 	}
 }

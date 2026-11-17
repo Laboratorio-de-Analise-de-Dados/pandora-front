@@ -30,6 +30,7 @@ serviços) ou alinhe com o responsável.
 | FE-43 multiselect de amostras       | ✅ concluído — mergeado (PR #119), deploy v0.9.0                                                                                      | —                        | —      | —     |
 | FE-47 erro 5xx amigável             | `src/API/index.ts`, `src/utils/apiError.*`                                                                                            | feat/jlab-feedback-19-10 | devin  | 17/11 |
 | FE-48 escala por canal (parcial)    | `plotConfigMemory.*`, `usePlotPersistence.ts`, `ExperimentWorkspaceContext.tsx`, `page/experiment/[id]` — T3/T4 aguardam BE-46        | feat/jlab-feedback-19-10 | devin  | 17/11 |
+| FE-49 propagar no menu + polígono   | `GateContextMenu.tsx`, `scatter-plot/index.tsx`, `useGateShapeEditing.ts`, `utils/shapePath.*`                                        | feat/jlab-feedback-19-10 | devin  | 17/11 |
 
 ## Concluído nesta branch
 

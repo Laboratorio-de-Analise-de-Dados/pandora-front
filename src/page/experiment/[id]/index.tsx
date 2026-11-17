@@ -99,6 +99,7 @@ function ExperimentPageContent() {
 		handleEnableFile,
 		handleMoveFileToSubsample,
 		handleUpdateFileTags,
+		handleApplyPlotConfigToAll,
 	} = useFileActions()
 	const {
 		handleRequestDeleteGate,
@@ -646,6 +647,14 @@ function ExperimentPageContent() {
 										childGates={childGates}
 										suggestSignal={suggestSignal}
 										onSuggestSignalConsumed={() => setSuggestSignal(null)}
+										onPropagateGate={
+											canEditExperiment
+												? (gate) => handleApplyGate(gate.id, gate.name)
+												: undefined
+										}
+										onApplyPlotConfigToAll={
+											canEditExperiment ? handleApplyPlotConfigToAll : undefined
+										}
 									/>
 								</PlotStateProvider>
 							) : (

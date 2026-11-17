@@ -103,6 +103,19 @@ export const findGateByPathNames = (
 	return match
 }
 
+/**
+ * Gates na mesma posição da árvore (mesmo caminho de nomes) — no máximo um
+ * por arquivo. "Mesmo nome na mesma camada": "Singlets > CD3" não casa com
+ * "CD3" na raiz nem com "Debris > CD3" (FE-48).
+ */
+export const gatesAtSamePath = (
+	files: ExperimentFiles[],
+	pathNames: string[],
+): Gate[] =>
+	files
+		.map((f) => findGateByPathNames(f.gates, pathNames))
+		.filter((g): g is Gate => g !== undefined)
+
 /** Extrai a descrição dos eixos usados para construir o gate. */
 export const gateAxesLabel = (gc: GateCoordinates): string | null => {
 	const gateType = gc.type ?? "rectangle"

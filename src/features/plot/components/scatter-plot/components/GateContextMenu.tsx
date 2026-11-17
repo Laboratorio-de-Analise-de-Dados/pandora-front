@@ -3,6 +3,7 @@ import { Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material"
 import {
 	MdOpenWith as ReshapeIcon,
 	MdEdit as EditIcon,
+	MdFlashOn as PropagateIcon,
 	MdDelete as DeleteIcon,
 } from "react-icons/md"
 
@@ -11,6 +12,7 @@ interface GateContextMenuProps {
 	onClose: () => void
 	onReshape: () => void
 	onEdit: () => void
+	onPropagate?: () => void
 	onDelete: () => void
 	deleteLabel?: string
 }
@@ -20,6 +22,7 @@ const GateContextMenu: React.FC<GateContextMenuProps> = ({
 	onClose,
 	onReshape,
 	onEdit,
+	onPropagate,
 	onDelete,
 	deleteLabel = "Excluir",
 }) => (
@@ -41,6 +44,14 @@ const GateContextMenu: React.FC<GateContextMenuProps> = ({
 			</ListItemIcon>
 			<ListItemText>Editar gate</ListItemText>
 		</MenuItem>
+		{onPropagate && (
+			<MenuItem onClick={onPropagate}>
+				<ListItemIcon>
+					<PropagateIcon fontSize="small" />
+				</ListItemIcon>
+				<ListItemText>Propagar gate…</ListItemText>
+			</MenuItem>
+		)}
 		<MenuItem onClick={onDelete}>
 			<ListItemIcon>
 				<DeleteIcon fontSize="small" />

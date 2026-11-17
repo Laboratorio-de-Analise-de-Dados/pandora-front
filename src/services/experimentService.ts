@@ -307,6 +307,24 @@ export const updateFilePlotConfig = async (
 	})
 }
 
+/** FE-48 (BE-46): mesma `plot_config` em lote — sem `fileIds` aplica a
+ * todas as amostras ativas do experimento; com a lista, só às listadas.
+ * Devolve as amostras atualizadas. */
+export const updateFilesPlotConfig = async (
+	experimentId: string | number,
+	plotConfig: PlotViewConfig,
+	fileIds?: number[],
+): Promise<ExperimentFiles[]> => {
+	const res = await CytometryApi.patch(
+		`/experiment/${experimentId}/files/plot-config`,
+		{
+			plot_config: plotConfig,
+			...(fileIds ? { file_ids: fileIds } : {}),
+		},
+	)
+	return res.data
+}
+
 /** Histograma 2D de baixa resolução da 1ª amostra ativa (BE-21). */
 export interface ExperimentPreviewResponse {
 	file_data_id: number
