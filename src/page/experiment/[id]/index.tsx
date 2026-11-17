@@ -74,6 +74,7 @@ function ExperimentPageContent() {
 		values,
 		plotInitialConfig,
 		saveSourceConfig,
+		saveChannelConfig,
 		goToAdjacentFile,
 		canGoPrevFile,
 		canGoNextFile,
@@ -630,6 +631,7 @@ function ExperimentPageContent() {
 									initialConfig={plotInitialConfig}
 									channelMeta={currentFile?.channel_meta}
 									onPersist={saveSourceConfig}
+									onConfigChange={saveChannelConfig}
 								>
 									<ScatterPlot
 										values={values}

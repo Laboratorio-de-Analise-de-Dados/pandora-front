@@ -22,7 +22,10 @@ import {
 	findGateByPathNames,
 } from "../../gate/utils"
 import { defaultScale } from "../../plot/utils/biex"
-import { resolvePlotInitialConfig } from "../../plot/utils/plotConfigMemory"
+import {
+	resolvePlotInitialConfig,
+	type ChannelMemory,
+} from "../../plot/utils/plotConfigMemory"
 import {
 	useExperimentQuery,
 	useExperimentFilesQuery,
@@ -55,6 +58,12 @@ interface ExperimentWorkspaceValue {
 		sourceId: number,
 		config: PlotViewConfig,
 	) => void
+	/**
+	 * Registra o ajuste de eixo na memória por canal da sessão (FE-48):
+	 * escala/min/max seguem o canal ao trocar de fonte. Só chamado em
+	 * mudança real de config — o seed de mount não conta como ajuste.
+	 */
+	saveChannelConfig: (config: PlotViewConfig) => void
 	plotInitialConfig: PlotViewConfig
 	sourceLabel: string
 	goToAdjacentFile: (direction: 1 | -1) => void
@@ -163,6 +172,27 @@ export function ExperimentWorkspaceProvider({
 		[],
 	)
 
+	// Memória por canal (FE-48): último ajuste de escala/range por canal na
+	// sessão. Troca de fonte para outra amostra que exibe o mesmo canal
+	// herda o ajuste — "FL1-A sempre log" sem depender da fonte.
+	const [channelMemory, setChannelMemory] = useState<ChannelMemory>({})
+
+	const saveChannelConfig = useCallback((config: PlotViewConfig) => {
+		setChannelMemory((prev) => ({
+			...prev,
+			[config.xAxis]: {
+				scale: config.xScale,
+				min: config.xMin,
+				max: config.xMax,
+			},
+			[config.yAxis]: {
+				scale: config.yScale,
+				min: config.yMin,
+				max: config.yMax,
+			},
+		}))
+	}, [])
+
 	const selectedGate = useMemo(() => {
 		if (source?.type !== "gate") return undefined
 		for (const f of experimentFiles) {
@@ -263,11 +293,13 @@ export function ExperimentWorkspaceProvider({
 			persistedConfig:
 				selectedGate?.plot_config ??
 				(source?.type === "file" ? sourceFile?.plot_config : undefined),
+			channelMemory,
 		})
 	}, [
 		keepCurrentViewConfig,
 		viewConfig,
 		savedConfigs,
+		channelMemory,
 		source,
 		selectedGate,
 		sourceFile,
@@ -290,6 +322,7 @@ export function ExperimentWorkspaceProvider({
 			selectedGate,
 			viewConfig,
 			saveSourceConfig,
+			saveChannelConfig,
 			plotInitialConfig,
 			sourceLabel,
 			goToAdjacentFile,
@@ -315,6 +348,7 @@ export function ExperimentWorkspaceProvider({
 			selectedGate,
 			viewConfig,
 			saveSourceConfig,
+			saveChannelConfig,
 			plotInitialConfig,
 			sourceLabel,
 			goToAdjacentFile,

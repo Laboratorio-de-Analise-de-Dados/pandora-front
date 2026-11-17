@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 import type { PlotViewConfig } from "../../../types"
-import { resolvePlotInitialConfig } from "./plotConfigMemory"
+import {
+	resolvePlotInitialConfig,
+	type ChannelMemory,
+} from "./plotConfigMemory"
 
 const base: PlotViewConfig = {
 	xAxis: "FSC-A",
@@ -65,5 +68,64 @@ describe("resolvePlotInitialConfig", () => {
 			viewConfig: biexConfig,
 		})
 		expect(result).toEqual(biexConfig)
+	})
+})
+
+describe("memória por canal (FE-48)", () => {
+	const channelMemory: ChannelMemory = {
+		"FL1-A": { scale: "log", min: "1", max: "10000" },
+	}
+	const fl1View: PlotViewConfig = { ...base, xAxis: "FL1-A" }
+
+	it("canal com memória aplica escala/range na 1ª visita a outra fonte", () => {
+		const result = resolvePlotInitialConfig({
+			keepCurrent: false,
+			viewConfig: fl1View,
+			channelMemory,
+		})
+		expect(result.xScale).toBe("log")
+		expect(result.xMin).toBe("1")
+		expect(result.xMax).toBe("10000")
+		// SSC-A (y) não tem memória — mantém o carry-forward.
+		expect(result.yScale).toBe("linear")
+	})
+
+	it("saved da fonte ganha da memória de canal", () => {
+		const saved: PlotViewConfig = { ...fl1View, xScale: "biex" }
+		const result = resolvePlotInitialConfig({
+			keepCurrent: false,
+			viewConfig: fl1View,
+			saved,
+			channelMemory,
+		})
+		expect(result).toBe(saved)
+	})
+
+	it("memória de canal ganha do plot_config persistido da fonte", () => {
+		const result = resolvePlotInitialConfig({
+			keepCurrent: false,
+			viewConfig: fl1View,
+			persistedConfig: { xScale: "linear" },
+			channelMemory,
+		})
+		expect(result.xScale).toBe("log")
+	})
+
+	it("navegação por setas ignora a memória de canal", () => {
+		const result = resolvePlotInitialConfig({
+			keepCurrent: true,
+			viewConfig: fl1View,
+			channelMemory,
+		})
+		expect(result).toBe(fl1View)
+	})
+
+	it("canal sem memória cai no comportamento atual", () => {
+		const result = resolvePlotInitialConfig({
+			keepCurrent: false,
+			viewConfig: base,
+			channelMemory,
+		})
+		expect(result).toEqual(base)
 	})
 })

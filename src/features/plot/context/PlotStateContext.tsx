@@ -29,6 +29,8 @@ interface PlotStateProviderProps {
 		sourceId: number,
 		config: PlotViewConfig,
 	) => void
+	/** Só em mudança real da config (não no seed) — memória por canal. */
+	onConfigChange?: (config: PlotViewConfig) => void
 }
 
 export function PlotStateProvider({
@@ -38,6 +40,7 @@ export function PlotStateProvider({
 	sourceType,
 	sourceId,
 	onPersist,
+	onConfigChange,
 }: PlotStateProviderProps) {
 	const plotState = usePlotState(initialConfig, channelMeta)
 
@@ -68,7 +71,13 @@ export function PlotStateProvider({
 		],
 	)
 
-	usePlotPersistence({ sourceType, sourceId, config, onPersist })
+	usePlotPersistence({
+		sourceType,
+		sourceId,
+		config,
+		onPersist,
+		onConfigChange,
+	})
 
 	const value = useMemo(() => ({ ...plotState, config }), [plotState, config])
 
