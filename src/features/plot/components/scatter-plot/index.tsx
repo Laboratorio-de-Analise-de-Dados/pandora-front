@@ -113,6 +113,9 @@ interface ScatterPlotProps {
 	/** FE-51: salvar label de canal (BE-47) — ausente = botão direito no
 	 * título do eixo não oferece "Renomear canal…" (sem permissão). */
 	onSaveChannelLabel?: (channel: string, label: string | null) => Promise<void>
+	/** FE-52: duplo clique sobre um gate — "entrar no gate". Recebe a
+	 * config atual do plot para o painel-filho herdar canais/escala. */
+	onGateDoubleClick?: (gate: Gate, config: PlotViewConfig) => void
 }
 
 // Fundo do plot: cinza bem claro — lê como "branco" como nos softwares
@@ -133,6 +136,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 	onPropagateGate,
 	onApplyPlotConfigToAll,
 	onSaveChannelLabel,
+	onGateDoubleClick,
 }) => {
 	const plotState = usePlotContext()
 
@@ -966,6 +970,13 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 						<Box
 							ref={plotContainerRef}
 							onContextMenu={handleContextMenu}
+							onDoubleClick={(event) => {
+								// FE-52: duplo clique no corpo do gate → "entrar" —
+								// navega pro filho ou cria gate-filho cópia do pai.
+								if (previewActive || !onGateDoubleClick) return
+								const hit = findGateAtPoint(event.clientX, event.clientY)
+								if (hit) onGateDoubleClick(hit.gate, plotState.config)
+							}}
 							sx={(theme) => ({
 								// Mobile: o plot ocupa a metade superior da tela
 								// (quase full-width, limitado pela altura); desktop

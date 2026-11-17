@@ -15,6 +15,9 @@ export {
 
 export { gateAuthorLabel } from "./gateAuthor"
 
+export { drilldownTarget } from "./gateDrilldown"
+export type { DrilldownTarget } from "./gateDrilldown"
+
 export {
 	GATE_NAME_MAX_LENGTH,
 	getNextGateName,
