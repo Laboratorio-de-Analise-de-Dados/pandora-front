@@ -5,7 +5,11 @@ import {
 	enableFileData,
 	updateFilesPlotConfig,
 } from "../../../services/experimentService"
-import { moveFileToSubsample } from "../../../services/subsampleService"
+import {
+	moveFileToSubsample,
+	moveFilesToSubsample,
+} from "../../../services/subsampleService"
+import { buildSubsampleMoves } from "../utils/subsampleMoves"
 import { updateGate } from "../../../services/gateService"
 import {
 	findFileForGate,
@@ -101,29 +105,48 @@ export function useFileActions() {
 
 	const handleMoveFileToSubsample = useCallback(
 		async (fileDataIds: number[], subsampleId: number | null) => {
+			// FE-53 (BE-48): payload em lote — `null` = no-op honesto
+			// (todas as selecionadas já estão no destino).
+			const batch = buildSubsampleMoves(
+				experimentFiles,
+				fileDataIds,
+				subsampleId,
+			)
+			if (!batch) {
+				toast.info("As amostras selecionadas já estão nesse subsample")
+				return
+			}
+			const moved = batch.moves.length
 			try {
-				// A API move uma amostra por PATCH (BE-07) — o lote é N chamadas.
-				const results = await Promise.allSettled(
-					fileDataIds.map((id) => moveFileToSubsample(id, subsampleId)),
-				)
-				const failed = results.filter((r) => r.status === "rejected").length
-				if (failed === 0) {
+				try {
+					await moveFilesToSubsample(experimentId, batch.moves)
 					toast.success(
-						fileDataIds.length === 1
-							? "Amostra movida"
-							: `${fileDataIds.length} amostras movidas`,
+						moved === 1 ? "Amostra movida" : `${moved} amostras movidas`,
 					)
-				} else {
-					toast.warn(
-						`${fileDataIds.length - failed} movida(s), ${failed} falharam.`,
+				} catch (error) {
+					// Backend sem a rota do BE-48 (404): fallback de uma PATCH
+					// por amostra (BE-07) — remove quando o lote estiver em prod.
+					const status = (error as { response?: { status?: number } }).response
+						?.status
+					if (status !== 404) throw error
+					const results = await Promise.allSettled(
+						batch.moves.map((m) => moveFileToSubsample(m.file_id, m.subsample)),
 					)
+					const failed = results.filter((r) => r.status === "rejected").length
+					if (failed === 0) {
+						toast.success(
+							moved === 1 ? "Amostra movida" : `${moved} amostras movidas`,
+						)
+					} else {
+						toast.warn(`${moved - failed} movida(s), ${failed} falharam.`)
+					}
 				}
 				invalidateExperiment()
 			} catch (error) {
 				toast.error(`Erro ao mover a amostra: ${extractErrorMessage(error)}`)
 			}
 		},
-		[invalidateExperiment],
+		[experimentFiles, experimentId, invalidateExperiment],
 	)
 
 	/**
