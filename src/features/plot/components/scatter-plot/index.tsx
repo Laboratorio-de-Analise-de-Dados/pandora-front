@@ -4,10 +4,6 @@ import {
 	Button,
 	CircularProgress,
 	LinearProgress,
-	ListItemIcon,
-	ListItemText,
-	Menu,
-	MenuItem,
 	Typography,
 	useMediaQuery,
 } from "@mui/material"
@@ -81,7 +77,6 @@ import { PlotSettingsPanel } from "./components/PlotSettingsPanel"
 import PlotToolbar from "./components/PlotToolbar"
 import GateContextMenu from "./components/GateContextMenu"
 import LabelEditDialog from "../../../stats/components/LabelEditDialog"
-import { MdEdit as EditIcon } from "react-icons/md"
 import PolygonEditOverlay from "./components/PolygonEditOverlay"
 
 // Espera o usuário parar de mexer nos limites antes de repedir o gráfico ao
@@ -110,8 +105,8 @@ interface ScatterPlotProps {
 	/** "Aplicar a todas as amostras" no painel de configurações — a página
 	 * confirma e grava a config em lote (ausente = botão escondido). */
 	onApplyPlotConfigToAll?: (config: PlotViewConfig) => void
-	/** FE-51: salvar label de canal (BE-47) — ausente = botão direito no
-	 * título do eixo não oferece "Renomear canal…" (sem permissão). */
+	/** FE-51: salvar label de canal (BE-47) — ausente = os lápis de rename
+	 * nos selects de eixo ficam escondidos (sem permissão). */
 	onSaveChannelLabel?: (channel: string, label: string | null) => Promise<void>
 	/** FE-52: duplo clique sobre um gate — "entrar no gate". Recebe a
 	 * config atual do plot para o painel-filho herdar canais/escala. */
@@ -223,12 +218,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 		gate: Gate
 		gateIndex: number
 	} | null>(null)
-	// FE-51: botão direito no título do eixo → "Renomear canal…" (BE-47).
-	const [axisMenu, setAxisMenu] = useState<{
-		mouseX: number
-		mouseY: number
-		channel: string
-	} | null>(null)
+	// FE-51: clique no título do eixo abre o rename de canal (BE-47).
 	const [renamingChannel, setRenamingChannel] = useState<string | null>(null)
 	const [renamingLabel, setRenamingLabel] = useState("")
 	// Reshape mode
@@ -594,22 +584,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const handleContextMenu = (event: React.MouseEvent) => {
 		if (previewActive) return
-		// FE-51: botão direito no título do eixo — o Plotly marca os grupos
-		// SVG com `.xaxis-title`/`.yaxis-title`.
-		const axisTitle = (event.target as Element).closest?.(
-			".xaxis-title, .yaxis-title",
-		)
-		if (axisTitle) {
-			event.preventDefault()
-			if (onSaveChannelLabel) {
-				setAxisMenu({
-					mouseX: event.clientX,
-					mouseY: event.clientY,
-					channel: axisTitle.classList.contains("yaxis-title") ? yAxis : xAxis,
-				})
-			}
-			return
-		}
 		const hit = findGateAtPoint(event.clientX, event.clientY)
 		if (hit) {
 			event.preventDefault()
@@ -624,11 +598,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 
 	const handleContextMenuClose = () => setContextMenu(null)
 
-	const handleAxisMenuRename = () => {
-		if (!axisMenu) return
-		setRenamingChannel(axisMenu.channel)
-		setRenamingLabel(currentFile?.channel_labels?.[axisMenu.channel] ?? "")
-		setAxisMenu(null)
+	// FE-51: lápis no select de eixo (AxisSelect) → dialog de rename
+	// direto. Sem permissão de edição (prop ausente) não há ação.
+	const openChannelRename = (channel: string) => {
+		if (!onSaveChannelLabel) return
+		setRenamingChannel(channel)
+		setRenamingLabel(currentFile?.channel_labels?.[channel] ?? "")
 	}
 
 	const handleSaveChannelLabel = async () => {
@@ -946,6 +921,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 									onApplyPlotConfigToAll
 										? () => onApplyPlotConfigToAll(plotState.config)
 										: undefined
+								}
+								onRenameChannel={
+									onSaveChannelLabel ? openChannelRename : undefined
 								}
 							/>
 						</Box>
@@ -1347,25 +1325,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
 				}
 			/>
 
-			{/* FE-51 — botão direito no título do eixo abre o rename de canal
-			    (BE-47). O menu só existe quando a página passa o save
-			    (permissão de edição). */}
-			<Menu
-				open={axisMenu !== null}
-				onClose={() => setAxisMenu(null)}
-				anchorReference="anchorPosition"
-				anchorPosition={
-					axisMenu ? { top: axisMenu.mouseY, left: axisMenu.mouseX } : undefined
-				}
-			>
-				<MenuItem onClick={handleAxisMenuRename}>
-					<ListItemIcon>
-						<EditIcon fontSize="small" />
-					</ListItemIcon>
-					<ListItemText>Renomear canal…</ListItemText>
-				</MenuItem>
-			</Menu>
-
+			{/* FE-51 — clique no título do eixo abre o rename de canal
+			    (BE-47) direto neste dialog. */}
 			<LabelEditDialog
 				open={renamingChannel !== null}
 				title={renamingChannel ? `Renomear ${renamingChannel}` : ""}

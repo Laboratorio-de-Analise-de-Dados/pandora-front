@@ -174,6 +174,9 @@ export default function StatsPanel({
 	const [channelMenuAnchor, setChannelMenuAnchor] =
 		useState<HTMLElement | null>(null)
 	const [labelDialogOpen, setLabelDialogOpen] = useState(false)
+	const [labelFocusChannel, setLabelFocusChannel] = useState<string | null>(
+		null,
+	)
 	const [editingLabels, setEditingLabels] = useState<Record<string, string>>({})
 	const { saveChannelLabels } = useChannelLabels()
 
@@ -231,16 +234,20 @@ export default function StatsPanel({
 		return values.map((v) => normalizeChannelName(v))
 	}, [currentGate, fileStats, values])
 
-	const openLabelDialog = useCallback(() => {
-		const labels: Record<string, string> = {}
-		for (const ch of allChannels) {
-			const raw = channelLabelMap[ch] ?? ch
-			const custom = statsFile?.channel_labels?.[raw]
-			if (custom) labels[ch] = custom
-		}
-		setEditingLabels(labels)
-		setLabelDialogOpen(true)
-	}, [allChannels, channelLabelMap, statsFile])
+	const openLabelDialog = useCallback(
+		(focusChannel?: string) => {
+			const labels: Record<string, string> = {}
+			for (const ch of allChannels) {
+				const raw = channelLabelMap[ch] ?? ch
+				const custom = statsFile?.channel_labels?.[raw]
+				if (custom) labels[ch] = custom
+			}
+			setEditingLabels(labels)
+			setLabelFocusChannel(focusChannel ?? null)
+			setLabelDialogOpen(true)
+		},
+		[allChannels, channelLabelMap, statsFile],
+	)
 
 	// Grava no arquivo via BE-47 — merge por chave: label grava, campo
 	// esvaziado (que antes tinha label) vai como `null` para remover.
@@ -623,7 +630,7 @@ export default function StatsPanel({
 										<Tooltip title="Editar labels">
 											<IconButton
 												size="small"
-												onClick={openLabelDialog}
+												onClick={() => openLabelDialog()}
 												sx={{ p: 0.25 }}
 											>
 												<EditIcon style={{ fontSize: 14 }} />
@@ -652,6 +659,7 @@ export default function StatsPanel({
 									channelStats={channelStats}
 									activeMetrics={activeMetrics}
 									channelLabel={channelLabel}
+									onChannelClick={canEditLabels ? openLabelDialog : undefined}
 								/>
 							</>
 						)}
@@ -682,6 +690,7 @@ export default function StatsPanel({
 				open={labelDialogOpen}
 				allChannels={allChannels}
 				channelLabelMap={channelLabelMap}
+				focusChannel={labelFocusChannel}
 				editingLabels={editingLabels}
 				onEditingLabelsChange={setEditingLabels}
 				onSave={saveLabelDialog}

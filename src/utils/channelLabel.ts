@@ -2,7 +2,8 @@ import type { ChannelMeta, ExperimentFiles, Scale } from "../types"
 
 /**
  * FE-51: rótulo de exibição do canal — custom (`channel_labels`, BE-47) >
- * stain ($PnS do header FCS) > nome cru. Com rótulo: `"CRU (rótulo)"`;
+ * stain ($PnS do header FCS) > nome cru. Com rótulo, **só o rótulo**
+ * aparece (o par canal↔label fica explícito no dialog/home de config);
  * sem os dois: o cru como sempre foi.
  */
 export const channelDisplayLabel = (
@@ -11,7 +12,7 @@ export const channelDisplayLabel = (
 	custom?: string | null,
 ): string => {
 	const suffix = custom?.trim() || meta?.stain?.trim()
-	return suffix ? `${channel} (${suffix})` : channel
+	return suffix || channel
 }
 
 /** Resolve o label no contexto de um arquivo — labels são por arquivo:
@@ -26,16 +27,17 @@ export const channelLabelForFile = (
 		file?.channel_labels?.[channel],
 	)
 
-/** Título do eixo do plot: label e escala dividem o mesmo parêntese —
- * `"FL11-A (F4/80 · biex)"`. Sem label, `"FL11-A (biex)"` como antes. */
+/** Título do eixo do plot: com label mostra só o label — no gráfico a
+ * pessoa quer ler o rótulo — e a escala segue entre parênteses quando
+ * não-linear: `"F4/80 (biex)"`. Sem label, `"FL11-A (biex)"`/`"FSC-A"`. */
 export const axisTitleLabel = (
 	channel: string,
 	file: Parameters<typeof channelLabelForFile>[1],
 	scale: Scale,
 ): string => {
-	const suffix =
+	const label =
 		file?.channel_labels?.[channel]?.trim() ||
 		file?.channel_meta?.find((m) => m.name === channel)?.stain?.trim()
-	const parts = [suffix, scale === "linear" ? "" : scale].filter(Boolean)
-	return parts.length ? `${channel} (${parts.join(" · ")})` : channel
+	const base = label || channel
+	return scale === "linear" ? base : `${base} (${scale})`
 }

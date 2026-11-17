@@ -317,6 +317,9 @@ export interface PlotToolbarProps {
 	/** FE-48: grava a config atual em todas as amostras ativas (BE-46).
 	 *  Ausente = botão escondido (ex.: sem permissão de edição). */
 	onApplyToAll?: () => void
+	/** FE-51: lápis por opção nos selects de eixo abre o rename do canal
+	 *  (BE-47). Ausente = opções sem lápis (sem permissão). */
+	onRenameChannel?: (channel: string) => void
 }
 
 /**
@@ -354,6 +357,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 	settingsOpen,
 	onToggleSettings,
 	onApplyToAll,
+	onRenameChannel,
 }) => {
 	const histogram = plotMode === "histogram"
 	const visibleTools = histogram
@@ -621,6 +625,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 				options={values}
 				onChange={onSelectX}
 				size="small"
+				onRenameChannel={onRenameChannel}
 			/>
 			{!histogram && (
 				<>
@@ -633,6 +638,7 @@ const PlotToolbar: React.FC<PlotToolbarProps> = ({
 						options={values}
 						onChange={onSelectY}
 						size="small"
+						onRenameChannel={onRenameChannel}
 					/>
 				</>
 			)}

@@ -18,6 +18,8 @@ interface LabelEditDialogProps {
 	title?: string
 	allChannels: string[]
 	channelLabelMap: Record<string, string>
+	/** FE-51: canal pré-focado ao abrir via clique na tabela de stats. */
+	focusChannel?: string | null
 	editingLabels: Record<string, string>
 	onEditingLabelsChange: (labels: Record<string, string>) => void
 	onSave: () => void
@@ -30,6 +32,7 @@ const LabelEditDialog: React.FC<LabelEditDialogProps> = ({
 	title = "Editar Labels dos Canais",
 	allChannels,
 	channelLabelMap,
+	focusChannel,
 	editingLabels,
 	onEditingLabelsChange,
 	onSave,
@@ -84,6 +87,7 @@ const LabelEditDialog: React.FC<LabelEditDialogProps> = ({
 						<TableCell sx={{ py: 0.25 }}>
 							<TextField
 								size="small"
+								autoFocus={ch === focusChannel}
 								placeholder={channelLabelMap[ch] ?? ch}
 								value={editingLabels[ch] ?? ""}
 								onChange={(e) =>
